@@ -2026,3 +2026,205 @@ def test_sql_injection_prevention():
 ---
 
 This comprehensive design document provides an industrial-grade technical specification for Tamil Nadu StartupOS (Vanigam), covering architecture, components, APIs, data models, error handling, correctness properties, and testing strategies suitable for a professional development team to implement.
+
+---
+
+# ADDENDUM v1.1 — Capability Extensions
+
+Two capabilities added after gap review: an experience-only entry path (no idea required) and automatic product decomposition with supply feasibility mapping. Both extend existing swarms; no architectural layer changes.
+
+## A1. Experience-Based Opportunity Discovery (Roadmap Swarm extension)
+
+**New sub-agents (added to Roadmap Swarm):**
+
+- `ExperienceProfiler`: structured intake for users with no idea — age, education, caste category, district, sector(s) and years of experience, roles, skills, certifications, financial capacity (investible amount; optional bank-statement evidence via Document_Verifier under separate DPDP consent), owned assets (land/equipment/digital), preferred sectors, risk appetite. Emits an `ExperienceProfile`.
+- `OpportunityGenerator`: ranks Opportunity_Bank entries against the profile:
+  `fit = 0.35*experience_match (embedding sim: skills/roles vs opportunity requirements) + 0.25*capital_feasibility + 0.20*scheme_availability (CPSAT pre-check) + 0.10*market_demand (web research, cited) + 0.10*location_fit`. Returns 3–5 opportunity cards (opportunity, why-you-fit, capital band vs capacity, scheme support with amounts, competition snapshot, next steps). Selected card pre-fills the existing IdeaExtractor → validation → roadmap pipeline.
+
+**New table:**
+
+```sql
+CREATE TABLE opportunity_bank (
+    opportunity_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title VARCHAR(500) NOT NULL,
+    problem_statement TEXT NOT NULL,
+    business_model TEXT,
+    sectors TEXT[] NOT NULL,              -- Sector_Taxonomy tags
+    required_skills TEXT[],
+    min_capital DECIMAL(15,2),
+    max_capital DECIMAL(15,2),
+    linked_scheme_ids UUID[],
+    source_urls TEXT[] NOT NULL,
+    last_verified_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+CREATE INDEX idx_opportunity_sectors ON opportunity_bank USING gin(sectors);
+```
+
+`experience_profiles` mirrors founder profile protections: financial-capacity fields carry the caste-category protection class (separate consent purpose, AES-256 at rest, purpose limitation). Opportunity_Bank is curated through the same editorial pipeline as schemes (source registry, monitors, LLM extraction, curator PR review, last-verified stamps).
+
+**Orchestrator change:** ideation entry becomes dual-mode; intent classifier gains an `Opportunity Discovery` label routing to ExperienceProfiler when the user signals experience-without-idea.
+
+## A2. Product Decomposition & Supply Feasibility Map (B2B Swarm extension)
+
+**New sub-agents (added to B2B Swarm):**
+
+- `ProductDecomposer`: input = product name/description/spec document/uploaded file (OCR via Document_Verifier). Produces a draft end-to-end breakdown — raw materials, components, sub-assemblies, services, machinery — with quantities/unit, UoM, quality standards; augmented by web research on comparable-product BOMs (all findings cited). Draft is confirmed/edited by the user before matching (human-in-the-loop; generated BOMs are never auto-committed).
+- `SupplyMapper`: per confirmed BOM line → Graph_Engine supply matches (standard 40/30/20/10 edge weights + trust). Lines with no adequate on-platform match trigger web research suggesting supplier categories and TN industrial clusters (Coimbatore pumps/motors, Tiruppur knitwear, Ambur–Ranipet leather, Sivakasi printing, Hosur electronics), cited. Output = `Supply_Feasibility_Map`: product → components → vendors tree with match score, price band, capacity, distance, trust; gaps flagged with an "invite vendor" action that logs unmet demand for onboarding prioritization.
+
+**New table:**
+
+```sql
+CREATE TABLE product_decompositions (
+    decomposition_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    startup_id UUID NOT NULL REFERENCES startups(startup_id),
+    product_name VARCHAR(500) NOT NULL,
+    input_source VARCHAR(50) NOT NULL,     -- text | file | spec
+    bom_draft JSONB NOT NULL,              -- generated lines w/ confidence + source citations
+    bom_confirmed JSONB,                   -- user-approved lines
+    supply_map JSONB,                      -- per-line matches + gaps + external suggestions
+    status VARCHAR(50) DEFAULT 'draft',    -- draft | confirmed | mapped
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+Confirmed lines flow into the standard T1 matching + CP-SAT allocation path unchanged.
+
+## A3. Sector Taxonomy (cross-cutting)
+
+Canonical, versioned, admin-extendable `sector_taxonomy` table (≥21 sectors per Requirement 2.7). Schemes, Opportunity_Bank entries, and B2B profiles all carry taxonomy tags; scheme-curation CI flags sectors lacking central or TN scheme coverage.
+
+---
+
+# ADDENDUM v2 — Hybrid-Ideology Component Designs
+
+Companion to `v2-integration-plan.md` (trees/mechanisms) and requirements ADDENDUM v2. Component designs and schemas for all v2 items.
+
+## B1. Entry Lattice & Terrain (P-34, P-29) — Roadmap/Profile Swarm
+
+```python
+class EntryMode(str, Enum):    IDEA="idea"; DOMAIN_ONLY="domain_only"; INTENT_ONLY="intent_only"
+class RegSubtype(str, Enum):   R2A="registered_product"; R2B="registered_no_product"; R2C="idea_worker_no_company"; NONE="unregistered"
+class Terrain(str, Enum):      URBAN_TECH="urban_tech"; RURAL_MICRO="rural_micro"; ACADEMIC="academic_spinoff"; DEEP_TECH="deep_tech"
+```
+- `ConversationState` gains `entry_mode`, `reg_subtype`; LangGraph conditional edges route on them (2B routes to legal verify first, then discovery; 2C routes to idea refinement then registration checklist).
+- `TerrainClassifier`: deterministic rules (district type x domain x education), founder-overridable; stored on profile.
+- Roadmap templates: versioned YAML families keyed by terrain (milestone sets, timeline multipliers, scheme-emphasis weights). `MilestoneGenerator(terrain=...)`.
+
+## B2. Peer Discovery, Live-Demo, Gamification (P-41)
+
+- `GET /api/v1/discovery/peers?startup_id=..&k=10` — pgvector ANN over `startup_domain_embeddings`, filtered `discoverable=true` (new consent-gated column).
+- `POST /api/v1/public/quick-eligibility` — ephemeral 4-field profile, rules-layer check, top-3 scheme names; no persistence, rate-limited, no auth.
+- Gamification: UI over existing completeness score; `tier_unlocks` config table (tier to features list).
+
+## B3. Approval-Likelihood Scorer (P-24) — Scheme Swarm Ranker extension
+
+```python
+likelihood = w1*preference_axis_match + w2*historical_success_rate + w3*profile_strength - w4*competition_proxy
+```
+- `schemes.preference_axes JSONB` (e.g., ["women_led","first_graduate","rural"]); scorer counts founder matches.
+- Output `likelihood_score` + `likelihood_reasons[]` alongside `relevance_score`; deterministic, no LLM. Outcome logging feeds weight recalibration (Phase 5).
+
+## B4. Roadmap Re-Versioner (P-30)
+
+```sql
+CREATE TABLE roadmap_scheme_refs (roadmap_id UUID, scheme_id UUID, milestone_id UUID, PRIMARY KEY(roadmap_id, scheme_id, milestone_id));
+```
+- Subscribes to `scheme_changelog` inserts; impact query on refs; scoped SchemeAnnotator re-run; new roadmap version row (`roadmap_versions`: version_n, diff JSONB, created_at); founder notification in preferred language.
+
+## B5. Milestone Tracker + Living PDF (P-31)
+
+```sql
+CREATE TABLE milestone_progress (
+  id UUID PRIMARY KEY, milestone_id UUID NOT NULL, startup_id UUID NOT NULL,
+  status VARCHAR(20) DEFAULT 'pending',            -- pending|in_progress|done
+  proof_documents UUID[],                          -- documents table refs
+  notes TEXT, started_at TIMESTAMP, completed_at TIMESTAMP);
+```
+- Share token: signed JWT (read-only scope) embedded as QR in exported PDF; `/r/{token}` renders live progress. Proofs flow through Document_Verifier; `source='milestone_proof'` evidence records feed C4 (B9).
+
+## B6. Problem-Statements Board (P-33)
+
+- `opportunity_bank.type` gains `challenge`; new columns `deadline`, `issuer`, `linked_scheme_ids UUID[]`.
+- `GET /api/v1/challenges` (public, filterable by sector/district/capital band); "Adopt" seeds the C1 flow with the challenge as opportunity.
+
+## B7. Alerts, Doc-Readiness, Deadline Tracker (P-40a-c)
+
+- New-scheme alert job: on scheme merge, rules-layer eligibility over profile snapshots (batch) writes `suggestions` rows (see B12).
+- Doc-readiness: set-difference of `required_docs(scheme)` minus `verified_docs(startup)` endpoint with upload CTAs.
+- Deadline tracker: view over scheme deadlines + application milestones + pipeline reminders.
+
+## B8. Offline/2G Ladder (P-39)
+
+- PWA service worker: cache shell + the founder's roadmap/scheme cards; write-behind sync queue for form posts.
+- `Save-Data`/client-hint keyed low-bandwidth render variant; voice uploads chunked and compressed, transcription async with notification.
+- Notification fallback chain: in-app, then email, then SMS (aggregator SMS API).
+
+## B9. Cross-Pillar Evidence & Proxy Traction (P-32, P-28)
+
+```sql
+CREATE TABLE traction_evidence (
+  id UUID PRIMARY KEY, startup_id UUID NOT NULL,
+  evidence_type VARCHAR(40) NOT NULL,   -- loi|pilot|hackathon|publication|waitlist|b2b_order|revenue
+  source VARCHAR(20) NOT NULL,          -- self_declared|document_verified|platform_verified
+  value_json JSONB, document_id UUID, consent_purpose_ok BOOL DEFAULT false,
+  created_at TIMESTAMP DEFAULT NOW());
+```
+- Nightly job materializes B2B collaboration metrics as `platform_verified` rows (consent-gated).
+- Traction assessor weights: platform_verified above document_verified above self_declared; type-specific weight config.
+- `schemes`/`investors` gain `accepts_pre_revenue BOOL`, `accepted_proxy_types TEXT[]`; CP-SAT compatibility constraint restricts pre-revenue founders to flagged routes.
+
+## B10. Portfolio Conflicts & Pathway Sequencer (P-27, P-35) — CPSAT/Funding
+
+- `scheme_conflicts (scheme_a UUID, scheme_b UUID, rule VARCHAR)`; CP-SAT adds `eligible[a] + eligible[b] <= 1` per conflict pair; over-raise soft constraint `total_ask <= ceiling(stage, burn)` with penalty and explanation.
+- Sequencer: deterministic topological ordering over route prerequisites + latency metadata (`routes.decision_latency_days`, `disbursement_days`, `prerequisites[]`) producing a dated `funding_plan JSONB` merged into the milestone tracker. Bank pathways: static curated checklists per loan scheme.
+
+## B11. Joint-Scheme Checker (P-25)
+
+- `schemes.supports_joint_application BOOL`; on match-accept event with shared district/sector, run scoped CP-SAT over joint-flagged schemes with the conjunction of both profiles; emit dual `co_application_cards`; `scheme_applications.joint_with UUID` support.
+
+## B12. SignalEngine (P-26)
+
+```sql
+CREATE TABLE suggestions (
+  id UUID PRIMARY KEY, founder_id UUID NOT NULL,
+  kind VARCHAR(30),          -- b2b_match|scheme|challenge|joint_scheme
+  payload JSONB, score DECIMAL(5,2),
+  status VARCHAR(15) DEFAULT 'pending',  -- pending|sent|accepted|dismissed
+  trigger VARCHAR(40), created_at TIMESTAMP DEFAULT NOW());
+```
+- Consumers: platform events (roadmap phase change, profile update, new supply node, scheme merge). Candidate generation runs the existing engines in scoped batches; all pushes are constraint-checked pre-send; weekly digest caps 3 per founder; accept/dismiss telemetry retained for learning.
+
+## B13. Sector-Adaptive Weights & Barter (P-36, P-43)
+
+- `sector_match_weights (sector VARCHAR PK, spec_w, price_w, capacity_w, geo_w, version, updated_by)` with defaults 40/30/20/10; presets for AgriTech/HealthTech/EdTech; admin-edited, versioned; GraphEngine reads by demand-node sector.
+- `b2b_profiles.payment_mode VARCHAR(10) DEFAULT 'cash'`; CP-SAT constraint: barter-only matches barter or either.
+
+## B14. Governance: Review Queue + Override (P-37)
+
+```sql
+CREATE TABLE review_queue (
+  id UUID PRIMARY KEY, artifact_type VARCHAR(30),  -- document|funding_rec|solver_override|b2b_flag
+  artifact_id UUID, reason TEXT, assignee VARCHAR(100),
+  decision VARCHAR(15),                             -- approved|rejected|overridden
+  decision_reason TEXT NOT NULL DEFAULT '', audit_hash CHAR(64),
+  created_at TIMESTAMP DEFAULT NOW(), decided_at TIMESTAMP);
+```
+- Overrides never mutate solver state; they append an exception with mandatory reason and a hash-chained audit entry. Sampling policy: N% of funding recommendations human-reviewed pre-display in early releases (config).
+
+## B15. Idea-Stage IP Consent (P-42)
+
+- New consent purpose `unregistered_idea_sharing` (own bilingual notice + withdrawal); idea descriptions stored in the encrypted column class; match cards mask idea detail until mutual accept.
+
+## B16. Investor Web-Intelligence (P-46) + Phase-6 Modules (P-44, P-47, P-40d)
+
+- Source allowlist config (SEBI AIF registry, Startup India Investor Connect, fund sites, press, StartupTN/TANFUND). Crawl, LLM extraction, curator PR, publish. Every web-derived field stores `{value, source_url, retrieved_at}`; UI renders "driven from web — [source, date]"; 90-day staleness SLA flags stale facts.
+- News pipeline (P-44): source registry, RSS-first crawlers, batch summarization, IndicTrans2 ta/hi/en, sector tags; `news_items (headline, summary_en, summary_ta, summary_hi, source_url, outlet, published_at, sectors[], scheme_refs[])`; agent-status strip driven by crawler run logs; scheme-change news links to the B4 re-versioner.
+- What-If Simulator (P-47): `POST /api/v1/simulate {scenario_type, params}` clones the founder's current constraint-model inputs, applies the perturbation, re-solves (funding portfolio / roadmap timeline / allocation), returns baseline-vs-scenario diff plus a fallback plan via the Gap/Sequencer machinery; results labeled hypothetical; never mutates live data.
+- Competitor intel (P-40d): peer-embedding join over the cited funding corpus; k-anonymity threshold (k >= 5) for platform-sourced entries.
+
+## B17. Synthetic-Founder Simulation Harness (P-38)
+
+- Hypothesis-based profile generator (distributions over caste/gender/district/education/stage/sector); golden-path suites per canonical profile; CI job replays the population on every scheme-rule PR and posts the eligibility diff as a PR comment; fairness monitor tracks outcome rates per demographic slice with drift alerts.

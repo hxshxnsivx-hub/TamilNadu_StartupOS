@@ -1,0 +1,1 @@
+"""Vanigam backend application package."""

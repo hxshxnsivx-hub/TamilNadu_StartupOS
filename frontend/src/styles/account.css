@@ -1,0 +1,1114 @@
+/* ============================================================
+   VANIGAM — ACCOUNT SURFACES  ("Living Pigment")
+   Auth · Dashboard · Profile · Language switch.
+
+   Everything here is additive. The global vocabulary (.card, .cat,
+   .authform, .tierbar, .meter, .langswitch …) keeps its meaning;
+   these rules only give the account screens weight and depth.
+
+   This sheet is imported from the page modules, so it may land
+   BEFORE index.css / motion.css in the cascade. Every override of a
+   shared class is therefore scoped under an `ac-` ancestor (or
+   chained onto one) so it wins on specificity, never on order.
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   0. shared pigment helpers
+   ------------------------------------------------------------ */
+
+.ac-rule {
+  height: 1px;
+  flex: 1 1 12px;
+  min-width: 0;
+  background: linear-gradient(90deg, var(--rule-hi), transparent);
+}
+
+.ac-eyebrow {
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ochre);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ============================================================
+   1. AUTH — a slab set on a painted panel
+   ============================================================ */
+
+.authwrap.ac-auth {
+  display: grid;
+  place-items: center;
+  padding: 48px 0 80px;
+}
+
+.ac-authcard {
+  width: min(100%, 880px);
+  display: grid;
+  grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
+  background: var(--carbon-2);
+  border: 1px solid var(--rule);
+  box-shadow: var(--lift-3);
+  position: relative;
+  overflow: hidden;
+}
+
+/* pigment ignites along the top edge of the whole slab */
+.ac-authcard::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  z-index: 3;
+  background: linear-gradient(90deg, var(--madder), var(--ochre), transparent);
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: ac-draw 1100ms var(--ease-out) 160ms both;
+}
+
+@keyframes ac-draw {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* --- the decorative panel --- */
+
+.ac-panel {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  padding: 34px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  justify-content: space-between;
+  border-right: 1px solid var(--rule);
+  background:
+    radial-gradient(120% 90% at 12% 6%, rgba(214, 69, 38, 0.16), transparent 62%),
+    radial-gradient(100% 80% at 92% 96%, rgba(229, 163, 43, 0.13), transparent 60%),
+    var(--carbon);
+}
+
+.ac-panel.ochre {
+  background:
+    radial-gradient(120% 90% at 12% 6%, rgba(229, 163, 43, 0.16), transparent 62%),
+    radial-gradient(100% 80% at 92% 96%, rgba(62, 155, 110, 0.12), transparent 60%),
+    var(--carbon);
+}
+
+/* the same unpainted lattice the ground uses, at panel scale */
+.ac-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 34px),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 34px);
+}
+
+.ac-panel-mark {
+  position: relative;
+  z-index: 1;
+  font-family: var(--display);
+  font-size: 19px;
+  letter-spacing: -0.045em;
+  text-transform: uppercase;
+  color: var(--chalk);
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+}
+
+.ac-panel-mark b {
+  font-family: var(--tamil);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--madder);
+  letter-spacing: 0;
+}
+
+.ac-panel.ochre .ac-panel-mark b {
+  color: var(--ochre);
+}
+
+.ac-kolam {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 208px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  animation: ac-kolam-in 1400ms var(--ease-out) 200ms both;
+}
+
+@keyframes ac-kolam-in {
+  from {
+    opacity: 0;
+    transform: scale(0.88) rotate(-6deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* the inner lattice turns the way a rangoli is walked around */
+.ac-kolam-turn {
+  transform-origin: 150px 150px;
+  animation: ac-turn 120s linear infinite;
+}
+
+@keyframes ac-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ac-panel-note {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  max-width: 30ch;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--chalk-2);
+  border-left: 3px solid var(--madder);
+  padding-left: 14px;
+}
+
+.ac-panel.ochre .ac-panel-note {
+  border-left-color: var(--ochre);
+}
+
+/* --- the form side --- */
+
+.ac-authcard .authform {
+  width: 100%;
+  min-width: 0;
+  padding: 38px 34px 34px;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+/* the form is a .card, but it lives inside the slab — it must not
+   lift away from it, nor grow a second hairline */
+.ac-authcard .authform.card:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: transparent;
+}
+
+.ac-authcard .authform.card::before {
+  content: none;
+}
+
+.ac-authcard .authform h2 {
+  font-size: clamp(28px, 6vw, 38px);
+  margin: 0 0 8px;
+}
+
+.ac-authcard .ac-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 20px 0 0;
+}
+
+.ac-authcard .ac-field > span {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--chalk-dim);
+  transition: color var(--t) var(--ease);
+}
+
+/* a chip of pigment marks the field, and lights when it is in use */
+.ac-authcard .ac-field > span::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  flex: none;
+  background: var(--rule-hi);
+  transition: background-color var(--t) var(--ease);
+}
+
+.ac-authcard .ac-field:focus-within > span {
+  color: var(--ochre);
+}
+
+.ac-authcard .ac-field:focus-within > span::before {
+  background: var(--ochre);
+}
+
+.ac-authcard .authform input {
+  padding: 14px;
+  background: var(--carbon);
+  border: 1px solid var(--rule-hi);
+}
+
+.ac-authcard .authform input:focus {
+  outline: none;
+  border-color: var(--ochre);
+  box-shadow: 0 0 0 3px rgba(229, 163, 43, 0.16);
+}
+
+.ac-authcard .authform .btn {
+  width: 100%;
+  margin-top: 26px;
+  padding: 15px 26px;
+}
+
+.ac-authfoot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 22px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule);
+  font-size: 13px;
+  color: var(--chalk-dim);
+}
+
+.ac-authfoot a {
+  color: var(--ochre);
+  font-weight: 700;
+}
+
+@media (max-width: 720px) {
+  .ac-authcard {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ac-panel {
+    flex-direction: row;
+    align-items: center;
+    gap: 18px;
+    padding: 18px 22px;
+    border-right: 0;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .ac-panel-note {
+    display: none;
+  }
+
+  .ac-kolam {
+    width: 78px;
+    max-width: 78px;
+    margin: 0;
+    flex: none;
+  }
+}
+
+@media (max-width: 400px) {
+  .ac-authcard .authform {
+    padding: 28px 20px 26px;
+  }
+
+  .ac-panel {
+    padding: 15px 18px;
+  }
+}
+
+/* ============================================================
+   2. DASHBOARD — the tier is the hero
+   ============================================================ */
+
+.ac-dashhead {
+  padding-top: 4px;
+}
+
+/* a long email must never push the page sideways */
+.dash .ac-dashhead h2 {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.ac-dashhead .accent {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.46em;
+  letter-spacing: -0.01em;
+}
+
+.ac-dashhead .muted {
+  max-width: 58ch;
+  margin: 14px 0 0;
+}
+
+/* --- the tier slab --- */
+
+.dashtop.ac-dashtop {
+  align-items: stretch;
+  gap: 28px;
+  margin: 30px 0 0;
+  padding: 30px;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(90% 150% at 0% 0%, rgba(214, 69, 38, 0.1), transparent 58%),
+    var(--carbon-2);
+}
+
+.ac-ring {
+  display: grid;
+  place-items: center;
+  flex: none;
+  animation: ac-ring-in 900ms var(--ease-out) both;
+}
+
+@keyframes ac-ring-in {
+  from {
+    opacity: 0;
+    transform: scale(0.86) rotate(-8deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.ac-dashtop .dashtop-info {
+  justify-content: center;
+  gap: 10px;
+  min-width: 170px;
+  flex: 0 1 auto;
+}
+
+.ac-dashtop .tiername {
+  font-size: 25px;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
+}
+
+.ac-dashtop .dashtop-info .muted {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--chalk-dim);
+}
+
+.ac-dashtop .btn {
+  margin-top: 6px;
+}
+
+/* --- the tier measure --- */
+
+.tierwrap.ac-tierwrap {
+  margin: 0;
+  flex: 1 1 280px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 13px;
+  border-left: 1px solid var(--rule);
+  padding-left: 28px;
+}
+
+.ac-tierhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.ac-pct {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 42px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  color: var(--chalk);
+}
+
+.ac-pct i {
+  font-style: normal;
+  font-size: 0.42em;
+  color: var(--chalk-dim);
+  margin-left: 3px;
+}
+
+.ac-tiergoal {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ochre-deep);
+  text-align: right;
+}
+
+.ac-tierwrap .tierbar {
+  height: 12px;
+  position: relative;
+  overflow: hidden;
+  background: var(--carbon-3);
+  border: 1px solid var(--rule);
+}
+
+.ac-tierwrap .tierfill {
+  position: relative;
+  background: linear-gradient(90deg, var(--madder-deep), var(--madder), var(--ochre));
+  transform-origin: left;
+  animation: ac-fill 1100ms var(--ease-out) 120ms both;
+}
+
+@keyframes ac-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* one pass of light down the filled measure */
+.ac-tierwrap .tierfill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.34), transparent);
+  transform: translateX(-100%);
+  animation: ac-sweep 2s var(--ease-in-out) 900ms;
+}
+
+@keyframes ac-sweep {
+  to {
+    transform: translateX(220%);
+  }
+}
+
+/* the tier gates, scored onto the measure */
+.ac-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--rule-hi);
+  pointer-events: none;
+}
+
+.ac-tick.passed {
+  background: rgba(20, 17, 15, 0.5);
+}
+
+.ac-tierwrap .tierlabel {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ac-tierlabel-b {
+  color: var(--chalk-2);
+}
+
+@media (max-width: 900px) {
+  .tierwrap.ac-tierwrap {
+    flex-basis: 100%;
+    border-left: 0;
+    border-top: 1px solid var(--rule);
+    padding-left: 0;
+    padding-top: 22px;
+  }
+}
+
+@media (max-width: 520px) {
+  .dashtop.ac-dashtop {
+    padding: 22px 20px;
+    gap: 20px;
+  }
+
+  .ac-pct {
+    font-size: 34px;
+  }
+}
+
+/* --- the four doors --- */
+
+.ac-cats {
+  margin-top: 40px;
+}
+
+.ac-cats-h {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  color: var(--chalk-dim);
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.ac-catgrid .cat {
+  --ac-pigment: var(--madder);
+  padding: 28px 26px 24px 30px;
+  min-height: 190px;
+  overflow: hidden;
+}
+
+.ac-catgrid .cat:nth-child(2) {
+  --ac-pigment: var(--ochre);
+}
+.ac-catgrid .cat:nth-child(3) {
+  --ac-pigment: var(--jade);
+}
+.ac-catgrid .cat:nth-child(4) {
+  --ac-pigment: var(--indigo);
+}
+
+.ac-catgrid .cat::before {
+  width: 3px;
+  background: var(--ac-pigment);
+  transition:
+    width var(--t) var(--ease-out),
+    opacity var(--t) var(--ease);
+}
+
+.ac-catgrid .cat:hover::before {
+  width: 5px;
+}
+
+/* pigment washes in from the leading edge as the door swings */
+.ac-catgrid .cat::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  color: var(--ac-pigment);
+  background: linear-gradient(100deg, currentColor, transparent 46%);
+  opacity: 0;
+  transition: opacity var(--t-slow) var(--ease-out);
+}
+
+.ac-catgrid .cat.ac-open:hover::after {
+  opacity: 0.09;
+}
+
+.ac-catgrid .cat .cn {
+  position: relative;
+  z-index: 1;
+  color: var(--ac-pigment);
+}
+
+.ac-catgrid .cat h3 {
+  position: relative;
+  z-index: 1;
+  margin: 14px 0 8px;
+  font-size: 21px;
+  padding-right: 70px;
+}
+
+.ac-catgrid .cat p {
+  position: relative;
+  z-index: 1;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--chalk-dim);
+}
+
+.ac-catgrid .cat.locked h3 {
+  color: var(--chalk-2);
+}
+
+.ac-catgrid .cat.locked::before {
+  opacity: 0.4;
+}
+
+.ac-catgrid .cat.locked:hover::before {
+  opacity: 1;
+}
+
+.ac-catgrid .cat.ac-open .soon {
+  color: var(--carbon);
+  background: var(--ac-pigment);
+  border-color: var(--ac-pigment);
+}
+
+/* the threshold line at the foot of each door */
+.ac-catfoot {
+  position: relative;
+  z-index: 1;
+  margin-top: auto;
+  padding-top: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--chalk-dim);
+}
+
+.ac-catfoot .ac-rule {
+  background: linear-gradient(90deg, var(--rule), transparent);
+}
+
+.ac-arrow {
+  display: inline-block;
+  color: var(--ac-pigment);
+  font-size: 13px;
+  transition: transform var(--t) var(--ease-out);
+}
+
+.ac-catgrid .cat:hover .ac-arrow {
+  transform: translateX(5px);
+}
+
+/* how far the founder still is from this door opening */
+.ac-lockbar {
+  position: relative;
+  height: 3px;
+  width: 62px;
+  flex: none;
+  background: var(--carbon-3);
+  overflow: hidden;
+}
+
+.ac-lockbar span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--ac-pigment);
+  transform-origin: left;
+  animation: ac-fill 1000ms var(--ease-out) 260ms both;
+}
+
+@media (max-width: 420px) {
+  .ac-catgrid .cat {
+    padding: 22px 18px 20px 22px;
+    min-height: 0;
+  }
+
+  .ac-catgrid .cat h3 {
+    font-size: 19px;
+    padding-right: 62px;
+  }
+}
+
+/* ============================================================
+   3. PROFILE — a long form made scannable
+   ============================================================ */
+
+.ac-profile {
+  padding: 48px 0 0;
+}
+
+.ac-profilehead {
+  margin-bottom: 24px;
+}
+
+.ac-profilehead h2 {
+  font-size: clamp(30px, 5vw, 46px);
+  text-transform: uppercase;
+  letter-spacing: -0.045em;
+  margin: 14px 0 8px;
+}
+
+.ac-profilehead .muted {
+  margin: 0;
+  max-width: 56ch;
+}
+
+.profilepage.ac-profilegrid {
+  padding: 0;
+}
+
+/* --- the meter rail --- */
+
+.meter.ac-meter {
+  gap: 16px;
+  padding: 22px;
+  background:
+    radial-gradient(120% 80% at 100% 0%, rgba(229, 163, 43, 0.09), transparent 60%),
+    var(--carbon-2);
+}
+
+.ac-meterhead {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-width: 0;
+}
+
+.ac-metercopy {
+  min-width: 0;
+}
+
+.ac-meter .tiername {
+  font-size: 18px;
+  overflow-wrap: anywhere;
+}
+
+.ac-metersub {
+  margin-top: 5px;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--chalk-dim);
+}
+
+.ac-meter .needs ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.ac-meter .needs li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 5px;
+  line-height: 1.4;
+}
+
+.ac-meter .needs li::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  flex: none;
+  background: var(--madder);
+  transform: translateY(-2px);
+}
+
+.ac-meter .btn {
+  width: 100%;
+}
+
+/* --- section bands --- */
+
+.ac-profile fieldset.card {
+  padding: 0 0 24px;
+  background: var(--carbon-2);
+  position: relative;
+}
+
+.ac-band {
+  --ac-pigment: var(--madder);
+}
+
+.ac-band.b2 {
+  --ac-pigment: var(--ochre);
+}
+.ac-band.b3 {
+  --ac-pigment: var(--jade);
+}
+.ac-band.b4 {
+  --ac-pigment: var(--indigo);
+}
+
+.ac-profile fieldset.card::before {
+  background: linear-gradient(90deg, var(--ac-pigment), transparent);
+}
+
+.ac-profile fieldset.card:hover {
+  transform: none;
+  box-shadow: var(--lift-2);
+}
+
+/* a legend floated to full width behaves as an ordinary block, so the
+   band header can carry its own rule instead of interrupting the border */
+.ac-band > legend {
+  float: left;
+  width: 100%;
+  padding: 0;
+  color: inherit;
+}
+
+.ac-bandhead {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  width: 100%;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.ac-bandno {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--carbon);
+  background: var(--ac-pigment);
+}
+
+.ac-bandtitle {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  color: var(--chalk);
+}
+
+.ac-bandgate {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ochre-deep);
+}
+
+/* live per-section progress — moves as fields are filled */
+.ac-bandmeter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  min-width: 0;
+}
+
+.ac-bandcount {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  white-space: nowrap;
+  color: var(--chalk-dim);
+}
+
+.ac-bandcount.full {
+  color: var(--jade);
+}
+
+.ac-bandbar {
+  position: relative;
+  width: 78px;
+  height: 4px;
+  flex: none;
+  overflow: hidden;
+  background: var(--carbon-3);
+}
+
+.ac-bandbar span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--ac-pigment);
+  transition: width var(--t-slow) var(--ease-out);
+}
+
+.ac-bandbody {
+  clear: both;
+  padding: 24px 24px 0;
+}
+
+/* the pigment edge that bands the section, growing while it is in use */
+.ac-band::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 3px;
+  height: 62px;
+  background: var(--ac-pigment);
+  transition: height var(--t-slow) var(--ease-out);
+  pointer-events: none;
+}
+
+.ac-band:focus-within::after {
+  height: 100%;
+}
+
+@media (max-width: 520px) {
+  .ac-bandhead {
+    padding: 18px 18px 15px;
+    gap: 10px;
+  }
+
+  .ac-bandbody {
+    padding: 18px 18px 0;
+  }
+
+  .ac-bandmeter {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .ac-bandbar {
+    flex: 1 1 auto;
+    width: auto;
+  }
+}
+
+/* --- the save bar, for screens where the rail scrolls away --- */
+
+.ac-savebar {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .ac-savebar {
+    position: sticky;
+    bottom: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 22px;
+    padding: 13px 16px;
+    border-top: 1px solid var(--rule-hi);
+    background: linear-gradient(to top, var(--carbon), rgba(20, 17, 15, 0.93));
+    backdrop-filter: blur(12px) saturate(1.2);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  }
+
+  .ac-savebar-n {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--chalk);
+  }
+
+  .ac-savebar-l {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--chalk-dim);
+  }
+
+  .ac-savebar .btn {
+    margin-left: auto;
+    flex: none;
+  }
+
+  /* the rail sits above the form here — stop it sticking mid-column */
+  .ac-profilegrid .meter {
+    position: static;
+  }
+}
+
+/* ============================================================
+   4. LANGUAGE SWITCH — three keys, one lit
+   ============================================================ */
+
+.langswitch.ac-langswitch {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid var(--rule-hi);
+  background: var(--carbon-2);
+}
+
+/* the lit key slides between positions rather than jumping */
+.ac-langind {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: calc(100% / 3);
+  background: var(--madder);
+  transform: translateX(calc(100% * var(--ac-lang-i, 0)));
+  transition: transform var(--t) var(--ease-out);
+  pointer-events: none;
+}
+
+.ac-langind::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 2px;
+  background: var(--ochre);
+}
+
+.langswitch.ac-langswitch button {
+  position: relative;
+  z-index: 1;
+  padding: 7px 10px;
+  text-align: center;
+  white-space: nowrap;
+  background: transparent;
+  border-right: 1px solid var(--rule);
+}
+
+.langswitch.ac-langswitch button:last-child {
+  border-right: 0;
+}
+
+.langswitch.ac-langswitch button.on {
+  background: transparent;
+  color: var(--chalk);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
+}
+
+.langswitch.ac-langswitch button:hover {
+  color: var(--chalk);
+}
+
+.langswitch.ac-langswitch button:not(.on):hover {
+  background: rgba(255, 255, 255, 0.045);
+}
+
+/* ============================================================
+   5. stillness — honour the reader who asks for it
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .ac-kolam,
+  .ac-kolam-turn,
+  .ac-ring {
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+
+  .ac-authcard::before,
+  .ac-tierwrap .tierfill,
+  .ac-lockbar span {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: scaleX(1) !important;
+  }
+
+  .ac-tierwrap .tierfill::after {
+    animation: none !important;
+    opacity: 0 !important;
+  }
+
+  .ac-langind,
+  .ac-arrow,
+  .ac-band::after,
+  .ac-bandbar span,
+  .ac-catgrid .cat::before,
+  .ac-catgrid .cat::after,
+  .ac-authcard .ac-field > span,
+  .ac-authcard .ac-field > span::before {
+    transition: none !important;
+  }
+}

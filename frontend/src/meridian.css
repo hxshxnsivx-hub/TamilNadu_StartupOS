@@ -1,0 +1,580 @@
+/* ============================================================
+   VANIGAM — "MERIDIAN"
+   A complete reset. Nothing from the previous system survives:
+   not the ground, not the accent, not the surfaces, not the type.
+
+   Where the old system was dark, warm, ornate and gilded, this is
+   light, cool, architectural and precise — editorial paper, deep
+   ink, hairline rules, one saturated pigment used with restraint.
+   Luxury here is space and exactness, not decoration.
+   ============================================================ */
+
+:root {
+  /* ---- ground: alabaster, warm and slightly chalky ---- */
+  --paper: #f4f1ea;
+  --paper-2: #faf8f3;
+  --paper-3: #eae5da;
+  --paper-4: #ddd6c8;
+
+  /* ---- ink: warm near-black, never blue-black ---- */
+  --ink: #14120f;
+  --ink-2: #2c2823;
+  --ink-3: #575046;
+  --ink-4: #736a5e; /* 4.71:1 on --paper — label text must clear 4.5 */
+
+  /* ---- the signal: deep bottle green. Restrained, not vivid. ---- */
+  --signal: #1d3d33;
+  --signal-deep: #122922;
+  --signal-wash: #e2e8e4;
+
+  /* ---- metal: antique brass, used only as a hairline or mark ---- */
+  --brass: #9a7b45;
+  --brass-deep: #6f5730;
+  --brass-wash: #efe8db;
+
+  /* ---- supporting, sparing ---- */
+  --clay: #7d3428;
+  --moss: #3f5d3a;
+  --slate: #46504f;
+
+  /* ---- hairlines ---- */
+  --hair: #ded7ca;       /* decorative rules between cards — exempt */
+  --hair-2: #c8bfae;     /* decorative borders */
+  --hair-field: #8f8472; /* 3.26:1 — form-control boundaries (WCAG 1.4.11) */
+  --hair-ink: rgba(20, 18, 15, 0.13);
+
+  /* ============ legacy token remap ============
+     Every page sheet reads these names. Repointing them re-skins
+     the entire app in one move, with no page edits. */
+  --carbon: var(--paper);
+  --carbon-2: var(--paper-2);
+  --carbon-3: var(--paper-3);
+  --carbon-4: var(--paper-4);
+  --rule: var(--hair);
+  --rule-hi: var(--hair-2);
+
+  --ochre: var(--brass);
+  --ochre-deep: var(--brass-deep);
+  --gold-pale: var(--brass-wash);
+  --gold: var(--brass);
+  --gold-dark: var(--brass-deep);
+
+  --madder: var(--clay);
+  --madder-deep: #8c3315;
+  --ruby: var(--clay);
+  --jade: var(--moss);
+  --jade-deep: #064a36;
+  --indigo: var(--slate);
+  --indigo-deep: #26314a;
+
+  --chalk: var(--ink);
+  --chalk-2: var(--ink-3);
+  --chalk-dim: var(--ink-4);
+
+  --ambient-1: 165 36% 18%;
+  --ambient-2: 38 38% 44%;
+
+  /* ---- spacing scale: a strict rhythm, not ad-hoc numbers ---- */
+  --s1: 8px;
+  --s2: 16px;
+  --s3: 24px;
+  --s4: 40px;
+  --s5: 64px;
+  --s6: 104px;
+  --s7: 168px;
+  --gutter: 28px;
+
+  /* gradients are gone — flat pigment only */
+  --grad-gold: var(--signal);
+  --grad-ember: var(--clay);
+  --grad-jewel: var(--slate);
+  --grad-rule: var(--hair);
+  --glass: none;
+  --glass-edge: var(--hair-2);
+
+  /* ---- elevation: paper lifting off paper, never glow ---- */
+  --lift-1: 0 1px 2px rgba(13, 17, 23, 0.05);
+  --lift-2: 0 2px 4px rgba(13, 17, 23, 0.05), 0 12px 28px -14px rgba(13, 17, 23, 0.22);
+  --lift-3: 0 3px 6px rgba(13, 17, 23, 0.06), 0 28px 56px -22px rgba(13, 17, 23, 0.3);
+  --glow-madder: 0 0 0 1px var(--clay);
+  --glow-ochre: 0 0 0 1px var(--signal);
+  --glow-jade: 0 0 0 1px var(--moss);
+
+  /* ---- type ---- */
+  /* Every one of these now points at a face that is actually downloaded.
+     --display and --mono previously resolved to system stacks while the real
+     files sat unused; see the note in index.html. */
+  --display: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --sans: "Inter", -apple-system, "Segoe UI", system-ui, sans-serif;
+  --tamil: "Noto Sans Tamil", "Nirmala UI", "Latha", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Menlo, monospace;
+
+  /* Fraunces' variable axes are the free signature here — almost nobody
+     ships this face tuned, so a tuned one is instantly distinctive.
+
+     The move that matters is LOW weight at HIGH optical size. Fraunces at
+     wght 300 / opsz 144 resolves to razor-thin, high-contrast, Didone-
+     adjacent letterforms at 100px+ — dignified and striking, and nothing
+     like the 700-weight Fraunces every other site ships. WONK (the splayed
+     alternate forms) is display-only; at text sizes it just looks like a
+     rendering fault.
+
+     opsz is dialled DOWN and weight UP as the setting gets smaller, which is
+     what an optical size axis is actually for: small text needs sturdier
+     strokes and looser fit, not the same shapes scaled. */
+  --display-huge: "opsz" 144, "SOFT" 0, "WONK" 1;
+  --display-mid: "opsz" 72, "SOFT" 10, "WONK" 0;
+  --display-small: "opsz" 24, "SOFT" 30, "WONK" 0;
+
+  /* ---- motion: precise, mechanical, never bouncy ---- */
+  --ease: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.83, 0, 0.17, 1);
+  --t-fast: 120ms;
+  --t: 300ms;
+  --t-slow: 620ms;
+  --t-page: 520ms;
+}
+
+/* ============================================================
+   GROUND — flat paper. No aurora, no grain, no vignette, no dust.
+   ============================================================ */
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15.5px;
+  line-height: 1.55;
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+  background-image: none;
+}
+
+/* every decorative layer of the previous system, retired */
+body::before,
+body::after,
+.app::before,
+.lx-backdrop,
+.lx-glyph,
+.lx-rail,
+.lx-presiding,
+.hm-procession,
+.hm-ticker {
+  display: none !important;
+  content: none !important;
+}
+
+.app {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 32px 120px;
+  position: relative;
+}
+
+@media (max-width: 640px) {
+  .app {
+    padding: 0 18px 72px;
+  }
+}
+
+/* ============================================================
+   TYPE — editorial serif display against a precise grotesk
+   ============================================================ */
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--display);
+  font-weight: 400;
+  color: var(--ink);
+  letter-spacing: -0.022em;
+  line-height: 1.06;
+  margin: 0;
+  /* no gradient clipping anywhere in this system */
+  background: none;
+  -webkit-text-fill-color: currentColor;
+}
+
+h1 {
+  font-size: clamp(3.1rem, 9vw, 8rem);
+  font-weight: 800;
+  font-variation-settings: var(--display-huge);
+  line-height: 0.88;
+  letter-spacing: -0.042em;
+}
+
+h2 {
+  font-size: clamp(2rem, 4.2vw, 3.4rem);
+  font-weight: 700;
+  font-variation-settings: var(--display-huge);
+  letter-spacing: -0.03em;
+}
+
+h3 {
+  font-size: clamp(1.3rem, 2vw, 1.7rem);
+}
+
+.muted,
+.subtitle {
+  color: var(--ink-3);
+}
+
+/* the eyebrow is a mono index mark, not a decorative label */
+.eyebrow,
+.label,
+.ms-phase,
+.reasons-h,
+.needs-h,
+.sc-metric,
+.stype,
+.tierlabel {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+}
+
+.brand {
+  font-family: var(--display);
+  font-size: 19px;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.brand b {
+  font-family: var(--tamil);
+  font-weight: 400;
+  color: var(--signal);
+  background: none;
+  -webkit-text-fill-color: currentColor;
+}
+
+::selection {
+  background: var(--signal);
+  color: var(--paper-2);
+}
+
+:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 3px;
+}
+
+/* ============================================================
+   SURFACES — bordered paper. No glass, no blur, no bevel.
+   ============================================================ */
+
+.card,
+.scheme,
+.ms,
+.cat,
+.sc-form,
+.ideate-head,
+.authform,
+.clar,
+.needs {
+  background: var(--paper-2);
+  background-image: none;
+  border: 1px solid var(--hair);
+  border-radius: 2px;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* retire the old hover ornaments entirely */
+.card::before,
+.card::after,
+.cat::after,
+.scheme::after,
+.ro-top::before,
+.ro-top::after,
+.dashtop::before,
+.dashtop::after {
+  display: none !important;
+  content: none !important;
+}
+
+.card:hover,
+.scheme:hover,
+.cat:hover {
+  border-color: var(--ink);
+  box-shadow: none;
+  transform: none;
+}
+
+/* the eligible/ineligible marker is a flat rule, not a glow */
+.scheme.eligible {
+  border-left: 2px solid var(--moss);
+}
+
+.scheme.ineligible {
+  border-left: 2px solid var(--hair-2);
+}
+
+.scheme.eligible:hover,
+.scheme.ineligible:hover {
+  box-shadow: none;
+  border-color: var(--ink);
+}
+
+/* ============================================================
+   CONTROLS — flat, exact, high-contrast
+   ============================================================ */
+
+.btn {
+  font-family: var(--sans);
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  border-radius: 2px;
+  padding: 12px 22px;
+  box-shadow: none;
+  animation: none;
+  text-shadow: none;
+  overflow: visible;
+}
+
+.btn::after {
+  display: none !important;
+  content: none !important;
+}
+
+.btn.primary {
+  background: var(--ink);
+  border: 1px solid var(--ink);
+  color: var(--paper-2);
+  background-image: none;
+}
+
+.btn.primary:hover {
+  background: var(--signal);
+  border-color: var(--signal);
+  color: #fff;
+  box-shadow: none;
+  filter: none;
+  transform: none;
+}
+
+.btn.ghost,
+.btn:not(.primary) {
+  background: transparent;
+  border: 1px solid var(--hair-2);
+  color: var(--ink-2);
+}
+
+.btn.ghost:hover,
+.btn:not(.primary):hover {
+  background: transparent;
+  border-color: var(--ink);
+  color: var(--ink);
+  transform: none;
+}
+
+.btn:disabled,
+.btn[disabled] {
+  opacity: 0.4;
+}
+
+/* ---- fields: ruled lines, not boxes ---- */
+
+.fld input,
+.fld select,
+.fld textarea,
+.form input,
+.form textarea,
+.authform input,
+.ideate-head textarea {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--hair-field);
+  border-radius: 0;
+  box-shadow: none;
+  padding: 9px 2px;
+  font-family: var(--sans);
+  font-size: 14.5px;
+  color: var(--ink);
+  transition: border-color var(--t) var(--ease);
+}
+
+.ideate-head textarea,
+.form textarea {
+  border: 1px solid var(--hair-field);
+  padding: 12px;
+}
+
+.fld input:focus,
+.fld select:focus,
+.fld textarea:focus,
+.form input:focus,
+.form textarea:focus,
+.authform input:focus,
+.ideate-head textarea:focus {
+  outline: none;
+  border-color: var(--signal);
+  box-shadow: none;
+}
+
+.fld:focus-within {
+  transform: none;
+}
+
+/* ============================================================
+   NAV — a ruled masthead, not a floating lintel
+   ============================================================ */
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  background: var(--paper);
+  border-bottom: 1px solid var(--hair);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+  padding: 20px 0;
+}
+
+.nav::after {
+  display: none !important;
+  content: none !important;
+}
+
+.nav.is-stuck {
+  box-shadow: none;
+  border-bottom-color: var(--ink);
+}
+
+.navlink {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+}
+
+.navlink::after {
+  background: var(--ink);
+  height: 1px;
+  bottom: -3px;
+}
+
+.navlink:hover,
+.navlink.is-active {
+  color: var(--ink);
+}
+
+/* ============================================================
+   MEASURES — hairline bars, mono numerals
+   ============================================================ */
+
+.bar-track,
+.tierbar,
+.meter {
+  background: var(--paper-3);
+  border: none;
+  border-radius: 0;
+  height: 2px;
+}
+
+.bar-fill,
+.tierfill {
+  background: var(--ink);
+  border-radius: 0;
+}
+
+.bar-fill::after {
+  display: none !important;
+  content: none !important;
+}
+
+.bar-v,
+.count,
+.ms-mo {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.lvl {
+  background: var(--ink);
+  color: var(--paper-2);
+  border: none;
+  border-radius: 2px;
+  box-shadow: none;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.whychip {
+  background: transparent;
+  border: 1px solid var(--hair-2);
+  border-radius: 2px;
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.whychip:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+  transform: none;
+}
+
+.star {
+  color: var(--signal);
+  filter: none;
+}
+
+.domain-badge {
+  background: var(--signal-wash);
+  color: var(--signal-deep);
+  border: none;
+  border-radius: 2px;
+}
+
+/* ============================================================
+   SCROLL FURNITURE
+   ============================================================ */
+
+.scrollrail {
+  background: var(--ink);
+  height: 1px;
+  box-shadow: none;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--hair-2) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--hair-2);
+  border: 3px solid var(--paper);
+  border-radius: 99px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-4);
+}
+
+a:not(.btn) {
+  color: var(--signal);
+  background-image: none;
+}

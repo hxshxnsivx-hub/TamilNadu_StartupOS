@@ -1450,3 +1450,108 @@ This document provides a comprehensive, phase-by-phase breakdown of implementati
 - **Monitoring**: Prometheus, Grafana, ELK Stack
 
 This comprehensive task breakdown provides an actionable, phase-by-phase implementation plan for Tamil Nadu StartupOS (Vanigam) from foundation to production deployment.
+
+---
+
+# ADDENDUM v1.1 — New Tasks
+
+### Task 1.10: Experience-Based Opportunity Discovery (Requirement 1.6)
+
+**Description**: Dual-mode ideation entry — discover startup opportunities for experience-only users
+
+**Subtasks**:
+- [ ] 1.10.1: Create opportunity_bank and experience_profiles tables + migrations
+  - Sector tags, capital bands, linked schemes, source URLs, last-verified stamps
+  - Effort: M, Priority: P0
+- [ ] 1.10.2: Seed Opportunity_Bank (30-50 entries across TN priority sectors)
+  - Sources: StartupTN challenges, TN sector reports, govt problem statements, incubator theses
+  - Effort: L, Priority: P0
+- [ ] 1.10.3: Implement ExperienceProfiler agent (multilingual structured intake)
+  - Financial-capacity fields under separate DPDP consent + encryption (caste protection class)
+  - Effort: M, Priority: P0
+- [ ] 1.10.4: Implement OpportunityGenerator agent
+  - 35/25/20/10/10 fit scoring; CPSAT scheme pre-check; web research with citations
+  - Effort: L, Priority: P0
+- [ ] 1.10.5: Wire selected opportunity into IdeaExtractor pipeline (pre-fill concept elements)
+  - Effort: S, Priority: P0
+- [ ] 1.10.6: Orchestrator dual-mode entry + "Opportunity Discovery" intent label
+  - Effort: S, Priority: P0
+- [ ] 1.10.7: Unit + integration tests (profile intake, ranking, scheme pre-check)
+  - Effort: M, Priority: P1
+
+**Dependencies**: Task 1.7 (Roadmap Swarm), Task 1.6 (Embeddings), Task 2.3 (CP-SAT, for scheme pre-check — stub until Phase 2)
+
+---
+
+### Task 2.8: Canonical Sector Taxonomy (Requirement 2.7)
+
+**Subtasks**:
+- [ ] 2.8.1: Create versioned sector_taxonomy table (≥21 sectors) + admin CRUD
+  - Effort: S, Priority: P0
+- [ ] 2.8.2: Tag all schemes, opportunities, B2B profiles; add coverage-gap CI check to scheme curation
+  - Effort: M, Priority: P0
+
+**Dependencies**: Task 2.2 (Scheme DB)
+
+---
+
+### Task 3.7: Product Decomposition & Supply Feasibility Map (Requirement 3.6)
+
+**Subtasks**:
+- [ ] 3.7.1: Create product_decompositions table + migration
+  - Effort: S, Priority: P0
+- [ ] 3.7.2: Implement ProductDecomposer agent (text/file/spec input, OCR reuse, web-research augmentation with citations)
+  - Effort: L, Priority: P0
+- [ ] 3.7.3: Implement human-in-the-loop BOM confirmation/edit UI + API
+  - Effort: M, Priority: P0
+- [ ] 3.7.4: Implement SupplyMapper agent (per-line Graph_Engine matches; gap detection; TN industrial-cluster suggestions via web research)
+  - Effort: L, Priority: P0
+- [ ] 3.7.5: Supply_Feasibility_Map rendering API (tree/graph JSON with scores, gaps, invite-vendor action + unmet-demand logging)
+  - Effort: M, Priority: P0
+- [ ] 3.7.6: Feed confirmed lines into T1 matching + CP-SAT allocation
+  - Effort: S, Priority: P0
+- [ ] 3.7.7: Tests (decomposition quality on sample products, map correctness, gap flags)
+  - Effort: M, Priority: P1
+
+**Dependencies**: Task 3.2 (Graph Engine), Task 3.4 (B2B Swarm), Task 1.4 (Document Verifier)
+
+---
+
+# ADDENDUM v2 — Hybrid-Ideology Tasks (details in v2-integration-plan.md)
+
+**Phase 1 additions (~+1 wk):**
+- [ ] 1.11 Entry-mode lattice + Cat-2 sub-typing (P-34) — M, P0
+- [ ] 1.12 Terrain classifier + roadmap template families (P-29) — M, P0
+- [ ] 1.13 Peer discovery + homepage live-demo widget + gamified tiers (P-41) — M, P1
+
+**Phase 2 additions (~+1.5 wk):**
+- [ ] 2.9 Approval-likelihood scorer in Ranker (P-24) — M, P0
+- [ ] 2.10 Roadmap re-versioner on scheme-changelog events (P-30) — M, P0
+- [ ] 2.11 Milestone tracker + proofs + QR living PDF (P-31) — M, P0
+- [ ] 2.12 Problem-statements live board over challenge-type opportunities (P-33) — S, P0
+- [ ] 2.13 New-scheme alerts + doc-readiness checker + deadline tracker (P-40a–c) — M, P1
+- [ ] 2.14 Offline/2G PWA ladder + SMS fallback (P-39) — L, P1
+- [ ] 2.15 Review-queue service + admin override w/ audit (P-37) — M, P0
+- [ ] 2.16 Idea-IP consent purpose + masking rules (P-42) — S, P0
+
+**Phase 3 additions (~+1 wk):**
+- [ ] 3.8 Joint cluster-scheme checker + co-application cards (P-25) — M, P0
+- [ ] 3.9 SignalEngine: inferred needs, event triggers, weekly digests (P-26) — L, P1
+- [ ] 3.10 Per-sector weight config for Graph Engine (P-36) — S, P1
+- [ ] 3.11 Barter payment_mode + compatibility constraint (P-43) — S, P2
+
+**Phase 4 additions (~+1 wk):**
+- [ ] 4.8 Portfolio conflict matrix + over-raise constraints (P-27) — M, P0
+- [ ] 4.9 Funding pathway sequencer + bank pathways (P-35) — M, P0
+- [ ] 4.10 Proxy-traction evidence + pre-revenue route flags (P-28) — M, P0
+- [ ] 4.11 B2B-metrics → readiness evidence pipe, consent-gated (P-32) — S, P1
+- [ ] 4.12 Investor web-intelligence seed: allowlisted sources, cited, curator-reviewed (P-46) — M, P1
+
+**Phase 5 additions:**
+- [ ] 5.8 Synthetic-founder simulation harness in CI + fairness slices (P-38) — M, P1
+
+**PHASE 6 — LIVING INTELLIGENCE LAYER (Weeks 33–40, post-MVP):**
+- [ ] 6.1 Vernacular news pipeline: sources → crawl → summarize → translate → cited board + agent-status strip (P-44) — XL, P1
+- [ ] 6.2 Investor crawler continuous ops + 90-day staleness SLA (P-46) — M, P1
+- [ ] 6.3 What-if simulator: scenario taxonomy, perturbed re-solves, fallback plans, diff view (P-47) — L, P1
+- [ ] 6.4 Competitor intelligence cards: cited funding corpus × peer embeddings, k-anonymized (P-40d) — M, P2

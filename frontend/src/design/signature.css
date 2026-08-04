@@ -1,0 +1,411 @@
+/* ============================================================
+   SIGNATURE — the devices that make the page memorable.
+
+   Everything before this file is *correct*. Correct is not the
+   same as striking, and a design with no signature moment is
+   forgettable however well-proportioned it is.
+
+   Each device below is rationed. They stop working the instant
+   they repeat: an inverted band is dramatic once per page and
+   noise twice, a folio numeral is a mark of care in the margin
+   and clutter in the field. The limits in these comments are
+   part of the design, not suggestions.
+   ============================================================ */
+
+/* ============================================================
+   1 · THE INVERTED BAND
+
+   One full-bleed reversal on a near-white page does more for
+   perceived value than any amount of additional refinement to
+   the light sections. It reads as a deliberate change of
+   register — the moment the document raises its voice.
+
+   Rules:
+     · at most ONE per page, and it carries the page's central
+       claim. Two inversions and neither is an event.
+     · brass hairlines only inside it — the ink rules that
+       structure the light sections are invisible here.
+     · the accent pigment has to be re-picked: bottle green on
+       ink is mud. Brass and paper carry the weight instead.
+   ============================================================ */
+
+.v-band.is-invert {
+  /* The Tanjore logic: a small amount of metal against a large
+     amount of flat, deep ground. Not a gradient — one pigment
+     stopping and another beginning.
+
+     LITERALS AGAIN, and for the same reason as the token block
+     below: this element redefines --ink and --paper-2, so
+     `background: var(--ink)` would resolve against its OWN
+     overridden value and paint the band alabaster. It did
+     exactly that once already. */
+  background: #14120f;
+  color: #faf8f3;
+  padding-block: var(--court-1);
+  margin-block: var(--court-2);
+  position: relative;
+  isolation: isolate;
+}
+
+/* Every token that assumes a light ground is repointed for the
+   duration of the band, so the primitives inside need no
+   knowledge of where they are standing.
+   ---------------------------------------------------------------
+   LITERAL VALUES ONLY. Writing `--ink: var(--paper-2)` here looks
+   tidy and is a trap: custom properties resolve against the
+   element's OWN computed values, so --ink picked up the --paper-2
+   that this very rule had just overridden to #1c1a16. Ink and
+   paper both collapsed to the same dark value and the pull quote
+   rendered at 1:1 — invisible. Never cross-reference a token you
+   are redefining in the same block.
+
+   Contrast on the #14120f ground, measured:
+     paper-2 17.62 · ink-2 12.42 · ink-3 8.21 · ink-4 5.56 */
+.v-band.is-invert {
+  --ink: #faf8f3;
+  --ink-2: #d8d2c6;
+  --ink-3: #b3ab9c;
+  --ink-4: #948b7c;
+  --paper: #14120f;
+  --paper-2: #1c1a16;
+  --paper-3: #2c2823;
+  --hair: rgba(250, 248, 243, 0.14);
+  --hair-2: rgba(250, 248, 243, 0.22);
+  --hair-field: rgba(250, 248, 243, 0.4);
+  /* brass lifted from #9a7b45 (4.71:1) to clear 4.5 comfortably at
+     small sizes too — the accent carries labels here, not just marks */
+  --brass: #b8965a;
+  --tone: #b8965a;
+  --tone-deep: #cbab74;
+  --tone-wash: rgba(184, 150, 90, 0.18);
+  --cell: inset 0 0 0 1px rgba(250, 248, 243, 0.1);
+}
+
+/* the oxides go pale on ink — the data tones need re-picking too,
+   or a "low" score reads as a smudge rather than a warning */
+.v-band.is-invert {
+  --oxide-green: #7fae86;
+  --oxide-mustard: #d6a94e;
+  --oxide-red: #d1705f;
+  --oxide-indigo: #8fa6c9;
+}
+
+.v-band.is-invert .v-cornice {
+  background: var(--brass);
+}
+
+/* the grain that stops wide dark fields banding on 8-bit screens */
+.v-band.is-invert::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'>\
+<filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter>\
+<rect width='120' height='120' filter='url(%23n)'/></svg>");
+}
+
+/* ============================================================
+   2 · FOLIO — the page number in the margin
+
+   A book numbers its pages in the margin, and the interface
+   almost never does. It costs nothing, it reads instantly as
+   "considered", and it gives a long scroll a sense of place.
+
+   Set in the gutter at a size that is confident rather than
+   apologetic, and hidden below the breakpoint where there is
+   no gutter to sit in.
+   ============================================================ */
+
+.v-folio {
+  position: absolute;
+  top: var(--court-3);
+  left: clamp(8px, 1.4vw, 18px);
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: var(--ink-4);
+  writing-mode: vertical-rl;
+  user-select: none;
+  pointer-events: none;
+}
+
+.v-band.is-invert .v-folio {
+  color: var(--brass);
+}
+
+@media (max-width: 1180px) {
+  .v-folio {
+    display: none;
+  }
+}
+
+/* ============================================================
+   3 · REGISTRATION MARKS
+
+   Printer's crosshairs at the corners of the compartmented
+   field. They are the single cheapest gesture that says a
+   surface was composed rather than assembled, and they are
+   honest here: this grid really is a register of plates.
+
+   Hairline brass, and only on the outer corners — a crosshair
+   on every cell would be a pattern, not a mark.
+   ============================================================ */
+
+.v-register {
+  position: relative;
+}
+
+.v-register::before,
+.v-register::after {
+  content: "";
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  pointer-events: none;
+  opacity: 0.55;
+  /* two hairlines crossing, drawn with a single background */
+  background:
+    linear-gradient(var(--brass), var(--brass)) center / 1px 100% no-repeat,
+    linear-gradient(var(--brass), var(--brass)) center / 100% 1px no-repeat;
+}
+
+.v-register::before {
+  top: -6px;
+  left: -6px;
+}
+
+.v-register::after {
+  bottom: -6px;
+  right: -6px;
+}
+
+/* ============================================================
+   4 · DROP CAP
+
+   One per page, on the lead paragraph only. A drop cap on a
+   second paragraph stops being a signal and becomes decoration.
+
+   Sized to exactly three lines of the body text it sits in, so
+   the baseline grid survives it.
+   ============================================================ */
+
+.v-lead::first-letter {
+  float: left;
+  font-family: var(--display);
+  font-weight: 700;
+  font-variation-settings: var(--display-huge);
+  font-size: 3.55em; /* ≈ 3 lines at line-height 1.68 */
+  line-height: 0.82;
+  padding: 0.06em 0.1em 0 0;
+  color: var(--tone);
+}
+
+/* Tamil and Devanagari carry matras above and below the body
+   height; a floated initial slices them. The rule is Latin-only
+   by script, not by preference. */
+.v-lead:lang(ta)::first-letter,
+.v-lead:lang(hi)::first-letter {
+  float: none;
+  font-size: inherit;
+  line-height: inherit;
+  padding: 0;
+  color: inherit;
+  font-family: inherit;
+}
+
+/* ============================================================
+   5 · THE CROPPED DISPLAY LINE
+
+   Type that runs past the measure and is cut by the viewport
+   edge reads as confident in a way centred, safely-margined
+   type never does. The crop has to be deliberate and small —
+   a line that loses a whole word is a bug, not a gesture.
+
+   Applied only to the landing masthead, where there is one line
+   and it is the brand statement.
+   ============================================================ */
+
+.v-mast.is-bleed .v-display {
+  /* pull left to the true page edge, past the shell padding */
+  margin-left: calc(-1 * clamp(18px, 3.4vw, 40px));
+  /* and let the last line run slightly wide of the column */
+  margin-right: -6vw;
+}
+
+@media (max-width: 900px) {
+  .v-mast.is-bleed .v-display {
+    margin-right: -2vw;
+  }
+}
+
+/* ============================================================
+   5b · SCRIPT-AWARE DISPLAY SIZING
+
+   The display scale was tuned on English and it clipped Tamil.
+   Measured at 375px before this rule: /b2b overflowed its mask by
+   125px, /schemes by 89px, /ideate by 44px — and page overflow
+   read ZERO, because `.v-set-line` has `overflow: hidden` for the
+   reveal mask, so the text was silently cut mid-word rather than
+   pushing the layout. A clipped Tamil heading on a product whose
+   reason to exist is serving Tamil speakers is not a styling nit.
+
+   Two causes, both script-level:
+     · Tamil is agglutinative — single words routinely exceed a
+       375px measure at display size (சப்ளையர்களைக், திட்டங்களுக்குத்)
+     · Tamil does not hyphenate, so there is no break opportunity
+       inside those words at all
+
+   So: the display drops a step for Indic scripts, tracking returns
+   to normal (negative tracking collides matras), leading opens up
+   to clear the above- and below-base marks, and words are allowed
+   to break because a broken word is legible and a clipped one is
+   not.
+   ============================================================ */
+
+:lang(ta) .v-display,
+:lang(hi) .v-display,
+.v-display:lang(ta),
+.v-display:lang(hi) {
+  font-size: clamp(1.9rem, 6.2vw, 5.2rem);
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.18;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: none;
+  padding-top: 0;
+}
+
+/* the same problem, one step down, on band titles and rail headings */
+:lang(ta) .v-band-t,
+:lang(hi) .v-band-t,
+:lang(ta) .v-pull,
+:lang(hi) .v-pull,
+:lang(ta) .v-rail-t,
+:lang(hi) .v-rail-t {
+  letter-spacing: 0;
+  line-height: 1.24;
+  overflow-wrap: anywhere;
+  hyphens: none;
+}
+
+/* the bleed crop is a Latin gesture — cropping a script that cannot
+   hyphenate just loses a word */
+:lang(ta) .v-mast.is-bleed .v-display,
+:lang(hi) .v-mast.is-bleed .v-display {
+  margin-right: 0;
+}
+
+/* ============================================================
+   6 · VERTICAL SECTION LABEL
+
+   An ultra-tracked label rotated into the gutter. Used to name
+   a band without spending a horizontal rule and a heading on it.
+   ============================================================ */
+
+.v-vlabel {
+  position: absolute;
+  right: clamp(8px, 1.4vw, 18px);
+  top: var(--court-3);
+  writing-mode: vertical-rl;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  user-select: none;
+  pointer-events: none;
+}
+
+@media (max-width: 1180px) {
+  .v-vlabel {
+    display: none;
+  }
+}
+
+/* ============================================================
+   7 · THE TABULAR FIGURE WALL
+
+   Numbers set as an instrument panel rather than as prose. On
+   the inverted band this is the payload: brass numerals at
+   absurd scale against flat ink, which is the whole Tanjore
+   move translated to data.
+   ============================================================ */
+
+.v-band.is-invert .v-stat dd {
+  color: var(--brass);
+  font-size: clamp(3.6rem, 9vw, 7.5rem);
+}
+
+.v-band.is-invert .v-stat dt {
+  color: var(--ink-3);
+}
+
+/* a hairline under each figure, so the row reads as a ruled
+   ledger rather than four floating numbers */
+.v-band.is-invert .v-stat {
+  padding-bottom: var(--space-eye);
+  border-bottom: 1px solid var(--hair-2);
+}
+
+/* ============================================================
+   8 · COLOPHON
+
+   The closing block of a book: who set it, in what, and under
+   what terms. On a government-adjacent product it doubles as
+   the provenance statement, which is the one thing this
+   platform is actually selling.
+   ============================================================ */
+
+.v-colophon {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr));
+  gap: var(--space-well);
+  padding-top: var(--space-well);
+  border-top: 1px solid var(--hair);
+}
+
+.v-colophon > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.v-colophon dt,
+.v-colophon-h {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+}
+
+.v-colophon-v {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+/* ============================================================
+   9 · REDUCED MOTION / PRINT
+   ============================================================ */
+
+@media print {
+  .v-band.is-invert {
+    background: none;
+    color: #000;
+  }
+
+  .v-folio,
+  .v-vlabel,
+  .v-register::before,
+  .v-register::after {
+    display: none;
+  }
+}
