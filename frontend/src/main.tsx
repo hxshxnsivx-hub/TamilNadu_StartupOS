@@ -26,6 +26,7 @@ import "./design/atelier.css";
 import "./design/compositions.css";
 import "./design/surfaces.css";
 import "./design/signature.css";
+import "./scene/scene.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

@@ -20,6 +20,7 @@ import {
 } from "../design/atelier";
 import { useScrollProgress, useWallTone } from "../components/Wall";
 import NewsBoard from "../components/NewsBoard";
+import Journey from "../scene/Journey";
 import { api } from "../api";
 
 /* Honest numbers only. There is no logo wall on this page because there are
@@ -107,6 +108,8 @@ export default function Home() {
           </>
         }
       />
+
+      <Journey />
 
       {/* ---- the arc, pinned and advancing sideways ---- */}
       <Rail count={chapters.length} tone="chapters">
