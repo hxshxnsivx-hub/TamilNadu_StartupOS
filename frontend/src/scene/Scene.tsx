@@ -146,7 +146,7 @@ export function Plane({
 }) {
   return (
     <div
-      className={["sc-plane", `sc-d${depth}`, className].filter(Boolean).join(" ")}
+      className={["zs-plane", `zs-p${depth}`, className].filter(Boolean).join(" ")}
       aria-hidden="true"
     >
       {children}

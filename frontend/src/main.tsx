@@ -2,35 +2,24 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 
-/* Cascade order is load-bearing — later sheets settle ties against earlier
-   ones, and each layer has one job:
-     index.css        base reset, and the legacy page layout still in use
-     meridian.css     the theme: ground, ink, signal, brass, surfaces, type
-     meridian-motion  the older motion grammar (Reveal, ScrollRail, kolam)
-     design/tokens    the canonical token set — space ladder, corner ladder,
-                      pigment names, opacity ceilings, motion vocabulary
-     design/wall      the background, which is a composed surface not a colour
-     design/atelier   structure: the primitives every page is now built from
-     design/composit. page-specific arrangements of those primitives
-   The retired "Gilded Pigment" sheets (luxe.css, motion.css) and the retired
-   landing sheet (styles/home.css) are not imported anywhere. */
-import "./index.css";
+// nocturne first (it owns the reset and the hand-written components), theme
+// second so Tailwind utilities win same-specificity ties against it.
+import "./nocturne.css";
+import "./theme.css";
 import App from "./App";
 import { AuthProvider } from "./auth";
 import "./i18n";
-import "./meridian.css";
-import "./meridian-motion.css";
-import "./design/tokens.css";
-import "./design/wall.css";
-import "./design/atelier.css";
-import "./design/compositions.css";
-import "./design/surfaces.css";
-import "./design/signature.css";
-import "./scene/scene.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <BrowserRouter>
+    {/* Opt into both v7 behaviours now rather than at the upgrade. Route
+        changes wrap in startTransition (which also keeps the scroll-driven
+        scenes from janking on navigation), and splat routes resolve relative
+        paths the v7 way — this app has a catch-all "*" route, so that one
+        would have changed behaviour under us. */}
+    <BrowserRouter
+      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+    >
       <AuthProvider>
         <App />
       </AuthProvider>

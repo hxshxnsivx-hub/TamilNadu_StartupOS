@@ -20,7 +20,8 @@ import {
 } from "../design/atelier";
 import { useScrollProgress, useWallTone } from "../components/Wall";
 import NewsBoard from "../components/NewsBoard";
-import Journey from "../scene/Journey";
+import Overture from "../scene/Overture";
+import Plate from "../scene/Plate";
 import { api } from "../api";
 
 /* Honest numbers only. There is no logo wall on this page because there are
@@ -88,6 +89,8 @@ export default function Home() {
 
   return (
     <Page set="home">
+      <Overture />
+
       <Masthead
         bleed
         index="Tamil Nadu StartupOS"
@@ -109,7 +112,6 @@ export default function Home() {
         }
       />
 
-      <Journey />
 
       {/* ---- the arc, pinned and advancing sideways ---- */}
       <Rail count={chapters.length} tone="chapters">
@@ -160,6 +162,14 @@ export default function Home() {
         </div>
       </Band>
 
+      <Plate
+        src="craft.jpg"
+        n="II"
+        eyebrow="The claim"
+        title={"Every answer\ncarries its reason"}
+        lede="Eligibility is decided by explicit rules, not opinion. A “no” always names the rule it failed — and what would change it."
+      />
+
       {/* ---- what changed this week, for a founder in Tamil Nadu ---- */}
       <Band
         depth={2}
@@ -172,6 +182,15 @@ export default function Home() {
       </Band>
 
       {/* ---- the three things this page has to answer before you leave ---- */}
+      <Plate
+        src="trade.jpg"
+        n="III"
+        eyebrow="Collaboration"
+        title={"A supply chain\nyou can see"}
+        lede="Break a product into its materials and match verified suppliers across Tamil Nadu's clusters — with the gaps named, not hidden."
+        align="right"
+      />
+
       <Band depth={3} tone="work" folio="IV">
         <span className="v-vlabel">The contract</span>
         <Register>
@@ -225,6 +244,15 @@ export default function Home() {
       </Band>
 
       {/* ---- the funnel's final action: the page must not just stop ---- */}
+      <Plate
+        src="land.jpg"
+        n="IV"
+        eyebrow="Reach"
+        title={"The map does not\nend at the city"}
+        lede="Agriculture, handloom, small manufacturing. Furthest from the port, counted the same."
+        height="70vh"
+      />
+
       <Band depth={3} className="v-close">
         <Cornice />
         <div className="v-split">

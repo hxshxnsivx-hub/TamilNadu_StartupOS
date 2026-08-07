@@ -4,6 +4,8 @@ import LangSwitch from "./components/LangSwitch";
 import { useAuth } from "./auth";
 import { ScrollRail, useStuck } from "./motion";
 import Wall from "./components/Wall";
+import AmbientBackground from "./components/layout/AmbientBackground";
+import { MotionProvider } from "./components/motion";
 import Home from "./pages/Home";
 import Start from "./pages/Start";
 import Login from "./pages/Login";
@@ -83,11 +85,16 @@ function Protected({ children }: { children: JSX.Element }) {
 export default function App() {
   const location = useLocation();
   return (
+    <MotionProvider>
     <div className="app">
       {/* The wall carries the palette and the only continuous motion in the
           product. It sits behind everything, fixed, and holds no information —
           so when reduced-motion stops it, nothing is lost but the movement. */}
       <Wall />
+      {/* Rendered AFTER Wall deliberately: both sit at z-0, so DOM order puts
+          the ambient texture on top of the wall while both stay behind .app
+          (z-1). Carries the per-route accent hue. */}
+      <AmbientBackground />
       <ScrollRail />
       <Nav />
       {/* keyed on pathname so every route change replays the entrance cut */}
@@ -125,5 +132,6 @@ export default function App() {
         </Routes>
       </main>
     </div>
+    </MotionProvider>
   );
 }
