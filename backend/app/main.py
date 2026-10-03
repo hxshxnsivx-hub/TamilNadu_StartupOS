@@ -13,7 +13,17 @@ from app.core.config import get_settings
 from app.core.errors import register_exception_handlers
 from app.core.logging import configure_logging, get_logger
 from app.core.middleware import RateLimitMiddleware, RequestContextMiddleware
-from app.routers import auth, b2b, funding, health, ideation, news, schemes, verification
+from app.routers import (
+    auth,
+    b2b,
+    banking,
+    funding,
+    health,
+    ideation,
+    news,
+    schemes,
+    verification,
+)
 
 
 @asynccontextmanager
@@ -54,6 +64,7 @@ def create_app() -> FastAPI:
     app.include_router(b2b.router)
     app.include_router(funding.router)
     app.include_router(news.router)
+    app.include_router(banking.router)
     # Later: profiles/startups persistence ...
 
     return app

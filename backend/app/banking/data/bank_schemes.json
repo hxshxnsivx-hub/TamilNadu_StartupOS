@@ -1,0 +1,1555 @@
+{
+ "_meta": {
+  "title": "Bank loan schemes for Tamil Nadu founders",
+  "checked": "2026-10-03",
+  "amounts": "lakh rupees; null = not published",
+  "categories": {
+   "gov": "Government scheme loans",
+   "startup": "Startup loans",
+   "women": "Women entrepreneur loans",
+   "wc": "Working capital & GST-based",
+   "term": "Term loans & asset-backed",
+   "unsec": "Unsecured business loans",
+   "micro": "Micro, SFB & group loans",
+   "sector": "Sector packages",
+   "guar": "Credit guarantees (overlay)"
+  },
+  "collateral_values": {
+   "none_rbi": "No collateral for MSE loans up to Rs 20 lakh (RBI, from 1 Apr 2026)",
+   "guarantee": "Guarantee replaces collateral",
+   "unsecured": "Unsecured, priced higher",
+   "hybrid": "Part collateral plus guarantee",
+   "collateral": "Property or security required",
+   "group": "Group liability",
+   "na": "Not a loan"
+  },
+  "offered_by_types": "For government scheme loans offered through many banks: the bank types that typically process them. A working assumption, to be replaced by bank-wise sanction data.",
+  "caution": "Rates and limits change; most entries come from bank pages and comparison sites. Confirm with the bank before quoting."
+ },
+ "schemes": [
+  {
+   "id": "mudra",
+   "bank": null,
+   "name": "PM MUDRA: Shishu / Kishore / Tarun / Tarun Plus",
+   "category": "gov",
+   "min_lakh": 0,
+   "max_lakh": 20,
+   "purposes": [
+    "micro",
+    "wc",
+    "tl"
+   ],
+   "collateral": "guarantee",
+   "pricing": "Bank's rate; CGFMU guarantee",
+   "for_whom": "Non-farm micro businesses",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": [
+    "public",
+    "private",
+    "private_tn",
+    "private_kerala",
+    "small_finance",
+    "regional_rural"
+   ],
+   "digital": false,
+   "details": [
+    "Shishu ≤ ₹50k, Kishore ≤ ₹5L, Tarun ≤ ₹10L, Tarun Plus ₹10–20L",
+    "Tarun Plus only after repaying a Tarun loan",
+    "Offered by public, private, small finance and rural banks, NBFCs and MFIs"
+   ],
+   "source_url": "https://www.mudra.org.in/",
+   "confidence": "official"
+  },
+  {
+   "id": "pmegp",
+   "bank": null,
+   "name": "PMEGP (central subsidy loan)",
+   "category": "gov",
+   "min_lakh": 0,
+   "max_lakh": 50,
+   "purposes": [
+    "tl",
+    "micro"
+   ],
+   "collateral": "none_rbi",
+   "pricing": "Bank's rate; 15–35% margin-money subsidy",
+   "for_whom": "New micro units",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": [
+    "public",
+    "private",
+    "private_tn",
+    "regional_rural"
+   ],
+   "digital": false,
+   "details": [
+    "Project up to ₹50L manufacturing, ₹20L service",
+    "Apply on the PMEGP portal; sponsored to a bank",
+    "New units only"
+   ],
+   "source_url": "https://www.kviconline.gov.in/pmegpeportal/",
+   "confidence": "secondary"
+  },
+  {
+   "id": "tn_dic",
+   "bank": null,
+   "name": "NEEDS / UYEGP / AABCS / KKT (Tamil Nadu subsidy loans)",
+   "category": "gov",
+   "min_lakh": 1,
+   "max_lakh": 500,
+   "purposes": [
+    "tl",
+    "wc",
+    "micro"
+   ],
+   "collateral": "none_rbi",
+   "pricing": "Bank's rate; 25–35% subsidy, 3–6% interest subvention",
+   "for_whom": "First-time, unemployed, SC/ST, artisans",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": [
+    "public",
+    "regional_rural"
+   ],
+   "digital": false,
+   "details": [
+    "Apply on msmeonline.tn.gov.in; DIC sponsors to the bank",
+    "Subsidy goes to the lender",
+    "See the Tamil Nadu schemes dashboard for each scheme's rules"
+   ],
+   "source_url": "https://msmeonline.tn.gov.in/",
+   "confidence": "official"
+  },
+  {
+   "id": "standup",
+   "bank": null,
+   "name": "Stand-Up India (being revamped)",
+   "category": "gov",
+   "min_lakh": 10,
+   "max_lakh": 100,
+   "purposes": [
+    "tl",
+    "wc"
+   ],
+   "collateral": "none_rbi",
+   "pricing": "Bank's rate",
+   "for_whom": "SC/ST and women, first venture",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "not_open",
+   "offered_by_types": [
+    "public",
+    "private",
+    "private_tn"
+   ],
+   "digital": false,
+   "details": [
+    "Ended March 2025; revamp with limits up to ₹2Cr announced",
+    "Do not plan around the old scheme"
+   ],
+   "source_url": "https://www.pib.gov.in/newsite/PrintRelease.aspx?relid=191276&reg=3&lang=2",
+   "confidence": "secondary"
+  },
+  {
+   "id": "sbi_udaan",
+   "bank": "State Bank of India",
+   "name": "MSME UDAAN (finance to startups)",
+   "category": "startup",
+   "min_lakh": null,
+   "max_lakh": 5000,
+   "purposes": [
+    "startup"
+   ],
+   "collateral": "guarantee",
+   "pricing": "Bank-set",
+   "for_whom": "DPIIT startups",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": true,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "Loans up to ₹50Cr for DPIIT-recognised startups",
+    "Typically backed by CGSS"
+   ],
+   "source_url": "https://sbi.bank.in/web/business/s/sme/sme-loans/finance-to-start-ups-msme-udaan",
+   "confidence": "official"
+  },
+  {
+   "id": "canara_su",
+   "bank": "Canara Bank",
+   "name": "Canara Start-Up",
+   "category": "startup",
+   "min_lakh": 10,
+   "max_lakh": 2000,
+   "purposes": [
+    "startup"
+   ],
+   "collateral": "hybrid",
+   "pricing": "Bank-set",
+   "for_whom": "DPIIT startups with revenue",
+   "requires": {
+    "gst": false,
+    "years_in_business": 1,
+    "women_owned": false,
+    "dpiit": true,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "₹10L–₹20Cr",
+    "DPIIT + Udyam + stable revenue stream",
+    "Uncovered portion covered under CGSS/CGTMSE (hybrid model)"
+   ],
+   "source_url": "https://www.canarabank.bank.in/canara-start-up",
+   "confidence": "official"
+  },
+  {
+   "id": "ib_startup",
+   "bank": "Indian Bank",
+   "name": "IND Start Up Scheme",
+   "category": "startup",
+   "min_lakh": null,
+   "max_lakh": 2000,
+   "purposes": [
+    "startup"
+   ],
+   "collateral": "guarantee",
+   "pricing": "Bank-set",
+   "for_whom": "DPIIT startups",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": true,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "Up to ₹20Cr for DPIIT-recognised startups"
+   ],
+   "source_url": "https://indianbank.bank.in/en/ind-start-up-scheme1",
+   "confidence": "official"
+  },
+  {
+   "id": "union_su",
+   "bank": "Union Bank of India",
+   "name": "Union Start up",
+   "category": "startup",
+   "min_lakh": 10,
+   "max_lakh": 500,
+   "purposes": [
+    "startup"
+   ],
+   "collateral": "guarantee",
+   "pricing": "Bank-set",
+   "for_whom": "Startups under Startup India",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": true,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "₹10L–₹5Cr",
+    "Innovation, development or improvement of products/services"
+   ],
+   "source_url": "https://cleartax.in/s/union-bank-of-india-business-loans",
+   "confidence": "secondary"
+  },
+  {
+   "id": "boi_su",
+   "bank": "Bank of India",
+   "name": "Star Start Up",
+   "category": "startup",
+   "min_lakh": null,
+   "max_lakh": 500,
+   "purposes": [
+    "startup"
+   ],
+   "collateral": "guarantee",
+   "pricing": "Bank-set",
+   "for_whom": "Entities under 5 years, turnover < ₹25Cr",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": true,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "Up to ₹5Cr",
+    "Incorporated within the last 5 years"
+   ],
+   "source_url": "https://cleartax.in/s/bank-of-india-business-loans",
+   "confidence": "secondary"
+  },
+  {
+   "id": "bob_su",
+   "bank": "Bank of Baroda",
+   "name": "Startup loans under CGSS",
+   "category": "startup",
+   "min_lakh": null,
+   "max_lakh": 2000,
+   "purposes": [
+    "startup"
+   ],
+   "collateral": "guarantee",
+   "pricing": "Bank-set",
+   "for_whom": "DPIIT startups",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": true,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "Up to ₹20Cr with CGSS cover"
+   ],
+   "source_url": "https://thecsruniverse.com/articles/bank-of-baroda-launches-new-msme-lending-schemes",
+   "confidence": "secondary"
+  },
+  {
+   "id": "sbi_ss",
+   "bank": "State Bank of India",
+   "name": "Stree Shakti",
+   "category": "women",
+   "min_lakh": null,
+   "max_lakh": null,
+   "purposes": [
+    "wc",
+    "tl",
+    "micro"
+   ],
+   "collateral": "none_rbi",
+   "pricing": "Concession for women",
+   "for_whom": "Women in business, trade, professions",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": true,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "For women entrepreneurs, including professionals and self-employed"
+   ],
+   "source_url": "https://hermoneytalks1.substack.com/p/government-financial-schemes-that",
+   "confidence": "secondary"
+  },
+  {
+   "id": "canara_mv",
+   "bank": "Canara Bank",
+   "name": "Canara Mahila Vikas",
+   "category": "women",
+   "min_lakh": 10,
+   "max_lakh": 500,
+   "purposes": [
+    "tl",
+    "wc"
+   ],
+   "collateral": "guarantee",
+   "pricing": "RLLR-linked (~9.25–10.25%); 0.25% less with CGTMSE",
+   "for_whom": "Women-led MSMEs",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": true,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "₹10L–₹5Cr",
+    "Premises, machinery, equipment, vehicles, working capital",
+    "Up to 50% off processing fee"
+   ],
+   "source_url": "https://www.canarabank.bank.in/canara-mahila-vikas",
+   "confidence": "official"
+  },
+  {
+   "id": "iob_mp",
+   "bank": "Indian Overseas Bank",
+   "name": "SME Mahila Plus",
+   "category": "women",
+   "min_lakh": null,
+   "max_lakh": 200,
+   "purposes": [
+    "tl",
+    "wc"
+   ],
+   "collateral": "none_rbi",
+   "pricing": "0.25% concession",
+   "for_whom": "Women-led micro and small enterprises",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": true,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "Up to ₹1Cr service, ₹2Cr manufacturing"
+   ],
+   "source_url": "https://financedragon.com/msme-loans/indian-overseas-bank-msme-loans/",
+   "confidence": "secondary"
+  },
+  {
+   "id": "union_ns",
+   "bank": "Union Bank of India",
+   "name": "Union Nari Shakti",
+   "category": "women",
+   "min_lakh": 2,
+   "max_lakh": 200,
+   "purposes": [
+    "wc",
+    "tl"
+   ],
+   "collateral": "none_rbi",
+   "pricing": "Bank-set",
+   "for_whom": "Women-owned and managed MSMEs",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": true,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "₹2L–₹2Cr",
+    "Working capital or premises purchase/renovation"
+   ],
+   "source_url": "https://www.unionbankofindia.bank.in/en/details/union-nari-shakti-scheme",
+   "confidence": "official"
+  },
+  {
+   "id": "bob_ms",
+   "bank": "Bank of Baroda",
+   "name": "Baroda Mahila Swavalamban",
+   "category": "women",
+   "min_lakh": 20,
+   "max_lakh": 750,
+   "purposes": [
+    "tl",
+    "wc"
+   ],
+   "collateral": "hybrid",
+   "pricing": "From ~9.15%",
+   "for_whom": "≥51% women-owned, Udyam + GST",
+   "requires": {
+    "gst": true,
+    "years_in_business": 0,
+    "women_owned": true,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "₹20L–₹7.5Cr, up to 10 years",
+    "Relaxed margin and collateral"
+   ],
+   "source_url": "https://thecsruniverse.com/articles/bank-of-baroda-launches-new-msme-lending-schemes",
+   "confidence": "secondary"
+  },
+  {
+   "id": "sbi_sahaj",
+   "bank": "State Bank of India",
+   "name": "MSME Sahaj (GST invoice finance)",
+   "category": "wc",
+   "min_lakh": null,
+   "max_lakh": 1,
+   "purposes": [
+    "wc",
+    "micro"
+   ],
+   "collateral": "none_rbi",
+   "pricing": "Bank-set",
+   "for_whom": "GST-registered micro businesses",
+   "requires": {
+    "gst": true,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": true,
+   "details": [
+    "Up to ~₹1L against GST sales invoices",
+    "Fully digital, in about 15 minutes"
+   ],
+   "source_url": "https://www.business-standard.com/finance/personal-finance/msme-sahaj-get-quick-digital-business-loans-up-to-rs-1-lakh-in-15-mins-124071200835_1.html",
+   "confidence": "secondary"
+  },
+  {
+   "id": "bob_od",
+   "bank": "Bank of Baroda",
+   "name": "Baroda Smart OD",
+   "category": "wc",
+   "min_lakh": 0.5,
+   "max_lakh": 25,
+   "purposes": [
+    "wc"
+   ],
+   "collateral": "none_rbi",
+   "pricing": "From ~10%",
+   "for_whom": "GST-registered individuals/proprietors",
+   "requires": {
+    "gst": true,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": true,
+   "details": [
+    "Overdraft ₹50k–₹25L, 12 months"
+   ],
+   "source_url": "https://thecsruniverse.com/articles/bank-of-baroda-launches-new-msme-lending-schemes",
+   "confidence": "secondary"
+  },
+  {
+   "id": "bob_digi",
+   "bank": "Bank of Baroda",
+   "name": "bob Digi Udyam",
+   "category": "wc",
+   "min_lakh": null,
+   "max_lakh": 200,
+   "purposes": [
+    "wc",
+    "tl"
+   ],
+   "collateral": "guarantee",
+   "pricing": "Bank-set",
+   "for_whom": "MSMEs, digital journey",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": true,
+   "details": [
+    "Up to ₹2Cr, paperless application"
+   ],
+   "source_url": "https://thecsruniverse.com/articles/bank-of-baroda-launches-new-msme-lending-schemes",
+   "confidence": "secondary"
+  },
+  {
+   "id": "boi_gst",
+   "bank": "Bank of India",
+   "name": "Star MSME GST Plus",
+   "category": "wc",
+   "min_lakh": 10,
+   "max_lakh": 500,
+   "purposes": [
+    "wc"
+   ],
+   "collateral": "guarantee",
+   "pricing": "Bank-set",
+   "for_whom": "Existing micro & small units with GSTIN",
+   "requires": {
+    "gst": true,
+    "years_in_business": 1,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "₹10L–₹5Cr working capital",
+    "Trading and manufacturing"
+   ],
+   "source_url": "https://www.indiafilings.com/learn/star-msme-gst-plus-scheme/",
+   "confidence": "secondary"
+  },
+  {
+   "id": "union_suv",
+   "bank": "Union Bank of India",
+   "name": "Union MSME Suvidha",
+   "category": "wc",
+   "min_lakh": 10,
+   "max_lakh": 5000,
+   "purposes": [
+    "wc",
+    "tl"
+   ],
+   "collateral": "hybrid",
+   "pricing": "Bank-set",
+   "for_whom": "MSMEs",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "₹10L–₹50Cr; overdraft up to ₹10Cr"
+   ],
+   "source_url": "https://www.unionbankofindia.bank.in/en/details/union-msme-suvidha",
+   "confidence": "official"
+  },
+  {
+   "id": "union_tp",
+   "bank": "Union Bank of India",
+   "name": "Union Turnover Plus",
+   "category": "wc",
+   "min_lakh": null,
+   "max_lakh": 500,
+   "purposes": [
+    "wc"
+   ],
+   "collateral": "guarantee",
+   "pricing": "Bank-set",
+   "for_whom": "Manufacturing, service, trading",
+   "requires": {
+    "gst": false,
+    "years_in_business": 1,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "Working capital up to ₹5Cr, based on turnover"
+   ],
+   "source_url": "https://cleartax.in/s/union-bank-of-india-business-loans",
+   "confidence": "secondary"
+  },
+  {
+   "id": "canara_gst",
+   "bank": "Canara Bank",
+   "name": "Canara GST",
+   "category": "wc",
+   "min_lakh": null,
+   "max_lakh": null,
+   "purposes": [
+    "wc"
+   ],
+   "collateral": "guarantee",
+   "pricing": "Bank-set",
+   "for_whom": "GST-registered MSMEs",
+   "requires": {
+    "gst": true,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "Working capital assessed from GST returns"
+   ],
+   "source_url": "https://www.canarabank.bank.in/canara-gst",
+   "confidence": "official"
+  },
+  {
+   "id": "iob_easy",
+   "bank": "Indian Overseas Bank",
+   "name": "SME Easy Loan",
+   "category": "wc",
+   "min_lakh": null,
+   "max_lakh": 500,
+   "purposes": [
+    "wc"
+   ],
+   "collateral": "guarantee",
+   "pricing": "Bank-set",
+   "for_whom": "Traders",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": "trade",
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "Up to ₹5Cr for day-to-day trading needs"
+   ],
+   "source_url": "https://financedragon.com/msme-loans/indian-overseas-bank-msme-loans/",
+   "confidence": "secondary"
+  },
+  {
+   "id": "cub_wc",
+   "bank": "City Union Bank",
+   "name": "CUB working capital (CC, bills, LC)",
+   "category": "wc",
+   "min_lakh": null,
+   "max_lakh": null,
+   "purposes": [
+    "wc"
+   ],
+   "collateral": "collateral",
+   "pricing": "Bank-set",
+   "for_whom": "Trading, micro & small enterprises",
+   "requires": {
+    "gst": false,
+    "years_in_business": 1,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "Cash credit, letters of credit, bills finance",
+    "EMI and non-EMI options"
+   ],
+   "source_url": "https://cityunionbank.bank.in/cub-working-capital-loans",
+   "confidence": "official"
+  },
+  {
+   "id": "tmb_credit",
+   "bank": "Tamilnad Mercantile Bank",
+   "name": "TMB MSME Credit Scheme",
+   "category": "wc",
+   "min_lakh": null,
+   "max_lakh": 500,
+   "purposes": [
+    "wc",
+    "tl"
+   ],
+   "collateral": "guarantee",
+   "pricing": "Bank-set",
+   "for_whom": "MSMEs",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "Working capital and term loans on liberalised terms",
+    "No collateral up to ₹5Cr under CGTMSE (per secondary source)"
+   ],
+   "source_url": "https://www.tmb.bank.in/pages/TMB-MSME",
+   "confidence": "secondary"
+  },
+  {
+   "id": "kvb_pack",
+   "bank": "Karur Vysya Bank",
+   "name": "KVB MSME Pack / MSME Easy Loan",
+   "category": "wc",
+   "min_lakh": null,
+   "max_lakh": 1000,
+   "purposes": [
+    "wc",
+    "tl"
+   ],
+   "collateral": "hybrid",
+   "pricing": "Bank-set",
+   "for_whom": "MSMEs",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "Working capital, expansion and trade finance",
+    "Up to ₹10Cr, up to 7 years"
+   ],
+   "source_url": "https://www.kvb.bank.in/business/products/loans/msme/kvb-msme-pack/",
+   "confidence": "official"
+  },
+  {
+   "id": "sbi_abl",
+   "bank": "State Bank of India",
+   "name": "Asset Backed Loan",
+   "category": "term",
+   "min_lakh": null,
+   "max_lakh": null,
+   "purposes": [
+    "tl",
+    "wc"
+   ],
+   "collateral": "collateral",
+   "pricing": "Bank-set",
+   "for_whom": "Manufacturing, services, self-employed under MSMED Act",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "Secured against assets"
+   ],
+   "source_url": "https://sbi.bank.in/web/business/sme/sme-loans/asset-backed-loan",
+   "confidence": "official"
+  },
+  {
+   "id": "canara_star",
+   "bank": "Canara Bank",
+   "name": "Canara MSME Star",
+   "category": "term",
+   "min_lakh": null,
+   "max_lakh": null,
+   "purposes": [
+    "tl",
+    "wc"
+   ],
+   "collateral": "collateral",
+   "pricing": "Bank-set",
+   "for_whom": "MSMEs with property",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "Against immovable property",
+    "Expansion, working capital, term needs"
+   ],
+   "source_url": "https://www.canarabank.bank.in/canara-msme-star",
+   "confidence": "official"
+  },
+  {
+   "id": "iob_tl",
+   "bank": "Indian Overseas Bank",
+   "name": "IOB MSME Term Loan",
+   "category": "term",
+   "min_lakh": null,
+   "max_lakh": null,
+   "purposes": [
+    "tl"
+   ],
+   "collateral": "none_rbi",
+   "pricing": "Bank-set",
+   "for_whom": "MSMEs",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "Fixed assets, setting up, expansion, modernisation",
+    "Bank sources say collateral-free to ₹10L; RBI rule now ₹20L for MSEs"
+   ],
+   "source_url": "https://financedragon.com/msme-loans/indian-overseas-bank-msme-loans/",
+   "confidence": "secondary"
+  },
+  {
+   "id": "cub_ebl",
+   "bank": "City Union Bank",
+   "name": "Easy Business Loan",
+   "category": "term",
+   "min_lakh": 15,
+   "max_lakh": 75,
+   "purposes": [
+    "tl",
+    "wc"
+   ],
+   "collateral": "collateral",
+   "pricing": "From ~12.5%",
+   "for_whom": "Trading, micro & small enterprises",
+   "requires": {
+    "gst": false,
+    "years_in_business": 1,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "₹15–75L, 24–60 months",
+    "25% margin; movable and immovable security"
+   ],
+   "source_url": "https://www.paisabazaar.com/city-union-bank/business-loan/",
+   "confidence": "secondary"
+  },
+  {
+   "id": "tngb_tl",
+   "bank": "Tamil Nadu Grama Bank",
+   "name": "MSME Term Loan / CC-OD",
+   "category": "term",
+   "min_lakh": null,
+   "max_lakh": null,
+   "purposes": [
+    "tl",
+    "wc"
+   ],
+   "collateral": "none_rbi",
+   "pricing": "Bank-set",
+   "for_whom": "Traders, businesses, professionals",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "Fixed assets, expansion, machinery; up to 10 years",
+    "Also handles MUDRA, PMEGP, UYEGP, NEEDS, PMFME"
+   ],
+   "source_url": "https://tngb.bank.in/loans/sme/msme-tl",
+   "confidence": "official"
+  },
+  {
+   "id": "hdfc_ul",
+   "bank": "HDFC Bank",
+   "name": "Unsecured business loan",
+   "category": "unsec",
+   "min_lakh": null,
+   "max_lakh": 75,
+   "purposes": [
+    "wc",
+    "tl"
+   ],
+   "collateral": "unsecured",
+   "pricing": "~10.75–22.5%",
+   "for_whom": "Turnover ≥ ₹12L, 1+ year, CIBIL ≥ 685",
+   "requires": {
+    "gst": false,
+    "years_in_business": 1,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "Up to ₹75L without collateral",
+    "Age 21–65"
+   ],
+   "source_url": "https://www.indiafilings.com/business-loan/hdfc-business-loan",
+   "confidence": "secondary"
+  },
+  {
+   "id": "icici_ul",
+   "bank": "ICICI Bank",
+   "name": "Unsecured business loan",
+   "category": "unsec",
+   "min_lakh": null,
+   "max_lakh": 50,
+   "purposes": [
+    "wc",
+    "tl"
+   ],
+   "collateral": "unsecured",
+   "pricing": "~11–18%",
+   "for_whom": "Established businesses",
+   "requires": {
+    "gst": false,
+    "years_in_business": 1,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "Up to ₹50L"
+   ],
+   "source_url": "https://www.indiafilings.com/business-loan/icici-business-loan",
+   "confidence": "secondary"
+  },
+  {
+   "id": "axis_ul",
+   "bank": "Axis Bank",
+   "name": "Unsecured business loan",
+   "category": "unsec",
+   "min_lakh": 0.5,
+   "max_lakh": 75,
+   "purposes": [
+    "wc",
+    "tl"
+   ],
+   "collateral": "unsecured",
+   "pricing": "~11–19%",
+   "for_whom": "Established businesses",
+   "requires": {
+    "gst": false,
+    "years_in_business": 1,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "₹50k–₹75L"
+   ],
+   "source_url": "https://www.buddyloan.com/axis-bank-business-loan",
+   "confidence": "secondary"
+  },
+  {
+   "id": "equitas",
+   "bank": "Equitas Small Finance Bank",
+   "name": "MSME / small business loan",
+   "category": "micro",
+   "min_lakh": 1,
+   "max_lakh": 20,
+   "purposes": [
+    "micro",
+    "wc",
+    "tl"
+   ],
+   "collateral": "hybrid",
+   "pricing": "Higher than public banks; 2% fee",
+   "for_whom": "Micro entrepreneurs",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "₹1–20L; loans against property also offered"
+   ],
+   "source_url": "https://www.paisabazaar.com/equitas-small-finance-bank/business-loan/",
+   "confidence": "secondary"
+  },
+  {
+   "id": "ujjivan",
+   "bank": "Ujjivan Small Finance Bank",
+   "name": "MSE loan",
+   "category": "micro",
+   "min_lakh": 10,
+   "max_lakh": 200,
+   "purposes": [
+    "tl",
+    "wc"
+   ],
+   "collateral": "hybrid",
+   "pricing": "From ~12%; fee up to 2.5%",
+   "for_whom": "Micro and small enterprises",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "₹10L–₹2Cr, up to 120 months"
+   ],
+   "source_url": "https://www.paisabazaar.com/ujjivan/business-loan/",
+   "confidence": "secondary"
+  },
+  {
+   "id": "tngb_shg",
+   "bank": "Tamil Nadu Grama Bank",
+   "name": "SHG / JLG loans",
+   "category": "micro",
+   "min_lakh": null,
+   "max_lakh": null,
+   "purposes": [
+    "micro"
+   ],
+   "collateral": "group",
+   "pricing": "Bank-set",
+   "for_whom": "Self-help groups (10–20 members)",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": true
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "Group loans; term loans over 60 months"
+   ],
+   "source_url": "https://tngb.bank.in/loans/group/shg",
+   "confidence": "official"
+  },
+  {
+   "id": "kvb_textile",
+   "bank": "Karur Vysya Bank",
+   "name": "KVB Textile Plus (and Transport / Pharma / Construction Plus)",
+   "category": "sector",
+   "min_lakh": null,
+   "max_lakh": 1000,
+   "purposes": [
+    "wc",
+    "tl"
+   ],
+   "collateral": "hybrid",
+   "pricing": "Bank-set",
+   "for_whom": "Sector businesses",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": "textile",
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "Sector-specific packages; relevant to Tiruppur knitwear"
+   ],
+   "source_url": "https://www.paisabazaar.com/karur-vysya-bank/business-loan/",
+   "confidence": "secondary"
+  },
+  {
+   "id": "boi_weaver",
+   "bank": "Bank of India",
+   "name": "Star Weaver MUDRA",
+   "category": "sector",
+   "min_lakh": null,
+   "max_lakh": 10,
+   "purposes": [
+    "micro",
+    "tl"
+   ],
+   "collateral": "guarantee",
+   "pricing": "Bank-set",
+   "for_whom": "Weavers",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": "textile",
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "MUDRA-linked loan for weavers"
+   ],
+   "source_url": "https://cleartax.in/s/bank-of-india-business-loans",
+   "confidence": "secondary"
+  },
+  {
+   "id": "union_ap",
+   "bank": "Union Bank of India",
+   "name": "Union Ayushman Plus",
+   "category": "sector",
+   "min_lakh": null,
+   "max_lakh": null,
+   "purposes": [
+    "tl",
+    "wc"
+   ],
+   "collateral": "hybrid",
+   "pricing": "Bank-set",
+   "for_whom": "Healthcare businesses",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": "health",
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "Healthcare sector package"
+   ],
+   "source_url": "https://cleartax.in/s/union-bank-of-india-business-loans",
+   "confidence": "secondary"
+  },
+  {
+   "id": "union_pv",
+   "bank": "Union Bank of India",
+   "name": "Union Parivahan",
+   "category": "sector",
+   "min_lakh": null,
+   "max_lakh": null,
+   "purposes": [
+    "tl"
+   ],
+   "collateral": "hybrid",
+   "pricing": "Bank-set",
+   "for_whom": "Transport operators",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": "transport",
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "Vehicle and transport finance"
+   ],
+   "source_url": "https://cleartax.in/s/union-bank-of-india-business-loans",
+   "confidence": "secondary"
+  },
+  {
+   "id": "ib_surya",
+   "bank": "Indian Bank",
+   "name": "IND Surya Shakti",
+   "category": "sector",
+   "min_lakh": null,
+   "max_lakh": null,
+   "purposes": [
+    "tl"
+   ],
+   "collateral": "hybrid",
+   "pricing": "Bank-set",
+   "for_whom": "Solar installations",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": "solar",
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "Solar power finance for MSMEs"
+   ],
+   "source_url": "https://www.paisabazaar.com/indian-bank/business-loan/",
+   "confidence": "secondary"
+  },
+  {
+   "id": "ib_arogyam",
+   "bank": "Indian Bank",
+   "name": "IND SME Arogyam",
+   "category": "sector",
+   "min_lakh": null,
+   "max_lakh": null,
+   "purposes": [
+    "tl",
+    "wc"
+   ],
+   "collateral": "hybrid",
+   "pricing": "Bank-set",
+   "for_whom": "Healthcare units",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": "health",
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "Healthcare sector package"
+   ],
+   "source_url": "https://www.creditmantri.com/indian-bank-msme-loan/",
+   "confidence": "secondary"
+  },
+  {
+   "id": "cgtmse",
+   "bank": null,
+   "name": "CGTMSE",
+   "category": "guar",
+   "min_lakh": null,
+   "max_lakh": 1000,
+   "purposes": [
+    "wc",
+    "tl",
+    "micro"
+   ],
+   "collateral": "guarantee",
+   "pricing": "Guarantee fee",
+   "for_whom": "Micro & small enterprises",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "Cover up to ₹10Cr (raised 2025)",
+    "Bank applies; replaces collateral"
+   ],
+   "source_url": "https://www.cgtmse.in/",
+   "confidence": "secondary"
+  },
+  {
+   "id": "cgss",
+   "bank": null,
+   "name": "CGSS (startups)",
+   "category": "guar",
+   "min_lakh": null,
+   "max_lakh": 2000,
+   "purposes": [
+    "startup"
+   ],
+   "collateral": "guarantee",
+   "pricing": "Guarantee fee",
+   "for_whom": "DPIIT startups",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": true,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "Up to ₹20Cr; 85% cover ≤ ₹10Cr, 75% above"
+   ],
+   "source_url": "https://www.startupindia.gov.in/content/sih/en/credit-guarantee-scheme-for-startups.html",
+   "confidence": "official"
+  },
+  {
+   "id": "mcgs",
+   "bank": null,
+   "name": "MCGS-MSME (machinery)",
+   "category": "guar",
+   "min_lakh": null,
+   "max_lakh": 10000,
+   "purposes": [
+    "tl"
+   ],
+   "collateral": "guarantee",
+   "pricing": "5% upfront contribution, partly refundable",
+   "for_whom": "MSMEs buying machinery",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "60% NCGTC guarantee on loans up to ₹100Cr",
+    "Machinery ≥ 60% of project cost; service sector added 2026"
+   ],
+   "source_url": "https://www.ncgtc.in/en/product-details/MCGSMSME/Mutual-Credit-Guarantee-Scheme-for-MSMEs-(MCGS-MSME)",
+   "confidence": "official"
+  },
+  {
+   "id": "tncgs",
+   "bank": null,
+   "name": "TNCGS (Tamil Nadu)",
+   "category": "guar",
+   "min_lakh": null,
+   "max_lakh": 200,
+   "purposes": [
+    "tl",
+    "wc"
+   ],
+   "collateral": "guarantee",
+   "pricing": "Guarantee fee",
+   "for_whom": "TN manufacturing MSMEs via TIIC/TAICO",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "90% cover ≤ ₹40L, 80% to ₹2Cr"
+   ],
+   "source_url": "https://knnindia.co.in/news/newsdetails/state/tamil-nadu-to-roll-out-credit-guarantee-scheme-for-msmes-for-collateral-free-loans",
+   "confidence": "secondary"
+  },
+  {
+   "id": "ib_prerana",
+   "bank": "Indian Bank",
+   "name": "MSME Prerana (mentoring)",
+   "category": "micro",
+   "min_lakh": null,
+   "max_lakh": null,
+   "purposes": [
+    "micro",
+    "wc",
+    "tl"
+   ],
+   "collateral": "na",
+   "pricing": "Not a loan",
+   "for_whom": "New entrepreneurs",
+   "requires": {
+    "gst": false,
+    "years_in_business": 0,
+    "women_owned": false,
+    "dpiit": false,
+    "self_help_group": false
+   },
+   "sector": null,
+   "status": "active",
+   "offered_by_types": null,
+   "digital": false,
+   "details": [
+    "Business mentoring so founders can apply for loans without a CA",
+    "Launched October 2020"
+   ],
+   "source_url": "https://indianbank.bank.in/en/msme-prerana",
+   "confidence": "official"
+  }
+ ]
+}

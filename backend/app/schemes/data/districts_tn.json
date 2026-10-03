@@ -1,0 +1,56 @@
+{
+  "_meta": {
+    "title": "Vanigam Stage 1 pilot districts: DIC and lead bank",
+    "last_checked": "2026-10-03",
+    "sources": {
+      "dic": "https://msmeonline.tn.gov.in/incentives/contactus.php?id=Contacts",
+      "lead_bank": "https://www.slbctn.com/Lead_Bank.aspx"
+    },
+    "notes": [
+      "Office contacts only. Lead District Manager names and mobile numbers change on transfer; read them live from the SLBC lead bank page rather than storing them.",
+      "State Level Bankers' Committee, Tamil Nadu: convenor Indian Overseas Bank, 763 Anna Salai, Chennai 600002, 044-28519288 (https://www.slbctn.com/About_Us.aspx)."
+    ]
+  },
+  "districts": [
+    {
+      "id": "chennai",
+      "name": "Chennai",
+      "name_ta": "சென்னை",
+      "profile": "Tech and SaaS startups; StartupTN head office; state finance agencies headquartered here",
+      "dic": {"address": "Thiru-Vi-Ka Industrial Estate, Guindy, Chennai 600032", "phone": ["044-22501620", "044-22501621", "044-22501622", "8925533927"], "email": "rjdchn.indcom@tn.gov.in", "note": "Listed as the Regional Joint Director of Industries office for Chennai"},
+      "lead_bank": {"bank": "Indian Overseas Bank", "office_email": "lbochennai@gmail.com"}
+    },
+    {
+      "id": "coimbatore",
+      "name": "Coimbatore",
+      "name_ta": "கோயம்புத்தூர்",
+      "profile": "Engineering, pumps and motors, foundries, textiles machinery",
+      "dic": {"address": "2 Raja Street, Coimbatore 641001", "phone": ["0422-2391678", "0422-2397311", "8925533933"], "email": "diccbe.indcom@tn.gov.in"},
+      "lead_bank": {"bank": "Canara Bank", "office_email": "lbocoimbatore@canarabank.com"}
+    },
+    {
+      "id": "tiruppur",
+      "name": "Tiruppur",
+      "name_ta": "திருப்பூர்",
+      "profile": "Knitwear and garment exports",
+      "dic": {"address": "Avinasi Road, Anupparpalayam Post, Tiruppur 641652", "phone": ["0421-2475007", "8925534021"], "email": "dictpr.indcom@tn.gov.in"},
+      "lead_bank": {"bank": "Canara Bank", "office_email": "lbotiruppur@canarabank.com"}
+    },
+    {
+      "id": "madurai",
+      "name": "Madurai",
+      "name_ta": "மதுரை",
+      "profile": "Traditional trades, agri and food processing, StartupTN regional hub",
+      "dic": {"address": "Alagar Koil Road, Madurai 625002", "phone": ["0452-2537621", "8925533965"], "email": "dicmdu.indcom@tn.gov.in"},
+      "lead_bank": {"bank": "Canara Bank", "office_email": "lbomadurai@canarabank.com"}
+    },
+    {
+      "id": "tiruchirappalli",
+      "name": "Tiruchirappalli",
+      "name_ta": "திருச்சிராப்பள்ளி",
+      "profile": "Manufacturing ancillaries, engineering colleges",
+      "dic": {"address": "Collectorate Compound, Tiruchirappalli 620001", "phone": ["0431-2460823", "8925534026"], "email": "dictry.indcom@tn.gov.in"},
+      "lead_bank": {"bank": "Indian Overseas Bank", "office_email": "ldm.trichy@gmail.com"}
+    }
+  ]
+}
