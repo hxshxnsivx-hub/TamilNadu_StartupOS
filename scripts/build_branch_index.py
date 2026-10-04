@@ -113,7 +113,13 @@ UA = "VanigamResearch/0.1 (pilot pin-code bank mapping)"
 TN_LAT = (8.0, 13.6)
 TN_LON = (76.0, 80.5)
 # Pins OpenStreetMap places wrongly, set by hand from the office's known location.
-PIN_OVERRIDES = {"600104": [13.087, 80.287]}  # High Court Building S.O, George Town
+PIN_OVERRIDES = {
+    "600104": [13.087, 80.287],  # High Court Building S.O, George Town (geocoded to Gujarat)
+    # Central Chennai offices OpenStreetMap placed 30-40 km south, near Chengalpattu:
+    "600007": [13.0846, 80.2600],  # Vepery
+    "600012": [13.1015, 80.2522],  # Perambur Barracks (India Post directory)
+    "600013": [13.1126, 80.2932],  # Royapuram (India Post directory)
+}
 
 
 def in_tamil_nadu(p: list[float] | tuple[float, float] | None) -> bool:
