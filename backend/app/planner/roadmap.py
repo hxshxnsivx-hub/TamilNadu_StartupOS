@@ -128,6 +128,18 @@ def months(t: Template, facts: dict, confidence: float) -> Timeline:
     )
 
 
+def _deliverables(t: Template, facts: dict, context: dict) -> list[str]:
+    out: list[str] = []
+    for text, cond in t.deliverables:
+        if cond is not None and not evaluate(cond, facts).ok:
+            continue
+        if text == "{regulatory_items}":  # expands to one line per regulatory item
+            out.extend(context.get("regulatory_items", []))
+        else:
+            out.append(text.format(**context))
+    return out
+
+
 def build(templates: list[Template], facts: dict, context: dict, confidence: float) -> dict:
     chosen = select(applicable(templates, facts))
     ids = {t.id for t in chosen}
@@ -139,11 +151,7 @@ def build(templates: list[Template], facts: dict, context: dict, confidence: flo
                     id=t.id,
                     phase=Phase(t.phase),
                     title=t.title.format(**context),
-                    deliverables=[
-                        text.format(**context)
-                        for text, cond in t.deliverables
-                        if cond is None or evaluate(cond, facts).ok
-                    ],
+                    deliverables=_deliverables(t, facts, context),
                     timeline=months(t, facts, confidence),
                     depends_on=[d for d in t.depends_on if d in ids],
                 ),

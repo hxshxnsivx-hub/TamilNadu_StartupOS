@@ -112,6 +112,7 @@ class PlanMilestoneOut(BaseModel):
     critical: bool
     why: str
     because: list[str]
+    risks: list[str] = []
     from_pack: str = Field(alias="from")
 
     model_config = {"populate_by_name": True}
@@ -125,7 +126,9 @@ class PlanRoadmapOut(BaseModel):
 
 class PlanOut(BaseModel):
     domain: dict[str, str] | None
+    domain_card: dict[str, Any] | None = None
     domain_note: str | None
+    risks_by_phase: dict[str, list[dict[str, Any]]] = {}
     variants: list[dict[str, Any]]
     unknown_variants: list[str]
     recipe_note: str
@@ -144,3 +147,26 @@ class DomainOut(BaseModel):
     about: str
     questions: list[dict[str, Any]]
     starting_variants: list[str]
+
+
+class CategoryOut(BaseModel):
+    id: str
+    label: str
+    kind: str
+    neighbours: list[str]
+    domains: int
+
+
+class HybridOut(BaseModel):
+    id: str
+    title: str
+    anchor: dict[str, str]
+    partner: dict[str, str]
+    partner_supplies: list[str]
+    anchor_supplies: list[str]
+    new_scheme_routes: list[dict[str, Any]]
+    scheme_routes_total: int
+    district_fit: dict[str, int]
+    risk: dict[str, int]
+    integration_risk: str
+    score: int

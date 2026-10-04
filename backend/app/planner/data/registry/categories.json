@@ -1,0 +1,42 @@
+{
+ "_meta": {
+  "source": "Tamil Nadu Startup & Innovation Policy thrust areas (Transportation & Logistics, Electrical & Electronics, Health Care & Bio-tech, Agriculture, Renewable energy, Climate change, Fintech, Textile, IT, IoT, AI, ML, SaaS); AI and ML merged. TANSEED themes from StartupTN.",
+  "source_url": "https://www.startupindia.gov.in/content/dam/invest-india/Templates/public/state_startup_policies/Tamil_Nadu_Startup_Policy.pdf",
+  "kinds": {"vertical": "an industry a product serves", "horizontal": "a technology that can be applied to many industries"}
+ },
+ "categories": [
+  {"id": "agriculture", "label": "Agriculture", "kind": "vertical", "sector": "agritech", "neighbours": ["climate", "renewable", "iot", "ai_ml", "fintech", "logistics", "health_bio"]},
+  {"id": "textile", "label": "Textile", "kind": "vertical", "sector": "textiles", "neighbours": ["climate", "ai_ml", "iot", "saas", "electrical", "fintech"]},
+  {"id": "health_bio", "label": "Health Care & Bio-tech", "kind": "vertical", "sector": "healthtech", "neighbours": ["ai_ml", "iot", "saas", "electrical", "agriculture", "it"]},
+  {"id": "logistics", "label": "Transportation & Logistics", "kind": "vertical", "sector": "logistics", "neighbours": ["iot", "ai_ml", "renewable", "electrical", "agriculture", "fintech"]},
+  {"id": "electrical", "label": "Electrical & Electronics", "kind": "vertical", "sector": "electronics", "neighbours": ["iot", "renewable", "logistics", "health_bio", "textile", "ai_ml"]},
+  {"id": "renewable", "label": "Renewable energy", "kind": "vertical", "sector": "cleantech", "neighbours": ["agriculture", "electrical", "iot", "climate", "fintech", "logistics"]},
+  {"id": "climate", "label": "Climate change", "kind": "vertical", "sector": "cleantech", "neighbours": ["agriculture", "textile", "renewable", "iot", "ai_ml", "it"]},
+  {"id": "fintech", "label": "Fintech", "kind": "vertical", "sector": "fintech", "neighbours": ["agriculture", "textile", "saas", "ai_ml", "logistics", "renewable"]},
+  {"id": "it", "label": "Information Technology", "kind": "horizontal", "sector": "saas", "neighbours": ["health_bio", "climate", "fintech", "saas", "ai_ml"]},
+  {"id": "iot", "label": "Internet of Things", "kind": "horizontal", "sector": "electronics", "neighbours": ["agriculture", "textile", "health_bio", "logistics", "electrical", "renewable", "climate"]},
+  {"id": "ai_ml", "label": "AI & ML", "kind": "horizontal", "sector": "deeptech", "neighbours": ["agriculture", "textile", "health_bio", "logistics", "fintech", "climate"]},
+  {"id": "saas", "label": "SaaS", "kind": "horizontal", "sector": "saas", "neighbours": ["textile", "health_bio", "fintech", "it", "electrical"]}
+ ],
+ "tanseed_themes": ["Farm Automation & Management", "Water Use Efficiency and Management", "Post Harvest Processing", "Feeds, Fodder & Animal Nutrition", "Financial Inclusion", "Art and Craft", "Food processing", "Livestock"],
+ "capabilities": {
+  "monitoring": "watching a process or asset continuously",
+  "prediction": "forecasting yield, demand, failures or risk",
+  "traceability": "proving where a product came from",
+  "payments": "collecting or moving money",
+  "credit": "lending or financing working capital",
+  "marketplace": "matching buyers and sellers",
+  "logistics": "moving and storing goods",
+  "cold_storage": "keeping perishables cold",
+  "energy": "supplying or saving energy",
+  "automation": "replacing manual steps with machines or software",
+  "compliance": "meeting rules, certifications or buyer audits",
+  "diagnostics": "detecting disease or defects",
+  "processing": "turning raw produce into a product",
+  "materials": "new or better materials",
+  "waste_reuse": "turning waste into value",
+  "water": "saving, cleaning or finding water",
+  "language": "working in Tamil and local languages",
+  "analytics": "turning records into decisions"
+ }
+}

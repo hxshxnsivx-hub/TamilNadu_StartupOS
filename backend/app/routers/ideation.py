@@ -7,12 +7,14 @@ when the profile/startup DB endpoints land.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
 from app.models.ideation_schemas import (
+    CategoryOut,
     CompletenessIn,
     CompletenessOut,
     DomainOut,
+    HybridOut,
     IdeaIn,
     IdeaOut,
     MilestoneOut,
@@ -26,6 +28,7 @@ from app.models.ideation_schemas import (
 )
 from app.orchestrator.orchestrator import Orchestrator
 from app.orchestrator.state import ConversationState
+from app.planner import registry
 from app.planner.packs import COMMON, load_packs
 from app.planner.plan import build_plan
 from app.schemes.annotate import annotate_roadmap
@@ -143,7 +146,11 @@ async def domains() -> list[DomainOut]:
 @router.post("/ideation/plan", response_model=PlanOut)
 async def plan(body: PlanIn) -> PlanOut:
     """A specific plan from the founder's answers: variants, costs and a roadmap that responds."""
-    if body.domain and body.domain not in load_packs():
+    if (
+        body.domain
+        and body.domain not in load_packs()
+        and body.domain not in registry.load()["domains"]
+    ):
         raise HTTPException(status_code=422, detail=f"Unknown domain: {body.domain}")
     return PlanOut(
         **build_plan(
@@ -160,3 +167,53 @@ async def plan(body: PlanIn) -> PlanOut:
             confidence=body.confidence,
         )
     )
+
+
+_DISTRICT = Query(default=None, pattern="^(chennai|coimbatore|tiruppur|madurai|tiruchirappalli)$")
+
+
+@router.get("/ideation/categories", response_model=list[CategoryOut])
+async def categories() -> list[CategoryOut]:
+    """StartupTN policy categories, with how many product domains each holds."""
+    reg = registry.load()
+    return [
+        CategoryOut(
+            id=c["id"],
+            label=c["label"],
+            kind=c["kind"],
+            neighbours=c["neighbours"],
+            domains=sum(1 for d in reg["domains"].values() if d["category"] == c["id"]),
+        )
+        for c in reg["categories"].values()
+    ]
+
+
+@router.get("/ideation/registry")
+async def domain_registry(
+    category: str | None = Query(default=None), district: str | None = _DISTRICT
+) -> list[dict]:
+    """Product domains, best fit for the district first, with schemes, licences and trends."""
+    if category and category not in registry.load()["categories"]:
+        raise HTTPException(status_code=422, detail=f"Unknown category: {category}")
+    return [registry.card(d, district) for d in registry.domains(category, district)]
+
+
+@router.get("/ideation/registry/{domain_id}")
+async def domain_card(domain_id: str, district: str | None = _DISTRICT) -> dict:
+    d = registry.load()["domains"].get(domain_id)
+    if d is None:
+        raise HTTPException(status_code=404, detail=f"No domain {domain_id}")
+    return registry.card(d, district)
+
+
+@router.get("/ideation/hybrids", response_model=list[HybridOut])
+async def hybrid_products(
+    domain: str | None = Query(default=None),
+    district: str | None = _DISTRICT,
+    neighbours_only: bool = True,
+    limit: int = Query(default=20, ge=1, le=200),
+) -> list[HybridOut]:
+    """Cross-bred products: a domain plus a product its kind of business uses."""
+    if domain and domain not in registry.load()["domains"]:
+        raise HTTPException(status_code=404, detail=f"No domain {domain}")
+    return [HybridOut(**h) for h in registry.hybrids(domain, district, neighbours_only, limit)]

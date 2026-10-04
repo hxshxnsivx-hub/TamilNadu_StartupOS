@@ -168,6 +168,6 @@ def test_missing_pack_answers_become_the_next_questions():
 
 def test_unknown_products_get_the_common_spine_and_say_so():
     p = build_plan("an app to book auto rickshaws", {"stage": "idea", "funding_route": "grant"})
-    assert p["domain"] is None and "No domain pack" in p["domain_note"]
+    assert p["domain"] is None and "No domain matches" in p["domain_note"]
     assert all(m["from"] == "common" for m in p["roadmap"]["milestones"])
     assert "Apply for seed grants" in _titles(p)

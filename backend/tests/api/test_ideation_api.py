@@ -101,3 +101,31 @@ async def test_plan_returns_variants_costs_and_a_specific_roadmap(client: AsyncC
 async def test_plan_rejects_unknown_domain(client: AsyncClient):
     r = await client.post("/api/v1/ideation/plan", json={"domain": "spaceships"})
     assert r.status_code == 422
+
+
+async def test_categories_registry_and_hybrids(client: AsyncClient):
+    cats = (await client.get("/api/v1/ideation/categories")).json()
+    assert len(cats) == 12 and sum(c["domains"] for c in cats) == 50
+    reg = (await client.get("/api/v1/ideation/registry", params={"district": "madurai"})).json()
+    assert reg[0]["district_fit"]["madurai"] == 3
+    card = (await client.get("/api/v1/ideation/registry/jasmine_postharvest")).json()
+    assert card["schemes"] and card["regulatory_items"]
+    hyb = (
+        await client.get("/api/v1/ideation/hybrids", params={"domain": "knitwear_small_batch"})
+    ).json()
+    assert hyb and all(h["anchor"]["id"] == "knitwear_small_batch" for h in hyb)
+    assert (await client.get("/api/v1/ideation/registry/nothing")).status_code == 404
+    bad = await client.get("/api/v1/ideation/registry", params={"district": "salem"})
+    assert bad.status_code == 422
+
+
+async def test_plan_accepts_a_registry_domain(client: AsyncClient):
+    r = await client.post(
+        "/api/v1/ideation/plan",
+        json={"domain": "phc_diagnostics", "slots": {"stage": "idea", "district": "Chennai"}},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["domain_card"]["id"] == "phc_diagnostics"
+    assert body["risks_by_phase"]["MVP"]
+    assert all("risks" in m for m in body["roadmap"]["milestones"])

@@ -11,8 +11,10 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.planner import registry
 from app.planner.costing import cost_sheet, fssai_tier
 from app.planner.packs import COMMON, Pack, detect_pack, load_packs
+from app.planner.risks import by_phase
 from app.planner.roadmap import build
 from app.planner.variants import free_extensions, resolve, shared_ingredients
 
@@ -50,8 +52,16 @@ def build_plan(
 ) -> dict:
     slots = dict(slots or {})
     packs = load_packs()
-    pack_id = domain or detect_pack(text)
+    domains = registry.load()["domains"]
+    # `domain` may name a registry domain or a deep pack; otherwise both are detected.
+    reg = domains.get(domain) if domain else None
+    if reg is None and not (domain and domain in packs):
+        found = registry.detect_domain(text)
+        reg = domains.get(found) if found else None
+    pack_id = (reg or {}).get("pack") or (domain if domain in packs else None) or detect_pack(text)
     pack = packs.get(pack_id) if pack_id and pack_id != COMMON else None
+    if reg is None and pack is not None and pack.id in domains:
+        reg = domains[pack.id]
 
     answered = {
         "variants": variants,
@@ -84,8 +94,10 @@ def build_plan(
     turnover = costs["projected_turnover_lakh"] if costs else None
     facts = {
         **slots,
-        "sector": slots.get("sector") or (pack.sector if pack else None),
-        "product_form": slots.get("product_form") or ("physical" if pack else None),
+        "sector": slots.get("sector") or (pack.sector if pack else (reg or {}).get("sector")),
+        "product_form": slots.get("product_form")
+        or ("physical" if pack else ((reg or {}).get("forms") or [None])[0]),
+        "has_regulatory": bool(reg and reg.get("regulatory") and not pack),
         "in_tamil_nadu": district not in ("outside_tn", "outside tamil nadu"),
         "sells_online": "online" in ch,
         "sells_retail": "retail" in ch,
@@ -99,19 +111,31 @@ def build_plan(
         "n_variants": len(chosen) or "the",
         "fssai_tier": fssai_tier(turnover),
         "format_label": FORMAT_LABEL.get(fmt, fmt),
+        "regulatory_items": [
+            f"{item['title']}: {item['text']}"
+            + (" (confirm with the regulator)" if item["confidence"] == "to_verify" else "")
+            for item in (registry.card(reg)["regulatory_items"] if reg else [])
+        ],
     }
     road = build(_templates(pack), facts, context, confidence)
+    risks = by_phase(reg, facts) if reg else {}
 
+    district_id = district if district in registry.DISTRICTS else None
     return {
         "domain": {"id": pack.id, "label": pack.label, "about": pack.about} if pack else None,
+        "domain_card": registry.card(reg, district_id) if reg else None,
         "domain_note": (
             None
             if pack
             else (
-                "No domain pack matches this product yet, so only the common spine is used."
-                " Add a pack to make it specific."
+                "Registry domain found, but no deep pack yet: licences, schemes and risks are"
+                " specific; milestones use the common spine."
+                if reg
+                else "No domain matches this product yet, so only the common spine is used."
+                " Add a registry card or a pack to make it specific."
             )
         ),
+        "risks_by_phase": risks,
         "variants": [
             {
                 "key": v.key,
@@ -156,6 +180,7 @@ def build_plan(
                     "why": p.template.why,
                     "because": p.because,
                     "from": p.template.pack,
+                    "risks": [r["label"] for r in risks.get(p.milestone.phase.value, [])[:2]],
                 }
                 for p in road["ordered"]
             ],

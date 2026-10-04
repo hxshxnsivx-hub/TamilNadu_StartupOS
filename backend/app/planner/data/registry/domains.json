@@ -1,0 +1,2857 @@
+{
+ "_meta": {
+  "about": "First batch of 50 product domains across the 12 policy categories, weighted to the industries of Chennai, Coimbatore, Tiruppur, Madurai and Tiruchirappalli. District fit: 3 = a cluster the product serves directly, 2 = strong local demand or supply, missing = no particular local advantage. Risk levels 1 (low) to 3 (high) are typical for the domain, before the founder's own situation adjusts them.",
+  "risk_types": [
+   "market",
+   "competition",
+   "regulatory",
+   "technical",
+   "supply",
+   "capital",
+   "seasonality",
+   "receivables",
+   "ip",
+   "data"
+  ],
+  "serves": "Categories whose businesses use this product. A domain can only be a hybrid partner to domains in the categories it serves; consumer products serve none."
+ },
+ "domains": [
+  {
+   "id": "banana_value_added",
+   "label": "Banana value-added products",
+   "category": "agriculture",
+   "sector": "food",
+   "theme": "Post Harvest Processing",
+   "summary": "Chips, flour, fibre and stem juice from bananas that would otherwise be sold cheap or wasted.",
+   "buyers": [
+    "retail shoppers",
+    "food processors",
+    "craft and fibre buyers"
+   ],
+   "forms": [
+    "physical"
+   ],
+   "districts": {
+    "tiruchirappalli": [
+     3,
+     "banana belt around Thottiyam and Musiri"
+    ],
+    "coimbatore": [
+     2,
+     "processing and retail market"
+    ]
+   },
+   "needs": [
+    "processing",
+    "cold_storage",
+    "marketplace"
+   ],
+   "offers": [
+    "processing",
+    "waste_reuse"
+   ],
+   "regulatory": [
+    "fssai",
+    "legal_metrology"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 2,
+    "regulatory": 1,
+    "technical": 1,
+    "supply": 2,
+    "capital": 2,
+    "seasonality": 2,
+    "receivables": 2,
+    "ip": 1,
+    "data": 1
+   },
+   "capital_band": "10L_50L",
+   "mvp_months": 4,
+   "trend_query": "banana flour processing value added",
+   "serves": []
+  },
+  {
+   "id": "jasmine_postharvest",
+   "label": "Jasmine and flower post-harvest",
+   "category": "agriculture",
+   "sector": "agritech",
+   "theme": "Post Harvest Processing",
+   "summary": "Keeping loose flowers fresh longer — pre-cooling, packaging, extracts and concretes — so growers can sell further away.",
+   "buyers": [
+    "flower traders",
+    "perfume and extract makers",
+    "exporters"
+   ],
+   "forms": [
+    "physical",
+    "service"
+   ],
+   "districts": {
+    "madurai": [
+     3,
+     "Madurai Malli (GI) growers and market"
+    ],
+    "tiruchirappalli": [
+     2,
+     "flower belt"
+    ]
+   },
+   "needs": [
+    "cold_storage",
+    "logistics",
+    "traceability"
+   ],
+   "offers": [
+    "processing"
+   ],
+   "regulatory": [
+    "gi_user",
+    "apeda"
+   ],
+   "risk": {
+    "market": 1,
+    "competition": 2,
+    "regulatory": 1,
+    "technical": 2,
+    "supply": 2,
+    "capital": 2,
+    "seasonality": 3,
+    "receivables": 2,
+    "ip": 1,
+    "data": 1
+   },
+   "capital_band": "10L_50L",
+   "mvp_months": 5,
+   "trend_query": "jasmine flower postharvest shelf life",
+   "serves": []
+  },
+  {
+   "id": "coconut_products",
+   "label": "Coconut value chain products",
+   "category": "agriculture",
+   "sector": "food",
+   "theme": "Food processing",
+   "summary": "Virgin coconut oil, coconut sugar, desiccated coconut and shell-based products from Pollachi's coconut belt.",
+   "buyers": [
+    "retail shoppers",
+    "bakeries and food makers",
+    "exporters"
+   ],
+   "forms": [
+    "physical"
+   ],
+   "districts": {
+    "coimbatore": [
+     3,
+     "Pollachi coconut belt"
+    ],
+    "tiruppur": [
+     2,
+     "neighbouring coconut farms"
+    ]
+   },
+   "needs": [
+    "processing",
+    "marketplace",
+    "traceability"
+   ],
+   "offers": [
+    "processing",
+    "waste_reuse"
+   ],
+   "regulatory": [
+    "fssai",
+    "legal_metrology",
+    "apeda"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 3,
+    "regulatory": 1,
+    "technical": 1,
+    "supply": 2,
+    "capital": 2,
+    "seasonality": 1,
+    "receivables": 2,
+    "ip": 1,
+    "data": 1
+   },
+   "capital_band": "10L_50L",
+   "mvp_months": 4,
+   "trend_query": "virgin coconut oil processing",
+   "serves": []
+  },
+  {
+   "id": "millet_foods",
+   "label": "Millet-based packaged foods",
+   "category": "agriculture",
+   "sector": "food",
+   "theme": "Food processing",
+   "summary": "Ready-to-cook and ready-to-eat millet foods for urban families and school meals.",
+   "buyers": [
+    "urban families",
+    "institutional kitchens",
+    "retail chains"
+   ],
+   "forms": [
+    "physical"
+   ],
+   "districts": {
+    "madurai": [
+     2,
+     "millet-growing hinterland"
+    ],
+    "tiruchirappalli": [
+     2,
+     "dryland millets nearby"
+    ],
+    "chennai": [
+     2,
+     "urban demand"
+    ]
+   },
+   "needs": [
+    "processing",
+    "marketplace",
+    "traceability"
+   ],
+   "offers": [
+    "processing"
+   ],
+   "regulatory": [
+    "fssai",
+    "legal_metrology"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 3,
+    "regulatory": 1,
+    "technical": 1,
+    "supply": 1,
+    "capital": 2,
+    "seasonality": 1,
+    "receivables": 2,
+    "ip": 1,
+    "data": 1
+   },
+   "capital_band": "10L_50L",
+   "mvp_months": 4,
+   "trend_query": "millet based food products",
+   "serves": []
+  },
+  {
+   "id": "precision_irrigation",
+   "label": "Precision irrigation controllers",
+   "category": "agriculture",
+   "sector": "agritech",
+   "theme": "Water Use Efficiency and Management",
+   "summary": "Controllers that water by soil moisture and schedule instead of by habit, cutting water and power use.",
+   "buyers": [
+    "horticulture farmers",
+    "plantations",
+    "FPOs"
+   ],
+   "forms": [
+    "physical",
+    "hybrid"
+   ],
+   "districts": {
+    "coimbatore": [
+     3,
+     "pumps and drip-irrigation industry"
+    ],
+    "tiruppur": [
+     2,
+     "coconut and vegetable farms"
+    ]
+   },
+   "needs": [
+    "monitoring",
+    "prediction",
+    "energy",
+    "credit"
+   ],
+   "offers": [
+    "water",
+    "automation"
+   ],
+   "regulatory": [
+    "bis"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 2,
+    "regulatory": 1,
+    "technical": 2,
+    "supply": 2,
+    "capital": 2,
+    "seasonality": 2,
+    "receivables": 2,
+    "ip": 2,
+    "data": 1
+   },
+   "capital_band": "10L_50L",
+   "mvp_months": 6,
+   "trend_query": "precision irrigation soil moisture controller",
+   "serves": [
+    "agriculture"
+   ]
+  },
+  {
+   "id": "fodder_feed",
+   "label": "Fodder and cattle feed",
+   "category": "agriculture",
+   "sector": "agritech",
+   "theme": "Feeds, Fodder & Animal Nutrition",
+   "summary": "Hydroponic green fodder units and balanced feed blends for small dairy farmers.",
+   "buyers": [
+    "dairy farmers",
+    "milk co-operatives"
+   ],
+   "forms": [
+    "physical",
+    "service"
+   ],
+   "districts": {
+    "madurai": [
+     2,
+     "dairy households"
+    ],
+    "tiruchirappalli": [
+     2,
+     "dairy co-operatives"
+    ],
+    "coimbatore": [
+     2,
+     "dairy belt"
+    ]
+   },
+   "needs": [
+    "credit",
+    "logistics",
+    "monitoring"
+   ],
+   "offers": [
+    "processing"
+   ],
+   "regulatory": [
+    "bis"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 2,
+    "regulatory": 1,
+    "technical": 2,
+    "supply": 2,
+    "capital": 2,
+    "seasonality": 2,
+    "receivables": 3,
+    "ip": 1,
+    "data": 1
+   },
+   "capital_band": "2L_10L",
+   "mvp_months": 4,
+   "trend_query": "hydroponic fodder dairy",
+   "serves": [
+    "agriculture"
+   ]
+  },
+  {
+   "id": "dairy_quality",
+   "label": "Dairy farm and milk quality tools",
+   "category": "agriculture",
+   "sector": "agritech",
+   "theme": "Livestock",
+   "summary": "Milk adulteration and fat testing at collection centres, and herd health records for farmers.",
+   "buyers": [
+    "milk collection centres",
+    "dairy co-operatives",
+    "private dairies"
+   ],
+   "forms": [
+    "hybrid"
+   ],
+   "districts": {
+    "madurai": [
+     2,
+     "milk collection network"
+    ],
+    "tiruchirappalli": [
+     2,
+     "co-operative dairies"
+    ],
+    "coimbatore": [
+     2,
+     "private dairies"
+    ]
+   },
+   "needs": [
+    "diagnostics",
+    "monitoring",
+    "payments",
+    "analytics"
+   ],
+   "offers": [
+    "diagnostics",
+    "traceability"
+   ],
+   "regulatory": [
+    "fssai",
+    "bis"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 2,
+    "regulatory": 2,
+    "technical": 2,
+    "supply": 1,
+    "capital": 2,
+    "seasonality": 1,
+    "receivables": 2,
+    "ip": 2,
+    "data": 2
+   },
+   "capital_band": "10L_50L",
+   "mvp_months": 6,
+   "trend_query": "milk adulteration detection sensor",
+   "serves": [
+    "agriculture"
+   ]
+  },
+  {
+   "id": "poultry_health",
+   "label": "Poultry health and farm automation",
+   "category": "agriculture",
+   "sector": "agritech",
+   "theme": "Livestock",
+   "summary": "Shed climate control, feed and water monitoring, and early disease alerts for poultry farms.",
+   "buyers": [
+    "poultry farmers",
+    "integrators"
+   ],
+   "forms": [
+    "hybrid"
+   ],
+   "districts": {
+    "tiruchirappalli": [
+     2,
+     "near the Namakkal poultry cluster"
+    ],
+    "coimbatore": [
+     2,
+     "broiler integrators"
+    ]
+   },
+   "needs": [
+    "monitoring",
+    "prediction",
+    "diagnostics"
+   ],
+   "offers": [
+    "automation"
+   ],
+   "regulatory": [
+    "bis"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 2,
+    "regulatory": 1,
+    "technical": 2,
+    "supply": 1,
+    "capital": 2,
+    "seasonality": 2,
+    "receivables": 2,
+    "ip": 2,
+    "data": 1
+   },
+   "capital_band": "10L_50L",
+   "mvp_months": 6,
+   "trend_query": "poultry farm monitoring disease detection",
+   "serves": [
+    "agriculture"
+   ]
+  },
+  {
+   "id": "tea_infusions",
+   "label": "Flavoured tea and herbal infusions",
+   "category": "agriculture",
+   "sector": "food",
+   "theme": "Food processing",
+   "pack": "tea_infusions",
+   "summary": "Blended teas and caffeine-free herbal infusions from Nilgiris tea and local botanicals.",
+   "buyers": [
+    "home buyers",
+    "gifting",
+    "cafés and hotels"
+   ],
+   "forms": [
+    "physical"
+   ],
+   "districts": {
+    "coimbatore": [
+     3,
+     "gateway to the Nilgiris tea belt"
+    ],
+    "chennai": [
+     2,
+     "urban premium demand"
+    ]
+   },
+   "needs": [
+    "processing",
+    "marketplace",
+    "traceability"
+   ],
+   "offers": [
+    "processing"
+   ],
+   "regulatory": [
+    "fssai",
+    "legal_metrology",
+    "tea_board"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 3,
+    "regulatory": 2,
+    "technical": 1,
+    "supply": 2,
+    "capital": 1,
+    "seasonality": 1,
+    "receivables": 2,
+    "ip": 1,
+    "data": 1
+   },
+   "capital_band": "2L_10L",
+   "mvp_months": 4,
+   "trend_query": "herbal infusion tea blend",
+   "serves": []
+  },
+  {
+   "id": "knitwear_small_batch",
+   "label": "Small-batch knitwear manufacturing",
+   "category": "textile",
+   "sector": "textiles",
+   "summary": "Fast sampling and short production runs for D2C brands that cannot meet big factories' minimums.",
+   "buyers": [
+    "D2C apparel brands",
+    "export buying houses"
+   ],
+   "forms": [
+    "service"
+   ],
+   "districts": {
+    "tiruppur": [
+     3,
+     "India's knitwear capital"
+    ],
+    "coimbatore": [
+     2,
+     "spinning and fabric supply"
+    ]
+   },
+   "needs": [
+    "automation",
+    "analytics",
+    "credit",
+    "compliance"
+   ],
+   "offers": [
+    "processing"
+   ],
+   "regulatory": [
+    "tnpcb"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 3,
+    "regulatory": 1,
+    "technical": 1,
+    "supply": 2,
+    "capital": 2,
+    "seasonality": 2,
+    "receivables": 3,
+    "ip": 1,
+    "data": 1
+   },
+   "capital_band": "50L_2.5Cr",
+   "mvp_months": 4,
+   "trend_query": "on demand apparel manufacturing small batch",
+   "serves": [
+    "textile"
+   ]
+  },
+  {
+   "id": "textile_effluent",
+   "label": "Textile effluent treatment and water reuse",
+   "category": "textile",
+   "sector": "cleantech",
+   "summary": "Lower-cost treatment, salt recovery and water reuse for dyeing units under zero-liquid-discharge rules.",
+   "buyers": [
+    "dyeing and bleaching units",
+    "common effluent treatment plants"
+   ],
+   "forms": [
+    "physical",
+    "service"
+   ],
+   "districts": {
+    "tiruppur": [
+     3,
+     "dyeing units under ZLD conditions"
+    ],
+    "coimbatore": [
+     2,
+     "process houses"
+    ]
+   },
+   "needs": [
+    "monitoring",
+    "energy",
+    "credit"
+   ],
+   "offers": [
+    "water",
+    "waste_reuse",
+    "compliance"
+   ],
+   "regulatory": [
+    "tnpcb",
+    "zld"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 2,
+    "regulatory": 3,
+    "technical": 3,
+    "supply": 1,
+    "capital": 3,
+    "seasonality": 1,
+    "receivables": 3,
+    "ip": 2,
+    "data": 1
+   },
+   "capital_band": "50L_2.5Cr",
+   "mvp_months": 9,
+   "trend_query": "textile effluent zero liquid discharge",
+   "serves": [
+    "textile"
+   ]
+  },
+  {
+   "id": "medical_nonwovens",
+   "label": "Medical and hygiene nonwovens",
+   "category": "textile",
+   "sector": "textiles",
+   "summary": "Technical textiles for masks, gowns, wound care and hygiene products.",
+   "buyers": [
+    "hospitals",
+    "hygiene brands",
+    "government buyers"
+   ],
+   "forms": [
+    "physical"
+   ],
+   "districts": {
+    "coimbatore": [
+     3,
+     "technical textile mills"
+    ],
+    "tiruppur": [
+     2,
+     "fabric processing"
+    ]
+   },
+   "needs": [
+    "compliance",
+    "materials",
+    "diagnostics"
+   ],
+   "offers": [
+    "materials"
+   ],
+   "regulatory": [
+    "bis",
+    "cdsco_md"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 2,
+    "regulatory": 3,
+    "technical": 2,
+    "supply": 2,
+    "capital": 3,
+    "seasonality": 1,
+    "receivables": 2,
+    "ip": 2,
+    "data": 1
+   },
+   "capital_band": "above_2.5Cr",
+   "mvp_months": 9,
+   "trend_query": "medical nonwoven textile",
+   "serves": [
+    "health_bio"
+   ]
+  },
+  {
+   "id": "garment_recycling",
+   "label": "Recycled fibre from garment waste",
+   "category": "textile",
+   "sector": "textiles",
+   "summary": "Turning cutting waste and old garments into recycled yarn and fibre.",
+   "buyers": [
+    "spinning mills",
+    "sustainable brands",
+    "export buyers"
+   ],
+   "forms": [
+    "physical"
+   ],
+   "districts": {
+    "tiruppur": [
+     3,
+     "cutting waste from knitwear units"
+    ],
+    "coimbatore": [
+     3,
+     "spinning mills"
+    ]
+   },
+   "needs": [
+    "traceability",
+    "logistics",
+    "compliance"
+   ],
+   "offers": [
+    "waste_reuse",
+    "materials"
+   ],
+   "regulatory": [
+    "tnpcb"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 2,
+    "regulatory": 2,
+    "technical": 2,
+    "supply": 2,
+    "capital": 3,
+    "seasonality": 1,
+    "receivables": 2,
+    "ip": 2,
+    "data": 1
+   },
+   "capital_band": "50L_2.5Cr",
+   "mvp_months": 8,
+   "trend_query": "textile waste recycled fibre",
+   "serves": [
+    "textile",
+    "climate"
+   ]
+  },
+  {
+   "id": "sungudi_handloom_d2c",
+   "label": "Handloom and Sungudi sarees, direct to buyers",
+   "category": "textile",
+   "sector": "textiles",
+   "theme": "Art and Craft",
+   "summary": "Selling Madurai Sungudi and handloom sarees online with weaver traceability, cutting out middle layers.",
+   "buyers": [
+    "online shoppers",
+    "diaspora",
+    "boutiques"
+   ],
+   "forms": [
+    "physical",
+    "service"
+   ],
+   "districts": {
+    "madurai": [
+     3,
+     "Madurai Sungudi (GI) weavers"
+    ],
+    "tiruchirappalli": [
+     2,
+     "handloom clusters nearby"
+    ]
+   },
+   "needs": [
+    "marketplace",
+    "traceability",
+    "payments",
+    "logistics"
+   ],
+   "offers": [
+    "materials"
+   ],
+   "regulatory": [
+    "gi_user",
+    "legal_metrology"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 2,
+    "regulatory": 1,
+    "technical": 1,
+    "supply": 2,
+    "capital": 1,
+    "seasonality": 2,
+    "receivables": 1,
+    "ip": 2,
+    "data": 1
+   },
+   "capital_band": "2L_10L",
+   "mvp_months": 3,
+   "trend_query": "handloom ecommerce weavers",
+   "serves": []
+  },
+  {
+   "id": "textile_compliance_software",
+   "label": "Export compliance and traceability for textile units",
+   "category": "textile",
+   "sector": "saas",
+   "summary": "Software that gathers the audit, chemical and traceability evidence export buyers now demand.",
+   "buyers": [
+    "exporters",
+    "garment units",
+    "buying houses"
+   ],
+   "forms": [
+    "software"
+   ],
+   "districts": {
+    "tiruppur": [
+     3,
+     "knitwear exporters"
+    ],
+    "coimbatore": [
+     2,
+     "mills supplying exporters"
+    ]
+   },
+   "needs": [
+    "analytics",
+    "language"
+   ],
+   "offers": [
+    "compliance",
+    "traceability"
+   ],
+   "regulatory": [
+    "dpdp"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 2,
+    "regulatory": 2,
+    "technical": 2,
+    "supply": 1,
+    "capital": 2,
+    "seasonality": 1,
+    "receivables": 2,
+    "ip": 1,
+    "data": 2
+   },
+   "capital_band": "10L_50L",
+   "mvp_months": 5,
+   "trend_query": "textile supply chain traceability compliance",
+   "serves": [
+    "textile"
+   ]
+  },
+  {
+   "id": "phc_diagnostics",
+   "label": "Low-cost diagnostics for primary care",
+   "category": "health_bio",
+   "sector": "healthtech",
+   "summary": "Point-of-care tests and devices for primary health centres and small clinics.",
+   "buyers": [
+    "primary health centres",
+    "small clinics",
+    "government health programmes"
+   ],
+   "forms": [
+    "physical",
+    "hybrid"
+   ],
+   "districts": {
+    "chennai": [
+     3,
+     "medical device ecosystem and hospitals"
+    ],
+    "coimbatore": [
+     2,
+     "hospitals and precision engineering"
+    ]
+   },
+   "needs": [
+    "diagnostics",
+    "analytics",
+    "compliance"
+   ],
+   "offers": [
+    "diagnostics"
+   ],
+   "regulatory": [
+    "cdsco_md",
+    "health_data"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 2,
+    "regulatory": 3,
+    "technical": 3,
+    "supply": 2,
+    "capital": 3,
+    "seasonality": 1,
+    "receivables": 3,
+    "ip": 2,
+    "data": 2
+   },
+   "capital_band": "50L_2.5Cr",
+   "mvp_months": 12,
+   "trend_query": "point of care diagnostic device low cost",
+   "serves": []
+  },
+  {
+   "id": "meddevice_contract_mfg",
+   "label": "Medical device contract manufacturing",
+   "category": "health_bio",
+   "sector": "healthtech",
+   "summary": "Precision machining and assembly for medical device makers who do not own factories.",
+   "buyers": [
+    "medtech startups",
+    "device makers"
+   ],
+   "forms": [
+    "service"
+   ],
+   "districts": {
+    "coimbatore": [
+     3,
+     "precision engineering cluster"
+    ],
+    "chennai": [
+     3,
+     "medical device makers"
+    ]
+   },
+   "needs": [
+    "compliance",
+    "automation"
+   ],
+   "offers": [
+    "processing",
+    "materials"
+   ],
+   "regulatory": [
+    "cdsco_md",
+    "tnpcb"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 2,
+    "regulatory": 3,
+    "technical": 2,
+    "supply": 2,
+    "capital": 3,
+    "seasonality": 1,
+    "receivables": 2,
+    "ip": 1,
+    "data": 1
+   },
+   "capital_band": "above_2.5Cr",
+   "mvp_months": 9,
+   "trend_query": "medical device contract manufacturing",
+   "serves": [
+    "health_bio"
+   ]
+  },
+  {
+   "id": "siddha_nutraceuticals",
+   "label": "Siddha and Ayurveda nutraceuticals",
+   "category": "health_bio",
+   "sector": "biotech_pharma",
+   "summary": "Standardised traditional formulations with quality testing, for wellness buyers.",
+   "buyers": [
+    "wellness shoppers",
+    "pharmacies",
+    "exporters"
+   ],
+   "forms": [
+    "physical"
+   ],
+   "districts": {
+    "chennai": [
+     2,
+     "Siddha research institutions"
+    ],
+    "madurai": [
+     2,
+     "herbal raw material trade"
+    ]
+   },
+   "needs": [
+    "compliance",
+    "traceability",
+    "marketplace"
+   ],
+   "offers": [
+    "processing"
+   ],
+   "regulatory": [
+    "ayush",
+    "legal_metrology"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 3,
+    "regulatory": 3,
+    "technical": 2,
+    "supply": 2,
+    "capital": 2,
+    "seasonality": 1,
+    "receivables": 2,
+    "ip": 2,
+    "data": 1
+   },
+   "capital_band": "10L_50L",
+   "mvp_months": 8,
+   "trend_query": "siddha medicine standardization",
+   "serves": []
+  },
+  {
+   "id": "tier2_telehealth",
+   "label": "Telehealth for tier-2 clinics",
+   "category": "health_bio",
+   "sector": "healthtech",
+   "summary": "Specialist consultations, in Tamil, for patients of small-town clinics.",
+   "buyers": [
+    "small clinics",
+    "patients",
+    "employers"
+   ],
+   "forms": [
+    "software",
+    "service"
+   ],
+   "districts": {
+    "madurai": [
+     3,
+     "regional referral hub"
+    ],
+    "tiruchirappalli": [
+     2,
+     "hospitals and clinics"
+    ],
+    "chennai": [
+     2,
+     "specialists"
+    ]
+   },
+   "needs": [
+    "language",
+    "payments",
+    "analytics"
+   ],
+   "offers": [
+    "diagnostics"
+   ],
+   "regulatory": [
+    "health_data",
+    "dpdp"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 3,
+    "regulatory": 2,
+    "technical": 2,
+    "supply": 1,
+    "capital": 2,
+    "seasonality": 1,
+    "receivables": 2,
+    "ip": 1,
+    "data": 3
+   },
+   "capital_band": "10L_50L",
+   "mvp_months": 5,
+   "trend_query": "telemedicine rural clinics India",
+   "serves": []
+  },
+  {
+   "id": "bio_inputs",
+   "label": "Biofertilisers and biopesticides",
+   "category": "health_bio",
+   "sector": "biotech_pharma",
+   "theme": "Farm Automation & Management",
+   "summary": "Microbial inputs that replace part of chemical fertiliser and pesticide use.",
+   "buyers": [
+    "farmers",
+    "FPOs",
+    "input dealers"
+   ],
+   "forms": [
+    "physical"
+   ],
+   "districts": {
+    "coimbatore": [
+     3,
+     "agricultural university and input trade"
+    ],
+    "madurai": [
+     2,
+     "agri college and dealers"
+    ]
+   },
+   "needs": [
+    "diagnostics",
+    "logistics",
+    "credit"
+   ],
+   "offers": [
+    "materials"
+   ],
+   "regulatory": [
+    "fco_cib"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 2,
+    "regulatory": 3,
+    "technical": 2,
+    "supply": 2,
+    "capital": 2,
+    "seasonality": 3,
+    "receivables": 3,
+    "ip": 2,
+    "data": 1
+   },
+   "capital_band": "10L_50L",
+   "mvp_months": 10,
+   "trend_query": "biofertilizer microbial inoculant",
+   "serves": [
+    "agriculture"
+   ]
+  },
+  {
+   "id": "perishables_cold_chain",
+   "label": "Cold chain for perishables",
+   "category": "logistics",
+   "sector": "logistics",
+   "summary": "Pre-cooling, cold rooms and refrigerated transport for flowers, dairy, fruit and fish.",
+   "buyers": [
+    "traders",
+    "FPOs",
+    "dairies"
+   ],
+   "forms": [
+    "service",
+    "physical"
+   ],
+   "districts": {
+    "madurai": [
+     3,
+     "flower and produce markets"
+    ],
+    "chennai": [
+     3,
+     "consumption hub"
+    ],
+    "tiruchirappalli": [
+     2,
+     "banana and vegetables"
+    ]
+   },
+   "needs": [
+    "monitoring",
+    "energy",
+    "credit"
+   ],
+   "offers": [
+    "cold_storage",
+    "logistics"
+   ],
+   "regulatory": [
+    "fssai"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 2,
+    "regulatory": 1,
+    "technical": 2,
+    "supply": 1,
+    "capital": 3,
+    "seasonality": 2,
+    "receivables": 2,
+    "ip": 1,
+    "data": 1
+   },
+   "capital_band": "50L_2.5Cr",
+   "mvp_months": 6,
+   "trend_query": "cold chain perishables India",
+   "serves": [
+    "agriculture",
+    "health_bio"
+   ]
+  },
+  {
+   "id": "ev_retrofit",
+   "label": "EV retrofit for three-wheelers and goods carriers",
+   "category": "logistics",
+   "sector": "mobility",
+   "summary": "Converting diesel autos and small goods carriers to electric with approved kits.",
+   "buyers": [
+    "auto owners",
+    "fleet operators"
+   ],
+   "forms": [
+    "physical",
+    "service"
+   ],
+   "districts": {
+    "chennai": [
+     3,
+     "auto industry and fleets"
+    ],
+    "coimbatore": [
+     2,
+     "engineering workshops"
+    ]
+   },
+   "needs": [
+    "energy",
+    "credit",
+    "compliance"
+   ],
+   "offers": [
+    "energy",
+    "logistics"
+   ],
+   "regulatory": [
+    "cmvr"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 2,
+    "regulatory": 3,
+    "technical": 2,
+    "supply": 2,
+    "capital": 3,
+    "seasonality": 1,
+    "receivables": 2,
+    "ip": 2,
+    "data": 1
+   },
+   "capital_band": "50L_2.5Cr",
+   "mvp_months": 10,
+   "trend_query": "electric vehicle retrofit conversion kit",
+   "serves": [
+    "logistics"
+   ]
+  },
+  {
+   "id": "msme_last_mile",
+   "label": "Shared logistics for MSME clusters",
+   "category": "logistics",
+   "sector": "logistics",
+   "summary": "Pooled pickup and delivery so small units in a cluster ship like a large one.",
+   "buyers": [
+    "MSME units",
+    "traders"
+   ],
+   "forms": [
+    "service",
+    "software"
+   ],
+   "districts": {
+    "tiruppur": [
+     3,
+     "knitwear units shipping daily"
+    ],
+    "coimbatore": [
+     3,
+     "engineering MSMEs"
+    ]
+   },
+   "needs": [
+    "analytics",
+    "payments",
+    "monitoring"
+   ],
+   "offers": [
+    "logistics"
+   ],
+   "regulatory": [],
+   "risk": {
+    "market": 2,
+    "competition": 3,
+    "regulatory": 1,
+    "technical": 1,
+    "supply": 1,
+    "capital": 2,
+    "seasonality": 1,
+    "receivables": 3,
+    "ip": 1,
+    "data": 1
+   },
+   "capital_band": "10L_50L",
+   "mvp_months": 3,
+   "trend_query": "MSME logistics aggregation",
+   "serves": [
+    "textile",
+    "electrical",
+    "agriculture"
+   ]
+  },
+  {
+   "id": "truck_telematics",
+   "label": "Truck fleet telematics",
+   "category": "logistics",
+   "sector": "logistics",
+   "summary": "Tracking, fuel and driver-behaviour monitoring for small truck owners.",
+   "buyers": [
+    "truck owners",
+    "transporters"
+   ],
+   "forms": [
+    "hybrid"
+   ],
+   "districts": {
+    "tiruchirappalli": [
+     2,
+     "transport hub on national highways"
+    ],
+    "coimbatore": [
+     2,
+     "goods transport"
+    ]
+   },
+   "needs": [
+    "monitoring",
+    "analytics",
+    "credit"
+   ],
+   "offers": [
+    "analytics",
+    "monitoring"
+   ],
+   "regulatory": [
+    "dpdp"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 3,
+    "regulatory": 1,
+    "technical": 2,
+    "supply": 1,
+    "capital": 2,
+    "seasonality": 1,
+    "receivables": 2,
+    "ip": 1,
+    "data": 2
+   },
+   "capital_band": "10L_50L",
+   "mvp_months": 5,
+   "trend_query": "fleet telematics fuel monitoring trucks",
+   "serves": [
+    "logistics",
+    "agriculture"
+   ]
+  },
+  {
+   "id": "pump_motor_controllers",
+   "label": "Smart pump and motor controllers",
+   "category": "electrical",
+   "sector": "electronics",
+   "summary": "Controllers that protect pumps from dry running and voltage swings and switch them remotely.",
+   "buyers": [
+    "farmers",
+    "pump makers",
+    "apartments"
+   ],
+   "forms": [
+    "physical",
+    "hybrid"
+   ],
+   "districts": {
+    "coimbatore": [
+     3,
+     "pumps and motors cluster"
+    ],
+    "tiruppur": [
+     2,
+     "farm pump users"
+    ]
+   },
+   "needs": [
+    "monitoring",
+    "energy"
+   ],
+   "offers": [
+    "automation",
+    "monitoring"
+   ],
+   "regulatory": [
+    "bis"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 2,
+    "regulatory": 2,
+    "technical": 2,
+    "supply": 2,
+    "capital": 2,
+    "seasonality": 2,
+    "receivables": 2,
+    "ip": 2,
+    "data": 1
+   },
+   "capital_band": "10L_50L",
+   "mvp_months": 6,
+   "trend_query": "smart pump controller remote monitoring",
+   "serves": [
+    "agriculture",
+    "climate",
+    "renewable"
+   ]
+  },
+  {
+   "id": "battery_bms",
+   "label": "EV battery packs and battery management",
+   "category": "electrical",
+   "sector": "electronics",
+   "summary": "Battery packs and management systems for e-rickshaws, e-bikes and storage.",
+   "buyers": [
+    "EV makers",
+    "retrofitters",
+    "solar installers"
+   ],
+   "forms": [
+    "physical"
+   ],
+   "districts": {
+    "chennai": [
+     3,
+     "EV makers"
+    ],
+    "coimbatore": [
+     2,
+     "electronics assembly"
+    ]
+   },
+   "needs": [
+    "compliance",
+    "materials",
+    "monitoring"
+   ],
+   "offers": [
+    "energy"
+   ],
+   "regulatory": [
+    "bis"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 3,
+    "regulatory": 2,
+    "technical": 3,
+    "supply": 3,
+    "capital": 3,
+    "seasonality": 1,
+    "receivables": 2,
+    "ip": 2,
+    "data": 1
+   },
+   "capital_band": "50L_2.5Cr",
+   "mvp_months": 9,
+   "trend_query": "battery management system lithium pack",
+   "serves": [
+    "logistics",
+    "renewable",
+    "electrical"
+   ]
+  },
+  {
+   "id": "pcb_ems",
+   "label": "Electronics assembly for local manufacturers",
+   "category": "electrical",
+   "sector": "electronics",
+   "summary": "PCB assembly and box-build for small manufacturers who now import boards.",
+   "buyers": [
+    "OEMs",
+    "hardware startups"
+   ],
+   "forms": [
+    "service"
+   ],
+   "districts": {
+    "chennai": [
+     3,
+     "electronics corridor"
+    ],
+    "coimbatore": [
+     3,
+     "pump, motor and appliance makers"
+    ]
+   },
+   "needs": [
+    "automation",
+    "compliance",
+    "credit"
+   ],
+   "offers": [
+    "processing"
+   ],
+   "regulatory": [
+    "tnpcb"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 2,
+    "regulatory": 1,
+    "technical": 2,
+    "supply": 3,
+    "capital": 3,
+    "seasonality": 1,
+    "receivables": 2,
+    "ip": 1,
+    "data": 1
+   },
+   "capital_band": "above_2.5Cr",
+   "mvp_months": 8,
+   "trend_query": "printed circuit board assembly SME",
+   "serves": [
+    "electrical",
+    "health_bio",
+    "iot"
+   ]
+  },
+  {
+   "id": "msme_energy_monitors",
+   "label": "Energy monitors for MSMEs",
+   "category": "electrical",
+   "sector": "electronics",
+   "summary": "Sub-meters and dashboards that show small factories where power is wasted.",
+   "buyers": [
+    "foundries",
+    "textile mills",
+    "workshops"
+   ],
+   "forms": [
+    "hybrid"
+   ],
+   "districts": {
+    "coimbatore": [
+     3,
+     "power-intensive foundries and mills"
+    ],
+    "tiruppur": [
+     2,
+     "knitting and processing units"
+    ]
+   },
+   "needs": [
+    "analytics",
+    "monitoring"
+   ],
+   "offers": [
+    "energy",
+    "monitoring"
+   ],
+   "regulatory": [
+    "cea_metering",
+    "bis"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 2,
+    "regulatory": 2,
+    "technical": 2,
+    "supply": 1,
+    "capital": 2,
+    "seasonality": 1,
+    "receivables": 2,
+    "ip": 1,
+    "data": 1
+   },
+   "capital_band": "10L_50L",
+   "mvp_months": 5,
+   "trend_query": "industrial energy monitoring SME",
+   "serves": [
+    "textile",
+    "electrical",
+    "health_bio"
+   ]
+  },
+  {
+   "id": "kitchen_appliances",
+   "label": "Wet grinder and kitchen appliance innovation",
+   "category": "electrical",
+   "sector": "electronics",
+   "summary": "Smarter, smaller and more efficient grinders and kitchen appliances from Coimbatore's appliance base.",
+   "buyers": [
+    "households",
+    "commercial kitchens",
+    "exporters"
+   ],
+   "forms": [
+    "physical"
+   ],
+   "districts": {
+    "coimbatore": [
+     3,
+     "Coimbatore wet grinder (GI) makers"
+    ]
+   },
+   "needs": [
+    "automation",
+    "materials",
+    "marketplace"
+   ],
+   "offers": [
+    "automation"
+   ],
+   "regulatory": [
+    "bis",
+    "gi_user"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 3,
+    "regulatory": 2,
+    "technical": 2,
+    "supply": 2,
+    "capital": 2,
+    "seasonality": 1,
+    "receivables": 2,
+    "ip": 2,
+    "data": 1
+   },
+   "capital_band": "10L_50L",
+   "mvp_months": 7,
+   "trend_query": "kitchen appliance energy efficient grinder",
+   "serves": []
+  },
+  {
+   "id": "solar_pumps_dryers",
+   "label": "Solar pumps and solar dryers for farms",
+   "category": "renewable",
+   "sector": "cleantech",
+   "theme": "Farm Automation & Management",
+   "summary": "Solar water pumps and solar dryers for drying produce on the farm.",
+   "buyers": [
+    "farmers",
+    "FPOs",
+    "food processors"
+   ],
+   "forms": [
+    "physical"
+   ],
+   "districts": {
+    "coimbatore": [
+     2,
+     "pump makers and farms"
+    ],
+    "madurai": [
+     2,
+     "dryland farms"
+    ],
+    "tiruchirappalli": [
+     2,
+     "produce drying"
+    ]
+   },
+   "needs": [
+    "credit",
+    "monitoring"
+   ],
+   "offers": [
+    "energy",
+    "processing"
+   ],
+   "regulatory": [
+    "solar_almm",
+    "bis"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 2,
+    "regulatory": 2,
+    "technical": 2,
+    "supply": 2,
+    "capital": 3,
+    "seasonality": 2,
+    "receivables": 2,
+    "ip": 1,
+    "data": 1
+   },
+   "capital_band": "10L_50L",
+   "mvp_months": 6,
+   "trend_query": "solar dryer agricultural produce",
+   "serves": [
+    "agriculture"
+   ]
+  },
+  {
+   "id": "rooftop_solar_msme",
+   "label": "Rooftop solar for MSMEs",
+   "category": "renewable",
+   "sector": "cleantech",
+   "summary": "Installation, financing and upkeep of rooftop solar for small factories.",
+   "buyers": [
+    "MSME units",
+    "commercial buildings"
+   ],
+   "forms": [
+    "service"
+   ],
+   "districts": {
+    "coimbatore": [
+     3,
+     "power-hungry MSMEs"
+    ],
+    "tiruppur": [
+     3,
+     "knitting and processing units"
+    ],
+    "chennai": [
+     2,
+     "commercial rooftops"
+    ]
+   },
+   "needs": [
+    "credit",
+    "monitoring",
+    "analytics"
+   ],
+   "offers": [
+    "energy"
+   ],
+   "regulatory": [
+    "electrical_safety",
+    "solar_almm"
+   ],
+   "risk": {
+    "market": 1,
+    "competition": 3,
+    "regulatory": 2,
+    "technical": 1,
+    "supply": 2,
+    "capital": 3,
+    "seasonality": 1,
+    "receivables": 2,
+    "ip": 1,
+    "data": 1
+   },
+   "capital_band": "50L_2.5Cr",
+   "mvp_months": 3,
+   "trend_query": "rooftop solar MSME financing",
+   "serves": [
+    "textile",
+    "electrical",
+    "health_bio"
+   ]
+  },
+  {
+   "id": "biogas",
+   "label": "Biogas from farm and food waste",
+   "category": "renewable",
+   "sector": "cleantech",
+   "summary": "Digesters that turn dung, food and market waste into gas and slurry fertiliser.",
+   "buyers": [
+    "dairies",
+    "hostels and hotels",
+    "markets",
+    "local bodies"
+   ],
+   "forms": [
+    "physical",
+    "service"
+   ],
+   "districts": {
+    "madurai": [
+     2,
+     "markets and dairies"
+    ],
+    "tiruchirappalli": [
+     2,
+     "dairy and food waste"
+    ],
+    "coimbatore": [
+     2,
+     "institutional kitchens"
+    ]
+   },
+   "needs": [
+    "monitoring",
+    "credit",
+    "logistics"
+   ],
+   "offers": [
+    "energy",
+    "waste_reuse"
+   ],
+   "regulatory": [
+    "tnpcb"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 2,
+    "regulatory": 2,
+    "technical": 2,
+    "supply": 2,
+    "capital": 2,
+    "seasonality": 1,
+    "receivables": 2,
+    "ip": 1,
+    "data": 1
+   },
+   "capital_band": "10L_50L",
+   "mvp_months": 6,
+   "trend_query": "biogas food waste digester",
+   "serves": [
+    "agriculture",
+    "climate"
+   ]
+  },
+  {
+   "id": "wind_om",
+   "label": "Wind turbine upkeep services",
+   "category": "renewable",
+   "sector": "cleantech",
+   "summary": "Independent repair, spares and blade services for ageing wind turbines.",
+   "buyers": [
+    "wind farm owners",
+    "industrial captive users"
+   ],
+   "forms": [
+    "service"
+   ],
+   "districts": {
+    "tiruppur": [
+     3,
+     "wind farms around Dharapuram and Udumalpet"
+    ],
+    "coimbatore": [
+     2,
+     "engineering support"
+    ]
+   },
+   "needs": [
+    "prediction",
+    "monitoring",
+    "logistics"
+   ],
+   "offers": [
+    "energy"
+   ],
+   "regulatory": [
+    "electrical_safety"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 2,
+    "regulatory": 1,
+    "technical": 3,
+    "supply": 2,
+    "capital": 2,
+    "seasonality": 2,
+    "receivables": 2,
+    "ip": 1,
+    "data": 1
+   },
+   "capital_band": "50L_2.5Cr",
+   "mvp_months": 6,
+   "trend_query": "wind turbine maintenance predictive",
+   "serves": [
+    "renewable"
+   ]
+  },
+  {
+   "id": "leaf_plates",
+   "label": "Plastic-free plates and packaging",
+   "category": "climate",
+   "sector": "consumer",
+   "theme": "Art and Craft",
+   "summary": "Areca and banana-leaf plates and natural packaging replacing banned plastics.",
+   "buyers": [
+    "caterers",
+    "hotels",
+    "retail chains",
+    "event organisers"
+   ],
+   "forms": [
+    "physical"
+   ],
+   "districts": {
+    "tiruchirappalli": [
+     2,
+     "banana leaf supply"
+    ],
+    "coimbatore": [
+     2,
+     "areca and caterers"
+    ],
+    "madurai": [
+     2,
+     "temple-town catering"
+    ]
+   },
+   "needs": [
+    "processing",
+    "marketplace",
+    "logistics"
+   ],
+   "offers": [
+    "materials",
+    "waste_reuse"
+   ],
+   "regulatory": [
+    "plastic_ban",
+    "fssai"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 3,
+    "regulatory": 1,
+    "technical": 1,
+    "supply": 2,
+    "capital": 1,
+    "seasonality": 2,
+    "receivables": 2,
+    "ip": 1,
+    "data": 1
+   },
+   "capital_band": "2L_10L",
+   "mvp_months": 3,
+   "trend_query": "areca leaf plates biodegradable",
+   "serves": []
+  },
+  {
+   "id": "groundwater_recharge",
+   "label": "Rainwater harvesting and groundwater recharge",
+   "category": "climate",
+   "sector": "cleantech",
+   "theme": "Water Use Efficiency and Management",
+   "summary": "Designing, building and maintaining recharge structures for homes, campuses and farms.",
+   "buyers": [
+    "apartments",
+    "campuses",
+    "farmers",
+    "local bodies"
+   ],
+   "forms": [
+    "service"
+   ],
+   "districts": {
+    "chennai": [
+     3,
+     "water stress and rainwater harvesting rules"
+    ],
+    "madurai": [
+     2,
+     "dryland water stress"
+    ]
+   },
+   "needs": [
+    "monitoring",
+    "analytics"
+   ],
+   "offers": [
+    "water"
+   ],
+   "regulatory": [],
+   "risk": {
+    "market": 2,
+    "competition": 2,
+    "regulatory": 1,
+    "technical": 1,
+    "supply": 1,
+    "capital": 1,
+    "seasonality": 2,
+    "receivables": 2,
+    "ip": 1,
+    "data": 1
+   },
+   "capital_band": "2L_10L",
+   "mvp_months": 2,
+   "trend_query": "groundwater recharge rainwater harvesting",
+   "serves": [
+    "agriculture",
+    "climate"
+   ]
+  },
+  {
+   "id": "exporter_esg",
+   "label": "Carbon and ESG reporting for exporters",
+   "category": "climate",
+   "sector": "saas",
+   "summary": "Measuring and reporting emissions and sustainability data that foreign buyers ask suppliers for.",
+   "buyers": [
+    "textile exporters",
+    "engineering exporters"
+   ],
+   "forms": [
+    "software",
+    "service"
+   ],
+   "districts": {
+    "tiruppur": [
+     3,
+     "exporters facing buyer audits"
+    ],
+    "coimbatore": [
+     2,
+     "engineering exporters"
+    ]
+   },
+   "needs": [
+    "analytics",
+    "monitoring"
+   ],
+   "offers": [
+    "compliance",
+    "analytics"
+   ],
+   "regulatory": [
+    "dpdp"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 2,
+    "regulatory": 2,
+    "technical": 2,
+    "supply": 1,
+    "capital": 1,
+    "seasonality": 1,
+    "receivables": 2,
+    "ip": 1,
+    "data": 2
+   },
+   "capital_band": "10L_50L",
+   "mvp_months": 4,
+   "trend_query": "supplier carbon footprint reporting SME",
+   "serves": [
+    "textile",
+    "electrical"
+   ]
+  },
+  {
+   "id": "flood_heat_warning",
+   "label": "Flood and heat early warning for local bodies",
+   "category": "climate",
+   "sector": "cleantech",
+   "summary": "Street-level flood and heat alerts from sensors and forecasts for city and town administrations.",
+   "buyers": [
+    "local bodies",
+    "residents' associations",
+    "insurers"
+   ],
+   "forms": [
+    "hybrid",
+    "software"
+   ],
+   "districts": {
+    "chennai": [
+     3,
+     "recurring urban floods"
+    ],
+    "madurai": [
+     2,
+     "urban heat"
+    ]
+   },
+   "needs": [
+    "monitoring",
+    "prediction",
+    "language"
+   ],
+   "offers": [
+    "prediction",
+    "analytics"
+   ],
+   "regulatory": [
+    "dpdp"
+   ],
+   "risk": {
+    "market": 3,
+    "competition": 1,
+    "regulatory": 1,
+    "technical": 2,
+    "supply": 1,
+    "capital": 2,
+    "seasonality": 2,
+    "receivables": 3,
+    "ip": 2,
+    "data": 2
+   },
+   "capital_band": "10L_50L",
+   "mvp_months": 6,
+   "trend_query": "urban flood early warning system",
+   "serves": [
+    "climate"
+   ]
+  },
+  {
+   "id": "msme_invoice_finance",
+   "label": "Invoice financing for MSME suppliers",
+   "category": "fintech",
+   "sector": "fintech",
+   "summary": "Getting suppliers paid early on invoices to large buyers, through regulated lenders and TReDS.",
+   "buyers": [
+    "MSME suppliers",
+    "large buyers"
+   ],
+   "forms": [
+    "software"
+   ],
+   "districts": {
+    "coimbatore": [
+     3,
+     "engineering suppliers to large OEMs"
+    ],
+    "tiruppur": [
+     3,
+     "exporter supply chains"
+    ],
+    "chennai": [
+     2,
+     "auto component suppliers"
+    ]
+   },
+   "needs": [
+    "analytics",
+    "compliance"
+   ],
+   "offers": [
+    "credit",
+    "payments"
+   ],
+   "regulatory": [
+    "rbi_lending",
+    "dpdp"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 3,
+    "regulatory": 3,
+    "technical": 2,
+    "supply": 1,
+    "capital": 3,
+    "seasonality": 1,
+    "receivables": 2,
+    "ip": 1,
+    "data": 3
+   },
+   "capital_band": "50L_2.5Cr",
+   "mvp_months": 6,
+   "trend_query": "invoice financing MSME TReDS",
+   "serves": [
+    "textile",
+    "electrical",
+    "health_bio",
+    "logistics"
+   ]
+  },
+  {
+   "id": "fpo_credit",
+   "label": "Crop and livestock credit through FPOs and SHGs",
+   "category": "fintech",
+   "sector": "fintech",
+   "theme": "Financial Inclusion",
+   "summary": "Credit tied to crop cycles and livestock income, routed through farmer and women's groups.",
+   "buyers": [
+    "FPOs",
+    "SHGs",
+    "farmers"
+   ],
+   "forms": [
+    "software",
+    "service"
+   ],
+   "districts": {
+    "madurai": [
+     2,
+     "SHG networks"
+    ],
+    "tiruchirappalli": [
+     2,
+     "FPOs"
+    ],
+    "coimbatore": [
+     2,
+     "FPOs and dairies"
+    ]
+   },
+   "needs": [
+    "analytics",
+    "prediction",
+    "language"
+   ],
+   "offers": [
+    "credit",
+    "payments"
+   ],
+   "regulatory": [
+    "rbi_lending",
+    "dpdp"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 2,
+    "regulatory": 3,
+    "technical": 2,
+    "supply": 1,
+    "capital": 3,
+    "seasonality": 3,
+    "receivables": 3,
+    "ip": 1,
+    "data": 3
+   },
+   "capital_band": "50L_2.5Cr",
+   "mvp_months": 6,
+   "trend_query": "agricultural credit farmer producer organisations",
+   "serves": [
+    "agriculture"
+   ]
+  },
+  {
+   "id": "trader_books",
+   "label": "Bookkeeping and GST for small traders, in Tamil",
+   "category": "fintech",
+   "sector": "fintech",
+   "summary": "Simple books, GST filing and reminders for kirana shops and small traders, in Tamil.",
+   "buyers": [
+    "small traders",
+    "kirana shops",
+    "service businesses"
+   ],
+   "forms": [
+    "software"
+   ],
+   "districts": {
+    "madurai": [
+     2,
+     "trading town"
+    ],
+    "tiruchirappalli": [
+     2,
+     "traders"
+    ],
+    "chennai": [
+     2,
+     "large small-business base"
+    ]
+   },
+   "needs": [
+    "language",
+    "payments"
+   ],
+   "offers": [
+    "analytics",
+    "compliance"
+   ],
+   "regulatory": [
+    "dpdp"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 3,
+    "regulatory": 2,
+    "technical": 1,
+    "supply": 1,
+    "capital": 2,
+    "seasonality": 1,
+    "receivables": 1,
+    "ip": 1,
+    "data": 3
+   },
+   "capital_band": "10L_50L",
+   "mvp_months": 4,
+   "trend_query": "small business bookkeeping app vernacular",
+   "serves": [
+    "agriculture",
+    "textile"
+   ]
+  },
+  {
+   "id": "shg_savings",
+   "label": "Savings and credit management for SHGs",
+   "category": "fintech",
+   "sector": "fintech",
+   "theme": "Financial Inclusion",
+   "summary": "Digital records, meeting minutes and bank linkage for women's self-help groups.",
+   "buyers": [
+    "SHGs",
+    "SHG federations",
+    "banks"
+   ],
+   "forms": [
+    "software"
+   ],
+   "districts": {
+    "madurai": [
+     3,
+     "dense SHG networks"
+    ],
+    "tiruchirappalli": [
+     2,
+     "SHG federations"
+    ]
+   },
+   "needs": [
+    "language",
+    "analytics"
+   ],
+   "offers": [
+    "credit",
+    "payments"
+   ],
+   "regulatory": [
+    "dpdp"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 2,
+    "regulatory": 2,
+    "technical": 1,
+    "supply": 1,
+    "capital": 1,
+    "seasonality": 1,
+    "receivables": 2,
+    "ip": 1,
+    "data": 3
+   },
+   "capital_band": "2L_10L",
+   "mvp_months": 4,
+   "trend_query": "self help group digital bookkeeping",
+   "serves": [
+    "agriculture",
+    "textile"
+   ]
+  },
+  {
+   "id": "tamil_localisation",
+   "label": "Tamil-language software and content",
+   "category": "it",
+   "sector": "saas",
+   "summary": "Localising apps, voice and content into Tamil for companies reaching Tamil speakers.",
+   "buyers": [
+    "consumer apps",
+    "government departments",
+    "publishers"
+   ],
+   "forms": [
+    "service",
+    "software"
+   ],
+   "districts": {
+    "chennai": [
+     3,
+     "IT and media companies"
+    ],
+    "madurai": [
+     2,
+     "Tamil language institutions"
+    ]
+   },
+   "needs": [
+    "analytics"
+   ],
+   "offers": [
+    "language"
+   ],
+   "regulatory": [
+    "dpdp"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 2,
+    "regulatory": 1,
+    "technical": 2,
+    "supply": 1,
+    "capital": 1,
+    "seasonality": 1,
+    "receivables": 2,
+    "ip": 2,
+    "data": 2
+   },
+   "capital_band": "2L_10L",
+   "mvp_months": 3,
+   "trend_query": "Tamil natural language processing",
+   "serves": [
+    "agriculture",
+    "health_bio",
+    "fintech",
+    "climate",
+    "textile",
+    "logistics"
+   ]
+  },
+  {
+   "id": "local_govtech",
+   "label": "Citizen services for local bodies",
+   "category": "it",
+   "sector": "saas",
+   "summary": "Grievance, tax and service-delivery tools for town panchayats and municipalities.",
+   "buyers": [
+    "municipalities",
+    "town panchayats",
+    "state departments"
+   ],
+   "forms": [
+    "software"
+   ],
+   "districts": {
+    "chennai": [
+     2,
+     "state departments"
+    ],
+    "madurai": [
+     2,
+     "municipal corporation"
+    ],
+    "tiruchirappalli": [
+     2,
+     "municipal corporation"
+    ]
+   },
+   "needs": [
+    "language",
+    "analytics",
+    "payments"
+   ],
+   "offers": [
+    "analytics",
+    "language"
+   ],
+   "regulatory": [
+    "dpdp"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 2,
+    "regulatory": 2,
+    "technical": 1,
+    "supply": 1,
+    "capital": 2,
+    "seasonality": 1,
+    "receivables": 3,
+    "ip": 1,
+    "data": 3
+   },
+   "capital_band": "10L_50L",
+   "mvp_months": 5,
+   "trend_query": "e-governance municipal services",
+   "serves": [
+    "climate"
+   ]
+  },
+  {
+   "id": "cold_room_monitoring",
+   "label": "Cold room and storage monitoring",
+   "category": "iot",
+   "sector": "electronics",
+   "summary": "Temperature and humidity sensors with alerts for cold rooms, pharmacies and warehouses.",
+   "buyers": [
+    "cold storage owners",
+    "pharmacies",
+    "dairies"
+   ],
+   "forms": [
+    "hybrid"
+   ],
+   "districts": {
+    "chennai": [
+     2,
+     "warehouses and pharma"
+    ],
+    "madurai": [
+     2,
+     "produce cold rooms"
+    ]
+   },
+   "needs": [
+    "analytics"
+   ],
+   "offers": [
+    "monitoring",
+    "cold_storage",
+    "traceability"
+   ],
+   "regulatory": [
+    "bis"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 2,
+    "regulatory": 1,
+    "technical": 2,
+    "supply": 2,
+    "capital": 1,
+    "seasonality": 1,
+    "receivables": 2,
+    "ip": 1,
+    "data": 1
+   },
+   "capital_band": "2L_10L",
+   "mvp_months": 4,
+   "trend_query": "cold storage temperature monitoring IoT",
+   "serves": [
+    "agriculture",
+    "logistics",
+    "health_bio"
+   ]
+  },
+  {
+   "id": "machine_monitoring",
+   "label": "Machine monitoring retrofit for workshops",
+   "category": "iot",
+   "sector": "electronics",
+   "summary": "Clip-on sensors that show machine uptime and faults in foundries and CNC shops without replacing machines.",
+   "buyers": [
+    "foundries",
+    "CNC job shops",
+    "spinning mills"
+   ],
+   "forms": [
+    "hybrid"
+   ],
+   "districts": {
+    "coimbatore": [
+     3,
+     "foundries and CNC shops"
+    ],
+    "tiruchirappalli": [
+     2,
+     "fabrication around BHEL"
+    ]
+   },
+   "needs": [
+    "analytics",
+    "prediction"
+   ],
+   "offers": [
+    "monitoring",
+    "automation"
+   ],
+   "regulatory": [
+    "bis"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 2,
+    "regulatory": 1,
+    "technical": 2,
+    "supply": 2,
+    "capital": 2,
+    "seasonality": 1,
+    "receivables": 2,
+    "ip": 2,
+    "data": 1
+   },
+   "capital_band": "10L_50L",
+   "mvp_months": 5,
+   "trend_query": "machine monitoring retrofit SME industry 4.0",
+   "serves": [
+    "electrical",
+    "textile",
+    "health_bio"
+   ]
+  },
+  {
+   "id": "water_level_sensors",
+   "label": "Tank and borewell level sensors",
+   "category": "iot",
+   "sector": "electronics",
+   "theme": "Water Use Efficiency and Management",
+   "summary": "Level sensors and pump automation for overhead tanks, sumps and borewells.",
+   "buyers": [
+    "households",
+    "apartments",
+    "farmers"
+   ],
+   "forms": [
+    "hybrid"
+   ],
+   "districts": {
+    "chennai": [
+     2,
+     "apartment water management"
+    ],
+    "coimbatore": [
+     2,
+     "pump users"
+    ]
+   },
+   "needs": [
+    "energy"
+   ],
+   "offers": [
+    "monitoring",
+    "water",
+    "automation"
+   ],
+   "regulatory": [
+    "bis"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 3,
+    "regulatory": 1,
+    "technical": 1,
+    "supply": 2,
+    "capital": 1,
+    "seasonality": 1,
+    "receivables": 1,
+    "ip": 1,
+    "data": 1
+   },
+   "capital_band": "2L_10L",
+   "mvp_months": 3,
+   "trend_query": "water tank level sensor IoT",
+   "serves": [
+    "agriculture",
+    "climate"
+   ]
+  },
+  {
+   "id": "crop_disease_ai",
+   "label": "Crop disease detection from photos",
+   "category": "ai_ml",
+   "sector": "deeptech",
+   "theme": "Farm Automation & Management",
+   "summary": "A farmer photographs a leaf and gets the likely disease and treatment, in Tamil, by voice.",
+   "buyers": [
+    "farmers",
+    "input dealers",
+    "FPOs",
+    "agri departments"
+   ],
+   "forms": [
+    "software"
+   ],
+   "districts": {
+    "coimbatore": [
+     2,
+     "agricultural university data"
+    ],
+    "madurai": [
+     2,
+     "farming households"
+    ],
+    "tiruchirappalli": [
+     2,
+     "paddy and banana farms"
+    ]
+   },
+   "needs": [
+    "language",
+    "diagnostics"
+   ],
+   "offers": [
+    "diagnostics",
+    "prediction"
+   ],
+   "regulatory": [
+    "dpdp"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 3,
+    "regulatory": 1,
+    "technical": 3,
+    "supply": 1,
+    "capital": 2,
+    "seasonality": 2,
+    "receivables": 2,
+    "ip": 2,
+    "data": 2
+   },
+   "capital_band": "10L_50L",
+   "mvp_months": 6,
+   "trend_query": "plant disease detection deep learning",
+   "serves": [
+    "agriculture"
+   ],
+   "not_partner_for": [
+    "poultry_health",
+    "dairy_quality",
+    "fodder_feed"
+   ]
+  },
+  {
+   "id": "fabric_defect_ai",
+   "label": "Fabric defect detection on machines",
+   "category": "ai_ml",
+   "sector": "deeptech",
+   "summary": "Cameras and vision models that catch knitting and weaving defects as they happen.",
+   "buyers": [
+    "knitting units",
+    "weaving mills",
+    "process houses"
+   ],
+   "forms": [
+    "hybrid"
+   ],
+   "districts": {
+    "tiruppur": [
+     3,
+     "knitting units"
+    ],
+    "coimbatore": [
+     3,
+     "weaving and spinning mills"
+    ]
+   },
+   "needs": [
+    "monitoring",
+    "automation"
+   ],
+   "offers": [
+    "diagnostics",
+    "analytics"
+   ],
+   "regulatory": [],
+   "risk": {
+    "market": 2,
+    "competition": 2,
+    "regulatory": 1,
+    "technical": 3,
+    "supply": 2,
+    "capital": 2,
+    "seasonality": 1,
+    "receivables": 2,
+    "ip": 2,
+    "data": 1
+   },
+   "capital_band": "10L_50L",
+   "mvp_months": 8,
+   "trend_query": "fabric defect detection computer vision",
+   "serves": [
+    "textile"
+   ]
+  },
+  {
+   "id": "jobshop_erp",
+   "label": "Planning software for small manufacturers",
+   "category": "saas",
+   "sector": "saas",
+   "summary": "Order, job scheduling and inventory software built for small job shops, not large factories.",
+   "buyers": [
+    "job shops",
+    "fabricators",
+    "small OEM suppliers"
+   ],
+   "forms": [
+    "software"
+   ],
+   "districts": {
+    "coimbatore": [
+     3,
+     "engineering job shops"
+    ],
+    "tiruchirappalli": [
+     2,
+     "fabricators around BHEL"
+    ],
+    "chennai": [
+     2,
+     "auto suppliers"
+    ]
+   },
+   "needs": [
+    "monitoring",
+    "language"
+   ],
+   "offers": [
+    "analytics",
+    "automation"
+   ],
+   "regulatory": [
+    "dpdp"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 3,
+    "regulatory": 1,
+    "technical": 2,
+    "supply": 1,
+    "capital": 2,
+    "seasonality": 1,
+    "receivables": 2,
+    "ip": 1,
+    "data": 2
+   },
+   "capital_band": "10L_50L",
+   "mvp_months": 5,
+   "trend_query": "SME manufacturing ERP scheduling",
+   "serves": [
+    "electrical",
+    "health_bio",
+    "textile"
+   ]
+  },
+  {
+   "id": "clinic_pharmacy_saas",
+   "label": "Clinic and pharmacy software for small towns",
+   "category": "saas",
+   "sector": "saas",
+   "summary": "Appointments, records, billing and stock for small clinics and pharmacies, in Tamil.",
+   "buyers": [
+    "small clinics",
+    "pharmacies",
+    "labs"
+   ],
+   "forms": [
+    "software"
+   ],
+   "districts": {
+    "madurai": [
+     2,
+     "regional clinics"
+    ],
+    "tiruchirappalli": [
+     2,
+     "clinics and pharmacies"
+    ],
+    "coimbatore": [
+     2,
+     "clinics"
+    ]
+   },
+   "needs": [
+    "language",
+    "payments"
+   ],
+   "offers": [
+    "analytics",
+    "compliance"
+   ],
+   "regulatory": [
+    "health_data",
+    "dpdp"
+   ],
+   "risk": {
+    "market": 2,
+    "competition": 3,
+    "regulatory": 2,
+    "technical": 1,
+    "supply": 1,
+    "capital": 1,
+    "seasonality": 1,
+    "receivables": 1,
+    "ip": 1,
+    "data": 3
+   },
+   "capital_band": "2L_10L",
+   "mvp_months": 4,
+   "trend_query": "clinic management software small clinics",
+   "serves": [
+    "health_bio"
+   ]
+  }
+ ]
+}

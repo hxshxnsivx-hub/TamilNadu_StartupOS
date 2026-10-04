@@ -153,6 +153,27 @@
    "why": "Udyam unlocks MSME schemes and collateral-free loans; GST, DPIIT and StartupTN are added only when your answers need them (GST threshold for goods in Tamil Nadu: ₹40 lakh — verify)."
   },
   {
+   "id": "c_compliance",
+   "phase": "MVP",
+   "title": "Licences and approvals for your product",
+   "deliverables": [
+    "{regulatory_items}"
+   ],
+   "effort_weeks": 6,
+   "min_months": 2,
+   "calendar": true,
+   "relevance": 95,
+   "depends_on": [
+    "c_entity"
+   ],
+   "applies": {
+    "field": "has_regulatory",
+    "op": "is_true",
+    "label": "your product is regulated"
+   },
+   "why": "The approvals your product's domain needs, each with its source and how sure we are."
+  },
+  {
    "id": "c_pilot",
    "phase": "Launch",
    "title": "Pilot with real buyers",
