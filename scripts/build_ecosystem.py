@@ -233,7 +233,13 @@ def build_startups(tnsm: dict, pins: dict, pin_district) -> tuple[list[dict], di
                 "slug": s["slug"],
                 "name": s.get("name"),
                 "website": s.get("website"),
-                "careers_url": s.get("careers_url"),
+                # The directory links a Google search when a company has no careers
+                # page; only a page the company publishes counts as a hiring signal.
+                "careers_url": (
+                    None
+                    if "google.com/search" in (s.get("careers_url") or "")
+                    else s.get("careers_url")
+                ),
                 "description": s.get("description"),
                 "sector_label": label,
                 "sectors": sectors_in(label) or sectors_in(s.get("description") or ""),
