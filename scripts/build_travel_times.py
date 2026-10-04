@@ -44,6 +44,8 @@ OUT = DATA / "travel_tn5.json"
 
 SEARCH_KM = 15.0  # straight-line radius of branches to time from each pin
 MAX_MINUTES = 60.0  # Dijkstra cut-off
+TN_LAT = (8.0, 13.6)
+TN_LON = (76.0, 80.5)
 BUFFER_DEG = 0.12  # ~13 km around a district's points, so border branches are covered
 ACCESS_KMH = 15.0  # speed for the short hop between a point and its snapped road node
 TILE_DEG = 0.25  # Overpass query tile size (~27 km)
@@ -127,6 +129,50 @@ def fetch_roads(bbox: tuple[float, float, float, float], cache: Path) -> dict:
     osm = {"elements": list(elements.values())}
     cache.write_text(json.dumps(osm, separators=(",", ":")), encoding="utf8")
     return osm
+
+
+def roads_from_pbf(pbf: str, bboxes: dict[str, tuple[float, float, float, float]]) -> dict:
+    """One pass over a Geofabrik .osm.pbf extract: drivable ways that touch each
+    district's box, in the same element format Overpass returns.
+
+    The fallback when Overpass is overloaded; a local file cannot time out.
+    """
+    import osmium  # only needed on this path
+
+    keep = re.compile(f"^({ROAD_TYPES})$")
+    out = {did: {"nodes": {}, "ways": []} for did in bboxes}
+    fp = (
+        osmium.FileProcessor(pbf)
+        .with_locations("flex_mem")
+        .with_filter(osmium.filter.EntityFilter(osmium.osm.WAY))
+        .with_filter(osmium.filter.KeyFilter("highway"))
+    )
+    for w in fp:
+        tags = dict(w.tags)
+        if not keep.match(tags.get("highway", "")):
+            continue
+        try:
+            pts = [(n.ref, n.lat, n.lon) for n in w.nodes]
+        except osmium.InvalidLocationError:
+            continue
+        for did, (s, west, n, e) in bboxes.items():
+            if any(s <= la <= n and west <= lo <= e for _, la, lo in pts):
+                acc = out[did]
+                acc["ways"].append(
+                    {"type": "way", "id": w.id, "nodes": [p[0] for p in pts], "tags": tags}
+                )
+                for ref, la, lo in pts:
+                    acc["nodes"][ref] = (la, lo)
+    return {
+        did: {
+            "elements": [
+                {"type": "node", "id": ref, "lat": la, "lon": lo}
+                for ref, (la, lo) in acc["nodes"].items()
+            ]
+            + acc["ways"]
+        }
+        for did, acc in out.items()
+    }
 
 
 def speed_of(tags: dict) -> float:
@@ -216,6 +262,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--osm-cache-dir", default="osm_roads")
     ap.add_argument("--districts", nargs="*", help="limit to these district ids")
+    ap.add_argument("--pbf", help="Geofabrik .osm.pbf extract to read roads from, not Overpass")
     args = ap.parse_args()
     cache_dir = Path(args.osm_cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)
@@ -234,19 +281,36 @@ def main() -> None:
     districts = args.districts or sorted({b["district"] for b in branches})
     stats = {}
     merged = old
+
+    def district_pins(did: str) -> list[str]:
+        found = sorted({b["pin"] for b in branches if b["district"] == did and b["pin"]})
+        return [p for p in found if p in pins]
+
+    bboxes = {}
     for did in districts:
-        t0 = time.time()
-        dist_pins = sorted({b["pin"] for b in branches if b["district"] == did and b["pin"]})
-        dist_pins = [p for p in dist_pins if p in pins]
-        pts = [pins[p] for p in dist_pins] + [
+        pts = [pins[p] for p in district_pins(did)] + [
             pos(b) for b in branches if b["district"] == did and pos(b)
         ]
-        bbox = (
+        # One mislocated point would stretch the box across the state (a Chennai pin
+        # once geocoded to Gujarat made the box 1,600 km wide), so keep Tamil Nadu only.
+        pts = [p for p in pts if TN_LAT[0] <= p[0] <= TN_LAT[1] and TN_LON[0] <= p[1] <= TN_LON[1]]
+        bboxes[did] = (
             min(p[0] for p in pts) - BUFFER_DEG,
             min(p[1] for p in pts) - BUFFER_DEG,
             max(p[0] for p in pts) + BUFFER_DEG,
             max(p[1] for p in pts) + BUFFER_DEG,
         )
+    missing = {d: b for d, b in bboxes.items() if not (cache_dir / f"{d}.json").exists()}
+    if args.pbf and missing:
+        t0 = time.time()
+        for did, osm in roads_from_pbf(args.pbf, missing).items():
+            (cache_dir / f"{did}.json").write_text(json.dumps(osm), encoding="utf8")
+        print(f"roads for {sorted(missing)} read from {args.pbf} in {time.time() - t0:.0f}s")
+
+    for did in districts:
+        t0 = time.time()
+        dist_pins = district_pins(did)
+        bbox = bboxes[did]
         osm = fetch_roads(bbox, cache_dir / f"{did}.json")
         g = build_graph(osm)
         snapper = Snapper(g)

@@ -108,7 +108,21 @@ PIN_RE = re.compile(r"(?<!\d)(6\d{5})(?!\d)")
 UA = "VanigamResearch/0.1 (pilot pin-code bank mapping)"
 
 
+# Tamil Nadu's bounding box. A pin geocoded outside it is a wrong match (600104,
+# Chennai's High Court office, once came back in Gujarat) and is discarded.
+TN_LAT = (8.0, 13.6)
+TN_LON = (76.0, 80.5)
+# Pins OpenStreetMap places wrongly, set by hand from the office's known location.
+PIN_OVERRIDES = {"600104": [13.087, 80.287]}  # High Court Building S.O, George Town
+
+
+def in_tamil_nadu(p: list[float] | tuple[float, float] | None) -> bool:
+    return bool(p) and TN_LAT[0] <= p[0] <= TN_LAT[1] and TN_LON[0] <= p[1] <= TN_LON[1]
+
+
 def geocode_pin(pin: str) -> list[float] | None:
+    if pin in PIN_OVERRIDES:
+        return PIN_OVERRIDES[pin]
     url = "https://nominatim.openstreetmap.org/search?" + urllib.parse.urlencode(
         {"postalcode": pin, "country": "India", "format": "json"}
     )
@@ -117,7 +131,11 @@ def geocode_pin(pin: str) -> list[float] | None:
         data = json.load(urllib.request.urlopen(req, timeout=20))
     except Exception:
         return None
-    return [round(float(data[0]["lat"]), 5), round(float(data[0]["lon"]), 5)] if data else None
+    for x in data:
+        p = [round(float(x["lat"]), 5), round(float(x["lon"]), 5)]
+        if in_tamil_nadu(p):
+            return p
+    return None
 
 
 # India Post still files most of Tiruppur district (formed 2009) under
@@ -406,6 +424,11 @@ def main() -> None:
 
     cache_path = Path(args.cache)
     cache = json.loads(cache_path.read_text()) if cache_path.exists() else {}
+    # Older runs cached results without the Tamil Nadu check: correct them first.
+    cache.update(PIN_OVERRIDES)
+    for p, v in list(cache.items()):
+        if v is not None and not in_tamil_nadu(v):
+            del cache[p]  # looked up again below
     for pin in sorted({r["pin"] for r in rows}):
         if pin in cache:
             continue
