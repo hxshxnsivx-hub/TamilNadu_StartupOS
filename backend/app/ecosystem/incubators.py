@@ -20,6 +20,9 @@ Then a fit score over the signals known for that incubator:
                       (0.6, founder must confirm eligibility), or the incubator
                       offers support only (0.4)
     confidence  0.10  official source 1.0, listing 0.7, to verify 0.4
+    intake      0.15  from the weekly check of its own site: open call 1.0, rolling
+                      (standing apply page) 0.8, apply page without dates 0.7,
+                      closed 0.2; left out when unknown or older than two weeks
 
 Each programme is reported with whether it applies to this founder and why, and
 with the scheme's current status from the funding catalogue where it is tracked
@@ -34,12 +37,21 @@ from functools import lru_cache
 from pathlib import Path
 
 from app.banking.branches import DETOUR_FACTOR, ESTIMATE_KMH, get_branch_index, haversine_km
+from app.ecosystem.intake import current_intake
 from app.ecosystem.taxonomy import SECTORS
 
 DATA = Path(__file__).parent / "data" / "incubators.json"
 CATALOGUE = Path(__file__).parents[1] / "schemes" / "data" / "funding_catalogue.json"
 
-WEIGHTS = {"sector": 0.35, "stage": 0.20, "nearness": 0.20, "money": 0.15, "confidence": 0.10}
+WEIGHTS = {
+    "sector": 0.35,
+    "stage": 0.20,
+    "nearness": 0.20,
+    "money": 0.15,
+    "confidence": 0.10,
+    "intake": 0.15,
+}
+INTAKE_SCORE = {"open": 1.0, "rolling": 0.8, "apply_page": 0.7, "closed": 0.2}
 NEAR_MINUTES = 90.0  # incubation means regular visits; an hour and a half away scores zero
 # Founder stage -> the incubator stage that takes it. None: past incubation.
 STAGE_TO_INCUBATOR = {
@@ -72,6 +84,7 @@ class IncubatorMatch:
     programmes: list[dict]
     travel: dict | None
     why: list[str] = field(default_factory=list)
+    intake: dict | None = None
 
 
 @dataclass
@@ -198,6 +211,7 @@ def judge_incubator(inc: dict, founder, pins: dict) -> IncubatorMatch | Incubato
         # distance never outranks a known short one.
         nearness = 0.5
 
+    intake = current_intake(inc["id"])
     programmes = [programme_fit(p, founder) for p in inc["programmes"]]
     applies = {p["applies"] for p in programmes}
     money = 1.0 if "yes" in applies else 0.6 if "check" in applies else 0.4
@@ -207,6 +221,7 @@ def judge_incubator(inc: dict, founder, pins: dict) -> IncubatorMatch | Incubato
         "nearness": nearness,
         "money": money,
         "confidence": CONFIDENCE.get(inc.get("confidence"), 0.4),
+        "intake": INTAKE_SCORE.get((intake or {}).get("status")),
     }
     known = {k: v for k, v in sig.items() if v is not None}
     total = sum(WEIGHTS[k] for k in known)
@@ -227,7 +242,15 @@ def judge_incubator(inc: dict, founder, pins: dict) -> IncubatorMatch | Incubato
     for p in programmes:
         if p["applies"] == "yes":
             why.append(f"{p['name']}: {p['reason']}")
-    return IncubatorMatch(inc, fit, known, programmes, travel, why)
+    status = (intake or {}).get("status")
+    if status == "open":
+        due = intake.get("deadline")
+        why.append("Taking applications now" + (f", deadline {due}" if due else ""))
+    elif status == "rolling":
+        why.append("Takes applications any time (standing apply page)")
+    elif status == "closed":
+        why.append(f"Intake closed when checked on {intake['checked']}")
+    return IncubatorMatch(inc, fit, known, programmes, travel, why, intake)
 
 
 def match_incubators(

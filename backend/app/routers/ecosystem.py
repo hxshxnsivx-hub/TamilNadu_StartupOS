@@ -180,6 +180,7 @@ async def match_founder(body: FounderIn) -> EcosystemMatchOut:
                 programmes=m.programmes,
                 travel=m.travel,
                 why=m.why,
+                intake=m.intake,
             )
             for m in r.incubators
         ],

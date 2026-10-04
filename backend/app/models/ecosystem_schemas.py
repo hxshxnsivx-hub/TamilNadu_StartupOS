@@ -123,6 +123,7 @@ class FounderIn(BaseModel):
 
 class IncubatorOut(BaseModel):
     id: str
+    website: str | None = None
     name: str
     host: str
     district: str
@@ -150,6 +151,16 @@ class TravelOut(BaseModel):
     basis: str
 
 
+class IntakeOut(BaseModel):
+    status: str  # open | rolling | apply_page | closed | unknown | stale | no_website | ...
+    checked: str
+    website: str | None = None
+    deadline: str | None = None
+    apply_url: str | None = None
+    evidence: list[dict] = []
+    note: str | None = None
+
+
 class IncubatorMatchOut(BaseModel):
     incubator: IncubatorOut
     fit: int
@@ -157,6 +168,7 @@ class IncubatorMatchOut(BaseModel):
     programmes: list[ProgrammeFitOut]
     travel: TravelOut | None
     why: list[str]
+    intake: IntakeOut | None = None
 
 
 class IncubatorRefusalOut(BaseModel):

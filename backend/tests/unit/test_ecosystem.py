@@ -302,3 +302,61 @@ def test_money_signal_follows_programmes():
     paying = judge_incubator(_inc(), _founder(), PINS)
     support = judge_incubator(_inc(programmes=["AIC"]), _founder(), PINS)
     assert paying.signals["money"] == 1.0 and support.signals["money"] == 0.4
+
+
+# --- Incubator intake -----------------------------------------------------------
+
+import datetime as dt  # noqa: E402
+
+from app.ecosystem import intake as intakemod  # noqa: E402
+from app.ecosystem.intake import classify_intake, current_intake, parse_date  # noqa: E402
+
+TODAY = dt.date(2026, 10, 5)
+
+
+def _cls(text, apply_url=None):
+    return classify_intake([("https://inc.example/", text)], apply_url, TODAY)
+
+
+def test_dates_in_indian_and_written_formats():
+    assert parse_date("15 October 2026") == dt.date(2026, 10, 15)
+    assert parse_date("15th Oct, 2026") == dt.date(2026, 10, 15)
+    assert parse_date("October 15, 2026") == dt.date(2026, 10, 15)
+    assert parse_date("15-10-2026") == dt.date(2026, 10, 15)  # day first
+    assert parse_date("31/02/2026") is None
+
+
+def test_intake_status_from_page_words():
+    upcoming = _cls("Cohort 7. Last date: 20 October 2026.")
+    assert upcoming["status"] == "open" and upcoming["deadline"] == "2026-10-20"
+    assert _cls("Cohort 6. Last date: 20 August 2026.")["status"] == "closed"
+    assert _cls("Applications are closed for this cohort.")["status"] == "closed"
+    assert _cls("Applications open for the healthcare programme")["status"] == "open"
+    assert _cls("Apply now and take your idea further")["status"] == "rolling"
+    assert _cls("About us", apply_url="https://inc.example/apply")["status"] == "apply_page"
+    assert _cls("About us")["status"] == "unknown"
+    # A future deadline outweighs a closed notice for an older call on the same page.
+    both = _cls("Cohort 5 applications closed. Cohort 6 deadline 1 Nov 2026.")
+    assert both["status"] == "open"
+
+
+def test_stale_or_lapsed_checks_are_not_trusted(monkeypatch):
+    rec = {"checked": "2026-09-01", "status": "open", "deadline": None, "evidence": []}
+    monkeypatch.setattr(intakemod, "load_intake", lambda: {"x": rec})
+    assert current_intake("x", TODAY)["status"] == "stale"
+    lapsed = {"checked": "2026-10-01", "status": "open", "deadline": "2026-10-03", "evidence": []}
+    monkeypatch.setattr(intakemod, "load_intake", lambda: {"x": lapsed})
+    assert current_intake("x", TODAY)["status"] == "closed"
+    assert current_intake("missing", TODAY) is None
+
+
+def test_intake_feeds_the_incubator_ranking(monkeypatch):
+    monkeypatch.setattr(incmod, "current_intake", lambda _id: {"status": "open", "checked": "x"})
+    open_now = judge_incubator(_inc(), _founder(), PINS)
+    monkeypatch.setattr(incmod, "current_intake", lambda _id: {"status": "closed", "checked": "x"})
+    closed = judge_incubator(_inc(), _founder(), PINS)
+    monkeypatch.setattr(incmod, "current_intake", lambda _id: {"status": "stale", "checked": "x"})
+    stale = judge_incubator(_inc(), _founder(), PINS)
+    assert open_now.signals["intake"] == 1.0 and "Taking applications now" in open_now.why
+    assert closed.fit < open_now.fit
+    assert "intake" not in stale.signals  # old checks are left out, not counted as closed

@@ -1,0 +1,175 @@
+{
+ "iitm_ic": {
+  "checked": "2026-10-04",
+  "website": "http://rtbi.in/incubationiitm/",
+  "status": "rolling",
+  "deadline": null,
+  "apply_url": "http://rtbi.in/incubationiitm/incubation/apply.html",
+  "evidence": [
+   {
+    "url": "http://rtbi.in/incubationiitm/about-us.html",
+    "text": "TBI ) by NSTEDB , GOI. Entrepreneurial ecosystem at IITM > Apply for Incubation > O p e r a t i n g M o d e l IITMIC is poised to straddle",
+    "says": "apply button"
+   }
+  ]
+ },
+ "rtbi": {
+  "checked": "2026-10-04",
+  "website": null,
+  "status": "no_website"
+ },
+ "htic": {
+  "checked": "2026-10-04",
+  "website": "https://htic.iitm.ac.in/",
+  "status": "unknown",
+  "deadline": null,
+  "apply_url": null,
+  "evidence": []
+ },
+ "iitmrp_bionest": {
+  "checked": "2026-10-04",
+  "website": null,
+  "status": "no_website"
+ },
+ "aic_au": {
+  "checked": "2026-10-04",
+  "website": null,
+  "status": "no_website"
+ },
+ "ciic": {
+  "checked": "2026-10-04",
+  "website": null,
+  "status": "no_website"
+ },
+ "sriher_bionest": {
+  "checked": "2026-10-04",
+  "website": null,
+  "status": "no_website"
+ },
+ "tanuvas_vif": {
+  "checked": "2026-10-04",
+  "website": null,
+  "status": "no_website"
+ },
+ "gjbp_women": {
+  "checked": "2026-10-04",
+  "website": null,
+  "status": "no_website"
+ },
+ "aic_great_lakes": {
+  "checked": "2026-10-04",
+  "website": null,
+  "status": "no_website"
+ },
+ "villgro": {
+  "checked": "2026-10-04",
+  "website": "https://villgro.org/",
+  "status": "open",
+  "deadline": null,
+  "apply_url": "https://www.villgro.org/programs/",
+  "evidence": [
+   {
+    "url": "https://www.villgro.org/programs/",
+    "text": "ovation, high impact and the ability to scale. Current Past Application Open Climate-Smart Agriculture Healthcare Climate Action Inclusi",
+    "says": "open"
+   },
+   {
+    "url": "https://www.villgro.org/programs/",
+    "text": "ds & Entrepreneurship Sector Agnostic Ecosystem Development Application Open TVARAN 3.0 – Maharashtra Tech Accelerator Project (T-MAP) A",
+    "says": "open"
+   },
+   {
+    "url": "https://www.villgro.org/programs/",
+    "text": "n TVARAN 3.0 – Maharashtra Tech Accelerator Project (T-MAP) Applications open 2026 Read more 2026 TVARAN 3.0 – Maharashtra Tech Accelerat",
+    "says": "open"
+   },
+   {
+    "url": "https://www.villgro.org/programs/",
+    "text": "6 TVARAN 3.0 – Maharashtra Tech Accelerator Project (T-MAP) Applications open Read more Startup India Seed Fund Applications open 2025 –",
+    "says": "open"
+   }
+  ]
+ },
+ "veltech_ti": {
+  "checked": "2026-10-04",
+  "website": null,
+  "status": "no_website"
+ },
+ "indigram": {
+  "checked": "2026-10-04",
+  "website": null,
+  "status": "no_website"
+ },
+ "psg_step": {
+  "checked": "2026-10-04",
+  "website": "https://www.psgstep.org/",
+  "status": "unknown",
+  "deadline": null,
+  "apply_url": null,
+  "evidence": []
+ },
+ "tnau_abis": {
+  "checked": "2026-10-04",
+  "website": null,
+  "status": "no_website"
+ },
+ "forge": {
+  "checked": "2026-10-04",
+  "website": "https://www.forge-iv.co/",
+  "status": "unknown",
+  "deadline": null,
+  "apply_url": null,
+  "evidence": []
+ },
+ "amrita_tbi": {
+  "checked": "2026-10-04",
+  "website": "https://www.amritatbi.com/",
+  "status": "robots_disallow"
+ },
+ "cdiic": {
+  "checked": "2026-10-04",
+  "website": "http://cdiic.in/",
+  "status": "unknown",
+  "deadline": null,
+  "apply_url": null,
+  "evidence": []
+ },
+ "aic_raise": {
+  "checked": "2026-10-04",
+  "website": "https://aicraise.com/",
+  "status": "unreachable"
+ },
+ "ciet_tbi": {
+  "checked": "2026-10-04",
+  "website": null,
+  "status": "no_website"
+ },
+ "sns_ihub": {
+  "checked": "2026-10-04",
+  "website": null,
+  "status": "no_website"
+ },
+ "tce_tbi": {
+  "checked": "2026-10-04",
+  "website": "https://tce-tbi.org/",
+  "status": "unreachable"
+ },
+ "mabif": {
+  "checked": "2026-10-04",
+  "website": "https://agribusinessincuba.wixsite.com/mysite",
+  "status": "unknown",
+  "deadline": null,
+  "apply_url": null,
+  "evidence": []
+ },
+ "aic_nift_tea": {
+  "checked": "2026-10-04",
+  "website": null,
+  "status": "no_website"
+ },
+ "acic_kalasalingam": {
+  "checked": "2026-10-04",
+  "website": null,
+  "status": "no_website"
+ }
+}

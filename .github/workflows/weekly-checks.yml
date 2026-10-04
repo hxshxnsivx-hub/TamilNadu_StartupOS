@@ -1,0 +1,52 @@
+name: weekly-website-checks
+
+# Re-read incubator and investor websites every week: is intake open, is there a
+# pitch route? The matcher ignores intake checks older than two weeks, so this
+# keeps "taking applications now" truthful. Changes arrive as a pull request.
+
+on:
+  schedule:
+    - cron: "0 3 * * 1" # Mondays 03:00 UTC = 08:30 IST
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Both scripts use the standard library only; the incubator check imports
+      # backend/app/ecosystem/intake.py, which needs nothing installed either.
+      - name: Incubator intake
+        run: python scripts/check_incubator_intake.py
+
+      - name: Investor pitch routes
+        run: python scripts/check_investor_signals.py
+
+      - name: Open a pull request if anything changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          files="backend/app/ecosystem/data/incubator_intake.json backend/app/ecosystem/data/investor_signals.json"
+          if git diff --quiet -- $files; then
+            echo "No change in intake or pitch routes."
+            exit 0
+          fi
+          branch="data/weekly-checks-$(date -u +%Y-%m-%d)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add $files
+          git commit -m "Weekly website checks: incubator intake and investor pitch routes"
+          git push -u origin "$branch"
+          gh pr create --title "Weekly website checks $(date -u +%Y-%m-%d)" \
+            --body "Automated re-read of incubator and investor websites. Review the evidence phrases in the diff before merging."
