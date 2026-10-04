@@ -165,14 +165,15 @@
     "strawberry_pieces": 15,
     "natural_flavour": 3
    },
-   "lighter_option": {
+   "cheaper_option": {
     "grams_per_100": {
      "black_tea": 70,
      "mint": 22,
      "strawberry_pieces": 6,
      "natural_flavour": 2
     },
-    "note": "fewer fruit pieces, a little more flavour"
+    "note": "fewer fruit pieces, a little more flavour",
+    "trade_off": "test in the taste panel; fruit pieces are also what buyers see"
    }
   },
   "lemon_raspberry": {
@@ -183,14 +184,15 @@
     "raspberry_pieces": 15,
     "natural_flavour": 5
    },
-   "lighter_option": {
+   "cheaper_option": {
     "grams_per_100": {
      "black_tea": 72,
      "lemon_peel": 18,
      "raspberry_pieces": 6,
      "natural_flavour": 4
     },
-    "note": "fewer fruit pieces, a little more flavour"
+    "note": "fewer fruit pieces, a little more flavour",
+    "trade_off": "test in the taste panel; fruit pieces are also what buyers see"
    }
   },
   "mint_hibiscus": {
@@ -218,20 +220,23 @@
  },
  "recipe_note": "Starting ratios for bench trials, not tested formulations. Adjust by taste panel.",
  "costing_defaults": {
-  "pack_grams": 100,
-  "packaging_per_pack": {
+  "unit_label": "pack",
+  "unit_grams": 100,
+  "contract_label": "co-packer",
+  "packaging_per_unit": {
    "loose_leaf": 9,
    "tea_bags": 22,
    "iced": 14
   },
-  "co_packer_fee_per_pack": 12,
-  "own_unit_fixed_per_month": 60000,
-  "own_unit_variable_per_pack": 4,
+  "contract_fee_per_unit": 12,
+  "own_fixed_per_month": 60000,
+  "own_variable_per_unit": 4,
   "wastage_pct": 4,
   "overhead_pct": 10,
   "gross_margin_pct": 40,
   "distributor_margin_pct": 10,
   "retailer_margin_pct": 25,
+  "format_lever": "Lead with loose-leaf pouches; add tea bags once a flavour sells",
   "label": "Example figures for a first estimate. Replace with your own quotes; nothing here is a market price."
  },
  "regulatory": [
@@ -374,7 +379,7 @@
     {
      "text": "Name herbal blends as infusions, not tea (FSSAI advisory — confirm current wording)",
      "applies": {
-      "field": "has_herbal",
+      "field": "lacks_is_tea",
       "op": "is_true",
       "label": "one of your blends has no tea leaves"
      }
@@ -382,7 +387,7 @@
     {
      "text": "Ask the Tea Board whether your blending or packing needs registration",
      "applies": {
-      "field": "has_tea",
+      "field": "has_is_tea",
       "op": "is_true",
       "label": "your blends contain tea leaves"
      }
@@ -551,5 +556,23 @@
    },
    "why": "Export adds registrations and destination-country rules."
   }
- ]
+ ],
+ "kinds": {
+  "default": "herbal infusion",
+  "rules": [
+   {
+    "if_any": "is_tea",
+    "label": "tea"
+   }
+  ]
+ },
+ "name_noise": [
+  "tea",
+  "infusion"
+ ],
+ "formats": {
+  "loose_leaf": "Loose-leaf pouches",
+  "tea_bags": "Tea bags",
+  "iced": "Iced blend packs"
+ }
 }

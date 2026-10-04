@@ -60,8 +60,8 @@ def test_cost_levers_are_computed_not_asserted():
             < r["distributor"]
             < r["retail_before_gst"]
         )
-    breakeven = next(lv for lv in c["levers"] if "breakeven_packs_per_month" in lv)
-    assert breakeven["breakeven_packs_per_month"] == 60000 / (12 - 4)
+    breakeven = next(lv for lv in c["levers"] if "breakeven_units_per_month" in lv)
+    assert breakeven["breakeven_units_per_month"] == 60000 / (12 - 4)
     lighter = [lv for lv in c["levers"] if "fewer fruit pieces" in lv["lever"]]
     assert len(lighter) == 2 and all(lv["saves_per_pack"] > 0 for lv in lighter)
     assert "mint" in c["example_prices_used"]
@@ -171,3 +171,65 @@ def test_unknown_products_get_the_common_spine_and_say_so():
     assert p["domain"] is None and "No domain matches" in p["domain_note"]
     assert all(m["from"] == "common" for m in p["roadmap"]["milestones"])
     assert "Apply for seed grants" in _titles(p)
+
+
+# --- Deep packs beyond tea -----------------------------------------------------
+
+BANANA = load_packs()["banana_value_added"]
+PUMPS = load_packs()["pump_controllers"]
+
+
+def test_banana_yield_drives_cost_and_kinds_follow_frying():
+    line, unknown = resolve(BANANA, ["chips", "flour", "health mix"])
+    assert not unknown
+    assert {v.key: v.kind for v in line} == {
+        "chips": "fried snack",
+        "flour": "dried product",
+        "health_mix": "dried product",
+    }
+    flour = next(v for v in line if v.key == "flour")
+    base = cost_sheet(BANANA, [flour], monthly_packs=1000)["rows"][0]["ingredients"]
+    better = cost_sheet(
+        BANANA, [flour], monthly_packs=1000, overrides={}, prices={"green_banana": 22}
+    )["rows"][0]["ingredients"]
+    assert base == better  # same price, same cost
+    # 200 g of flour at 5.5 kg raw per kg and ₹22/kg, plus 6% wastage
+    assert abs(base - 0.2 * 5.5 * 22 * 1.06) < 0.01
+    assert {e["key"] for e in free_extensions(BANANA, line)} == {"dried_figs"}
+
+
+def test_banana_roadmap_adds_frying_oil_only_for_fried_products():
+    fried = build_plan(
+        "banana chips", {"stage": "idea"}, domain="banana_value_added", variants=["chips"]
+    )
+    dried = build_plan(
+        "banana flour", {"stage": "idea"}, domain="banana_value_added", variants=["flour"]
+    )
+
+    def deliverables(p, mid):
+        return next(m for m in p["roadmap"]["milestones"] if m["id"] == mid)["deliverables"]
+
+    assert any("Frying-oil" in d for d in deliverables(fried, "b_trials"))
+    assert not any("Frying-oil" in d for d in deliverables(dried, "b_trials"))
+    assert any("Drying method" in d for d in deliverables(dried, "b_trials"))
+
+
+def test_pump_controllers_cost_by_bill_of_materials_and_flag_connected():
+    line, _ = resolve(PUMPS, ["dry run", "gsm remote"])
+    kinds = {v.key: v.kind for v in line}
+    assert kinds == {"dry_run": "standalone starter", "gsm_remote": "connected controller"}
+    rows = {r["key"]: r for r in cost_sheet(PUMPS, line, monthly_packs=300)["rows"]}
+    dry = PUMPS.recipes["dry_run"]["bom"]
+    expected = sum(q * PUMPS.ingredients[k]["example_price_per_unit"] for k, q in dry.items())
+    assert abs(rows["dry_run"]["ingredients"] - expected * 1.03) < 0.01
+    plan = build_plan(
+        "gsm starter",
+        {"stage": "idea"},
+        domain="pump_motor_controllers",
+        variants=["gsm remote"],
+        production_mode="co_packer",
+    )
+    cert = next(m for m in plan["roadmap"]["milestones"] if m["id"] == "p_cert")
+    assert any("MTCTE" in d for d in cert["deliverables"])
+    assert plan["domain"]["id"] == "pump_controllers"
+    assert plan["domain_card"]["id"] == "pump_motor_controllers"

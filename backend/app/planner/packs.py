@@ -72,6 +72,9 @@ class Pack:
     recipe_note: str = ""
     costing_defaults: dict[str, Any] = field(default_factory=dict)
     regulatory: list[dict] = field(default_factory=list)
+    kinds: dict[str, Any] = field(default_factory=dict)  # {"default": label, "rules": [...]}
+    name_noise: list[str] = field(default_factory=list)  # words ignored when matching names
+    formats: dict[str, str] = field(default_factory=dict)  # format id -> label
 
 
 def _load(path: Path) -> Pack:
@@ -111,6 +114,9 @@ def _load(path: Path) -> Pack:
         recipe_note=raw.get("recipe_note", ""),
         costing_defaults=raw.get("costing_defaults", {}),
         regulatory=raw.get("regulatory", []),
+        kinds=raw.get("kinds", {}),
+        name_noise=raw.get("name_noise", []),
+        formats=raw.get("formats", {}),
     )
 
 

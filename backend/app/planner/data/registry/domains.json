@@ -69,7 +69,8 @@
    "capital_band": "10L_50L",
    "mvp_months": 4,
    "trend_query": "banana flour processing value added",
-   "serves": []
+   "serves": [],
+   "pack": "banana_value_added"
   },
   {
    "id": "jasmine_postharvest",
@@ -1415,7 +1416,8 @@
     "agriculture",
     "climate",
     "renewable"
-   ]
+   ],
+   "pack": "pump_controllers"
   },
   {
    "id": "battery_bms",

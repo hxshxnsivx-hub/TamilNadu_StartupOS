@@ -106,22 +106,15 @@ def test_risks_by_phase_are_ranked_and_actionable():
             assert r["reduce"] and r["early_warning"] and r["risk"] in RISKS
 
 
-def test_plan_carries_domain_card_risks_and_licences():
+def test_card_only_domain_gets_licences_milestone_and_risks():
     p = build_plan(
-        "banana chips and banana flour from our farm",
-        {
-            "district": "Tiruchirappalli",
-            "stage": "idea",
-            "funding_route": "debt",
-            "capital_band": "2L_10L",
-        },
+        "jasmine flower post-harvest for Madurai Malli growers",
+        {"district": "Madurai", "stage": "idea", "funding_route": "debt", "capital_band": "2L_10L"},
     )
-    assert p["domain_card"]["id"] == "banana_value_added"
-    assert p["domain_card"]["district_fit"]["tiruchirappalli"] == 3
-    titles = [m["title"] for m in p["roadmap"]["milestones"]]
-    assert "Licences and approvals for your product" in titles
+    assert p["domain"] is None and p["domain_card"]["id"] == "jasmine_postharvest"
+    assert p["domain_card"]["district_fit"]["madurai"] == 3
     licences = next(m for m in p["roadmap"]["milestones"] if m["id"] == "c_compliance")
-    assert any(d.startswith("FSSAI") for d in licences["deliverables"])
+    assert any(d.startswith("GI authorised user") for d in licences["deliverables"])
     assert all(m["risks"] for m in p["roadmap"]["milestones"])
     assert p["risks_by_phase"]["MVP"][0]["label"] == "Running out of money"
 

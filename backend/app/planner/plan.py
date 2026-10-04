@@ -18,12 +18,6 @@ from app.planner.risks import by_phase
 from app.planner.roadmap import build
 from app.planner.variants import free_extensions, resolve, shared_ingredients
 
-FORMAT_LABEL = {
-    "loose_leaf": "Loose-leaf pouches",
-    "tea_bags": "Tea bags",
-    "iced": "Iced blend packs",
-}
-
 
 def _templates(pack: Pack | None) -> list:
     common = {t.id: t for t in load_packs()[COMMON].templates}
@@ -60,8 +54,8 @@ def build_plan(
         reg = domains.get(found) if found else None
     pack_id = (reg or {}).get("pack") or (domain if domain in packs else None) or detect_pack(text)
     pack = packs.get(pack_id) if pack_id and pack_id != COMMON else None
-    if reg is None and pack is not None and pack.id in domains:
-        reg = domains[pack.id]
+    if reg is None and pack is not None:  # a pack's registry card names the pack
+        reg = next((d for d in domains.values() if d.get("pack") == pack.id), None)
 
     answered = {
         "variants": variants,
@@ -73,7 +67,7 @@ def build_plan(
     next_questions = [
         q for q in (pack.questions if pack else []) if answered.get(q["slot"]) in (None, [], "")
     ]
-    fmt = fmt or "loose_leaf"
+    fmt = fmt or (next(iter(pack.formats)) if pack and pack.formats else "standard")
     production_mode = production_mode or "co_packer"
 
     chosen, unknown = resolve(pack, variants) if pack else ([], [])
@@ -102,15 +96,16 @@ def build_plan(
         "sells_online": "online" in ch,
         "sells_retail": "retail" in ch,
         "sells_horeca": "horeca" in ch,
-        "has_tea": any(v.is_tea for v in chosen),
-        "has_herbal": any(not v.is_tea for v in chosen),
+        # has_<flag>: some variant's inputs carry the flag; lacks_<flag>: some variant's do not
+        **{f"has_{f}": True for v in chosen for f, on in v.flags.items() if on},
+        **{f"lacks_{f}": True for v in chosen for f, on in v.flags.items() if not on},
         "production_mode": production_mode,
         "projected_turnover_lakh": turnover,
     }
     context = {
         "n_variants": len(chosen) or "the",
         "fssai_tier": fssai_tier(turnover),
-        "format_label": FORMAT_LABEL.get(fmt, fmt),
+        "format_label": (pack.formats if pack else {}).get(fmt, fmt.replace("_", " ").capitalize()),
         "regulatory_items": [
             f"{item['title']}: {item['text']}"
             + (" (confirm with the regulator)" if item["confidence"] == "to_verify" else "")
@@ -141,8 +136,9 @@ def build_plan(
                 "key": v.key,
                 "label": v.label,
                 "kind": v.kind,
-                "caffeine": v.caffeine,
-                "recipe_g_per_100": v.grams,
+                "flags": v.flags,
+                "basis": v.basis,
+                "recipe": v.items,
             }
             for v in chosen
         ],
@@ -156,7 +152,7 @@ def build_plan(
                     "ingredient": pack.ingredients[k]["label"],
                     "where": pack.ingredients[k]["sourcing"],
                 }
-                for k in sorted({k for v in chosen for k in v.grams})
+                for k in sorted({k for v in chosen for k in v.items})
             ]
             if pack
             else []
