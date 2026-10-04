@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -85,3 +85,62 @@ class CompletenessOut(BaseModel):
     tier: str
     missing_fields: list[str]
     verified_fields: list[str]
+
+
+# ── domain-aware plan: variants, costs, roadmap (app/planner) ────────────────
+class PlanIn(BaseModel):
+    text: str = Field(default="", max_length=4000)
+    slots: dict[str, Any] = Field(default_factory=dict)  # elicitation slots: stage, district, ...
+    domain: str | None = None  # a pack id; detected from text when omitted
+    variants: list[str] | None = None
+    format: Literal["loose_leaf", "tea_bags", "iced"] | None = None
+    production_mode: Literal["co_packer", "own_unit"] | None = None
+    channels: list[Literal["online", "retail", "horeca"]] | None = None
+    monthly_packs: int | None = Field(default=None, ge=1, le=10_000_000)
+    prices: dict[str, float] | None = None  # ingredient -> your quoted ₹ per kg
+    costing: dict[str, Any] | None = None  # override pack cost assumptions
+    confidence: float = Field(default=0.8, ge=0, le=1)
+
+
+class PlanMilestoneOut(BaseModel):
+    id: str
+    phase: str
+    title: str
+    deliverables: list[str]
+    months: dict[str, int]
+    depends_on: list[str]
+    critical: bool
+    why: str
+    because: list[str]
+    from_pack: str = Field(alias="from")
+
+    model_config = {"populate_by_name": True}
+
+
+class PlanRoadmapOut(BaseModel):
+    milestones: list[PlanMilestoneOut]
+    critical_path: list[str]
+    months_realistic: int
+
+
+class PlanOut(BaseModel):
+    domain: dict[str, str] | None
+    domain_note: str | None
+    variants: list[dict[str, Any]]
+    unknown_variants: list[str]
+    recipe_note: str
+    shared_ingredients: list[dict[str, Any]]
+    free_extensions: list[dict[str, Any]]
+    sourcing: list[dict[str, str]]
+    costs: dict[str, Any] | None
+    regulatory: list[dict[str, str]]
+    roadmap: PlanRoadmapOut
+    next_questions: list[dict[str, Any]]
+
+
+class DomainOut(BaseModel):
+    id: str
+    label: str
+    about: str
+    questions: list[dict[str, Any]]
+    starting_variants: list[str]

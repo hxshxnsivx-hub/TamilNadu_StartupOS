@@ -1,0 +1,166 @@
+"""One call from a founder's answers to a specific plan: variants, costs, roadmap.
+
+Facts come from the elicitation slots (sector, product form, stage, capital,
+funding route, district, experience, team) plus the domain pack's own answers
+(flavours, format, production mode, channels, volume). What is still unknown is
+returned as the next questions to ask, so ideation stays a conversation: the
+plan sharpens with every answer instead of guessing.
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+from app.planner.costing import cost_sheet, fssai_tier
+from app.planner.packs import COMMON, Pack, detect_pack, load_packs
+from app.planner.roadmap import build
+from app.planner.variants import free_extensions, resolve, shared_ingredients
+
+FORMAT_LABEL = {
+    "loose_leaf": "Loose-leaf pouches",
+    "tea_bags": "Tea bags",
+    "iced": "Iced blend packs",
+}
+
+
+def _templates(pack: Pack | None) -> list:
+    common = {t.id: t for t in load_packs()[COMMON].templates}
+    if pack:
+        for t in pack.templates:
+            common[t.id] = t  # same id replaces the common template
+    # fresh copies: applicability prunes depends_on in place
+    from copy import deepcopy
+
+    return deepcopy(list(common.values()))
+
+
+def build_plan(
+    text: str = "",
+    slots: dict[str, Any] | None = None,
+    *,
+    domain: str | None = None,
+    variants: list[str] | None = None,
+    fmt: str | None = None,
+    production_mode: str | None = None,
+    channels: list[str] | None = None,
+    monthly_packs: int | None = None,
+    prices: dict[str, float] | None = None,
+    costing: dict | None = None,
+    confidence: float = 0.8,
+) -> dict:
+    slots = dict(slots or {})
+    packs = load_packs()
+    pack_id = domain or detect_pack(text)
+    pack = packs.get(pack_id) if pack_id and pack_id != COMMON else None
+
+    answered = {
+        "variants": variants,
+        "format": fmt,
+        "production_mode": production_mode,
+        "channels": channels,
+        "monthly_packs": monthly_packs,
+    }
+    next_questions = [
+        q for q in (pack.questions if pack else []) if answered.get(q["slot"]) in (None, [], "")
+    ]
+    fmt = fmt or "loose_leaf"
+    production_mode = production_mode or "co_packer"
+
+    chosen, unknown = resolve(pack, variants) if pack else ([], [])
+    costs = None
+    if pack and chosen:
+        costs = cost_sheet(
+            pack,
+            chosen,
+            fmt=fmt,
+            mode=production_mode,
+            monthly_packs=monthly_packs,
+            prices=prices,
+            overrides=costing,
+        )
+
+    ch = set(channels or [])
+    district = (slots.get("district") or "").lower()
+    turnover = costs["projected_turnover_lakh"] if costs else None
+    facts = {
+        **slots,
+        "sector": slots.get("sector") or (pack.sector if pack else None),
+        "product_form": slots.get("product_form") or ("physical" if pack else None),
+        "in_tamil_nadu": district not in ("outside_tn", "outside tamil nadu"),
+        "sells_online": "online" in ch,
+        "sells_retail": "retail" in ch,
+        "sells_horeca": "horeca" in ch,
+        "has_tea": any(v.is_tea for v in chosen),
+        "has_herbal": any(not v.is_tea for v in chosen),
+        "production_mode": production_mode,
+        "projected_turnover_lakh": turnover,
+    }
+    context = {
+        "n_variants": len(chosen) or "the",
+        "fssai_tier": fssai_tier(turnover),
+        "format_label": FORMAT_LABEL.get(fmt, fmt),
+    }
+    road = build(_templates(pack), facts, context, confidence)
+
+    return {
+        "domain": {"id": pack.id, "label": pack.label, "about": pack.about} if pack else None,
+        "domain_note": (
+            None
+            if pack
+            else (
+                "No domain pack matches this product yet, so only the common spine is used."
+                " Add a pack to make it specific."
+            )
+        ),
+        "variants": [
+            {
+                "key": v.key,
+                "label": v.label,
+                "kind": v.kind,
+                "caffeine": v.caffeine,
+                "recipe_g_per_100": v.grams,
+            }
+            for v in chosen
+        ],
+        "unknown_variants": unknown,
+        "recipe_note": pack.recipe_note if pack else "",
+        "shared_ingredients": shared_ingredients(pack, chosen) if pack else [],
+        "free_extensions": free_extensions(pack, chosen) if pack else [],
+        "sourcing": (
+            [
+                {
+                    "ingredient": pack.ingredients[k]["label"],
+                    "where": pack.ingredients[k]["sourcing"],
+                }
+                for k in sorted({k for v in chosen for k in v.grams})
+            ]
+            if pack
+            else []
+        ),
+        "costs": costs,
+        "regulatory": [r for r in (pack.regulatory if pack else [])],
+        "roadmap": {
+            "milestones": [
+                {
+                    "id": p.milestone.id,
+                    "phase": p.milestone.phase.value,
+                    "title": p.milestone.title,
+                    "deliverables": p.milestone.deliverables,
+                    "months": {
+                        "optimistic": p.milestone.timeline.optimistic,
+                        "realistic": p.milestone.timeline.realistic,
+                        "pessimistic": p.milestone.timeline.pessimistic,
+                    },
+                    "depends_on": p.milestone.depends_on,
+                    "critical": p.milestone.critical,
+                    "why": p.template.why,
+                    "because": p.because,
+                    "from": p.template.pack,
+                }
+                for p in road["ordered"]
+            ],
+            "critical_path": road["critical_path"],
+            "months_realistic": road["months_realistic"],
+        },
+        "next_questions": next_questions,
+    }

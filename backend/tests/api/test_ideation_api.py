@@ -64,3 +64,40 @@ async def test_completeness_endpoint(client: AsyncClient):
     body = r.json()
     assert body["score"] == 40
     assert body["tier"] == "basic"
+
+
+async def test_domains_list_the_tea_pack(client: AsyncClient):
+    r = await client.get("/api/v1/ideation/domains")
+    assert r.status_code == 200
+    tea = next(d for d in r.json() if d["id"] == "tea_infusions")
+    assert "Mint hibiscus infusion" in tea["starting_variants"]
+    assert any(q["slot"] == "production_mode" for q in tea["questions"])
+
+
+async def test_plan_returns_variants_costs_and_a_specific_roadmap(client: AsyncClient):
+    r = await client.post(
+        "/api/v1/ideation/plan",
+        json={
+            "text": "I want to start a tea brand",
+            "slots": {"district": "Coimbatore", "stage": "idea", "funding_route": "debt"},
+            "variants": ["mint lemon", "mint hibiscus"],
+            "format": "loose_leaf",
+            "production_mode": "co_packer",
+            "channels": ["online"],
+            "monthly_packs": 800,
+        },
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["domain"]["id"] == "tea_infusions"
+    assert {v["kind"] for v in body["variants"]} == {"tea", "herbal infusion"}
+    assert body["costs"]["rows"] and body["costs"]["example_prices_used"]
+    titles = [m["title"] for m in body["roadmap"]["milestones"]]
+    assert "Contract a co-packer and run a pilot batch" in titles
+    assert 5 <= len(titles) <= 15
+    assert body["roadmap"]["milestones"][0]["from"] in ("common", "tea_infusions")
+
+
+async def test_plan_rejects_unknown_domain(client: AsyncClient):
+    r = await client.post("/api/v1/ideation/plan", json={"domain": "spaceships"})
+    assert r.status_code == 422

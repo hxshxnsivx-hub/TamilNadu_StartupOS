@@ -7,14 +7,17 @@ when the profile/startup DB endpoints land.
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from app.models.ideation_schemas import (
     CompletenessIn,
     CompletenessOut,
+    DomainOut,
     IdeaIn,
     IdeaOut,
     MilestoneOut,
+    PlanIn,
+    PlanOut,
     RoadmapOut,
     RouteIn,
     RouteOut,
@@ -23,6 +26,8 @@ from app.models.ideation_schemas import (
 )
 from app.orchestrator.orchestrator import Orchestrator
 from app.orchestrator.state import ConversationState
+from app.planner.packs import COMMON, load_packs
+from app.planner.plan import build_plan
 from app.schemes.annotate import annotate_roadmap
 from app.schemes.models import Scheme
 from app.services.completeness import CompletenessInput, score_completeness
@@ -116,4 +121,42 @@ async def completeness(body: CompletenessIn) -> CompletenessOut:
         tier=r.tier,
         missing_fields=r.missing_fields,
         verified_fields=r.verified_fields,
+    )
+
+
+@router.get("/ideation/domains", response_model=list[DomainOut])
+async def domains() -> list[DomainOut]:
+    """Product domains with their own questions, variants and roadmap steps."""
+    return [
+        DomainOut(
+            id=p.id,
+            label=p.label,
+            about=p.about,
+            questions=p.questions,
+            starting_variants=[r["label"] for r in p.recipes.values()],
+        )
+        for p in load_packs().values()
+        if p.id != COMMON
+    ]
+
+
+@router.post("/ideation/plan", response_model=PlanOut)
+async def plan(body: PlanIn) -> PlanOut:
+    """A specific plan from the founder's answers: variants, costs and a roadmap that responds."""
+    if body.domain and body.domain not in load_packs():
+        raise HTTPException(status_code=422, detail=f"Unknown domain: {body.domain}")
+    return PlanOut(
+        **build_plan(
+            body.text,
+            body.slots,
+            domain=body.domain,
+            variants=body.variants,
+            fmt=body.format,
+            production_mode=body.production_mode,
+            channels=body.channels,
+            monthly_packs=body.monthly_packs,
+            prices=body.prices,
+            costing=body.costing,
+            confidence=body.confidence,
+        )
     )
