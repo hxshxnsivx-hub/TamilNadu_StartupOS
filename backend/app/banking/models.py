@@ -57,7 +57,15 @@ class Branch:
     branch: str
     address: str
     district: str
-    pin: str
+    pin: str  # "" when neither the RBI address nor a post-office match gave one
+    # Own coordinates when the branch was located by its neighbourhood name;
+    # otherwise None and the branch sits at its pin code's centroid.
+    lat: float | None = None
+    lon: float | None = None
+    # "pin": pin in the RBI address; "post_office": branch name matched a post
+    # office in the same district, whose pin is used; "locality": neighbourhood
+    # located on OpenStreetMap.
+    located_by: str = "pin"
 
 
 @dataclass

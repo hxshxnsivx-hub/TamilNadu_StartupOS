@@ -115,6 +115,40 @@ def test_nearby_sorts_and_filters_by_radius():
     assert idx.nearby("999999") == []
 
 
+def test_branch_located_by_neighbourhood_uses_its_own_position():
+    pins = {"641201": [10.9174, 77.0378]}
+    rows = [
+        {
+            "ifsc": "KVBL0000009",
+            "bank": "Karur Vysya Bank",
+            "bank_code": "KVBL",
+            "type": "private_tn",
+            "branch": "PODANUR",
+            "address": "no pin in address",
+            "district": "coimbatore",
+            "pin": "",
+            "lat": 10.9174,
+            "lon": 77.0832,  # about 5 km east
+            "located_by": "locality",
+        },
+        {
+            "ifsc": "KVBL0000010",
+            "bank": "Karur Vysya Bank",
+            "bank_code": "KVBL",
+            "type": "private_tn",
+            "branch": "UNLOCATED",
+            "address": "",
+            "district": "coimbatore",
+            "pin": "",
+        },
+    ]
+    near = BranchIndex(pins, rows).nearby("641201", 10)
+    assert len(near) == 1  # no pin and no coordinates: cannot be placed, so left out
+    b, km = near[0]
+    assert b.located_by == "locality"
+    assert 4.8 < km < 5.2
+
+
 def test_allocation_ranks_and_is_honest_about_signals():
     a = allocate(_need(), "641201", index=_index())
     assert a.pin_located
@@ -138,3 +172,37 @@ def test_unknown_pin_still_returns_schemes_without_branches():
     a = allocate(_need(), "999999", index=_index())
     assert not a.pin_located
     assert a.options and all(o.branch is None for o in a.options)
+
+
+def test_travel_uses_road_network_when_precomputed_else_estimates():
+    pins = {"641201": [10.9174, 77.0378], "641050": [10.9670, 77.0378]}
+    rows = [
+        {
+            "ifsc": i,
+            "bank": bank,
+            "bank_code": i[:4],
+            "type": "public",
+            "branch": "X",
+            "address": "",
+            "district": "coimbatore",
+            "pin": "641050",
+        }
+        for i, bank in (("CNRB0000002", "Canara Bank"), ("IOBA0000004", "Indian Overseas Bank"))
+    ]
+    # Canara is 5.5 km away in a straight line but 25 minutes by road; IOB has no
+    # precomputed road time and is estimated (5.5 × 1.34 km at 34 km/h ≈ 13 min).
+    idx = BranchIndex(pins, rows, {"641201": {"CNRB0000002": [25.0, 9.1]}})
+    near = idx.nearby("641201", 10)
+    assert [b.ifsc for b, _ in near] == ["IOBA0000004", "CNRB0000002"]
+    road = idx.travel("641201", near[1][0], near[1][1])
+    assert (road.minutes, road.road_km, road.basis) == (25.0, 9.1, "road_network")
+    est = idx.travel("641201", near[0][0], near[0][1])
+    assert est.basis == "estimate" and 12 < est.minutes < 14
+
+
+def test_allocation_nearness_uses_road_minutes():
+    idx = _index()
+    idx.travel_table = {"641201": {"SBIN0000001": [2.0, 0.6]}}
+    top = allocate(_need(), "641201", index=idx).options[0]
+    assert top.travel.basis == "road_network"
+    assert top.signals["nearness"] == 1 - 2.0 / 40

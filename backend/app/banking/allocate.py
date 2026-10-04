@@ -7,7 +7,8 @@ Designed signals and weights:
                        later Vanigam's own outcomes)
     value        0.20  how good the scheme is for this founder (subsidy,
                        no-collateral, guarantee)
-    nearness     0.15  1 − distance / radius
+    nearness     0.15  1 − road minutes / NEAR_MINUTES (road time from the
+                       pin's centre; estimated where not precomputed)
     digital      0.15  can be applied for online (fewer visits)
     speed        0.15  measured days to sanction from past users
 
@@ -21,7 +22,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from app.banking.branches import BranchIndex, get_branch_index
+from app.banking.branches import BranchIndex, Travel, get_branch_index
 from app.banking.matcher import MatchResult, match
 from app.banking.models import BankScheme, Branch, LoanNeed
 from app.banking.router import RailDecision, decide
@@ -38,6 +39,8 @@ VALUE = {
 # Public sector banks take in-principle applications through PSB Loans in 59
 # Minutes, which saves a visit for founders who already file GST and ITR.
 ONLINE_INTAKE_TYPES = {"public"}
+# A branch this many minutes away by road scores zero on nearness.
+NEAR_MINUTES = 40.0
 
 
 @dataclass
@@ -45,6 +48,7 @@ class Option:
     scheme: BankScheme
     branch: Branch | None
     km: float | None
+    travel: Travel | None
     channel: str  # "online" | "online_then_branch" | "branch"
     score: int
     signals: dict[str, float]
@@ -90,6 +94,7 @@ def allocate(
     has_records = need.gst_registered and need.gst_months >= 6
 
     near = index.nearby(pin, radius_km)
+    # nearby() is ordered by road time, so the first branch of a bank is its quickest to reach.
     nearest_by_bank: dict[str, tuple[Branch, float]] = {}
     for b, km in near:
         nearest_by_bank.setdefault(b.bank, (b, km))
@@ -112,15 +117,16 @@ def allocate(
             ] or [(None, None)]
         for b, km in candidates:
             channel = _channel(s, b, has_records)
+            trip = index.travel(pin, b, km) if b is not None else None
             sig = {
                 "value": _value(s),
-                "nearness": max(0.0, 1 - km / radius_km) if km is not None else 0.0,
+                "nearness": max(0.0, 1 - trip.minutes / NEAR_MINUTES) if trip else 0.0,
                 "digital": 1.0 if channel != "branch" else 0.0,
             }
             score = round(100 * sum(WEIGHTS[k] * sig[k] for k in used) / total)
-            options.append(Option(s, b, km, channel, score, sig))
+            options.append(Option(s, b, km, trip, channel, score, sig))
 
-    options.sort(key=lambda o: (-o.score, o.km if o.km is not None else 99, o.scheme.id))
+    options.sort(key=lambda o: (-o.score, o.travel.minutes if o.travel else 999, o.scheme.id))
     # One option per (scheme, bank): a founder needs a choice of banks, not ten
     # branches of the same one.
     seen: set[tuple[str, str]] = set()

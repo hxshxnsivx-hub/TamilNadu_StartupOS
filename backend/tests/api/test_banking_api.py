@@ -15,6 +15,12 @@ async def test_branches_near_pin(client: AsyncClient):
     assert nearest["km"] == 0
     assert nearest["pin"] == "641201"
     assert body["by_type"]["public"] > 0
+    # Coimbatore has precomputed road times; the list is ordered by them.
+    timed = [b for b in body["branches"] if b["travel_basis"] == "road_network"]
+    assert len(timed) == body["count"]
+    minutes = [b["travel_min"] for b in body["branches"]]
+    assert minutes == sorted(minutes)
+    assert all(b["road_km"] >= b["km"] - 0.6 for b in timed)
 
 
 async def test_branches_rejects_bad_pin(client: AsyncClient):

@@ -7,7 +7,7 @@ from collections import Counter
 from fastapi import APIRouter, Query
 
 from app.banking.allocate import allocate
-from app.banking.branches import get_branch_index
+from app.banking.branches import BranchIndex, get_branch_index
 from app.banking.matcher import match
 from app.banking.models import BankScheme, Branch, LoanNeed
 from app.banking.router import RailDecision, decide
@@ -28,7 +28,10 @@ from app.models.banking_schemas import (
 router = APIRouter(prefix="/api/v1/banking", tags=["banking"])
 
 _DISTANCE_NOTE = (
-    "Distances are straight-line, between pin-code centres (about ±2–3 km). "
+    "Branches are ordered by road travel time from the centre of the founder's pin code. "
+    "travel_basis 'road_network' means a shortest path over the OpenStreetMap road network at "
+    "free-flow speeds (no live traffic); 'estimate' means straight-line km × 1.34 at 34 km/h. "
+    "km is straight-line. Branch positions are pin-code centres or neighbourhoods (±2–3 km). "
     "Only the five pilot districts are indexed."
 )
 
@@ -51,9 +54,20 @@ def _scheme(s: BankScheme) -> SchemeOut:
     )
 
 
-def _branch(b: Branch, km: float) -> BranchOut:
+def _branch(b: Branch, km: float, pin: str, index: BranchIndex) -> BranchOut:
+    trip = index.travel(pin, b, km)
     return BranchOut(
-        ifsc=b.ifsc, bank=b.bank, type=b.type, branch=b.branch, address=b.address, pin=b.pin, km=km
+        ifsc=b.ifsc,
+        bank=b.bank,
+        type=b.type,
+        branch=b.branch,
+        address=b.address,
+        pin=b.pin,
+        km=km,
+        located_by=b.located_by,
+        travel_min=trip.minutes,
+        road_km=trip.road_km,
+        travel_basis=trip.basis,
     )
 
 
@@ -76,7 +90,7 @@ async def branches(
     pin: str = Query(pattern=r"^[1-9]\d{5}$"),
     radius_km: float = Query(default=10.0, gt=0, le=30),
 ) -> BranchesOut:
-    """Bank branches near a pin code, nearest first, with a count per kind of bank."""
+    """Bank branches near a pin code, quickest by road first, with a count per kind of bank."""
     index = get_branch_index()
     near = index.nearby(pin, radius_km)
     return BranchesOut(
@@ -85,7 +99,7 @@ async def branches(
         radius_km=radius_km,
         count=len(near),
         by_type=dict(Counter(b.type for b, _ in near)),
-        branches=[_branch(b, km) for b, km in near],
+        branches=[_branch(b, km, pin, index) for b, km in near],
         note=_DISTANCE_NOTE,
     )
 
@@ -106,14 +120,15 @@ async def match_schemes(body: LoanNeedIn) -> MatchOut:
 @router.post("/allocate", response_model=AllocateOut)
 async def allocate_loan(body: AllocateIn) -> AllocateOut:
     """Ranked (scheme, nearest branch) options for a founder's pin code, with the rail to take."""
-    a = allocate(_need(body.need), body.pin, body.radius_km, body.limit)
+    index = get_branch_index()
+    a = allocate(_need(body.need), body.pin, body.radius_km, body.limit, index=index)
     return AllocateOut(
         rail=_rail(a.rail),
         pin_located=a.pin_located,
         options=[
             OptionOut(
                 scheme=_scheme(o.scheme),
-                branch=_branch(o.branch, o.km) if o.branch else None,
+                branch=_branch(o.branch, o.km, body.pin, index) if o.branch else None,
                 channel=o.channel,
                 score=o.score,
                 signals=o.signals,

@@ -77,7 +77,11 @@ class BranchOut(BaseModel):
     branch: str
     address: str
     pin: str
-    km: float
+    km: float  # straight line
+    located_by: str
+    travel_min: float  # by road from the pin's centre, free-flow
+    road_km: float
+    travel_basis: str  # "road_network" | "estimate"
 
 
 class BranchesOut(BaseModel):
