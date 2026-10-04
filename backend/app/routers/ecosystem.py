@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query
 
+from app.ecosystem.incubators import load_incubators
 from app.ecosystem.index import Ecosystem, get_ecosystem
 from app.ecosystem.match import Founder, match
 from app.ecosystem.taxonomy import SECTORS
@@ -14,6 +15,9 @@ from app.models.ecosystem_schemas import (
     EcosystemMatchOut,
     FounderIn,
     FounderZoneOut,
+    IncubatorMatchOut,
+    IncubatorOut,
+    IncubatorRefusalOut,
     InvestorMatchOut,
     InvestorOut,
     InvestorRefusalOut,
@@ -35,6 +39,9 @@ _METHOD = (
     "in the zone is ≥ 1.25× the district's (location quotient), with at least 10 firms."
 )
 _MATCH_NOTE = (
+    "Incubators are matched on sector focus, stage, estimated travel time and whether a "
+    "programme run there can pay this founder now; scheme status comes from Vanigam's funding "
+    "catalogue. "
     "Investors come from a hand-reviewed directory of Tamil Nadu-registered funds and angel "
     "networks; national funds investing in Tamil Nadu are not yet included — the platforms "
     "listed reach them. 'reachable' reflects the investor's own website on the date checked. "
@@ -63,6 +70,10 @@ def _zone(z: Zone) -> ZoneOut:
         sectors=z.sectors,
         specialisations=z.specialisations,
     )
+
+
+def _incubator(i: dict) -> IncubatorOut:
+    return IncubatorOut(**{k: i.get(k) for k in IncubatorOut.model_fields})
 
 
 def _investor(i: dict) -> InvestorOut:
@@ -98,6 +109,21 @@ async def investors(founders_only: bool = True) -> list[InvestorOut]:
     return [_investor(i) for i in _eco().investors if i.get("serves_founders") or not founders_only]
 
 
+@router.get("/incubators", response_model=list[IncubatorOut])
+async def incubators(
+    district: str | None = Query(default=None), sector: str | None = Query(default=None)
+) -> list[IncubatorOut]:
+    """Sourced incubators, optionally for one district or one sector."""
+    if sector and sector not in SECTORS:
+        raise HTTPException(status_code=422, detail=f"Unknown sector: {sector}")
+    return [
+        _incubator(i)
+        for i in load_incubators()
+        if (not district or i["district"] == district)
+        and (not sector or sector in i["sectors"] or "general" in i["sectors"])
+    ]
+
+
 @router.post("/match", response_model=EcosystemMatchOut)
 async def match_founder(body: FounderIn) -> EcosystemMatchOut:
     """Investors (ranked, with reasons for the rest), peers and zone companies for a founder."""
@@ -113,6 +139,8 @@ async def match_founder(body: FounderIn) -> EcosystemMatchOut:
             pin=body.pin,
             ask_lakh=body.ask_lakh,
             instrument=body.instrument,
+            dpiit=body.dpiit,
+            company_age_years=body.company_age_years,
         ),
         limit=body.limit,
     )
@@ -144,5 +172,20 @@ async def match_founder(body: FounderIn) -> EcosystemMatchOut:
             CompanyOut(**{k: c.get(k) for k in CompanyOut.model_fields}) for c in r.companies
         ],
         company_counts=r.company_counts,
+        incubators=[
+            IncubatorMatchOut(
+                incubator=_incubator(m.incubator),
+                fit=m.fit,
+                signals=m.signals,
+                programmes=m.programmes,
+                travel=m.travel,
+                why=m.why,
+            )
+            for m in r.incubators
+        ],
+        incubators_refused=[
+            IncubatorRefusalOut(incubator=_incubator(x.incubator), reasons=x.reasons)
+            for x in r.incubators_refused
+        ],
         note=_MATCH_NOTE,
     )

@@ -216,3 +216,89 @@ def test_match_puts_founder_in_zone_and_finds_peers_and_companies():
     assert {x.investor["slug"] for x in r.refused} == {"realty", "growth_pe"}
     assert r.peers[0]["name"] == "LearnCo" and r.peers[0]["hiring"]
     assert r.company_counts["district_same_sector"] == 12
+
+
+# --- Incubators -----------------------------------------------------------------
+
+from app.ecosystem import incubators as incmod  # noqa: E402
+from app.ecosystem.incubators import judge_incubator, programme_fit  # noqa: E402
+
+
+def _inc(**kw):
+    base = {
+        "id": "x",
+        "name": "Test Incubator",
+        "host": "Test College",
+        "district": "chennai",
+        "area": "Guindy",
+        "pin": "600025",
+        "sectors": ["healthtech"],
+        "stages": ["pre_seed", "seed"],
+        "programmes": ["BioNEST"],
+        "notes": "",
+        "source_url": "x",
+        "confidence": "official",
+    }
+    base.update(kw)
+    return base
+
+
+PINS = {"600025": (13.0108, 80.2354), "600020": (13.0012, 80.2565)}
+
+
+def _founder(**kw):
+    base = {"sectors": ["healthtech"], "stage": "seed", "district": "chennai", "pin": "600020"}
+    base.update(kw)
+    return Founder(**base)
+
+
+def test_incubator_refusals_carry_reasons():
+    late = judge_incubator(_inc(), _founder(stage="series_a"), PINS)
+    assert late.reasons == ["Incubators take idea-to-MVP startups; look at investors at your stage"]
+    off = judge_incubator(_inc(), _founder(sectors=["fintech"]), PINS)
+    assert off.reasons == ["Focuses on Health & medical"]
+    only_idea = judge_incubator(_inc(stages=["pre_seed"]), _founder(), PINS)
+    assert only_idea.reasons == ["Takes idea and prototype startups, not MVP"]
+    elsewhere = judge_incubator(_inc(district="madurai"), _founder(), PINS)
+    assert elsewhere.reasons[0] == "Serves Madurai, not Chennai"
+
+
+def test_general_incubator_takes_any_sector_at_lower_weight():
+    focused = judge_incubator(_inc(), _founder(), PINS)
+    general = judge_incubator(_inc(sectors=["general"]), _founder(sectors=["fintech"]), PINS)
+    assert focused.signals["sector"] == 1.0 and general.signals["sector"] == 0.6
+    assert focused.fit > general.fit
+
+
+def test_travel_is_estimated_and_unknown_campus_scores_half():
+    m = judge_incubator(_inc(), _founder(), PINS)
+    assert m.travel["basis"] == "estimate" and 0 < m.travel["minutes"] < 15
+    assert m.signals["nearness"] > 0.8
+    unknown = judge_incubator(_inc(pin=""), _founder(), PINS)
+    assert unknown.travel is None and unknown.signals["nearness"] == 0.5
+    neighbour = judge_incubator(
+        _inc(district="tiruppur", pin=""), _founder(district="coimbatore", pin=None), PINS
+    )
+    assert neighbour.signals["nearness"] == 0.5
+
+
+def test_programmes_say_whether_money_reaches_this_founder(monkeypatch):
+    monkeypatch.setattr(incmod, "scheme_status", lambda: {"sisfs": "active"})
+    assert programme_fit("SISFS", _founder(dpiit=False))["applies"] == "no"
+    assert programme_fit("SISFS", _founder(dpiit=True, company_age_years=3))["reason"] == (
+        "Company must be under 2 years old"
+    )
+    assert programme_fit("SISFS", _founder())["applies"] == "check"
+    assert programme_fit("SISFS", _founder(dpiit=True, company_age_years=1))["applies"] == "yes"
+    monkeypatch.setattr(incmod, "scheme_status", lambda: {"sisfs": "closed"})
+    closed = programme_fit("SISFS", _founder(dpiit=True, company_age_years=1))
+    assert closed["applies"] == "closed" and closed["reason"].endswith("scheme closed now")
+    assert programme_fit("BioNEST", _founder())["applies"] == "yes"
+    assert programme_fit("BioNEST", _founder(sectors=["saas"]))["applies"] == "no"
+    assert programme_fit("NABARD", _founder(sectors=["agritech"]))["applies"] == "yes"
+
+
+def test_money_signal_follows_programmes():
+    paying = judge_incubator(_inc(), _founder(), PINS)
+    support = judge_incubator(_inc(programmes=["AIC"]), _founder(), PINS)
+    assert paying.signals["money"] == 1.0 and support.signals["money"] == 0.4

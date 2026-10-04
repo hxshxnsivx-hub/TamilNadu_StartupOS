@@ -116,7 +116,52 @@ class FounderIn(BaseModel):
     pin: str | None = Field(default=None, pattern=r"^[1-9]\d{5}$")
     ask_lakh: float | None = Field(default=None, gt=0)
     instrument: Literal["equity", "debt", "either"] = "either"
+    dpiit: bool | None = None
+    company_age_years: float | None = Field(default=None, ge=0, le=100)
     limit: int = Field(default=10, ge=1, le=50)
+
+
+class IncubatorOut(BaseModel):
+    id: str
+    name: str
+    host: str
+    district: str
+    area: str
+    pin: str
+    sectors: list[str]
+    stages: list[str]
+    programmes: list[str]
+    notes: str
+    source_url: str
+    confidence: str
+
+
+class ProgrammeFitOut(BaseModel):
+    name: str
+    applies: Literal["yes", "check", "closed", "no", "support"]
+    reason: str
+    status: str | None = None
+
+
+class TravelOut(BaseModel):
+    km: float
+    road_km: float
+    minutes: int
+    basis: str
+
+
+class IncubatorMatchOut(BaseModel):
+    incubator: IncubatorOut
+    fit: int
+    signals: dict[str, float]
+    programmes: list[ProgrammeFitOut]
+    travel: TravelOut | None
+    why: list[str]
+
+
+class IncubatorRefusalOut(BaseModel):
+    incubator: IncubatorOut
+    reasons: list[str]
 
 
 class FounderZoneOut(BaseModel):
@@ -140,4 +185,6 @@ class EcosystemMatchOut(BaseModel):
     peers: list[PeerOut]
     companies: list[CompanyOut]
     company_counts: dict[str, int]
+    incubators: list[IncubatorMatchOut]
+    incubators_refused: list[IncubatorRefusalOut]
     note: str

@@ -58,3 +58,40 @@ async def test_match_rejects_unknown_sector(client: AsyncClient):
         json={"sectors": ["crypto"], "stage": "seed", "district": "madurai"},
     )
     assert r.status_code == 422
+
+
+async def test_incubators_listed_by_district_and_sector(client: AsyncClient):
+    r = await client.get("/api/v1/ecosystem/incubators", params={"district": "madurai"})
+    assert r.status_code == 200
+    names = {i["name"] for i in r.json()}
+    assert any("MABIF" in n for n in names) and any("TCE" in n for n in names)
+    agri = await client.get("/api/v1/ecosystem/incubators", params={"sector": "agritech"})
+    assert all("agritech" in i["sectors"] or "general" in i["sectors"] for i in agri.json())
+    bad = await client.get("/api/v1/ecosystem/incubators", params={"sector": "crypto"})
+    assert bad.status_code == 422
+
+
+async def test_match_includes_incubators_with_programmes(client: AsyncClient):
+    r = await client.post(
+        "/api/v1/ecosystem/match",
+        json={
+            "sectors": ["healthtech"],
+            "stage": "seed",
+            "district": "chennai",
+            "pin": "600020",
+            "dpiit": True,
+            "company_age_years": 1,
+        },
+    )
+    assert r.status_code == 200
+    body = r.json()
+    top = body["incubators"][0]
+    assert "healthtech" in top["incubator"]["sectors"]
+    assert any(p["name"] == "BioNEST" and p["applies"] == "yes" for p in top["programmes"])
+    assert top["travel"]["basis"] == "estimate"
+    assert all(x["reasons"] for x in body["incubators_refused"])
+    late = await client.post(
+        "/api/v1/ecosystem/match",
+        json={"sectors": ["saas"], "stage": "series_a", "district": "chennai"},
+    )
+    assert late.json()["incubators"] == []

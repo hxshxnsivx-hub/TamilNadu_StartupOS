@@ -30,6 +30,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from app.banking.branches import haversine_km
+from app.ecosystem.incubators import match_incubators
 from app.ecosystem.index import Ecosystem
 from app.ecosystem.taxonomy import SECTORS
 from app.ecosystem.zones import Zone, nearest_zone
@@ -67,6 +68,8 @@ class Founder:
     pin: str | None = None
     ask_lakh: float | None = None
     instrument: str = "either"  # "equity" | "debt" | "either"
+    dpiit: bool | None = None  # DPIIT startup recognition, if known
+    company_age_years: float | None = None  # since incorporation, if known
 
 
 @dataclass
@@ -101,6 +104,8 @@ class EcosystemMatch:
     peers: list[dict]
     companies: list[dict]
     company_counts: dict[str, int]
+    incubators: list = field(default_factory=list)
+    incubators_refused: list = field(default_factory=list)
 
 
 @lru_cache
@@ -252,6 +257,8 @@ def match(eco: Ecosystem, f: Founder, limit: int = 10) -> EcosystemMatch:
         key=lambda s: (not s["same_zone"], s["km"] if s["km"] is not None else 999, s["name"] or "")
     )
 
+    incubators, incubators_refused = match_incubators(f, limit)
+
     in_zone = [c for c in eco.companies if c["pin"] in zone_pins] if zone_pins else []
     same_sector = [c for c in in_zone if c.get("sector") in f.sectors]
     same_sector.sort(key=lambda c: (-(c.get("paidup_lakh") or 0), c["name"]))
@@ -271,4 +278,6 @@ def match(eco: Ecosystem, f: Founder, limit: int = 10) -> EcosystemMatch:
         peers=peers[:limit],
         companies=same_sector[:limit],
         company_counts=counts,
+        incubators=incubators,
+        incubators_refused=incubators_refused,
     )
