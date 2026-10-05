@@ -23,6 +23,7 @@ from __future__ import annotations
 import datetime as dt
 import json
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -32,6 +33,8 @@ REGISTRY = ROOT / "backend/app/planner/data/registry"
 API = "https://api.openalex.org/works"
 UA = "VanigamResearch/0.1 (domain research momentum)"
 BAND_PP = 3.0
+PAUSE_S = 1.0  # between requests; OpenAlex rate-limits bursts
+BACKOFF_S = [10, 30, 60, 120]
 
 
 def counts(query: str | None, years: range) -> dict[int, int]:
@@ -40,15 +43,19 @@ def counts(query: str | None, years: range) -> dict[int, int]:
         params["search"] = query
     url = f"{API}?{urllib.parse.urlencode(params)}"
     req = urllib.request.Request(url, headers={"User-Agent": UA})
-    for attempt in range(3):
+    for wait in BACKOFF_S + [None]:
         try:
             data = json.load(urllib.request.urlopen(req, timeout=60))
             break
-        except Exception:
-            if attempt == 2:
+        except urllib.error.HTTPError as exc:  # 429: slow down and retry
+            if wait is None or exc.code not in (429, 500, 502, 503):
                 raise
-            time.sleep(5)
-    time.sleep(0.2)
+            time.sleep(float(exc.headers.get("Retry-After") or wait))
+        except urllib.error.URLError:
+            if wait is None:
+                raise
+            time.sleep(wait)
+    time.sleep(PAUSE_S)
     got = {int(g["key"]): g["count"] for g in data["group_by"] if str(g["key"]).isdigit()}
     return {y: got.get(y, 0) for y in years}
 
@@ -64,7 +71,9 @@ def cagr(c: dict[int, int]) -> float | None:
 def main() -> None:
     this_year = dt.date.today().year
     years = range(this_year - 5, this_year)  # five complete years
-    doms = json.loads((REGISTRY / "domains.json").read_text(encoding="utf8"))["domains"]
+    doms = []
+    for f in [REGISTRY / "domains.json", *sorted(REGISTRY.glob("domains_batch*.json"))]:
+        doms += json.loads(f.read_text(encoding="utf8"))["domains"]
     base = counts(None, years)
     base_cagr = cagr(base)
     out = {}

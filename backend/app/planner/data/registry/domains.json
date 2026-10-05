@@ -70,7 +70,9 @@
    "mvp_months": 4,
    "trend_query": "banana flour processing value added",
    "serves": [],
-   "pack": "banana_value_added"
+   "pack": "banana_value_added",
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "jasmine_postharvest",
@@ -125,7 +127,9 @@
    "capital_band": "10L_50L",
    "mvp_months": 5,
    "trend_query": "jasmine flower postharvest shelf life",
-   "serves": []
+   "serves": [],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "coconut_products",
@@ -181,7 +185,9 @@
    "capital_band": "10L_50L",
    "mvp_months": 4,
    "trend_query": "virgin coconut oil processing",
-   "serves": []
+   "serves": [],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "millet_foods",
@@ -239,7 +245,9 @@
    "capital_band": "10L_50L",
    "mvp_months": 4,
    "trend_query": "millet based food products",
-   "serves": []
+   "serves": [],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "precision_irrigation",
@@ -297,7 +305,9 @@
    "trend_query": "precision irrigation soil moisture controller",
    "serves": [
     "agriculture"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "fodder_feed",
@@ -356,7 +366,9 @@
    "trend_query": "hydroponic fodder dairy",
    "serves": [
     "agriculture"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "dairy_quality",
@@ -418,7 +430,9 @@
    "trend_query": "milk adulteration detection sensor",
    "serves": [
     "agriculture"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "poultry_health",
@@ -472,7 +486,9 @@
    "trend_query": "poultry farm monitoring disease detection",
    "serves": [
     "agriculture"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "tea_infusions",
@@ -528,7 +544,9 @@
    "capital_band": "2L_10L",
    "mvp_months": 4,
    "trend_query": "herbal infusion tea blend",
-   "serves": []
+   "serves": [],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "knitwear_small_batch",
@@ -582,7 +600,9 @@
    "trend_query": "on demand apparel manufacturing small batch",
    "serves": [
     "textile"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "textile_effluent",
@@ -639,7 +659,9 @@
    "trend_query": "textile effluent zero liquid discharge",
    "serves": [
     "textile"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "medical_nonwovens",
@@ -694,7 +716,9 @@
    "trend_query": "medical nonwoven textile",
    "serves": [
     "health_bio"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "garment_recycling",
@@ -750,7 +774,9 @@
    "serves": [
     "textile",
     "climate"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "sungudi_handloom_d2c",
@@ -806,7 +832,9 @@
    "capital_band": "2L_10L",
    "mvp_months": 3,
    "trend_query": "handloom ecommerce weavers",
-   "serves": []
+   "serves": [],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "textile_compliance_software",
@@ -860,7 +888,9 @@
    "trend_query": "textile supply chain traceability compliance",
    "serves": [
     "textile"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "phc_diagnostics",
@@ -914,7 +944,9 @@
    "capital_band": "50L_2.5Cr",
    "mvp_months": 12,
    "trend_query": "point of care diagnostic device low cost",
-   "serves": []
+   "serves": [],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "meddevice_contract_mfg",
@@ -968,7 +1000,9 @@
    "trend_query": "medical device contract manufacturing",
    "serves": [
     "health_bio"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "siddha_nutraceuticals",
@@ -1021,7 +1055,9 @@
    "capital_band": "10L_50L",
    "mvp_months": 8,
    "trend_query": "siddha medicine standardization",
-   "serves": []
+   "serves": [],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "tier2_telehealth",
@@ -1079,7 +1115,9 @@
    "capital_band": "10L_50L",
    "mvp_months": 5,
    "trend_query": "telemedicine rural clinics India",
-   "serves": []
+   "serves": [],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "bio_inputs",
@@ -1134,7 +1172,9 @@
    "trend_query": "biofertilizer microbial inoculant",
    "serves": [
     "agriculture"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "perishables_cold_chain",
@@ -1195,7 +1235,9 @@
    "serves": [
     "agriculture",
     "health_bio"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "ev_retrofit",
@@ -1250,7 +1292,9 @@
    "trend_query": "electric vehicle retrofit conversion kit",
    "serves": [
     "logistics"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "msme_last_mile",
@@ -1304,7 +1348,9 @@
     "textile",
     "electrical",
     "agriculture"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "truck_telematics",
@@ -1359,7 +1405,9 @@
    "serves": [
     "logistics",
     "agriculture"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "pump_motor_controllers",
@@ -1417,7 +1465,9 @@
     "climate",
     "renewable"
    ],
-   "pack": "pump_controllers"
+   "pack": "pump_controllers",
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "battery_bms",
@@ -1473,7 +1523,9 @@
     "logistics",
     "renewable",
     "electrical"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "pcb_ems",
@@ -1528,7 +1580,9 @@
     "electrical",
     "health_bio",
     "iot"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "msme_energy_monitors",
@@ -1585,7 +1639,9 @@
     "textile",
     "electrical",
     "health_bio"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "kitchen_appliances",
@@ -1634,7 +1690,9 @@
    "capital_band": "10L_50L",
    "mvp_months": 7,
    "trend_query": "kitchen appliance energy efficient grinder",
-   "serves": []
+   "serves": [],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "solar_pumps_dryers",
@@ -1694,7 +1752,9 @@
    "trend_query": "solar dryer agricultural produce",
    "serves": [
     "agriculture"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "rooftop_solar_msme",
@@ -1754,7 +1814,9 @@
     "textile",
     "electrical",
     "health_bio"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "biogas",
@@ -1816,7 +1878,9 @@
    "serves": [
     "agriculture",
     "climate"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "wind_om",
@@ -1869,7 +1933,9 @@
    "trend_query": "wind turbine maintenance predictive",
    "serves": [
     "renewable"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "leaf_plates",
@@ -1929,7 +1995,9 @@
    "capital_band": "2L_10L",
    "mvp_months": 3,
    "trend_query": "areca leaf plates biodegradable",
-   "serves": []
+   "serves": [],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "groundwater_recharge",
@@ -1983,7 +2051,9 @@
    "serves": [
     "agriculture",
     "climate"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "exporter_esg",
@@ -2038,7 +2108,9 @@
    "serves": [
     "textile",
     "electrical"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "flood_heat_warning",
@@ -2094,7 +2166,9 @@
    "trend_query": "urban flood early warning system",
    "serves": [
     "climate"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "msme_invoice_finance",
@@ -2155,7 +2229,9 @@
     "electrical",
     "health_bio",
     "logistics"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "fpo_credit",
@@ -2217,7 +2293,9 @@
    "trend_query": "agricultural credit farmer producer organisations",
    "serves": [
     "agriculture"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "trader_books",
@@ -2276,7 +2354,9 @@
    "serves": [
     "agriculture",
     "textile"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "shg_savings",
@@ -2332,7 +2412,9 @@
    "serves": [
     "agriculture",
     "textile"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "tamil_localisation",
@@ -2390,7 +2472,9 @@
     "climate",
     "textile",
     "logistics"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "local_govtech",
@@ -2449,7 +2533,9 @@
    "trend_query": "e-governance municipal services",
    "serves": [
     "climate"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "cold_room_monitoring",
@@ -2505,7 +2591,9 @@
     "agriculture",
     "logistics",
     "health_bio"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "machine_monitoring",
@@ -2561,7 +2649,9 @@
     "electrical",
     "textile",
     "health_bio"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "water_level_sensors",
@@ -2617,7 +2707,9 @@
    "serves": [
     "agriculture",
     "climate"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "crop_disease_ai",
@@ -2682,7 +2774,9 @@
     "poultry_health",
     "dairy_quality",
     "fodder_feed"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "fabric_defect_ai",
@@ -2734,7 +2828,9 @@
    "trend_query": "fabric defect detection computer vision",
    "serves": [
     "textile"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "jobshop_erp",
@@ -2794,7 +2890,9 @@
     "electrical",
     "health_bio",
     "textile"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   },
   {
    "id": "clinic_pharmacy_saas",
@@ -2853,7 +2951,9 @@
    "trend_query": "clinic management software small clinics",
    "serves": [
     "health_bio"
-   ]
+   ],
+   "batch": 1,
+   "review": "base"
   }
  ]
 }

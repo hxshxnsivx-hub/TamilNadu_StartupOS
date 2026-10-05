@@ -13,7 +13,8 @@ category) and B offers a capability A needs. The hybrid inherits both
 domains' scheme routes — often a route neither had alone — and both domains'
 risks plus an integration risk.
 
-Adding domains is a data change: append cards to domains.json.
+Adding domains is a data change: add a domains_batch<N>.json file. Cards
+carry their batch and a review state ("base", "draft", "approved").
 """
 
 from __future__ import annotations
@@ -44,7 +45,13 @@ GOVT_BUYERS = (
 def load() -> dict:
     cats = json.loads((DATA / "categories.json").read_text(encoding="utf8"))
     regs = json.loads((DATA / "regulatory.json").read_text(encoding="utf8"))["items"]
+    # domains.json is batch 1; later batches live in domains_batch<N>.json and are merged.
     doms = json.loads((DATA / "domains.json").read_text(encoding="utf8"))
+    batches = {1: doms["_meta"]}
+    for extra in sorted(DATA.glob("domains_batch*.json")):
+        more = json.loads(extra.read_text(encoding="utf8"))
+        batches[more["_meta"]["batch"]] = more["_meta"]
+        doms["domains"] += more["domains"]
     signals_path = DATA / "signals.json"
     signals = json.loads(signals_path.read_text(encoding="utf8")) if signals_path.exists() else {}
     return {
@@ -56,6 +63,7 @@ def load() -> dict:
         "domains": {d["id"]: d for d in doms["domains"]},
         "risk_types": doms["_meta"]["risk_types"],
         "signals": signals,
+        "batches": batches,
     }
 
 
@@ -111,8 +119,10 @@ def _scheme_rules(d: dict) -> list[SchemeRoute]:
     if d.get("theme") == "Art and Craft":
         add("kkt", "artisan venture")
         add("sfurti", "traditional-industry cluster")
-    if any(f >= 3 for f, _ in d.get("districts", {}).values()):
-        add("mse_cdp", "serves an established MSME cluster")
+    # MSE-CDP funds common facilities for manufacturing clusters: a physical product made
+    # where the founder's industry clusters (a temple town or migration hub does not count).
+    if "physical" in forms and any(f >= 3 for f, _ in d.get("districts", {}).values()):
+        add("mse_cdp", "made in an established manufacturing cluster")
     if any(g in buyers for g in GOVT_BUYERS):
         add("gem_runway", "sells to government buyers")
     if "local bodies" in buyers or "municipal" in buyers:

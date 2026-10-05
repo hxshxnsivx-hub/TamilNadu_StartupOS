@@ -105,7 +105,7 @@ async def test_plan_rejects_unknown_domain(client: AsyncClient):
 
 async def test_categories_registry_and_hybrids(client: AsyncClient):
     cats = (await client.get("/api/v1/ideation/categories")).json()
-    assert len(cats) == 12 and sum(c["domains"] for c in cats) == 50
+    assert len(cats) == 12 and all(c["domains"] >= 10 for c in cats)
     reg = (await client.get("/api/v1/ideation/registry", params={"district": "madurai"})).json()
     assert reg[0]["district_fit"]["madurai"] == 3
     card = (await client.get("/api/v1/ideation/registry/jasmine_postharvest")).json()

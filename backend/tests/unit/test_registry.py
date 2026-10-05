@@ -13,9 +13,12 @@ DOMAINS = REG["domains"]
 
 
 def test_registry_is_consistent():
-    assert len(DOMAINS) == 50
     counts = Counter(d["category"] for d in DOMAINS.values())
-    assert set(counts) == set(REG["categories"])  # every category has domains
+    assert set(counts) == set(REG["categories"])
+    assert min(counts.values()) >= 10  # batch 2 brought every category to 10
+    assert len(DOMAINS) == sum(counts.values())  # ids are unique across batches
+    assert {d["review"] for d in DOMAINS.values()} <= {"base", "draft", "approved"}
+    assert {d["batch"] for d in DOMAINS.values()} >= {1, 2}
     for d in DOMAINS.values():
         assert d["category"] in REG["categories"]
         assert set(d["needs"]) <= set(REG["capabilities"]), d["id"]
@@ -122,3 +125,16 @@ def test_card_only_domain_gets_licences_milestone_and_risks():
 def test_tea_founder_still_gets_the_deep_pack_and_the_card():
     p = build_plan("a tea brand with mint hibiscus", {"stage": "idea"}, variants=["mint hibiscus"])
     assert p["domain"]["id"] == "tea_infusions" and p["domain_card"]["id"] == "tea_infusions"
+
+
+def test_cluster_programme_needs_a_physical_product():
+    remit = {s["id"] for s in registry.schemes_for(DOMAINS["migrant_remittance"])}
+    assert "mse_cdp" not in remit  # a strong district fit, but not a manufacturing cluster
+    coir = {s["id"] for s in registry.schemes_for(DOMAINS["coir_products"])}
+    assert "mse_cdp" in coir
+
+
+def test_batch_two_cards_are_drafts_with_a_review_checklist():
+    drafts = [d for d in DOMAINS.values() if d["batch"] == 2]
+    assert len(drafts) == 70 and all(d["review"] == "draft" for d in drafts)
+    assert REG["batches"][2]["review_checklist"]
