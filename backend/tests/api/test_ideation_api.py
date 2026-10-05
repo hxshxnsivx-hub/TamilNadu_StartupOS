@@ -129,3 +129,18 @@ async def test_plan_accepts_a_registry_domain(client: AsyncClient):
     assert body["domain_card"]["id"] == "phc_diagnostics"
     assert body["risks_by_phase"]["MVP"]
     assert all("risks" in m for m in body["roadmap"]["milestones"])
+
+
+async def test_scan_endpoint_validates_and_returns_the_report(client: AsyncClient, monkeypatch):
+    from app.routers import ideation
+
+    async def fake_scan(text, *, elements=None, queries=None):
+        return {"idea": text, "elements": elements, "queries": queries, "coverage": []}
+
+    monkeypatch.setattr(ideation, "scan", fake_scan)
+    r = await client.post(
+        "/api/v1/ideation/scan",
+        json={"text": "EEG communication for paralysed patients", "elements": ["EEG yes/no"]},
+    )
+    assert r.status_code == 200 and r.json()["elements"] == ["EEG yes/no"]
+    assert (await client.post("/api/v1/ideation/scan", json={"text": "short"})).status_code == 422

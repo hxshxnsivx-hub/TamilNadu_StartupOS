@@ -8,6 +8,7 @@ when the profile/startup DB endpoints land.
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel, Field
 
 from app.models.ideation_schemas import (
     CategoryOut,
@@ -31,6 +32,7 @@ from app.orchestrator.state import ConversationState
 from app.planner import registry
 from app.planner.packs import COMMON, load_packs
 from app.planner.plan import build_plan
+from app.research.scan import scan
 from app.schemes.annotate import annotate_roadmap
 from app.schemes.models import Scheme
 from app.services.completeness import CompletenessInput, score_completeness
@@ -217,3 +219,18 @@ async def hybrid_products(
     if domain and domain not in registry.load()["domains"]:
         raise HTTPException(status_code=404, detail=f"No domain {domain}")
     return [HybridOut(**h) for h in registry.hybrids(domain, district, neighbours_only, limit)]
+
+
+class ScanIn(BaseModel):
+    text: str = Field(min_length=10, max_length=4000)
+    # parts of the idea to check one by one (the agent's language model can supply these)
+    elements: list[str] = Field(default_factory=list, max_length=8)
+    # search terms written by the agent's language model, replacing the built-in lexicon
+    queries: dict[str, str] | None = None
+
+
+@router.post("/ideation/scan")
+async def scan_idea(body: ScanIn) -> dict:
+    """Prior art for any idea: associated domains, papers, trials, open projects, patents,
+    local players, element-by-element checks and what to discuss, with source coverage."""
+    return await scan(body.text, elements=body.elements, queries=body.queries)

@@ -57,6 +57,14 @@ class Settings(BaseSettings):
     verification_provider: str = "surepass"
     verification_api_key: str = ""
 
+    # Prior-art research sources (app/research). All optional: a source without a
+    # required key is reported as "not searched", never silently skipped.
+    openalex_api_key: str = ""  # free key; without it OpenAlex allows a small shared daily budget
+    patentsview_api_key: str = ""  # free key from PatentsView; patents are skipped without it
+    github_token: str = ""  # raises GitHub's search rate limit
+    research_cache_dir: str = ".cache/research"
+    research_cache_days: int = 7
+
     # Rate limits
     rate_limit_per_user_per_min: int = 100
     rate_limit_global_per_min: int = 1000

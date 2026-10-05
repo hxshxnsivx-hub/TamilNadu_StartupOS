@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import os
 import time
 import urllib.error
 import urllib.parse
@@ -35,10 +36,17 @@ UA = "VanigamResearch/0.1 (domain research momentum)"
 BAND_PP = 3.0
 PAUSE_S = 1.0  # between requests; OpenAlex rate-limits bursts
 BACKOFF_S = [10, 30, 60, 120]
+MAX_WAIT_S = 300  # a longer Retry-After means the daily budget is used up
+
+
+class BudgetExhausted(RuntimeError):
+    """OpenAlex's free daily budget is spent; previous signals are kept."""
 
 
 def counts(query: str | None, years: range) -> dict[int, int]:
     params = {"group_by": "publication_year"}
+    if os.environ.get("OPENALEX_API_KEY"):
+        params["api_key"] = os.environ["OPENALEX_API_KEY"]
     if query:
         params["search"] = query
     url = f"{API}?{urllib.parse.urlencode(params)}"
@@ -50,7 +58,10 @@ def counts(query: str | None, years: range) -> dict[int, int]:
         except urllib.error.HTTPError as exc:  # 429: slow down and retry
             if wait is None or exc.code not in (429, 500, 502, 503):
                 raise
-            time.sleep(float(exc.headers.get("Retry-After") or wait))
+            retry_after = float(exc.headers.get("Retry-After") or wait)
+            if retry_after > MAX_WAIT_S:  # the daily budget is spent, not a burst limit
+                raise BudgetExhausted(retry_after) from exc
+            time.sleep(retry_after)
         except urllib.error.URLError:
             if wait is None:
                 raise
@@ -74,11 +85,19 @@ def main() -> None:
     doms = []
     for f in [REGISTRY / "domains.json", *sorted(REGISTRY.glob("domains_batch*.json"))]:
         doms += json.loads(f.read_text(encoding="utf8"))["domains"]
-    base = counts(None, years)
+    try:
+        base = counts(None, years)
+        fetched = {d["id"]: counts(d["trend_query"], years) for d in doms}
+    except BudgetExhausted as exc:
+        hours = exc.args[0] / 3600
+        raise SystemExit(
+            f"OpenAlex daily budget used up (resets in ~{hours:.0f} h). Previous signals kept. "
+            "Set OPENALEX_API_KEY (free) to use your own budget."
+        ) from exc
     base_cagr = cagr(base)
     out = {}
     for d in doms:
-        c = counts(d["trend_query"], years)
+        c = fetched[d["id"]]
         g = cagr(c)
         rel = round(g - base_cagr, 1) if g is not None and base_cagr is not None else None
         label = (
