@@ -144,3 +144,21 @@ async def test_scan_endpoint_validates_and_returns_the_report(client: AsyncClien
     )
     assert r.status_code == 200 and r.json()["elements"] == ["EEG yes/no"]
     assert (await client.post("/api/v1/ideation/scan", json={"text": "short"})).status_code == 422
+
+
+async def test_agent_session_greets_and_takes_turns(client: AsyncClient, monkeypatch):
+    from app.agents import ideation as agent
+    from app.core.config import get_settings
+
+    async def fake_turn(s, text):
+        return {"session_id": s.id, "reply": f"heard: {text}"}
+
+    monkeypatch.setattr(get_settings(), "anthropic_api_key", "")
+    monkeypatch.setattr(agent, "turn", fake_turn)
+    r = await client.post("/api/v1/ideation/agent/sessions", json={"name": "Kavya"})
+    assert r.status_code == 200 and "Kavya" in r.json()["reply"]
+    sid = r.json()["session_id"]
+    r = await client.post(f"/api/v1/ideation/agent/sessions/{sid}/turns", json={"text": "hi"})
+    assert r.json()["reply"] == "heard: hi"
+    r = await client.post("/api/v1/ideation/agent/sessions/nope/turns", json={"text": "hi"})
+    assert r.status_code == 404

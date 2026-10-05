@@ -10,6 +10,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
+from app.agents import ideation as agent
 from app.models.ideation_schemas import (
     CategoryOut,
     CompletenessIn,
@@ -234,3 +235,28 @@ async def scan_idea(body: ScanIn) -> dict:
     """Prior art for any idea: associated domains, papers, trials, open projects, patents,
     local players, element-by-element checks and what to discuss, with source coverage."""
     return await scan(body.text, elements=body.elements, queries=body.queries)
+
+
+class AgentStartIn(BaseModel):
+    name: str | None = Field(default=None, max_length=80)
+    # what the founder's profile already says (district, sector...), never asked again
+    profile: dict | None = None
+
+
+class AgentTurnIn(BaseModel):
+    text: str = Field(min_length=1, max_length=4000)
+
+
+@router.post("/ideation/agent/sessions")
+async def agent_start(body: AgentStartIn) -> dict:
+    """Open an ideation conversation; the reply is the greeting."""
+    return agent.start(body.name, body.profile)
+
+
+@router.post("/ideation/agent/sessions/{session_id}/turns")
+async def agent_turn(session_id: str, body: AgentTurnIn) -> dict:
+    """One founder turn: the reply, the next question, and the evidence it rests on."""
+    s = agent.get_session(session_id)
+    if s is None:
+        raise HTTPException(status_code=404, detail="Session not found or expired")
+    return await agent.turn(s, body.text)
