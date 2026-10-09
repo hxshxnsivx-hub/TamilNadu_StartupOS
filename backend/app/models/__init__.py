@@ -5,6 +5,7 @@ autogenerate and ``metadata.create_all`` see the full schema.
 """
 
 from app.db.base import Base
+from app.models.agent_session import AgentSessionRow
 from app.models.document import Document
 from app.models.embeddings import Embedding
 from app.models.founder import Founder
@@ -20,4 +21,5 @@ __all__ = [
     "Document",
     "ProfileCompleteness",
     "Embedding",
+    "AgentSessionRow",
 ]

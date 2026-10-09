@@ -1,4 +1,4 @@
-"""Unit tests for the ideation agent: tool loop with a mock model, and the offline path."""
+"""Unit tests for the ideation agent: streamed turns, fact check, saved sessions, offline path."""
 
 from __future__ import annotations
 
@@ -9,7 +9,10 @@ import httpx
 import pytest
 from app.agents import ideation as agent
 from app.agents import tools
+from app.agents.grounding import NOVELTY_LINE
+from app.agents.store import MemoryStore, VersionConflict
 from app.core.config import get_settings
+from app.elicitation.slots import Sector
 
 BCI = (
     "I want to build a device so paralysed patients can ask nurses for a change in medication"
@@ -34,7 +37,7 @@ SCAN = {
         "most_relevant": [{"title": "P300 speller", "year": 2023, "cited_by": 9, "url": "u"}],
         "most_cited": [],
     },
-    "trials": {"total": 23, "items": [{"id": "NCT1", "title": "BCI speech trial"}]},
+    "trials": {"total": 23, "items": [{"id": "NCT01234567", "title": "BCI speech trial"}]},
     "projects": {"total": 702, "items": [{"name": "lab/eeg-bci", "stars": 169}]},
     "patents": {"total": 0, "items": []},
     "local": {"startups": [], "registry_domains": []},
@@ -50,11 +53,10 @@ SCAN = {
 
 @pytest.fixture(autouse=True)
 def _env(monkeypatch):
-    agent._reset_sessions()
     calls: list = []
 
-    async def fake_scan(text, *, elements=None, queries=None, client=None):
-        calls.append({"text": text, "elements": elements, "queries": queries})
+    async def fake_scan(text, *, elements=None, queries=None, client=None, private=False):
+        calls.append({"text": text, "elements": elements, "queries": queries, "private": private})
         return SCAN
 
     monkeypatch.setattr("app.research.scan.scan", fake_scan)
@@ -67,13 +69,90 @@ def _run(coro):
     return asyncio.run(coro)
 
 
+def _new(name="Kavya", **kw) -> agent.AgentSession:
+    return agent.new_session(name, **kw)[0]
+
+
+async def _events(s, text, client=None) -> list[dict]:
+    return [ev async for ev in agent.turn_stream(s, text, client=client)]
+
+
+# ---- the model, as a server-sent event stream ----------------------------------
+
+
+def _sse(*events: dict) -> bytes:
+    return "".join(f"event: {e['type']}\ndata: {json.dumps(e)}\n\n" for e in events).encode()
+
+
+def _text_reply(text: str, stop: str = "end_turn") -> bytes:
+    return _sse(
+        {"type": "message_start", "message": {}},
+        {"type": "content_block_start", "index": 0, "content_block": {"type": "text", "text": ""}},
+        *[
+            {"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": c}}
+            for c in (text[: len(text) // 2], text[len(text) // 2 :])
+        ],
+        {"type": "content_block_stop", "index": 0},
+        {"type": "message_delta", "delta": {"stop_reason": stop}},
+        {"type": "message_stop"},
+    )
+
+
+def _tool_reply(say: str, tool: str, args: dict) -> bytes:
+    raw = json.dumps(args)
+    return _sse(
+        {"type": "content_block_start", "index": 0, "content_block": {"type": "text", "text": ""}},
+        {"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": say}},
+        {"type": "content_block_stop", "index": 0},
+        {
+            "type": "content_block_start",
+            "index": 1,
+            "content_block": {"type": "tool_use", "id": "tu_1", "name": tool, "input": {}},
+        },
+        {
+            "type": "content_block_delta",
+            "index": 1,
+            "delta": {"type": "input_json_delta", "partial_json": raw[:10]},
+        },
+        {
+            "type": "content_block_delta",
+            "index": 1,
+            "delta": {"type": "input_json_delta", "partial_json": raw[10:]},
+        },
+        {"type": "content_block_stop", "index": 1},
+        {"type": "message_delta", "delta": {"stop_reason": "tool_use"}},
+    )
+
+
+def _model(monkeypatch, *bodies: bytes) -> list:
+    monkeypatch.setattr(get_settings(), "anthropic_api_key", "test-key")
+    sent: list = []
+
+    def handle(req: httpx.Request) -> httpx.Response:
+        sent.append(json.loads(req.content))
+        assert req.headers["x-api-key"] == "test-key"
+        return httpx.Response(
+            200, content=bodies[len(sent) - 1], headers={"content-type": "text/event-stream"}
+        )
+
+    return sent, httpx.MockTransport(handle)
+
+
+async def _with(transport, fn):
+    async with httpx.AsyncClient(transport=transport) as c:
+        return await fn(c)
+
+
+# ---- offline path ------------------------------------------------------------------
+
+
 def test_greeting_uses_the_founders_name():
-    r = agent.start("Kavya")
-    assert "Kavya" in r["reply"] and agent.get_session(r["session_id"])
+    s, greeting = agent.new_session("Kavya")
+    assert "Kavya" in greeting and s.messages[0]["role"] == "user"
 
 
 def test_offline_turn_scans_and_cites_evidence(_env):
-    s = agent.get_session(agent.start("Kavya")["session_id"])
+    s = _new()
     r = _run(agent.turn(s, BCI))
     assert r["tools_used"] == ["scan_prior_art"]
     assert "23 clinical trials" in r["reply"] and "lab/eeg-bci" in r["reply"]
@@ -86,6 +165,19 @@ def test_offline_turn_scans_and_cites_evidence(_env):
     assert len(_env) == 1
 
 
+def test_stream_events_come_in_order():
+    kinds = [e["event"] for e in _run(_events(_new(), BCI))]
+    assert kinds[0] == "ack" and kinds[-1] == "done"
+    assert "evidence" in kinds and kinds.count("sentence") >= 2
+    assert kinds.index("evidence") < kinds.index("sentence")
+
+
+def test_private_session_scans_privately(_env):
+    s = _new(private=True)
+    _run(agent.turn(s, BCI))
+    assert _env[0]["private"] is True
+
+
 def test_compact_scan_keeps_coverage_and_drops_bulk():
     c = tools.compact_scan(SCAN)
     assert c["coverage"] == SCAN["coverage"] and c["caveat"]
@@ -93,7 +185,7 @@ def test_compact_scan_keeps_coverage_and_drops_bulk():
 
 
 def test_note_fact_refuses_unknown_keys():
-    s = agent.get_session(agent.start()["session_id"])
+    s = _new()
     out = _run(tools.run_tool("note_fact", {"key": "aadhaar", "value": "1"}, s.elicitation, {}))
     assert "error" in out
     out = _run(
@@ -103,67 +195,13 @@ def test_note_fact_refuses_unknown_keys():
 
 
 def test_support_for_lists_schemes_and_incubators():
-    out = _run(
-        tools.run_tool(
-            "support_for", {"domain_id": "banana_value_added", "district": "tiruchirappalli"},
-            agent.get_session(agent.start()["session_id"]).elicitation, {},
-        )
-    )  # fmt: skip
+    args = {"domain_id": "banana_value_added", "district": "tiruchirappalli"}
+    out = _run(tools.run_tool("support_for", args, _new().elicitation, {}))
     assert out.get("schemes") is not None and "incubators" in out
 
 
-def test_model_tool_loop(monkeypatch, _env):
-    monkeypatch.setattr(get_settings(), "anthropic_api_key", "test-key")
-    sent: list = []
-    replies = [
-        {
-            "stop_reason": "tool_use",
-            "content": [
-                {"type": "text", "text": "Let me look that up."},
-                {
-                    "type": "tool_use",
-                    "id": "tu_1",
-                    "name": "scan_prior_art",
-                    "input": {"idea": BCI, "queries": {"papers": "P300 BCI nurse call"}},
-                },
-            ],
-        },
-        {
-            "stop_reason": "end_turn",
-            "content": [{"type": "text", "text": "23 trials exist, e.g. a BCI speech trial."}],
-        },
-    ]
-
-    def handle(req: httpx.Request) -> httpx.Response:
-        body = json.loads(req.content)
-        sent.append(body)
-        assert req.headers["x-api-key"] == "test-key"
-        return httpx.Response(200, json=replies[len(sent) - 1])
-
-    s = agent.get_session(agent.start("Arun")["session_id"])
-
-    async def go():
-        async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as c:
-            return await agent.turn(s, BCI, client=c)
-
-    r = _run(go())
-    assert r["reply"] == "23 trials exist, e.g. a BCI speech trial."
-    assert r["tools_used"] == ["scan_prior_art"] and r["evidence"]["projects"]["total"] == 702
-    assert _env[0]["queries"] == {"papers": "P300 BCI nurse call"}
-    first = sent[0]
-    assert first["messages"][0]["role"] == "user"  # the API needs a user turn first
-    assert "Arun" in first["system"] and {t["name"] for t in first["tools"]} >= {
-        "scan_prior_art",
-        "build_roadmap",
-    }
-    # the tool result went back to the model, paired with its call
-    result = sent[1]["messages"][-1]["content"][0]
-    assert result["type"] == "tool_result" and result["tool_use_id"] == "tu_1"
-    assert json.loads(result["content"])["trials"]["total"] == 23
-
-
 def test_confirmation_builds_the_roadmap_offline():
-    s = agent.get_session(agent.start("Meena")["session_id"])
+    s = _new("Meena")
     _run(agent.turn(s, "banana chips and banana flour unit in Tiruchirappalli for B-grade fruit"))
     for _ in range(10):  # answer until the engine restates the objective
         if s.elicitation.state.value == "confirming":
@@ -175,3 +213,101 @@ def test_confirmation_builds_the_roadmap_offline():
     r = _run(agent.turn(s, "yes, that's right"))
     assert r["action"]["kind"] == "generate" and "build_roadmap" in r["tools_used"]
     assert r["roadmap"]["milestones"] and "milestones" in r["reply"]
+
+
+# ---- with the model ------------------------------------------------------------------
+
+
+def test_model_tool_loop_streams_and_cites(monkeypatch, _env):
+    sent, transport = _model(
+        monkeypatch,
+        _tool_reply(
+            "Let me look that up.",
+            "scan_prior_art",
+            {"idea": BCI, "queries": {"papers": "P300 BCI nurse call"}},
+        ),
+        _text_reply("I found 23 trials, such as NCT01234567. Which signal would you use?"),
+    )
+    s = _new("Arun")
+    evs = _run(_with(transport, lambda c: _events(s, BCI, c)))
+    said = [e["data"] for e in evs if e["event"] == "sentence"]
+    assert said == [
+        "Let me look that up.",
+        "I found 23 trials, such as NCT01234567.",
+        "Which signal would you use?",
+    ]
+    done = evs[-1]["data"]
+    assert done["tools_used"] == ["scan_prior_art"] and done["dropped"] == 0
+    assert _env[0]["queries"] == {"papers": "P300 BCI nurse call"}
+    first = sent[0]
+    assert first["stream"] is True and first["messages"][0]["role"] == "user"
+    assert "Arun" in first["system"] and {t["name"] for t in first["tools"]} >= {
+        "scan_prior_art",
+        "build_roadmap",
+    }
+    # the tool result went back to the model, paired with its call
+    result = sent[1]["messages"][-1]["content"][0]
+    assert result["type"] == "tool_result" and result["tool_use_id"] == "tu_1"
+    assert json.loads(result["content"])["trials"]["total"] == 23
+
+
+def test_unbacked_sentences_are_never_spoken(monkeypatch):
+    _, transport = _model(
+        monkeypatch,
+        _text_reply(
+            "There are 4,500 papers on this. PMEGP gives you 25 lakh. This is a unique idea."
+            " Who would pay for it?"
+        ),
+    )
+    s = _new()
+    evs = _run(_with(transport, lambda c: _events(s, "a device for paralysed patients", c)))
+    said = [e["data"] for e in evs if e["event"] == "sentence"]
+    assert said == [NOVELTY_LINE, "Who would pay for it?"]
+    assert evs[-1]["data"]["dropped"] == 2
+
+
+def test_when_every_sentence_fails_the_question_is_still_asked(monkeypatch):
+    _, transport = _model(monkeypatch, _text_reply("You will get 40 lakh from TANSEED."))
+    s = _new()
+    evs = _run(_with(transport, lambda c: _events(s, "a device for paralysed patients", c)))
+    said = [e["data"] for e in evs if e["event"] == "sentence"]
+    assert len(said) == 1 and said[0] == evs[0]["data"]["action"]["question"]
+
+
+# ---- saved sessions ----------------------------------------------------------------------
+
+
+def test_session_survives_a_save_and_load():
+    store = MemoryStore()
+    s = _new()
+    _run(store.create(s))
+    _run(agent.turn(s, "textile finishing unit for weavers in Erode"))
+    _run(store.save(s))
+    back = _run(store.get(s.id))
+    assert back.elicitation.slots["sector"].value is Sector.TEXTILE  # enum restored
+    assert back.elicitation.slots["district"].value == "erode"
+    assert back.pending_slot == s.pending_slot and back.idea_version == s.idea_version
+    snap = agent.snapshot(back)
+    assert snap["last_question"] and snap["transcript"][0]["role"] == "assistant"
+
+
+def test_concurrent_saves_do_not_overwrite_each_other():
+    store = MemoryStore()
+    s = _new()
+    _run(store.create(s))
+    a, b = _run(store.get(s.id)), _run(store.get(s.id))
+    _run(store.save(a))
+    with pytest.raises(VersionConflict):
+        _run(store.save(b))
+
+
+def test_idea_version_changes_with_the_idea_only():
+    s = _new()
+    _run(agent.turn(s, "The problem is weavers in Erode cannot reach buyers outside the district"))
+    v1 = s.idea_version
+    s.elicitation.put("team_size", 3, 0.9, s.elicitation.slots["problem"].source)
+    assert s.idea_version == v1
+    s.elicitation.put(
+        "problem", "dyers lose colour batches", 0.95, s.elicitation.slots["problem"].source
+    )
+    assert s.idea_version != v1

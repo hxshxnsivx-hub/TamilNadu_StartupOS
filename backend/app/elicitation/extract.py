@@ -29,6 +29,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from app.elicitation.places import find_district
 from app.elicitation.slots import (
     CapitalBand,
     FundingRoute,
@@ -213,6 +214,9 @@ def extract(text: str) -> list[Extraction]:
         if rupees >= 10_000:
             out.append(Extraction("capital_band", _band(rupees), 0.85))
             break
+
+    if (district := find_district(text)) is not None:
+        out.append(Extraction("district", district, 0.85))
 
     # The actual words the founder used — not a placeholder token.
     if (m := _PROBLEM_CUE.search(text)) is not None:

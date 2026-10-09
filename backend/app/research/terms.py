@@ -14,6 +14,7 @@ bypassed. The lexicon is the offline floor, not the ceiling.
 from __future__ import annotations
 
 import re
+from functools import lru_cache
 
 # everyday phrase -> technical terms. Matching is on whole words; longer phrases first.
 LEXICON: dict[str, list[str]] = {
@@ -198,14 +199,77 @@ def expand(text: str) -> tuple[list[str], list[str]]:
     return technical, content
 
 
+@lru_cache
+def public_vocabulary() -> frozenset[str]:
+    """Words that may leave the platform in a search query.
+
+    The lexicon, the research-field names and the words of Vanigam's own domain
+    registry: all public, all generic. A founder's brand names, invented product
+    names, people and places are not in it, so they are never sent to a source.
+    """
+    words: set[str] = set()
+    for phrase, terms in LEXICON.items():
+        words |= set(_words(phrase))
+        for t in terms:
+            words |= set(_words(t.lower()))
+    for fields in TERM_FIELDS.values():
+        for f in fields:
+            words |= set(_words(f.lower()))
+    try:
+        from app.planner import registry
+
+        reg = registry.load()
+        proper: set[str] = set()  # places and names, capitalised mid-sentence
+        for d in reg["domains"].values():
+            text = f"{d['label']}. {d['summary']}"
+            words |= set(_words(text.lower()))
+            proper |= {m.lower() for m in re.findall(r"(?<![.!?(]\s)(?<!^)\b[A-Z][a-z]{2,}", text)}
+        words -= proper
+        for c in reg["categories"].values():
+            words |= set(_words(c["label"].lower()))
+    except Exception:  # the registry is optional here; the lexicon still applies
+        pass
+    return frozenset(w for w in words if len(w) > 2 and w not in STOP and not _is_place(w))
+
+
+def _is_place(word: str) -> bool:
+    from app.elicitation.places import find_district
+
+    return find_district(word) is not None
+
+
+def scrub(query: str, founder_text: str = "") -> str:
+    """Make a query written by the agent's model safe to send.
+
+    Drops numbers and place names, and any word the founder said that is not in
+    the public vocabulary; keeps the model's own technical terms. At most 8 words.
+    """
+    said = set(_words(founder_text.lower()))
+    vocab = public_vocabulary()
+    keep = []
+    for w in re.findall(r"[A-Za-z][A-Za-z0-9-]*", query):
+        low = w.lower()
+        if _is_place(low) or (low in said and low not in vocab):
+            continue
+        keep.append(w)
+    return " ".join(keep[:8])
+
+
 def build_queries(text: str) -> dict[str, str]:
-    """Short, specific queries: search engines rank better on a few precise terms."""
+    """Short, specific queries: search engines rank better on a few precise terms.
+
+    Only technical terms and public-vocabulary words are used, never the
+    founder's sentence. An empty query means "nothing safe to send": the source
+    is reported as not searched rather than sent the idea text.
+    """
     technical, content = expand(text)
+    vocab = public_vocabulary()
+    content = [w for w in content if w in vocab]
     specific = [t for t in technical if t in SPECIFIC]
     broad = [t for t in technical if t not in SPECIFIC]
-    papers = " ".join(specific[:3] + broad[:2] + content[:2]) or text
-    trials = " ".join(specific[:2] + broad[:1]) or " ".join(content[:3]) or text
-    projects = " ".join(specific[:2]) or " ".join((broad + content)[:3]) or text
+    papers = " ".join(specific[:3] + broad[:2] + content[:2])
+    trials = " ".join(specific[:2] + broad[:1]) or " ".join(content[:3])
+    projects = " ".join(specific[:2]) or " ".join((broad + content)[:3])
     return {
         "papers": papers,
         "trials": trials,

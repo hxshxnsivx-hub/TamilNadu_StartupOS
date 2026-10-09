@@ -26,7 +26,14 @@ import httpx
 
 from app.core.config import get_settings
 from app.research import sources
-from app.research.terms import SPECIFIC, build_queries, expand, fields_from_terms, is_health
+from app.research.terms import (
+    SPECIFIC,
+    build_queries,
+    expand,
+    fields_from_terms,
+    is_health,
+    scrub,
+)
 
 # OpenAlex fields -> Vanigam registry categories (for schemes, incubators, packs).
 FIELD_TO_CATEGORY = {
@@ -195,21 +202,34 @@ async def scan(
     elements: list[str] | None = None,
     queries: dict[str, str] | None = None,
     client: httpx.AsyncClient | None = None,
+    private: bool = False,
 ) -> dict:
+    """`private`: search nothing outside Vanigam; only local data is used."""
     settings = get_settings()
-    q = {**build_queries(text), **(queries or {})}
+    own_q = {k: scrub(v, text) for k, v in (queries or {}).items()}  # model-written: cleaned
+    q = {**build_queries(text), **{k: v for k, v in own_q.items() if v}}
     cache = sources.Cache(settings.research_cache_dir, settings.research_cache_days)
     own = client is None
     client = client or httpx.AsyncClient(timeout=60, headers={"User-Agent": sources.UA})
     try:
         health = is_health(f"{text} {q['papers']}")
+
+        async def search(name: str, fn, query: str) -> sources.SourceResult:
+            if private:
+                return sources.SourceResult(name, "private", note="Private mode: not searched")
+            if not query.strip():
+                return sources.SourceResult(
+                    name, "skipped", note="Not searched: no technical terms safe to send"
+                )
+            return await fn(client, query, cache)
+
         tasks = [
-            sources.papers(client, q["papers"], cache),
-            sources.projects(client, q["projects"], cache),
-            sources.patents(client, q["patents"], cache),
+            search("papers", sources.papers, q["papers"]),
+            search("projects", sources.projects, q["projects"]),
+            search("patents", sources.patents, q["patents"]),
         ]
         if health:
-            tasks.append(sources.trials(client, q["trials"], cache))
+            tasks.append(search("trials", sources.trials, q["trials"]))
         results = {r.source: r for r in await asyncio.gather(*tasks)}
         if not health:
             results["trials"] = sources.SourceResult(
@@ -220,8 +240,8 @@ async def scan(
         for el in elements or []:
             eq = build_queries(el)
             p, g = await asyncio.gather(
-                sources.papers(client, eq["papers"], cache),
-                sources.projects(client, eq["projects"], cache),
+                search("papers", sources.papers, eq["papers"]),
+                search("projects", sources.projects, eq["projects"]),
             )
             pt = p.total if p.status == "ok" else None
             gt = g.total if g.status == "ok" else None

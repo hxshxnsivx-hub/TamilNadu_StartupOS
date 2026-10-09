@@ -146,19 +146,43 @@ async def test_scan_endpoint_validates_and_returns_the_report(client: AsyncClien
     assert (await client.post("/api/v1/ideation/scan", json={"text": "short"})).status_code == 422
 
 
-async def test_agent_session_greets_and_takes_turns(client: AsyncClient, monkeypatch):
-    from app.agents import ideation as agent
+async def test_agent_session_lifecycle(client: AsyncClient, monkeypatch):
+    from app.agents import store
     from app.core.config import get_settings
+    from app.research import scan as research
 
-    async def fake_turn(s, text):
-        return {"session_id": s.id, "reply": f"heard: {text}"}
+    real_scan = research.scan
+
+    async def private_scan(text, *, elements=None, queries=None, client=None, private=False):
+        return await real_scan(text, client=client, private=True)  # no network in tests
 
     monkeypatch.setattr(get_settings(), "anthropic_api_key", "")
-    monkeypatch.setattr(agent, "turn", fake_turn)
-    r = await client.post("/api/v1/ideation/agent/sessions", json={"name": "Kavya"})
-    assert r.status_code == 200 and "Kavya" in r.json()["reply"]
-    sid = r.json()["session_id"]
-    r = await client.post(f"/api/v1/ideation/agent/sessions/{sid}/turns", json={"text": "hi"})
-    assert r.json()["reply"] == "heard: hi"
-    r = await client.post("/api/v1/ideation/agent/sessions/nope/turns", json={"text": "hi"})
-    assert r.status_code == 404
+    monkeypatch.setattr(research, "scan", private_scan)
+    store.set_store(store.MemoryStore())
+    try:
+        r = await client.post("/api/v1/ideation/agent/sessions", json={"name": "Kavya"})
+        assert r.status_code == 200 and "Kavya" in r.json()["reply"]
+        sid = r.json()["session_id"]
+        base = f"/api/v1/ideation/agent/sessions/{sid}"
+
+        r = await client.post(f"{base}/turns", json={"text": "a nurse alert device"})
+        assert r.status_code == 200 and r.json()["action"]["kind"] == "ask"
+        asked = r.json()["action"]["question"]
+
+        # resumes at the same question, from the saved session
+        snap = (await client.get(base)).json()
+        assert snap["last_question"] == asked and snap["transcript"]
+
+        # streamed turn: ack first, done last, sentences between
+        async with client.stream("POST", f"{base}/turns/stream", json={"text": "Chennai"}) as s:
+            body = "".join([c async for c in s.aiter_text()])
+        kinds = [ln[7:] for ln in body.splitlines() if ln.startswith("event: ")]
+        assert kinds[0] == "ack" and kinds[-1] == "done" and "sentence" in kinds
+        assert (await client.get(base)).json()["known"]["district"] == "chennai"
+
+        assert (await client.delete(base)).status_code == 204
+        assert (await client.get(base)).status_code == 404
+        bad = await client.post("/api/v1/ideation/agent/sessions/nope/turns", json={"text": "x"})
+        assert bad.status_code == 422
+    finally:
+        store.set_store(None)

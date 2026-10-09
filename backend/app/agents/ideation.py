@@ -1,43 +1,53 @@
 """The ideation agent: one conversation that knows what already exists.
 
-Each founder turn:
+Each founder turn (IDEATION-PIPELINE-DESIGN.md §1):
 
-    1. the elicitation engine folds the words into slots and picks the one
-       question worth asking next (deterministic, never nags, Q_MAX ceiling);
-    2. the language model talks — it calls tools (prior-art scan, registry,
+    1. the elicitation engine folds the words into facts, checks that a reply
+       answers the question asked, and picks the one question worth asking next;
+    2. the language model talks: it calls tools (prior-art scan, registry,
        schemes and incubators, roadmap) and phrases the reply around evidence
        and the engine's question;
-    3. the reply goes back with the evidence it used, so the screen (or the
-       voice orb's caption) can show the papers, trials and projects it cites.
+    3. the reply streams out sentence by sentence, and every sentence the model
+       wrote passes the fact check (grounding.py) before it is spoken.
+
+`turn_stream` yields the events of §1.2 (ack, sentence, tool, evidence, done);
+`turn` runs the same stream and returns the final `done` payload.
 
 Without an API key the same turn runs offline: the scan runs once the idea is
-clear, and a templated reply summarises it. The founder still gets evidence,
-just in plainer words.
+clear, and a templated reply summarises it.
 """
 
 from __future__ import annotations
 
+import contextlib
+import hashlib
 import json
 import re
 import uuid
+from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
+from typing import Any
 
 import httpx
 
+from app.agents.grounding import NOVELTY_LINE, SentenceSplitter, facts_from, gate, problems
 from app.agents.tools import TOOLS, compact_scan, run_tool
 from app.core.config import get_settings
+from app.core.logging import get_logger
 from app.elicitation import engine
+from app.elicitation.answers import SKIP
 from app.elicitation.session import ElicitationSession, SessionState
+from app.elicitation.slots import BY_KEY
+
+log = get_logger("ideation_agent")
 
 ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
 MAX_TOOL_ROUNDS = 4
-IDLE_EXPIRY = timedelta(hours=6)
 YES = {"yes", "yeah", "yep", "correct", "right", "ok", "okay", "sure", "seri", "aamaa", "aama"}
 NO = {"no", "nope", "wrong", "illai", "not"}
-SKIP = re.compile(
-    r"^\s*(skip|pass|next|not sure|no idea|don'?t know|i don'?t know|theriyala)\W*$", re.I
-)
+# What counts as "the same idea": a change here is a new idea version.
+CORE_SLOTS = ("problem", "solution", "product_form", "sector", "beneficiary")
 
 SYSTEM = """You are Vanigam's ideation guide for founders in Tamil Nadu. You talk with
 {name} about their idea — hardware, software, a physical product or a service.
@@ -55,11 +65,14 @@ How you work:
   regulation, cost, who pays.
 - Use find_domains and support_for for Tamil Nadu schemes and incubators; never
   invent a scheme, amount or deadline. Use build_roadmap once they confirm.
+- Only use numbers that appear in tool results or in what the founder said.
+  Sentences with other numbers are removed before they are spoken.
 - Record facts they state with note_fact.
 - Ask at most one question per turn. The question to ask next is: {question}
   Ask it in your own words, unless the founder raised something more urgent.
 - Speak simply; the founder may be listening rather than reading and English
-  may be their second language. Short paragraphs, no tables, no markdown.
+  may be their second language. At most three short sentences before the
+  question. No tables, no markdown.
 
 Known so far: {known}
 """
@@ -70,47 +83,123 @@ class AgentSession:
     name: str
     elicitation: ElicitationSession
     id: str = field(default_factory=lambda: uuid.uuid4().hex)
+    user_id: str = "anon"
     messages: list[dict] = field(default_factory=list)
     idea: str = ""
     scan: dict | None = None
     roadmap: dict | None = None
     pending_slot: str | None = None
+    private: bool = False  # search nothing outside Vanigam
+    version: int = 0  # bumped on every save; guards against lost updates
     updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
+    @property
+    def idea_version(self) -> str | None:
+        slots = self.elicitation.slots
+        core = {k: _plain(slots[k].value).strip().lower() for k in CORE_SLOTS if k in slots}
+        if not core:
+            return None
+        return hashlib.sha1(json.dumps(core, sort_keys=True).encode()).hexdigest()[:12]
 
-# In-memory for now; sessions move to the database with the elicitation endpoints.
-_SESSIONS: dict[str, AgentSession] = {}
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "name": self.name,
+            "user_id": self.user_id,
+            "elicitation": self.elicitation.model_dump(mode="json"),
+            "messages": self.messages,
+            "idea": self.idea,
+            "scan": self.scan,
+            "roadmap": self.roadmap,
+            "pending_slot": self.pending_slot,
+            "private": self.private,
+            "version": self.version,
+            "updated_at": self.updated_at.isoformat(),
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict) -> AgentSession:
+        el = ElicitationSession.model_validate(d["elicitation"])
+        for key, sv in el.slots.items():  # JSON stores enum values; restore the members
+            enum = BY_KEY[key].enum if key in BY_KEY else None
+            if enum is not None and isinstance(sv.value, str):
+                with contextlib.suppress(ValueError):
+                    sv.value = enum(sv.value)
+        return cls(
+            name=d["name"],
+            elicitation=el,
+            id=d["id"],
+            user_id=d.get("user_id", "anon"),
+            messages=d.get("messages", []),
+            idea=d.get("idea", ""),
+            scan=d.get("scan"),
+            roadmap=d.get("roadmap"),
+            pending_slot=d.get("pending_slot"),
+            private=d.get("private", False),
+            version=d.get("version", 0),
+            updated_at=datetime.fromisoformat(d["updated_at"]),
+        )
 
 
-def get_session(session_id: str) -> AgentSession | None:
-    s = _SESSIONS.get(session_id)
-    if s and datetime.now(UTC) - s.updated_at > IDLE_EXPIRY:
-        _SESSIONS.pop(session_id, None)
-        return None
-    return s
+def _plain(v: Any) -> str:
+    return str(getattr(v, "value", v))
 
 
-def start(name: str | None = None, profile: dict | None = None, user_id: str = "anon") -> dict:
+def new_session(
+    name: str | None = None,
+    profile: dict | None = None,
+    user_id: str = "anon",
+    private: bool = False,
+) -> tuple[AgentSession, str]:
     who = (name or "").strip() or "there"
-    s = AgentSession(name=who, elicitation=engine.start(user_id, profile=profile))
-    _SESSIONS[s.id] = s
+    s = AgentSession(name=who, elicitation=engine.start(user_id, profile=profile), user_id=user_id)
+    s.private = private
     greeting = (
         f"Vanakkam {who}! Tell me about the idea you are working on, in your own words."
         " It can be a product, a machine, an app or a service. I will look up what already"
         " exists for it, papers, patents, projects and products, and we will shape it together."
     )
+    if private:
+        greeting += " You chose private mode, so I will search only Vanigam's own data."
     # The Messages API starts with a user turn; the screen opening stands in for it.
     s.messages += [
         {"role": "user", "content": "(The founder opened the ideation screen.)"},
         {"role": "assistant", "content": greeting},
     ]
-    return {"session_id": s.id, "reply": greeting, "action": {"kind": "ask", "slot": None}}
+    return s, greeting
+
+
+def snapshot(s: AgentSession) -> dict:
+    """Where the conversation stands: enough for a screen to resume it."""
+    said = [
+        {"role": m["role"], "text": m["content"]}
+        for m in s.messages[1:]
+        if isinstance(m.get("content"), str)
+    ]
+    question = next(
+        (t.question for t in reversed(s.elicitation.turns) if t.question), None
+    ) or next((m["text"] for m in reversed(said) if m["role"] == "assistant"), None)
+    return {
+        "session_id": s.id,
+        "name": s.name,
+        "private": s.private,
+        "state": s.elicitation.state.value,
+        "pending_slot": s.pending_slot,
+        "last_question": question,
+        "transcript": said,
+        "known": _known_dict(s),
+        "evidence": compact_scan(s.scan) if s.scan else None,
+        "roadmap": s.roadmap,
+        "idea_version": s.idea_version,
+    }
+
+
+def _known_dict(s: AgentSession) -> dict:
+    return {k: _plain(v.value) for k, v in s.elicitation.slots.items()}
 
 
 def _known(s: AgentSession) -> str:
-    rows = [
-        f"{k}={getattr(v.value, 'value', v.value)}" for k, v in sorted(s.elicitation.slots.items())
-    ]
+    rows = [f"{k}={v}" for k, v in sorted(_known_dict(s).items())]
     return ", ".join(rows) or "nothing yet"
 
 
@@ -126,54 +215,154 @@ def _action_dict(a: engine.Action) -> dict:
 
 def _idea_text(s: AgentSession) -> str:
     slots = s.elicitation.slots
-    parts = [str(slots[k].value) for k in ("problem", "solution") if k in slots]
+    parts = [_plain(slots[k].value) for k in ("problem", "solution") if k in slots]
     return " ".join(parts) or s.idea
 
 
-async def _call_model(client: httpx.AsyncClient, system: str, messages: list[dict]) -> dict:
-    st = get_settings()
-    r = await client.post(
-        ANTHROPIC_URL,
-        headers={
-            "x-api-key": st.anthropic_api_key,
-            "anthropic-version": "2023-06-01",
-            "content-type": "application/json",
-        },
-        json={
-            "model": st.llm_model_main,
-            "max_tokens": 1024,
-            "system": system,
-            "tools": TOOLS,
-            "messages": messages,
-        },
+def _facts(s: AgentSession, question: str):
+    """Everything this session can back, for the fact check."""
+    tool_results = [
+        b.get("content")
+        for m in s.messages
+        if m["role"] == "user" and isinstance(m["content"], list)
+        for b in m["content"]
+        if isinstance(b, dict) and b.get("type") == "tool_result"
+    ]
+    founder_said = [
+        m["content"] for m in s.messages if m["role"] == "user" and isinstance(m["content"], str)
+    ]
+    human = [engine.HUMAN.get(v, v) for v in _known_dict(s).values()]
+    return facts_from(
+        tool_results,
+        founder_said,
+        human,
+        s.elicitation.objective or "",
+        compact_scan(s.scan) if s.scan else "",
+        s.roadmap or "",
+        question,
     )
-    r.raise_for_status()
-    return r.json()
 
 
-async def _llm_turn(s: AgentSession, question: str, client: httpx.AsyncClient) -> tuple[str, list]:
+# ---- the model, streamed ----------------------------------------------------
+
+
+async def _model_events(
+    client: httpx.AsyncClient, system: str, messages: list[dict]
+) -> AsyncIterator[tuple[str, Any]]:
+    """("text", chunk) while streaming, then ("message", (content, stop_reason))."""
+    st = get_settings()
+    body = {
+        "model": st.llm_model_main,
+        "max_tokens": 1024,
+        "system": system,
+        "tools": TOOLS,
+        "messages": messages,
+        "stream": True,
+    }
+    headers = {
+        "x-api-key": st.anthropic_api_key,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+    }
+    blocks: dict[int, dict] = {}
+    partial_json: dict[int, str] = {}
+    stop = None
+    async with client.stream("POST", ANTHROPIC_URL, headers=headers, json=body) as r:
+        if r.status_code != 200:
+            await r.aread()
+            r.raise_for_status()
+        async for line in r.aiter_lines():
+            if not line.startswith("data:"):
+                continue
+            ev = json.loads(line[5:].strip())
+            kind = ev.get("type")
+            if kind == "content_block_start":
+                blocks[ev["index"]] = dict(ev["content_block"])
+            elif kind == "content_block_delta":
+                i, d = ev["index"], ev["delta"]
+                if d.get("type") == "text_delta":
+                    blocks[i]["text"] = blocks[i].get("text", "") + d["text"]
+                    yield "text", d["text"]
+                elif d.get("type") == "input_json_delta":
+                    partial_json[i] = partial_json.get(i, "") + d.get("partial_json", "")
+            elif kind == "message_delta":
+                stop = ev.get("delta", {}).get("stop_reason", stop)
+            elif kind == "error":
+                raise RuntimeError(ev.get("error", {}).get("message", "model stream error"))
+    for i, raw in partial_json.items():
+        blocks[i]["input"] = json.loads(raw) if raw.strip() else {}
+    content = [blocks[i] for i in sorted(blocks)]
+    yield "message", (content, stop)
+
+
+def _event(kind: str, data: Any) -> dict:
+    return {"event": kind, "data": data}
+
+
+async def _llm_stream(
+    s: AgentSession, question: str, client: httpx.AsyncClient, out: dict
+) -> AsyncIterator[dict]:
     system = SYSTEM.format(name=s.name, question=question, known=_known(s))
-    state: dict = {}
-    used: list[str] = []
+    state: dict = {"private": s.private}
+    facts = _facts(s, question)
+    splitter = SentenceSplitter()
+    caveat_said = False
+
+    def speak(sentence: str) -> dict | None:
+        nonlocal caveat_said
+        said = gate(sentence, facts)
+        if said is None:
+            out["dropped"].append({"sentence": sentence, "why": problems(sentence, facts)})
+            log.info("grounding.dropped", sentence=sentence)
+            return None
+        if said == NOVELTY_LINE:
+            if caveat_said:
+                return None
+            caveat_said = True
+        out["spoken"].append(said)
+        return _event("sentence", said)
+
     for _ in range(MAX_TOOL_ROUNDS + 1):
-        resp = await _call_model(client, system, s.messages)
-        content = resp.get("content", [])
+        content, stop = [], None
+        async for kind, payload in _model_events(client, system, s.messages):
+            if kind == "text":
+                for sentence in splitter.feed(payload):
+                    if ev := speak(sentence):
+                        yield ev
+            else:
+                content, stop = payload
         s.messages.append({"role": "assistant", "content": content})
         calls = [b for b in content if b.get("type") == "tool_use"]
-        if resp.get("stop_reason") != "tool_use" or not calls:
+        if stop != "tool_use" or not calls:
             break
+        for sentence in splitter.flush():  # "Let me look that up." before the tools run
+            if ev := speak(sentence):
+                yield ev
         results = []
         for c in calls:
-            out = await run_tool(c["name"], c.get("input") or {}, s.elicitation, state)
-            used.append(c["name"])
+            yield _event("tool", {"name": c["name"], "status": "started"})
+            res = await run_tool(c["name"], c.get("input") or {}, s.elicitation, state)
+            out["tools"].append(c["name"])
+            yield _event("tool", {"name": c["name"], "status": "done"})
             results.append(
-                {"type": "tool_result", "tool_use_id": c["id"], "content": json.dumps(out)}
+                {"type": "tool_result", "tool_use_id": c["id"], "content": json.dumps(res)}
             )
         s.messages.append({"role": "user", "content": results})
-    s.scan = state.get("scan", s.scan)
-    s.roadmap = state.get("roadmap", s.roadmap)
-    text = "".join(b.get("text", "") for b in s.messages[-1]["content"] if isinstance(b, dict))
-    return text.strip(), used
+        if "scan" in state:
+            s.scan = state.pop("scan")
+            yield _event("evidence", compact_scan(s.scan))
+        if "roadmap" in state:
+            s.roadmap = state.pop("roadmap")
+        facts = _facts(s, question)  # new tool results can now be cited
+    for sentence in splitter.flush():
+        if ev := speak(sentence):
+            yield ev
+    if not out["spoken"] and question:  # every sentence failed the check
+        out["spoken"].append(question)
+        yield _event("sentence", question)
+
+
+# ---- offline ----------------------------------------------------------------
 
 
 def _fallback_reply(scan: dict | None, question: str | None) -> str:
@@ -184,7 +373,6 @@ def _fallback_reply(scan: dict | None, question: str | None) -> str:
         fields = [f["name"] for f in c["fields"][:4]]
         if fields:
             parts.append(f"Your idea touches {', '.join(fields)}.")
-        cov = {x["source"]: x for x in c["coverage"]}
         if c["trials"]["total"]:
             t = c["trials"]["items"][0]
             parts.append(
@@ -206,17 +394,54 @@ def _fallback_reply(scan: dict | None, question: str | None) -> str:
         if c["local"]["startups"]:
             names = ", ".join(x["name"] for x in c["local"]["startups"][:3])
             parts.append(f"In Tamil Nadu, {names} work in this space.")
-        missing = [
-            k for k, v in cov.items() if v["status"] not in ("ok", "skipped")
-        ]  # not searched, so not "nothing"
-        if missing:
-            parts.append(f"I could not search {', '.join(missing)} this time.")
+        cov = c["coverage"]
+        if any(x["status"] == "private" for x in cov):
+            parts.append("You chose private mode, so I searched only Vanigam's own data.")
+        else:
+            missing = [  # not searched is never "nothing found"
+                x["source"]
+                for x in cov
+                if x["status"] not in ("ok", "skipped") or x["note"].startswith("Not searched")
+            ]
+            if missing:
+                parts.append(f"I could not search {', '.join(missing)} this time.")
         firsts = [d["questions"][0] for d in c["discuss"][:2]]
         if firsts:
             parts.append("Things to think through: " + " ".join(firsts))
     if question:
         parts.append(question)
     return " ".join(parts) or "Tell me a little more about the idea."
+
+
+async def _offline_stream(
+    s: AgentSession, action: engine.Action, question: str, client: httpx.AsyncClient, out: dict
+) -> AsyncIterator[dict]:
+    idea = _idea_text(s)
+    fresh = None
+    if s.scan is None and len(idea) >= 20:
+        from app.research.scan import scan
+
+        yield _event("tool", {"name": "scan_prior_art", "status": "started"})
+        s.scan = fresh = await scan(idea, client=client, private=s.private)
+        out["tools"].append("scan_prior_art")
+        yield _event("tool", {"name": "scan_prior_art", "status": "done"})
+        yield _event("evidence", compact_scan(s.scan))
+    if action.kind == "generate":
+        if s.roadmap is None:
+            state: dict = {}
+            await run_tool("build_roadmap", {"idea": idea}, s.elicitation, state)
+            s.roadmap = state["roadmap"]
+            out["tools"].append("build_roadmap")
+        question = _roadmap_line(s.roadmap)
+    reply = _fallback_reply(fresh, question)  # templated from the session: no fact check
+    s.messages.append({"role": "assistant", "content": reply})
+    splitter = SentenceSplitter()
+    for sentence in splitter.feed(reply) + splitter.flush():
+        out["spoken"].append(sentence)
+        yield _event("sentence", sentence)
+
+
+# ---- the turn -----------------------------------------------------------------
 
 
 def _advance(s: AgentSession, text: str) -> engine.Action:
@@ -247,7 +472,10 @@ def _roadmap_line(r: dict) -> str:
     )
 
 
-async def turn(s: AgentSession, text: str, *, client: httpx.AsyncClient | None = None) -> dict:
+async def turn_stream(
+    s: AgentSession, text: str, *, client: httpx.AsyncClient | None = None
+) -> AsyncIterator[dict]:
+    """One founder turn as events: ack, sentence…, tool, evidence, done."""
     s.updated_at = datetime.now(UTC)
     s.idea = s.idea or text
     action = _advance(s, text)
@@ -258,48 +486,48 @@ async def turn(s: AgentSession, text: str, *, client: httpx.AsyncClient | None =
         question = "They confirmed: build the roadmap now and walk them through it."
     else:
         question = action.question or ""
+    if action.kind == "ask" and s.elicitation.turns:
+        s.elicitation.turns[-1].question = question  # so a resumed session can repeat it
+    yield _event("ack", {"session_id": s.id, "action": _action_dict(action)})
 
     s.messages.append({"role": "user", "content": text})
+    out: dict = {"spoken": [], "dropped": [], "tools": []}
     own = client is None
     client = client or httpx.AsyncClient(timeout=120)
-    used: list[str] = []
     try:
         if get_settings().anthropic_api_key:
-            reply, used = await _llm_turn(s, question, client)
+            stream = _llm_stream(s, question, client, out)
         else:
-            idea = _idea_text(s)
-            if s.scan is None and len(idea) >= 20:
-                from app.research.scan import scan
-
-                s.scan = await scan(idea, client=client)
-                used.append("scan_prior_art")
-            if action.kind == "generate":
-                if s.roadmap is None:
-                    state: dict = {}
-                    await run_tool("build_roadmap", {"idea": idea}, s.elicitation, state)
-                    s.roadmap = state["roadmap"]
-                    used.append("build_roadmap")
-                question = _roadmap_line(s.roadmap)
-            fresh = s.scan if "scan_prior_art" in used else None  # summarise a scan once
-            reply = _fallback_reply(fresh, question)
-            s.messages.append({"role": "assistant", "content": reply})
+            stream = _offline_stream(s, action, question, client, out)
+        async for ev in stream:
+            yield ev
     finally:
         if own:
             await client.aclose()
 
-    return {
-        "session_id": s.id,
-        "reply": reply,
-        "action": _action_dict(action),
-        "tools_used": used,
-        "evidence": compact_scan(s.scan) if s.scan else None,
-        "roadmap": s.roadmap,
-        "known": {k: getattr(v.value, "value", v.value) for k, v in s.elicitation.slots.items()},
-    }
+    yield _event(
+        "done",
+        {
+            "session_id": s.id,
+            "reply": " ".join(out["spoken"]),
+            "action": _action_dict(action),
+            "tools_used": out["tools"],
+            "dropped": len(out["dropped"]),
+            "evidence": compact_scan(s.scan) if s.scan else None,
+            "roadmap": s.roadmap,
+            "known": _known_dict(s),
+            "idea_version": s.idea_version,
+        },
+    )
 
 
-def _reset_sessions() -> None:  # tests
-    _SESSIONS.clear()
+async def turn(s: AgentSession, text: str, *, client: httpx.AsyncClient | None = None) -> dict:
+    """The same turn, collected: returns the `done` payload."""
+    done: dict = {}
+    async for ev in turn_stream(s, text, client=client):
+        if ev["event"] == "done":
+            done = ev["data"]
+    return done
 
 
-__all__ = ["AgentSession", "get_session", "start", "turn"]
+__all__ = ["AgentSession", "new_session", "snapshot", "turn", "turn_stream"]

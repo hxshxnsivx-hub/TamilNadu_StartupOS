@@ -95,6 +95,13 @@ class ElicitationSession(BaseModel):
     # way to make someone abandon the flow.
     skipped: set[str] = Field(default_factory=set)
 
+    # Answer checking. A reply that does not fit the asked slot counts as a
+    # miss: the question is asked once more (`reask`), then dropped for good.
+    mismatches: dict[str, int] = Field(default_factory=dict)
+    reask: str | None = None
+    # Slots the extractor newly filled on the last turn, to acknowledge them.
+    learned: list[str] = Field(default_factory=list)
+
     objective: str | None = None  # the restatement shown at CONFIRMING
     roadmap_id: uuid.UUID | None = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

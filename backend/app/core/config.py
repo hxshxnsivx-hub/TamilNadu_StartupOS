@@ -65,6 +65,10 @@ class Settings(BaseSettings):
     research_cache_dir: str = ".cache/research"
     research_cache_days: int = 7
 
+    # Where ideation conversations are saved: "database", "memory", or "auto"
+    # (the database when it answers and the agent_sessions table exists).
+    agent_store: Literal["auto", "database", "memory"] = "auto"
+
     # Rate limits
     rate_limit_per_user_per_min: int = 100
     rate_limit_global_per_min: int = 1000

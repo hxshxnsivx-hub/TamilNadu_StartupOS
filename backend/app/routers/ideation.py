@@ -7,10 +7,15 @@ when the profile/startup DB endpoints land.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Query
+import asyncio
+import json
+
+from fastapi import APIRouter, HTTPException, Path, Query
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, Field
 
 from app.agents import ideation as agent
+from app.agents.store import VersionConflict, get_store
 from app.models.ideation_schemas import (
     CategoryOut,
     CompletenessIn,
@@ -241,22 +246,105 @@ class AgentStartIn(BaseModel):
     name: str | None = Field(default=None, max_length=80)
     # what the founder's profile already says (district, sector...), never asked again
     profile: dict | None = None
+    # search nothing outside Vanigam for this conversation
+    private: bool = False
 
 
 class AgentTurnIn(BaseModel):
     text: str = Field(min_length=1, max_length=4000)
 
 
+_SESSION_ID = Path(pattern=r"^[0-9a-f]{32}$")
+# One turn at a time per conversation in this process; the version check in the
+# store covers several processes.
+_turn_locks: dict[str, asyncio.Lock] = {}
+
+
+async def _load(session_id: str) -> agent.AgentSession:
+    s = await (await get_store()).get(session_id)
+    if s is None:
+        raise HTTPException(status_code=404, detail="Session not found or expired")
+    return s
+
+
+async def _save(s: agent.AgentSession) -> None:
+    try:
+        await (await get_store()).save(s)
+    except VersionConflict as exc:
+        raise HTTPException(
+            status_code=409, detail="This conversation changed elsewhere; reload it"
+        ) from exc
+
+
 @router.post("/ideation/agent/sessions")
 async def agent_start(body: AgentStartIn) -> dict:
     """Open an ideation conversation; the reply is the greeting."""
-    return agent.start(body.name, body.profile)
+    s, greeting = agent.new_session(body.name, body.profile, private=body.private)
+    store = await get_store()
+    await store.create(s)
+    return {
+        "session_id": s.id,
+        "reply": greeting,
+        "action": {"kind": "ask", "slot": None},
+        "saved": store.name == "database",
+    }
+
+
+@router.get("/ideation/agent/sessions/{session_id}")
+async def agent_resume(session_id: str = _SESSION_ID) -> dict:
+    """Where a conversation stands, to resume it on any device."""
+    return agent.snapshot(await _load(session_id))
+
+
+@router.delete("/ideation/agent/sessions/{session_id}", status_code=204, response_class=Response)
+async def agent_delete(session_id: str = _SESSION_ID) -> Response:
+    """Delete a conversation with its transcript, evidence and roadmap."""
+    if not await (await get_store()).delete(session_id):
+        raise HTTPException(status_code=404, detail="Session not found")
+    return Response(status_code=204)
 
 
 @router.post("/ideation/agent/sessions/{session_id}/turns")
-async def agent_turn(session_id: str, body: AgentTurnIn) -> dict:
+async def agent_turn(body: AgentTurnIn, session_id: str = _SESSION_ID) -> dict:
     """One founder turn: the reply, the next question, and the evidence it rests on."""
-    s = agent.get_session(session_id)
-    if s is None:
-        raise HTTPException(status_code=404, detail="Session not found or expired")
-    return await agent.turn(s, body.text)
+    async with _turn_locks.setdefault(session_id, asyncio.Lock()):
+        s = await _load(session_id)
+        out = await agent.turn(s, body.text)
+        await _save(s)
+        return out
+
+
+@router.post("/ideation/agent/sessions/{session_id}/turns/stream")
+async def agent_turn_stream(body: AgentTurnIn, session_id: str = _SESSION_ID):
+    """The same turn as server-sent events: ack, sentence…, tool, evidence, done.
+
+    Only `sentence` events are meant for speech; each has passed the fact check.
+    """
+    lock = _turn_locks.setdefault(session_id, asyncio.Lock())
+    await lock.acquire()
+    try:
+        s = await _load(session_id)
+    except HTTPException:
+        lock.release()
+        raise
+
+    async def events():
+        try:
+            async for ev in agent.turn_stream(s, body.text):
+                if ev["event"] == "done":
+                    try:
+                        await _save(s)
+                    except HTTPException as exc:
+                        yield _sse("error", {"detail": exc.detail})
+                        return
+                yield _sse(ev["event"], ev["data"])
+        except Exception as exc:  # the stream has started; report, don't crash it
+            yield _sse("error", {"detail": f"turn failed: {type(exc).__name__}"})
+        finally:
+            lock.release()
+
+    return StreamingResponse(events(), media_type="text/event-stream")
+
+
+def _sse(event: str, data: object) -> str:
+    return f"event: {event}\ndata: {json.dumps(data, default=str)}\n\n"

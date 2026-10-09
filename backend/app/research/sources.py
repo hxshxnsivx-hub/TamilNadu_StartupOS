@@ -33,7 +33,7 @@ UA = "VanigamResearch/0.1 (prior-art scan)"
 @dataclass
 class SourceResult:
     source: str
-    status: str  # ok | no_key | budget_exhausted | error | skipped
+    status: str  # ok | no_key | budget_exhausted | error | skipped | private
     total: int = 0
     items: list[dict] = field(default_factory=list)
     note: str = ""

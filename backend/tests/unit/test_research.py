@@ -193,3 +193,35 @@ def test_agent_supplied_queries_replace_the_lexicon():
 
 def test_scan_output_is_json_serialisable():
     json.dumps(_run(BCI, []))
+
+
+def test_founder_words_never_leave_in_queries():
+    """Names, brands and places stay on the platform; only public vocabulary goes out."""
+    text = "solar dryer for coconut copra in Pollachi called KopraKing by Ravi"
+    sent = " ".join(build_queries(text)[k] for k in ("papers", "trials", "projects", "patents"))
+    for private_word in ("kopraking", "ravi", "pollachi"):
+        assert private_word not in sent.lower()
+    assert "photovoltaic" in sent
+
+
+def test_model_written_queries_are_cleaned():
+    from app.research.terms import scrub
+
+    assert scrub("P300 speller nurse call KopraKing Chennai 2024", "KopraKing in Chennai") == (
+        "P300 speller nurse call"
+    )
+
+
+def test_private_scan_calls_no_external_source():
+    calls: list = []
+    r = _run(BCI, calls, private=True)
+    assert calls == []
+    assert {c["status"] for c in r["coverage"]} <= {"private", "skipped"}
+
+
+def test_nothing_safe_to_send_is_reported_not_searched():
+    calls: list = []
+    r = _run("KopraKing by Ravi from Pollachi", calls)
+    cov = {c["source"]: c for c in r["coverage"]}
+    assert cov["papers"]["status"] == "skipped" and "safe" in cov["papers"]["note"]
+    assert not any("kopraking" in c.lower() for c in calls)

@@ -222,7 +222,10 @@ async def run_tool(name: str, args: dict, session: ElicitationSession, state: di
     try:
         if name == "scan_prior_art":
             r = await research.scan(
-                args["idea"], elements=args.get("elements"), queries=args.get("queries")
+                args["idea"],
+                elements=args.get("elements"),
+                queries=args.get("queries"),
+                private=state.get("private", False),
             )
             state["scan"] = r
             return compact_scan(r)

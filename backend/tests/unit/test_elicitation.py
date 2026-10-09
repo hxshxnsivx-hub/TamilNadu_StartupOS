@@ -199,3 +199,30 @@ def test_experience_mode_drops_idea_slots():
     req = REQUIRED_BY_MODE[EntryMode.EXPERIENCE]
     assert "problem" not in req and "solution" not in req
     assert "founder_skills" in req and "founder_years" in req
+
+
+# ---------------------------------------------------------------- answer check
+
+
+def test_wrong_type_answer_is_routed_and_asked_once_more():
+    """'Chennai' answered to the stage question was stored as the stage."""
+    s = engine.start("u1")
+    engine.observe(s, "I want to build a nurse alert device for paralysed patients")
+    engine.observe(s, "Chennai", answering="stage")
+    assert s.slots["district"].value == "chennai"
+    assert "stage" not in s.slots
+    act = engine.step(s)
+    assert act.slot == "stage" and act.question.startswith("Got it, Chennai.")
+    engine.observe(s, "Madurai", answering="stage")  # second miss: drop it for good
+    assert "stage" in s.skipped and engine.step(s).slot != "stage"
+
+
+def test_valid_direct_answers_are_typed():
+    from app.elicitation.answers import validate
+
+    assert validate("stage", "we have a prototype") == "prototype"
+    assert validate("district", "Trichy") == "tiruchirappalli"
+    assert validate("team_size", "three of us") == 3
+    assert validate("team_size", "yes") is None
+    assert validate("problem", "Chennai") is None
+    assert validate("stage", "skip") is None

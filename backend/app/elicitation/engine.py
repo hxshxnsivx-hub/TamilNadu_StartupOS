@@ -24,6 +24,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Literal
 
+from app.elicitation.answers import validate
 from app.elicitation.extract import extract
 from app.elicitation.selector import Q_MAX, is_objective_clear, next_question
 from app.elicitation.session import (
@@ -128,36 +129,33 @@ def observe(session: ElicitationSession, text: str, *, answering: str | None = N
     extractor cannot parse it.
     """
     session.state = SessionState.EXTRACTING
+    session.learned = []
 
     if answering and answering in BY_KEY and text.strip():
-        session.put(answering, _coerce(answering, text), 0.90, Source.ANSWER)
+        value = validate(answering, text)
+        if value is not None:
+            session.put(answering, value, 0.90, Source.ANSWER)
+            session.reask = None
+        else:
+            # Not an answer to this question ("Chennai" for the stage). Never
+            # store it there; let the extractor place it, and ask once more.
+            misses = session.mismatches.get(answering, 0) + 1
+            session.mismatches[answering] = misses
+            session.reask = answering if misses < 2 else None
+            if misses >= 2:
+                session.skip(answering)
 
     for e in extract(text):
         # Never let an extraction overwrite the direct answer we just stored.
         if e.key == answering:
             continue
+        was_filled = e.key in session.filled
         session.put(e.key, e.value, e.confidence, Source.EXTRACTED)
+        if not was_filled and e.key in session.filled:
+            session.learned.append(e.key)
 
     session.record(user_text=text, asked=answering)
     session.state = SessionState.ELICITING
-
-
-def _coerce(key: str, text: str) -> Any:
-    """Best-effort typing of a direct answer against the slot's declared enum."""
-    slot = BY_KEY[key]
-    raw = text.strip()
-    if slot.enum is not None:
-        low = raw.lower()
-        for member in slot.enum:
-            if member.value.lower() in low or low in member.value.lower():
-                return member
-        return raw
-    if slot.kind == "int":
-        m = [int(t) for t in raw.split() if t.isdigit()]
-        if m:
-            lo, hi = slot.bounds or (0, 10**6)
-            return max(lo, min(hi, m[0]))
-    return raw
 
 
 def step(session: ElicitationSession) -> Action:
@@ -168,6 +166,16 @@ def step(session: ElicitationSession) -> Action:
     decision = is_objective_clear(session)
 
     if not decision.stop:
+        if (key := session.reask) and key not in session.filled and key not in session.skipped:
+            session.state = SessionState.AWAITING_ANSWER
+            return Action(
+                kind="ask",
+                slot=key,
+                question=f"{_acknowledge(session)} {BY_KEY[key].question}",
+                progress=session.progress(),
+                turn=session.turn_no,
+                reason="reask: the reply did not answer the question",
+            )
         nq = next_question(session)
         if nq is not None:
             key, question = nq
@@ -192,6 +200,20 @@ def step(session: ElicitationSession) -> Action:
         turn=session.turn_no,
         reason=decision.reason,
     )
+
+
+def _acknowledge(session: ElicitationSession) -> str:
+    """Name what the last reply did tell us, before asking again."""
+    facts = [_word(session.slots[k].value) for k in session.learned if k in ("district", "sector")]
+    facts += [k.replace("_", " ") for k in session.learned if k not in ("district", "sector")]
+    if facts:
+        return f"Got it, {', '.join(f for f in facts if f)}."
+    return "Sorry, I didn't catch that."
+
+
+def _word(v: Any) -> str:
+    raw = getattr(v, "value", v) if v is not None else ""
+    return HUMAN.get(str(raw), str(raw).replace("_", " ").title())
 
 
 def confirm(session: ElicitationSession, accepted: bool) -> Action:
