@@ -39,6 +39,7 @@ from app.elicitation import engine
 from app.elicitation.answers import SKIP
 from app.elicitation.session import ElicitationSession, SessionState
 from app.elicitation.slots import BY_KEY
+from app.research import novelty
 
 log = get_logger("ideation_agent")
 
@@ -63,6 +64,9 @@ How you work:
 - Walk the founder through every field the idea touches (the scan's fields and
   discuss questions): technology, users, clinical or field validation,
   regulation, cost, who pays.
+- After the scan, call check_novelty with the idea's parts. Share what it finds
+  over the next turns, one point per turn: first the statement (what is rare),
+  then one way to stand out at a time, always with the reason it gives.
 - Use find_domains and support_for for Tamil Nadu schemes and incubators; never
   invent a scheme, amount or deadline. Use build_roadmap once they confirm.
 - Only use numbers that appear in tool results or in what the founder said.
@@ -88,6 +92,9 @@ class AgentSession:
     idea: str = ""
     scan: dict | None = None
     roadmap: dict | None = None
+    novelty: dict | None = None
+    # novelty points already said: "statement", "lever:0", "lever:1", ...
+    narrated: list[str] = field(default_factory=list)
     pending_slot: str | None = None
     private: bool = False  # search nothing outside Vanigam
     version: int = 0  # bumped on every save; guards against lost updates
@@ -111,6 +118,8 @@ class AgentSession:
             "idea": self.idea,
             "scan": self.scan,
             "roadmap": self.roadmap,
+            "novelty": self.novelty,
+            "narrated": self.narrated,
             "pending_slot": self.pending_slot,
             "private": self.private,
             "version": self.version,
@@ -134,6 +143,8 @@ class AgentSession:
             idea=d.get("idea", ""),
             scan=d.get("scan"),
             roadmap=d.get("roadmap"),
+            novelty=d.get("novelty"),
+            narrated=d.get("narrated", []),
             pending_slot=d.get("pending_slot"),
             private=d.get("private", False),
             version=d.get("version", 0),
@@ -190,6 +201,7 @@ def snapshot(s: AgentSession) -> dict:
         "known": _known_dict(s),
         "evidence": compact_scan(s.scan) if s.scan else None,
         "roadmap": s.roadmap,
+        "novelty": s.novelty,
         "idea_version": s.idea_version,
     }
 
@@ -239,6 +251,7 @@ def _facts(s: AgentSession, question: str):
         s.elicitation.objective or "",
         compact_scan(s.scan) if s.scan else "",
         s.roadmap or "",
+        s.novelty or "",
         question,
     )
 
@@ -303,7 +316,7 @@ async def _llm_stream(
     s: AgentSession, question: str, client: httpx.AsyncClient, out: dict
 ) -> AsyncIterator[dict]:
     system = SYSTEM.format(name=s.name, question=question, known=_known(s))
-    state: dict = {"private": s.private}
+    state: dict = {"private": s.private, "last_scan": s.scan}
     facts = _facts(s, question)
     splitter = SentenceSplitter()
     caveat_said = False
@@ -353,6 +366,9 @@ async def _llm_stream(
             yield _event("evidence", compact_scan(s.scan))
         if "roadmap" in state:
             s.roadmap = state.pop("roadmap")
+        if "novelty" in state:
+            s.novelty = state.pop("novelty")
+            yield _event("novelty", s.novelty)
         facts = _facts(s, question)  # new tool results can now be cited
     for sentence in splitter.flush():
         if ev := speak(sentence):
@@ -365,9 +381,42 @@ async def _llm_stream(
 # ---- offline ----------------------------------------------------------------
 
 
-def _fallback_reply(scan: dict | None, question: str | None) -> str:
+def _slot_text(s: AgentSession, key: str) -> str | None:
+    v = s.elicitation.slots.get(key)
+    return _plain(v.value) if v else None
+
+
+def _next_novelty_point(s: AgentSession) -> str | None:
+    """One novelty point per turn: the statement first, then each way to stand out."""
+    if not s.novelty:
+        return None
+    if "statement" not in s.narrated:
+        s.narrated.append("statement")
+        st = s.novelty["statement"]
+        caveat = (
+            " That is only what I found in the sources I searched."
+            if st["type"] != ("unclear")
+            else ""
+        )
+        return st["text"] + caveat
+    for i, lever in enumerate(s.novelty.get("levers", [])[:3]):
+        if f"lever:{i}" not in s.narrated:
+            s.narrated.append(f"lever:{i}")
+            first = "One way to stand out" if i == 0 else "Another way to stand out"
+            text = lever["text"].rstrip(".")
+            return f"{first}: {text[:1].lower()}{text[1:]}, because {lever['because']}."
+    return None
+
+
+def _fallback_reply(scan: dict | None, question: str | None, lead: str | None = None) -> str:
     """Plain-words summary of a fresh scan, used when no language model is configured."""
     parts: list[str] = []
+    # Turn grammar: acknowledge, then one evidence point, then the question.
+    if question and question.startswith(("Got it,", "Sorry,")) and ". " in question:
+        ack, question = question.split(". ", 1)
+        parts.append(ack + ".")
+    if lead:
+        parts.append(lead)
     c = compact_scan(scan) if scan else None
     if c:
         fields = [f["name"] for f in c["fields"][:4]]
@@ -426,6 +475,17 @@ async def _offline_stream(
         out["tools"].append("scan_prior_art")
         yield _event("tool", {"name": "scan_prior_art", "status": "done"})
         yield _event("evidence", compact_scan(s.scan))
+        yield _event("tool", {"name": "check_novelty", "status": "started"})
+        s.novelty = await novelty.check(
+            idea,
+            scan=s.scan,
+            beneficiary=_slot_text(s, "beneficiary"),
+            client=client,
+            private=s.private,
+        )
+        out["tools"].append("check_novelty")
+        yield _event("tool", {"name": "check_novelty", "status": "done"})
+        yield _event("novelty", s.novelty)
     if action.kind == "generate":
         if s.roadmap is None:
             state: dict = {}
@@ -433,7 +493,8 @@ async def _offline_stream(
             s.roadmap = state["roadmap"]
             out["tools"].append("build_roadmap")
         question = _roadmap_line(s.roadmap)
-    reply = _fallback_reply(fresh, question)  # templated from the session: no fact check
+    lead = _next_novelty_point(s) if fresh is None and action.kind == "ask" else None
+    reply = _fallback_reply(fresh, question, lead)  # templated from the session: no fact check
     s.messages.append({"role": "assistant", "content": reply})
     splitter = SentenceSplitter()
     for sentence in splitter.feed(reply) + splitter.flush():
@@ -515,6 +576,7 @@ async def turn_stream(
             "dropped": len(out["dropped"]),
             "evidence": compact_scan(s.scan) if s.scan else None,
             "roadmap": s.roadmap,
+            "novelty": s.novelty,
             "known": _known_dict(s),
             "idea_version": s.idea_version,
         },

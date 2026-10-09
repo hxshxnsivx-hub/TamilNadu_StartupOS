@@ -135,6 +135,34 @@ async def papers(client: httpx.AsyncClient, query: str, cache: Cache | None = No
     )
 
 
+async def paper_count(
+    client: httpx.AsyncClient,
+    query: str,
+    cache: Cache | None = None,
+    filter: str | None = None,
+) -> SourceResult:
+    """How many works match: one cheap request, for novelty checks.
+
+    OpenAlex reads spaces as AND, supports OR inside parentheses and exact
+    phrases in quotes, so `(EEG OR "brain-computer interface") "nurse call system"`
+    counts works on both parts together.
+    """
+    key = get_settings().openalex_api_key
+    params = {"search": query, "per_page": 1, "select": "id", **({"api_key": key} if key else {})}
+    if filter:
+        params["filter"] = filter
+    status, data = await _get_json(client, cache, OPENALEX, params=params)
+    if status == 429:
+        return SourceResult(
+            "papers",
+            "budget_exhausted",
+            note="OpenAlex daily budget used up for this network; add OPENALEX_API_KEY",
+        )
+    if status != 200:
+        return SourceResult("papers", "error", note=f"OpenAlex returned {status}")
+    return SourceResult("papers", "ok", total=data.get("meta", {}).get("count", 0))
+
+
 async def trials(client: httpx.AsyncClient, query: str, cache: Cache | None = None) -> SourceResult:
     status, data = await _get_json(
         client, cache, CTGOV, params={"query.term": query, "pageSize": 10, "countTotal": "true"}

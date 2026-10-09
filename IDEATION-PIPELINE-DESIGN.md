@@ -101,9 +101,13 @@ and the evidence pack.
 
    `rarity = pair_count / min(count_a, count_b)`
 
-   A pair is a **gap** when both elements are active or crowded on their own but the rarity is
-   below 2%, or the pair count is under 30. "Both parts are well studied; together they are
-   rare." The number of pairs is capped at 6, so at most 15 extra searches, all cached.
+   A pair is a **gap** when both elements are active or crowded on their own, the pair has
+   fewer than 300 papers, and either the rarity is below 2% or the pair count is under 30.
+   "Both parts are well studied; together they are rare." The absolute limit matters: 1,118
+   papers is not rare even when it is 1.5% of a field of 74,000. The number of elements is
+   capped at 6, so at most 15 pair searches, all cached. Each part is searched as its technical
+   names joined by OR, with multi-word names in quotes; OpenAlex reads a space as AND, so a pair
+   is both parts' searches side by side.
 3. **Context map.** For the whole idea: share of matching papers with an Indian institution;
    matching TN startups; matching registry domains. **Context gap** when the idea is active
    globally but India's share is under 5% and no TN startup matches.
@@ -231,7 +235,7 @@ Cohort analysis is offline: it never runs inside a live turn.
 | Phase | Scope | Depends on |
 |---|---|---|
 | **1** | answer check · fact check · no idea text leaves · sessions saved · streamed replies | — |
-| **1b** | novelty check (element, combination, context maps) and levers, spoken over turns | 1 |
+| **1b** | novelty check (element, combination, context maps) and levers, spoken over turns. *Done 2026-10-09; until Phase 2's background jobs, it runs in the same turn as the evidence search* | 1 |
 | **2** | council: seven seats, vote, synthesis, scheduler; council ranks levers | 1, 1b |
 | **3** | voice and orb | 1 (streaming) |
 | **4** | Indian patents, registry growth, weight tuning, evaluation | 2 |

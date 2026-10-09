@@ -158,6 +158,14 @@ async def test_agent_session_lifecycle(client: AsyncClient, monkeypatch):
 
     monkeypatch.setattr(get_settings(), "anthropic_api_key", "")
     monkeypatch.setattr(research, "scan", private_scan)
+    from app.research import novelty
+
+    real_novelty = novelty.check
+
+    async def private_novelty(idea, **kw):
+        return await real_novelty(idea, **{**kw, "private": True})
+
+    monkeypatch.setattr(novelty, "check", private_novelty)
     store.set_store(store.MemoryStore())
     try:
         r = await client.post("/api/v1/ideation/agent/sessions", json={"name": "Kavya"})

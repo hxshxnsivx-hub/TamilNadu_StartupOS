@@ -40,6 +40,14 @@ async def test_session_round_trip_and_version_guard(store, monkeypatch):
         return await real_scan(text, client=client, private=True)
 
     monkeypatch.setattr(research, "scan", private_scan)
+    from app.research import novelty
+
+    real_novelty = novelty.check
+
+    async def private_novelty(idea, **kw):
+        return await real_novelty(idea, **{**kw, "private": True})
+
+    monkeypatch.setattr(novelty, "check", private_novelty)
     s, _ = new_session("Kavya")
     await store.create(s)
     await turn(s, "textile finishing unit for weavers in Erode")

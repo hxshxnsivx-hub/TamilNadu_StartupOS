@@ -51,6 +51,31 @@ SCAN = {
 }
 
 
+NOVELTY = {
+    "elements": [],
+    "pairs": [],
+    "context": {"searched": True, "world_papers": 1118, "india_papers": 52},
+    "statement": {
+        "type": "combination",
+        "text": "Both parts are well studied on their own: brain waves (760,191 papers) and"
+        " nurse call (980). Together, I found only 19.",
+    },
+    "levers": [
+        {
+            "kind": "combine",
+            "text": "Build your version around joining brain waves with nurse call.",
+            "because": "only 19 papers cover both",
+        },
+        {
+            "kind": "localise",
+            "text": "Make it fit Tamil Nadu.",
+            "because": "52 of 1,118 papers are from India",
+        },
+    ],
+    "caveat": "not proof of novelty",
+}
+
+
 @pytest.fixture(autouse=True)
 def _env(monkeypatch):
     calls: list = []
@@ -59,8 +84,14 @@ def _env(monkeypatch):
         calls.append({"text": text, "elements": elements, "queries": queries, "private": private})
         return SCAN
 
+    async def fake_novelty(idea, *, elements=None, scan=None, beneficiary=None, client=None,
+                           private=False):  # fmt: skip
+        calls.append({"novelty": idea, "elements": elements, "private": private})
+        return NOVELTY
+
     monkeypatch.setattr("app.research.scan.scan", fake_scan)
     monkeypatch.setattr(tools.research, "scan", fake_scan)
+    monkeypatch.setattr("app.research.novelty.check", fake_novelty)
     monkeypatch.setattr(get_settings(), "anthropic_api_key", "")
     return calls
 
@@ -154,7 +185,7 @@ def test_greeting_uses_the_founders_name():
 def test_offline_turn_scans_and_cites_evidence(_env):
     s = _new()
     r = _run(agent.turn(s, BCI))
-    assert r["tools_used"] == ["scan_prior_art"]
+    assert r["tools_used"] == ["scan_prior_art", "check_novelty"]
     assert "23 clinical trials" in r["reply"] and "lab/eeg-bci" in r["reply"]
     assert "could not search patents" in r["reply"]  # not searched is never "nothing"
     assert r["evidence"]["trials"]["total"] == 23
@@ -162,7 +193,7 @@ def test_offline_turn_scans_and_cites_evidence(_env):
     # the scan is summarised once, not repeated every turn
     r2 = _run(agent.turn(s, "Chennai"))
     assert r2["tools_used"] == [] and "clinical trials" not in r2["reply"]
-    assert len(_env) == 1
+    assert len(_env) == 2  # one scan, one novelty check
 
 
 def test_stream_events_come_in_order():
@@ -311,3 +342,33 @@ def test_idea_version_changes_with_the_idea_only():
         "problem", "dyers lose colour batches", 0.95, s.elicitation.slots["problem"].source
     )
     assert s.idea_version != v1
+
+
+def test_novelty_is_narrated_one_point_per_turn():
+    s = _new()
+    first = _run(agent.turn(s, BCI))
+    assert first["novelty"]["statement"]["type"] == "combination"
+    assert "Together, I found only 19" not in first["reply"]  # turn 1: what exists
+    second = _run(agent.turn(s, "Chennai"))["reply"]
+    assert second.startswith("Got it, Chennai. Both parts are well studied")  # ack first
+    assert "only what I found in the sources I searched" in second
+    third = _run(agent.turn(s, "prototype"))["reply"]
+    assert third.startswith("One way to stand out: build your version around joining")
+    assert "because only 19 papers cover both" in third
+    fourth = _run(agent.turn(s, "skip"))["reply"]
+    assert fourth.startswith("Another way to stand out: make it fit Tamil Nadu")
+    assert s.narrated == ["statement", "lever:0", "lever:1"]
+
+
+def test_model_can_call_check_novelty(monkeypatch, _env):
+    _, transport = _model(
+        monkeypatch,
+        _tool_reply("Checking.", "check_novelty", {"idea": BCI, "elements": ["EEG", "nurse call"]}),
+        _text_reply("Together, I found only 19 papers. Who would buy it?"),
+    )
+    s = _new()
+    evs = _run(_with(transport, lambda c: _events(s, BCI, c)))
+    assert any(e["event"] == "novelty" for e in evs)
+    said = [e["data"] for e in evs if e["event"] == "sentence"]
+    assert "Together, I found only 19 papers." in said  # backed by the novelty result
+    assert s.novelty == NOVELTY and _env[-1]["elements"] == ["EEG", "nurse call"]

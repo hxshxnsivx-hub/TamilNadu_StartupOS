@@ -19,6 +19,7 @@ from app.elicitation.session import ElicitationSession, Source
 from app.elicitation.slots import BY_KEY, SLOTS
 from app.planner import registry
 from app.planner.plan import build_plan
+from app.research import novelty
 from app.research import scan as research
 
 _FACT_KEYS = [s.key for s in SLOTS if not s.sensitive]
@@ -50,6 +51,23 @@ TOOLS: list[dict] = [
                     ),
                     "additionalProperties": {"type": "string"},
                 },
+            },
+            "required": ["idea"],
+        },
+    },
+    {
+        "name": "check_novelty",
+        "description": (
+            "Check novelty after scan_prior_art: whether each part of the idea exists, which"
+            " pairs of parts rarely appear together, whether it exists in India and Tamil Nadu,"
+            " and the ways to stand out that those gaps support. Pass the idea's parts as"
+            " elements (2 to 6 short phrases)."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "idea": {"type": "string"},
+                "elements": {"type": "array", "items": {"type": "string"}, "maxItems": 6},
             },
             "required": ["idea"],
         },
@@ -227,8 +245,23 @@ async def run_tool(name: str, args: dict, session: ElicitationSession, state: di
                 queries=args.get("queries"),
                 private=state.get("private", False),
             )
-            state["scan"] = r
+            state["scan"] = state["last_scan"] = r
             return compact_scan(r)
+        if name == "check_novelty":
+            beneficiary = session.slots.get("beneficiary")
+            r = await novelty.check(
+                args["idea"],
+                elements=args.get("elements"),
+                scan=state.get("last_scan"),
+                beneficiary=(
+                    str(getattr(beneficiary.value, "value", beneficiary.value))
+                    if beneficiary
+                    else None
+                ),
+                private=state.get("private", False),
+            )
+            state["novelty"] = r
+            return r
         if name == "find_domains":
             return _find_domains(args["idea"])
         if name == "support_for":

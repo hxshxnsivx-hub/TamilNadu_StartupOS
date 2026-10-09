@@ -279,6 +279,41 @@ def build_queries(text: str) -> dict[str, str]:
     }
 
 
+def term_groups(text: str) -> list[tuple[str, list[str]]]:
+    """The idea's parts: (the founder's phrase, its technical terms), longest phrase first.
+
+    "communication through brain waves for medication change" gives
+    ("brain waves", ["EEG", "brain-computer interface"]), ("medication", [...]).
+    The phrases are lexicon keys: public words, safe to show and to send.
+    """
+    low = f" {text.lower()} "
+    groups: list[tuple[str, list[str]]] = []
+    seen: set[tuple[str, ...]] = set()
+    for phrase in sorted(LEXICON, key=len, reverse=True):
+        if re.search(rf"\b{re.escape(phrase)}\b", low):
+            terms = LEXICON[phrase]
+            if tuple(terms) not in seen:
+                seen.add(tuple(terms))
+                groups.append((phrase, list(terms)))
+            low = re.sub(rf"\b{re.escape(phrase)}\b", " ", low)
+    return groups
+
+
+def or_query(terms: list[str]) -> str:
+    """One part of an idea as a search: its technical names, any of them."""
+    quoted = [f'"{t}"' if " " in t or "-" in t else t for t in terms]
+    return quoted[0] if len(quoted) == 1 else f"({' OR '.join(quoted)})"
+
+
+def element_query(text: str) -> str:
+    """A part of an idea, as given by the founder or the model, as a safe search."""
+    technical, content = expand(text)
+    if technical:
+        return or_query(technical[:4])
+    vocab = public_vocabulary()
+    return " ".join([w for w in content if w in vocab][:3])
+
+
 def fields_from_terms(text: str) -> list[str]:
     technical, _ = expand(text)
     seen: list[str] = []
