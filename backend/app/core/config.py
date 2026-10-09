@@ -44,8 +44,10 @@ class Settings(BaseSettings):
     llm_provider: Literal["anthropic", "openai"] = "anthropic"
     anthropic_api_key: str = ""
     openai_api_key: str = ""
-    llm_model_main: str = "claude-sonnet-5"
+    llm_model_main: str = "claude-sonnet-5-5"
     llm_model_router: str = "claude-haiku-4-5-20251001"
+    # Council seats: many short parallel calls on a shared cached prefix.
+    llm_model_fast: str = "claude-haiku-4-5-20251001"
 
     translation_provider: str = "sarvam"
     sarvam_api_key: str = ""
