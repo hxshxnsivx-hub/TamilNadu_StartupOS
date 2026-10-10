@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from app.funding.investors import SEED_INVESTORS, Investor
+from app.funding.investors import ALL_SECTORS, Investor, real_investors
 
 _LATE_STAGES = {"series_a", "series_b", "series_c", "growth", "scale"}
 FIT_WEIGHTS = {"sector": 0.30, "stage": 0.25, "traction": 0.20, "geo": 0.15, "track": 0.10}
@@ -47,20 +47,31 @@ def _violations(inv: Investor, s: dict, funding_need: int, readiness: int) -> li
     revenue = float(s.get("monthly_revenue", 0) or 0)
     # geography is a soft ranking factor (see _fit), not a hard constraint
     reasons: list[str] = []
+    if inv.availability == "not_investing" and inv.not_investing_reason:
+        # the deciding reason; the rest would only be noise
+        return [inv.not_investing_reason[:1].upper() + inv.not_investing_reason[1:]]
 
-    if not (inv.min_ticket <= funding_need <= inv.max_ticket):
+    if inv.ticket_known and not (inv.min_ticket <= funding_need <= inv.max_ticket):
         reasons.append(
             f"Ticket size ₹{inv.min_ticket:,}–₹{inv.max_ticket:,} "
             f"doesn't fit your ₹{funding_need:,} need"
         )
-    if stage not in inv.stages:
+    if not inv.stages:
+        reasons.append("Investment stage not published")
+    elif stage not in inv.stages:
         reasons.append(f"Invests at {', '.join(inv.stages)} — not {stage}")
-    if sector not in inv.sectors:
+    if not inv.sectors:
+        reasons.append("Sectors not published")
+    elif ALL_SECTORS not in inv.sectors and sector not in inv.sectors:
         reasons.append(f"Focuses on {', '.join(inv.sectors)}")
     if sector in inv.exclusions:
         reasons.append(f"Excludes {sector}")
     if inv.availability == "not_investing":
-        reasons.append("Not currently investing")
+        reasons.append(
+            inv.not_investing_reason[:1].upper() + inv.not_investing_reason[1:]
+            if inv.not_investing_reason
+            else "Not currently investing"
+        )
     if users < inv.min_users:
         reasons.append(f"Needs ≥ {inv.min_users:,} users")
     if revenue < inv.min_revenue:
@@ -75,7 +86,7 @@ def _fit(inv: Investor, s: dict) -> int:
     revenue = float(s.get("monthly_revenue", 0) or 0)
     state = s.get("state")
 
-    sector = 100  # eligible → sector already matched
+    sector = 80 if ALL_SECTORS in inv.sectors else 100  # a specialist in your sector fits best
     stage = 100
     # traction margin above the investor's floor
     umarg = 1.0 if inv.min_users == 0 else min(1.0, users / max(1, inv.min_users * 2))
@@ -101,7 +112,7 @@ def match_investors(
     readiness_overall: int,
     investors: list[Investor] | None = None,
 ) -> InvestorMatchResult:
-    investors = investors if investors is not None else SEED_INVESTORS
+    investors = investors if investors is not None else list(real_investors())
     eligible: list[EligibleInvestor] = []
     ineligible: list[IneligibleInvestor] = []
 

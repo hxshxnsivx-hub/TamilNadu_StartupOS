@@ -1,8 +1,19 @@
-"""Investor database seed (Task 4.1) — angels / VCs with preferences."""
+"""Investors for matching (Task 4.1).
+
+real_investors(): the Tamil Nadu investors from the ecosystem layer (TN Startup
+Map), translated to the matcher's terms. What the source does not say stays
+unknown: most do not publish a ticket size, so the ticket is not checked for
+them and the match says so. These are the investors founders see.
+
+SEED_INVESTORS: invented examples with complete figures, used only as test
+fixtures for the matching rules. They are never shown to founders.
+"""
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
+from functools import lru_cache
 
 
 @dataclass
@@ -21,6 +32,9 @@ class Investor:
     exclusions: list[str] = field(default_factory=list)
     track_record_score: int = 60  # 0–100
     thesis: str = ""
+    ticket_known: bool = True
+    not_investing_reason: str = ""
+    source_url: str | None = None
 
 
 SEED_INVESTORS: list[Investor] = [
@@ -109,3 +123,52 @@ SEED_INVESTORS: list[Investor] = [
         thesis="Currently not deploying.",
     ),
 ]
+
+
+# The source's stage words -> the funding module's stages.
+_STAGES = {
+    "pre_seed": ["idea", "poc", "prototype"],
+    "seed": ["prototype", "mvp", "seed"],
+    "pre_series_a": ["seed"],
+    "early": ["seed", "series_a"],
+    "growth": ["series_a", "series_b", "series_c", "growth", "scale"],
+}
+_TYPE = {"venture": "vc", "angel": "angel", "growth": "vc", "private_credit": "lender"}
+ALL_SECTORS = "__all__"
+
+
+@lru_cache
+def real_investors() -> tuple[Investor, ...]:
+    from app.ecosystem.index import DATA
+
+    if not DATA.exists():
+        return ()
+    rows = json.loads(DATA.read_text(encoding="utf8")).get("investors", [])
+    out = []
+    for r in rows:
+        stages = sorted({s for st in r.get("stages") or [] for s in _STAGES.get(st, [])})
+        ticket = r.get("ticket_lakh")
+        lo, hi = (int(ticket[0] * 100_000), int(ticket[1] * 100_000)) if ticket else (0, 0)
+        reason = ""
+        if not r.get("serves_founders"):
+            reason = r.get("not_for_founders_reason") or "does not invest in startups"
+        elif r.get("instrument") == "debt":
+            reason = "lends money; does not buy shares"
+        out.append(
+            Investor(
+                id=r["slug"],
+                name=r["name"],
+                type=_TYPE.get(r.get("asset_class") or "", r.get("asset_class") or "other"),
+                min_ticket=lo,
+                max_ticket=hi,
+                stages=stages,
+                sectors=[ALL_SECTORS] if r.get("generalist") else list(r.get("sectors") or []),
+                geographies=["Tamil Nadu"],
+                availability="not_investing" if reason else "actively_investing",
+                thesis=r.get("summary") or "",
+                ticket_known=bool(ticket),
+                not_investing_reason=reason,
+                source_url=r.get("source_url"),
+            )
+        )
+    return tuple(out)

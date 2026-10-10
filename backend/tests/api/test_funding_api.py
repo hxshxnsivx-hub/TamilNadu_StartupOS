@@ -80,3 +80,16 @@ async def test_pipeline_board_endpoint(client: AsyncClient):
     # only the open deal counts toward pipeline value, discounted by stage
     assert m["pipeline_value"] == 1000000
     assert m["weighted_value"] == 800000
+
+
+async def test_investor_match_uses_real_investors_with_sources(client):
+    r = await client.post(
+        "/api/v1/funding/investors/match",
+        json={"startup": {"sector": "cleantech", "stage": "seed"}, "funding_need": 5000000,
+              "readiness_overall": 65},
+    )  # fmt: skip
+    body = r.json()
+    assert r.status_code == 200 and body["eligible"]
+    top = body["eligible"][0]["investor"]
+    assert top["source_url"].startswith("https://tamilnadustartupmap.com")
+    assert top["ticket_known"] in (True, False)

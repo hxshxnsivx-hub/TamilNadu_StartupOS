@@ -40,6 +40,9 @@ class InvestorOut(BaseModel):
     max_ticket: int
     track_record_score: int
     thesis: str
+    # most investors do not publish a ticket size; then min/max are 0 and this is False
+    ticket_known: bool = True
+    source_url: str | None = None
 
 
 class EligibleInvestorOut(BaseModel):

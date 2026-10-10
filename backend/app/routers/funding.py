@@ -43,6 +43,8 @@ def _investor_out(inv: Investor) -> InvestorOut:
         max_ticket=inv.max_ticket,
         track_record_score=inv.track_record_score,
         thesis=inv.thesis,
+        ticket_known=inv.ticket_known,
+        source_url=inv.source_url,
     )
 
 
