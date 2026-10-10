@@ -12,12 +12,24 @@ import {
   getSession,
   startSession,
   streamTurn,
+  voiceStatus,
   type Action,
+  type Lang,
   type CouncilBrief,
   type Evidence,
   type Novelty,
 } from "../voice/agentClient";
 import { Listener, Speaker, canListen, canSpeak, isBargeIn, micLevel } from "../voice/speech";
+import { AudioSpeaker, RecordingListener } from "../voice/mentorVoice";
+
+/* Either voice, browser or Sarvam, behind the same small interface. */
+interface VoiceOut {
+  say(sentence: string, language?: Lang): void;
+  cancel(): void;
+  readonly speaking: boolean;
+  current: string;
+}
+const LANGS: Lang[] = ["ta-IN", "en-IN", "hi-IN"];
 
 const SESSION_KEY = "vanigam_talk_session";
 const TOOL_LABEL: Record<string, string> = {
@@ -63,7 +75,8 @@ export default function Talk() {
   const [listening, setListening] = useState(false);
   const [level, setLevel] = useState(0);
   const [voiceOn, setVoiceOn] = useState(canSpeak);
-  const [lang, setLang] = useState("en-IN");
+  const [lang, setLang] = useState<Lang | "auto">("auto");
+  const [provider, setProvider] = useState<"browser" | "sarvam">("browser");
   const [draft, setDraft] = useState("");
   const [action, setAction] = useState<Action | null>(null);
   const [evidence, setEvidence] = useState<Evidence | null>(null);
@@ -76,16 +89,29 @@ export default function Talk() {
   const stopMicRef = useRef<(() => void) | null>(null);
   const voiceOnRef = useRef(voiceOn);
   voiceOnRef.current = voiceOn;
+  const founderLangRef = useRef<Lang | undefined>(undefined); // last language heard
+  const langRef = useRef(lang);
+  langRef.current = lang;
 
-  const speaker = useMemo(
-    () =>
-      new Speaker({
-        onStart: () => setSpeaking(true),
-        onEnd: () => setSpeaking(false),
-        onPulse: (v) => setLevel(v),
-      }),
-    [],
-  );
+  // The mentor's voice: Sarvam when the server has a key, otherwise the browser's.
+  useEffect(() => {
+    voiceStatus()
+      .then((v) => setProvider(v.provider))
+      .catch(() => setProvider("browser"));
+  }, []);
+
+  const speaker: VoiceOut = useMemo(() => {
+    const ev = {
+      onStart: () => setSpeaking(true),
+      onEnd: () => setSpeaking(false),
+      onPulse: (v: number) => setLevel(v),
+    };
+    return provider === "sarvam" ? new AudioSpeaker(ev) : new Speaker(ev);
+  }, [provider]);
+
+  /** The language to send with a turn: chosen, or last heard when on auto. */
+  const turnLang = (heard?: Lang): Lang | undefined =>
+    langRef.current === "auto" ? heard ?? founderLangRef.current : langRef.current;
 
   // ---- resume a saved conversation
   useEffect(() => {
@@ -107,7 +133,7 @@ export default function Talk() {
 
   // ---- one turn
   const send = useCallback(
-    async (text: string) => {
+    async (text: string, heard?: Lang) => {
       const said = text.trim();
       if (!said || !sessionId) return;
       if (busyRef.current) {
@@ -121,17 +147,19 @@ export default function Talk() {
       setPartial("");
       setLines((l) => [...l, { role: "user", text: said }]);
       let spoken = "";
+      let replyLang: Lang = "en-IN";
       try {
         await streamTurn(sessionId, said, (ev) => {
           switch (ev.event) {
             case "ack":
               setAction(ev.data.action);
+              replyLang = ev.data.reply_language ?? "en-IN";
               break;
             case "sentence":
               spoken = spoken ? `${spoken} ${ev.data}` : ev.data;
               setCaption(ev.data);
               setStatus("");
-              if (voiceOnRef.current && !mutedRef.current) speaker.say(ev.data);
+              if (voiceOnRef.current && !mutedRef.current) speaker.say(ev.data, replyLang);
               break;
             case "tool":
               setStatus(ev.data.status === "started" ? `${TOOL_LABEL[ev.data.name] ?? ev.data.name}…` : "");
@@ -156,7 +184,7 @@ export default function Talk() {
               setError(ev.data.detail);
               break;
           }
-        });
+        }, undefined, turnLang(heard));
       } catch (e) {
         setError(e instanceof Error ? e.message : "The turn failed. Try again.");
       } finally {
@@ -175,7 +203,7 @@ export default function Talk() {
   sendRef.current = send;
 
   // ---- listening
-  const listener = useMemo(
+  const browserListener = useMemo(
     () =>
       new Listener({
         onPartial: (t) => {
@@ -198,10 +226,51 @@ export default function Talk() {
     [speaker],
   );
 
+  const recordingListener = useMemo(
+    () =>
+      provider !== "sarvam"
+        ? null
+        : new RecordingListener(
+            {
+              onPartial: (t) => setPartial(t),
+              onFinal: () => undefined,
+              onFinalLang: (t, l) => {
+                founderLangRef.current = l;
+                void sendRef.current(t, l);
+              },
+              onSpeechStart: () => {
+                if (speaker.speaking) {
+                  mutedRef.current = true; // the founder is talking: stop, and listen
+                  speaker.cancel();
+                }
+              },
+              onUtteranceEnd: () => {
+                // no dead air: acknowledge at once, in the founder's language
+                if (voiceOnRef.current && speaker instanceof AudioSpeaker) {
+                  speaker.acknowledge(turnLang() ?? "en-IN");
+                }
+              },
+              onLevel: (v) => {
+                if (!speaker.speaking) setLevel(v);
+              },
+              onError: (m) => {
+                setError(m);
+                setListening(false);
+              },
+            },
+            () => speaker.speaking,
+          ),
+    [provider, speaker],
+  );
+  const listener = recordingListener ?? browserListener;
+
   useEffect(() => {
-    listener.lang = lang;
-    listener.setLang(lang);
-  }, [lang, listener]);
+    // Browser recognition needs one language; Sarvam can detect it ("auto").
+    const l = lang === "auto" && !recordingListener ? "en-IN" : lang;
+    browserListener.lang = l;
+    browserListener.setLang(l);
+    recordingListener?.setLang(lang);
+  }, [lang, browserListener, recordingListener]);
 
   const stopListening = useCallback(() => {
     listener.stop();
@@ -213,11 +282,16 @@ export default function Talk() {
   }, [listener]);
 
   const startListening = useCallback(async () => {
+    setError("");
+    if (recordingListener) {
+      setListening(true);
+      await recordingListener.start(); // its own level meter
+      return;
+    }
     if (!canListen) {
       setError("This browser has no speech recognition. Type below instead.");
       return;
     }
-    setError("");
     listener.start();
     setListening(true);
     try {
@@ -227,7 +301,7 @@ export default function Talk() {
     } catch {
       /* no level meter: recognition still works */
     }
-  }, [listener, speaker]);
+  }, [listener, recordingListener, speaker]);
 
   useEffect(() => () => {
     stopListening();
@@ -244,7 +318,8 @@ export default function Talk() {
       save(r.session_id);
       setLines([{ role: "assistant", text: r.reply }]);
       setCaption(r.reply);
-      if (voiceOn) speaker.say(r.reply);
+      if (voiceOn) speaker.say(r.reply, "en-IN");
+      if (speaker instanceof AudioSpeaker) speaker.warm(LANGS);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not start. Is the backend running?");
     }
@@ -334,7 +409,7 @@ export default function Talk() {
           if (listening) stopListening();
           else void startListening();
         }}
-        disabled={!canListen && !speaking}
+        disabled={!canListen && !recordingListener && !speaking}
       />
 
       <p className={`vg-caption${partial ? " vg-caption--partial" : ""}`} aria-live="polite">
@@ -371,9 +446,19 @@ export default function Talk() {
 
       <p>
         <label htmlFor="talk-lang">I'll speak in </label>
-        <select id="talk-lang" value={lang} onChange={(e) => setLang(e.target.value)}>
-          <option value="en-IN">English (India)</option>
+        <select
+          id="talk-lang"
+          value={lang}
+          onChange={(e) => setLang(e.target.value as Lang | "auto")}
+        >
+          <option value="auto">
+            {provider === "sarvam"
+              ? "Any: Tamil, English or Hindi"
+              : "Auto (the browser listens in English)"}
+          </option>
           <option value="ta-IN">தமிழ் (Tamil)</option>
+          <option value="en-IN">English (India)</option>
+          <option value="hi-IN">हिन्दी (Hindi)</option>
         </select>{" "}
         <input
           id="talk-voice"

@@ -252,6 +252,8 @@ class AgentStartIn(BaseModel):
 
 class AgentTurnIn(BaseModel):
     text: str = Field(min_length=1, max_length=4000)
+    # the founder's language this turn (ta-IN, en-IN, hi-IN); the reply follows it
+    language: str | None = Field(default=None, pattern=r"^(ta|en|hi)-IN$")
 
 
 _SESSION_ID = Path(pattern=r"^[0-9a-f]{32}$")
@@ -309,7 +311,7 @@ async def agent_turn(body: AgentTurnIn, session_id: str = _SESSION_ID) -> dict:
     """One founder turn: the reply, the next question, and the evidence it rests on."""
     async with _turn_locks.setdefault(session_id, asyncio.Lock()):
         s = await _load(session_id)
-        out = await agent.turn(s, body.text)
+        out = await agent.turn(s, body.text, language=body.language)
         await _save(s)
         return out
 
@@ -330,7 +332,7 @@ async def agent_turn_stream(body: AgentTurnIn, session_id: str = _SESSION_ID):
 
     async def events():
         try:
-            async for ev in agent.turn_stream(s, body.text):
+            async for ev in agent.turn_stream(s, body.text, language=body.language):
                 if ev["event"] == "done":
                     try:
                         await _save(s)

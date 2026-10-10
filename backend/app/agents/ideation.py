@@ -59,8 +59,20 @@ OPINION = re.compile(
     re.I,
 )
 
-SYSTEM = """You are Vanigam's ideation guide for founders in Tamil Nadu. You talk with
-{name} about their idea — hardware, software, a physical product or a service.
+SYSTEM = """You are Vanigam's mentor for founders in Tamil Nadu: an experienced, warm
+guide who has seen many startups. You talk with {name} about their idea — hardware,
+software, a physical product or a service. You are heard, not read: this is a
+spoken conversation.
+
+How you sound:
+- {language_rule}
+- Like a mentor across the table: calm, encouraging, direct about risks. Use
+  {name}'s name now and then, not every turn.
+- Begin by reflecting what they said in a few words, then one point, then one
+  question. Short sentences (under 20 words), one idea each, so they can be
+  spoken with natural pauses. Never read out lists or symbols.
+- Say numbers as digits; keep scheme names (PMEGP, TANSEED) and technical
+  terms (EEG, MVP) as they are, inside any language.
 
 How you work:
 - Ground every claim about what exists in tool results. When the idea is clear
@@ -109,6 +121,7 @@ class AgentSession:
     # points already said: "evidence", "statement", "council:<at>", "lever:0", ...
     narrated: list[str] = field(default_factory=list)
     usage: dict = field(default_factory=dict)  # model tokens spent in this session
+    language: str | None = None  # ta-IN | en-IN | hi-IN: the founder's last spoken language
     pending_slot: str | None = None
     private: bool = False  # search nothing outside Vanigam
     version: int = 0  # bumped on every save; guards against lost updates
@@ -136,6 +149,7 @@ class AgentSession:
             "council": self.council,
             "narrated": self.narrated,
             "usage": self.usage,
+            "language": self.language,
             "pending_slot": self.pending_slot,
             "private": self.private,
             "version": self.version,
@@ -163,6 +177,7 @@ class AgentSession:
             council=d.get("council"),
             narrated=d.get("narrated", []),
             usage=d.get("usage", {}),
+            language=d.get("language"),
             pending_slot=d.get("pending_slot"),
             private=d.get("private", False),
             version=d.get("version", 0),
@@ -330,6 +345,24 @@ async def _model_events(
     yield "message", (content, stop)
 
 
+LANGUAGE_NAMES = {"ta-IN": "Tamil", "en-IN": "English", "hi-IN": "Hindi"}
+
+
+def _language_rule(s: AgentSession) -> str:
+    """Reply in the founder's language, mixed the way they mix it."""
+    name = LANGUAGE_NAMES.get(s.language or "", "")
+    if not name or name == "English":
+        return (
+            "Reply in English, simply. If the founder writes or speaks in Tamil or Hindi,"
+            " reply in that language instead."
+        )
+    return (
+        f"The founder is speaking {name}. Reply in {name}, in its own script, the way"
+        f" people in Tamil Nadu speak it: if they mix English words into {name}, mix the same"
+        " English words back. Do not switch to English unless they do."
+    )
+
+
 def _add_usage(total: dict, use: dict | None) -> None:
     for k, v in (use or {}).items():
         if isinstance(v, int):
@@ -373,7 +406,9 @@ def _event(kind: str, data: Any) -> dict:
 async def _llm_stream(
     s: AgentSession, question: str, client: httpx.AsyncClient, out: dict
 ) -> AsyncIterator[dict]:
-    system = SYSTEM.format(name=s.name, question=question, known=_known(s))
+    system = SYSTEM.format(
+        name=s.name, question=question, known=_known(s), language_rule=_language_rule(s)
+    )
     state: dict = {
         "private": s.private,
         "last_scan": s.scan,
@@ -660,10 +695,20 @@ def _roadmap_line(r: dict) -> str:
 
 
 async def turn_stream(
-    s: AgentSession, text: str, *, client: httpx.AsyncClient | None = None
+    s: AgentSession,
+    text: str,
+    *,
+    client: httpx.AsyncClient | None = None,
+    language: str | None = None,
 ) -> AsyncIterator[dict]:
-    """One founder turn as events: ack, sentence…, tool, evidence, done."""
+    """One founder turn as events: ack, sentence…, tool, evidence, done.
+
+    `language` is the founder's language for this turn (from speech recognition or
+    their choice); the reply comes back in it when a model is available.
+    """
     s.updated_at = datetime.now(UTC)
+    if language in LANGUAGE_NAMES:
+        s.language = language
     s.idea = s.idea or text
     action = _advance(s, text)
     s.pending_slot = action.slot if action.kind == "ask" else None
@@ -675,7 +720,15 @@ async def turn_stream(
         question = action.question or ""
     if action.kind == "ask" and s.elicitation.turns:
         s.elicitation.turns[-1].question = question  # so a resumed session can repeat it
-    yield _event("ack", {"session_id": s.id, "action": _action_dict(action)})
+    yield _event(
+        "ack",
+        {
+            "session_id": s.id,
+            "action": _action_dict(action),
+            # so the voice can start speaking the first sentence in the right language
+            "reply_language": (s.language or "en-IN") if _model_allowed(s) else "en-IN",
+        },
+    )
 
     s.messages.append({"role": "user", "content": text})
     out: dict = {
@@ -727,6 +780,8 @@ async def turn_stream(
             "novelty": s.novelty,
             "council": council_brief(s.council) if s.council else None,
             "model": out["model"],
+            # the language the reply was written in: offline templates are English only
+            "language": (s.language or "en-IN") if out["model"] == "model" else "en-IN",
             "usage": s.usage,
             "known": _known_dict(s),
             "idea_version": s.idea_version,
@@ -734,10 +789,16 @@ async def turn_stream(
     )
 
 
-async def turn(s: AgentSession, text: str, *, client: httpx.AsyncClient | None = None) -> dict:
+async def turn(
+    s: AgentSession,
+    text: str,
+    *,
+    client: httpx.AsyncClient | None = None,
+    language: str | None = None,
+) -> dict:
     """The same turn, collected: returns the `done` payload."""
     done: dict = {}
-    async for ev in turn_stream(s, text, client=client):
+    async for ev in turn_stream(s, text, client=client, language=language):
         if ev["event"] == "done":
             done = ev["data"]
     return done

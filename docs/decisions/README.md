@@ -12,6 +12,7 @@ edited after it is accepted; a later decision supersedes it and says so.
 | [0005](0005-fact-check-before-speech.md) | Fact check every model sentence before it is spoken | Accepted | 2026-10-09 |
 | [0006](0006-novelty-from-counts.md) | Novelty is judged from search counts at three levels | Accepted | 2026-10-09 |
 | [0007](0007-council-in-the-turn.md) | The review panel meets inside the turn, at three moments, until background jobs exist | Accepted | 2026-10-10 |
+| [0008](0008-mentor-voice-sarvam.md) | The mentor's voice and listening use Sarvam AI, through the server | Accepted | 2026-10-10 |
 
 Template: copy any record; keep the headings **Context**, **Decision**, **Options considered**,
 **Consequences**.

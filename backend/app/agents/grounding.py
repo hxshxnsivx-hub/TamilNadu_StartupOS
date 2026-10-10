@@ -27,7 +27,11 @@ NOVELTY_LINE = (
 )
 BANNED = re.compile(
     r"\b(unique|novel|first[- ]of[- ]its[- ]kind|never been done|no one (?:has|else)"
-    r"|nobody (?:has|else)|world'?s first|completely new|groundbreaking)\b",
+    r"|nobody (?:has|else)|world'?s first|completely new|groundbreaking)\b"
+    # Tamil: unique, first time, never before, new invention
+    r"|தனித்துவ|முதன்முறையாக|இதுவரை யாரும்|புதிய கண்டுபிடிப்பு"
+    # Hindi: unique, first time, never before, nobody has
+    r"|अनोखा|अनोखी|अद्वितीय|पहली बार|पहले कभी नहीं|किसी ने नहीं",
     re.I,
 )
 # A figure as said in a reply: 1,200 · 4.5 · 12% · ₹5 · 2022
@@ -35,7 +39,9 @@ NUM = re.compile(r"(?<![\w.])(\d{1,3}(?:,\d{2,3})+|\d+(?:\.\d+)?)(?![\w])")
 UNIT_AFTER = re.compile(r"^\s*(%|percent|lakh|lakhs|crore|crores|l\b|cr\b)", re.I)
 NCT = re.compile(r"\bNCT\d{8}\b")
 REPO = re.compile(r"\b[\w.-]+/[\w.-]+\b")
-SENTENCE_END = re.compile(r"(?<!\bDr)(?<!\bRs)(?<!\bMr)(?<!\bMs)(?<!\bvs)[.!?](?=\s|$)")
+SENTENCE_END = re.compile(
+    r"(?<!\bDr)(?<!\bRs)(?<!\bMr)(?<!\bMs)(?<!\bvs)[.!?\u0964\u0965](?=\s|$)"
+)  # . ! ? and the Hindi danda (। ॥)
 # Bare small counts ("two steps", "3 questions") carry little risk and are
 # everywhere in natural speech; a figure with a unit or a year never passes free.
 FREE_MAX = 12

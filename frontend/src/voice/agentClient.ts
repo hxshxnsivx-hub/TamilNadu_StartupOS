@@ -61,6 +61,7 @@ export interface Done {
   roadmap: unknown;
   known: Record<string, string>;
   model?: string;
+  language?: Lang;
 }
 
 export interface Snapshot {
@@ -75,7 +76,7 @@ export interface Snapshot {
 }
 
 export type AgentEvent =
-  | { event: "ack"; data: { session_id: string; action: Action } }
+  | { event: "ack"; data: { session_id: string; action: Action; reply_language?: Lang } }
   | { event: "sentence"; data: string }
   | { event: "tool"; data: { name: string; status: "started" | "done" } }
   | { event: "evidence"; data: Evidence }
@@ -87,7 +88,9 @@ export type AgentEvent =
 async function json<T>(res: Response): Promise<T> {
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const detail = (body as { detail?: string }).detail || `Request failed (${res.status})`;
+    // The backend's error handler sends error_message; FastAPI's default is detail.
+    const b = body as { error_message?: string; detail?: string };
+    const detail = b.error_message || b.detail || `Request failed (${res.status})`;
     throw new Error(detail);
   }
   return body as T;
@@ -105,17 +108,55 @@ export function getSession(id: string): Promise<Snapshot> {
   return fetch(`${BASE}/${id}`).then((r) => json<Snapshot>(r));
 }
 
+export type Lang = "ta-IN" | "en-IN" | "hi-IN";
+
+export interface VoiceStatus {
+  provider: "sarvam" | "browser";
+  languages: Record<Lang, string>;
+  voice: string | null;
+}
+
+export function voiceStatus(): Promise<VoiceStatus> {
+  return fetch("/api/v1/voice/status").then((r) => json<VoiceStatus>(r));
+}
+
+/** One sentence in the mentor's voice (MP3), from the server's Sarvam proxy. */
+export async function speakAudio(text: string, language: Lang): Promise<Blob> {
+  const res = await fetch("/api/v1/voice/speak", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text, language }),
+  });
+  if (!res.ok) await json(res);
+  return res.blob();
+}
+
+/** One utterance to text; "auto" lets the service detect Tamil, English or Hindi. */
+export function transcribe(
+  audio: Blob,
+  language: Lang | "auto",
+): Promise<{ text: string; language: Lang; confidence: number | null }> {
+  const form = new FormData();
+  const ext = audio.type.includes("ogg") ? "ogg" : audio.type.includes("mp4") ? "m4a" : "webm";
+  form.append("file", audio, `turn.${ext}`);
+  form.append("language", language);
+  return fetch("/api/v1/voice/transcribe", { method: "POST", body: form }).then((r) =>
+    json<{ text: string; language: Lang; confidence: number | null }>(r),
+  );
+}
+
 /** Parse a server-sent event stream into events, as they arrive. */
 export async function streamTurn(
   sessionId: string,
   text: string,
   onEvent: (ev: AgentEvent) => void,
   signal?: AbortSignal,
+  language?: Lang,
 ): Promise<void> {
   const res = await fetch(`${BASE}/${sessionId}/turns/stream`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text }),
+    body: JSON.stringify(language ? { text, language } : { text }),
     signal,
   });
   if (!res.ok || !res.body) {

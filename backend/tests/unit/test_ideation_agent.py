@@ -450,3 +450,25 @@ def test_model_can_call_check_novelty(monkeypatch, _env):
     said = [e["data"] for e in evs if e["event"] == "sentence"]
     assert "Together, I found only 19 papers." in said  # backed by the novelty result
     assert s.novelty == NOVELTY and _env[-1]["elements"] == ["EEG", "nurse call"]
+
+
+def test_founders_language_reaches_the_prompt_and_the_ack(monkeypatch):
+    sent, transport = _model(monkeypatch, _text_reply("சரி. நீங்கள் எந்த நிலையில் இருக்கிறீர்கள்?"))
+    s = _new("Kavya")
+    evs = _run(_with(transport, lambda c: _collect(s, "நான் ஒரு சாதனம் உருவாக்குகிறேன்", c)))
+    assert evs[0]["data"]["reply_language"] == "ta-IN"
+    assert "Reply in Tamil" in sent[0]["system"]
+    said = [e["data"] for e in evs if e["event"] == "sentence"]
+    assert said == ["சரி.", "நீங்கள் எந்த நிலையில் இருக்கிறீர்கள்?"]
+    assert evs[-1]["data"]["language"] == "ta-IN" and s.language == "ta-IN"
+
+
+def test_offline_replies_say_they_are_english():
+    s = _new()
+    evs = _run(_collect(s, BCI, None, language="hi-IN"))
+    assert evs[0]["data"]["reply_language"] == "en-IN"  # templates are English only
+    assert evs[-1]["data"]["language"] == "en-IN" and s.language == "hi-IN"
+
+
+async def _collect(s, text, client, language="ta-IN"):
+    return [ev async for ev in agent.turn_stream(s, text, client=client, language=language)]

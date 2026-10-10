@@ -52,6 +52,15 @@ class Settings(BaseSettings):
     # the conversation itself keeps going.
     session_token_budget: int = 0
 
+    # Mentor voice: Sarvam AI speech (app/voice). Without a key the browser's own
+    # speech is used. One speaker for every language keeps the mentor's voice the same.
+    # The key is SARVAM_API_KEY, shared with translation below.
+    sarvam_tts_model: str = "bulbul:v3"
+    sarvam_tts_speaker: str = "shubh"
+    sarvam_tts_pace: float = 0.95  # a touch slower than default: a mentor, not an announcer
+    sarvam_stt_model: str = "saaras:v4"
+    voice_cache_dir: str = ".cache/voice"
+
     translation_provider: str = "sarvam"
     sarvam_api_key: str = ""
 
