@@ -14,6 +14,7 @@ import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import Consent from "./pages/Consent";
 import Ideate from "./pages/Ideate";
+import Talk from "./pages/Talk";
 import Schemes from "./pages/Schemes";
 import B2B from "./pages/B2B";
 import Supply from "./pages/Supply";
@@ -30,6 +31,7 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
    reads. */
 const NAV = [
   { to: "/ideate", key: "ideate_nav" },
+  { to: "/talk", label: "Talk" },
   { to: "/schemes", key: "schemes" },
   { to: "/b2b", key: "b2b" },
   { to: "/funding", key: "funding" },
@@ -103,6 +105,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/start" element={<Start />} />
           <Route path="/ideate" element={<Ideate />} />
+          <Route path="/talk" element={<Talk />} />
           <Route path="/schemes" element={<Schemes />} />
           <Route path="/b2b" element={<B2B />} />
           <Route path="/supply" element={<Supply />} />

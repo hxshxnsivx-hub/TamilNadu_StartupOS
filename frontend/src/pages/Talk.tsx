@@ -1,0 +1,556 @@
+/* Talk: the voice ideation agent (Phase 3).
+ *
+ * The founder talks to the orb or types; replies stream sentence by sentence
+ * and are spoken as they arrive. Every claim the agent makes can be checked in
+ * the evidence panel below. Text input is always available: voice is a
+ * convenience, never a requirement.
+ */
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Orb, { type OrbState } from "../voice/Orb";
+import {
+  getSession,
+  startSession,
+  streamTurn,
+  type Action,
+  type CouncilBrief,
+  type Evidence,
+  type Novelty,
+} from "../voice/agentClient";
+import { Listener, Speaker, canListen, canSpeak, isBargeIn, micLevel } from "../voice/speech";
+
+const SESSION_KEY = "vanigam_talk_session";
+const TOOL_LABEL: Record<string, string> = {
+  scan_prior_art: "Looking up what already exists",
+  check_novelty: "Checking what is rare",
+  ask_council: "Asking the review panel",
+  build_roadmap: "Building your roadmap",
+  find_domains: "Finding the closest domains",
+  support_for: "Finding schemes and incubators",
+  note_fact: "Noting that",
+};
+
+type Line = { role: "user" | "assistant"; text: string };
+
+function readSaved(): string | null {
+  try {
+    return localStorage.getItem(SESSION_KEY);
+  } catch {
+    return null;
+  }
+}
+function save(id: string | null) {
+  try {
+    if (id) localStorage.setItem(SESSION_KEY, id);
+    else localStorage.removeItem(SESSION_KEY);
+  } catch {
+    /* private window: the conversation still works, it just won't resume */
+  }
+}
+
+export default function Talk() {
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [name, setName] = useState("");
+  const [isPrivate, setPrivate] = useState(false);
+  const [saved, setSaved] = useState<boolean | null>(null);
+  const [lines, setLines] = useState<Line[]>([]);
+  const [caption, setCaption] = useState("");
+  const [partial, setPartial] = useState("");
+  const [status, setStatus] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [level, setLevel] = useState(0);
+  const [voiceOn, setVoiceOn] = useState(canSpeak);
+  const [lang, setLang] = useState("en-IN");
+  const [draft, setDraft] = useState("");
+  const [action, setAction] = useState<Action | null>(null);
+  const [evidence, setEvidence] = useState<Evidence | null>(null);
+  const [novelty, setNovelty] = useState<Novelty | null>(null);
+  const [council, setCouncil] = useState<CouncilBrief | null>(null);
+
+  const busyRef = useRef(false);
+  const mutedRef = useRef(false); // founder interrupted: stop speaking this turn
+  const queuedRef = useRef<string | null>(null);
+  const stopMicRef = useRef<(() => void) | null>(null);
+  const voiceOnRef = useRef(voiceOn);
+  voiceOnRef.current = voiceOn;
+
+  const speaker = useMemo(
+    () =>
+      new Speaker({
+        onStart: () => setSpeaking(true),
+        onEnd: () => setSpeaking(false),
+        onPulse: (v) => setLevel(v),
+      }),
+    [],
+  );
+
+  // ---- resume a saved conversation
+  useEffect(() => {
+    const id = readSaved();
+    if (!id) return;
+    getSession(id)
+      .then((snap) => {
+        setSessionId(snap.session_id);
+        setName(snap.name === "there" ? "" : snap.name);
+        setPrivate(snap.private);
+        setLines(snap.transcript);
+        setEvidence(snap.evidence);
+        setNovelty(snap.novelty);
+        setCouncil(snap.council);
+        setCaption(snap.last_question ?? "");
+      })
+      .catch(() => save(null)); // expired or gone: start fresh
+  }, []);
+
+  // ---- one turn
+  const send = useCallback(
+    async (text: string) => {
+      const said = text.trim();
+      if (!said || !sessionId) return;
+      if (busyRef.current) {
+        queuedRef.current = said; // sent when this turn finishes
+        return;
+      }
+      busyRef.current = true;
+      mutedRef.current = false;
+      setBusy(true);
+      setError("");
+      setPartial("");
+      setLines((l) => [...l, { role: "user", text: said }]);
+      let spoken = "";
+      try {
+        await streamTurn(sessionId, said, (ev) => {
+          switch (ev.event) {
+            case "ack":
+              setAction(ev.data.action);
+              break;
+            case "sentence":
+              spoken = spoken ? `${spoken} ${ev.data}` : ev.data;
+              setCaption(ev.data);
+              setStatus("");
+              if (voiceOnRef.current && !mutedRef.current) speaker.say(ev.data);
+              break;
+            case "tool":
+              setStatus(ev.data.status === "started" ? `${TOOL_LABEL[ev.data.name] ?? ev.data.name}…` : "");
+              break;
+            case "evidence":
+              setEvidence(ev.data);
+              break;
+            case "novelty":
+              setNovelty(ev.data);
+              break;
+            case "council":
+              setCouncil(ev.data);
+              break;
+            case "done":
+              setAction(ev.data.action);
+              if (ev.data.evidence) setEvidence(ev.data.evidence);
+              if (ev.data.novelty) setNovelty(ev.data.novelty);
+              if (ev.data.council) setCouncil(ev.data.council);
+              spoken = ev.data.reply || spoken;
+              break;
+            case "error":
+              setError(ev.data.detail);
+              break;
+          }
+        });
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "The turn failed. Try again.");
+      } finally {
+        if (spoken) setLines((l) => [...l, { role: "assistant", text: spoken }]);
+        busyRef.current = false;
+        setBusy(false);
+        setStatus("");
+        const next = queuedRef.current;
+        queuedRef.current = null;
+        if (next) void send(next);
+      }
+    },
+    [sessionId, speaker],
+  );
+  const sendRef = useRef(send);
+  sendRef.current = send;
+
+  // ---- listening
+  const listener = useMemo(
+    () =>
+      new Listener({
+        onPartial: (t) => {
+          setPartial(t);
+          if (speaker.speaking && isBargeIn(t, speaker.current)) {
+            mutedRef.current = true; // the founder is talking: stop, and listen
+            speaker.cancel();
+          }
+        },
+        onFinal: (t) => {
+          if (speaker.speaking && !isBargeIn(t, speaker.current)) return; // our own echo
+          void sendRef.current(t);
+        },
+        onSpeechStart: () => undefined,
+        onError: (m) => {
+          setError(m);
+          setListening(false);
+        },
+      }),
+    [speaker],
+  );
+
+  useEffect(() => {
+    listener.lang = lang;
+    listener.setLang(lang);
+  }, [lang, listener]);
+
+  const stopListening = useCallback(() => {
+    listener.stop();
+    stopMicRef.current?.();
+    stopMicRef.current = null;
+    setListening(false);
+    setLevel(0);
+    setPartial("");
+  }, [listener]);
+
+  const startListening = useCallback(async () => {
+    if (!canListen) {
+      setError("This browser has no speech recognition. Type below instead.");
+      return;
+    }
+    setError("");
+    listener.start();
+    setListening(true);
+    try {
+      stopMicRef.current = await micLevel((v) => {
+        if (!speaker.speaking) setLevel(v);
+      });
+    } catch {
+      /* no level meter: recognition still works */
+    }
+  }, [listener, speaker]);
+
+  useEffect(() => () => {
+    stopListening();
+    speaker.cancel();
+  }, [stopListening, speaker]);
+
+  // ---- starting and ending a conversation
+  async function begin() {
+    setError("");
+    try {
+      const r = await startSession(name.trim(), isPrivate);
+      setSessionId(r.session_id);
+      setSaved(r.saved);
+      save(r.session_id);
+      setLines([{ role: "assistant", text: r.reply }]);
+      setCaption(r.reply);
+      if (voiceOn) speaker.say(r.reply);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not start. Is the backend running?");
+    }
+  }
+
+  function startOver() {
+    stopListening();
+    speaker.cancel();
+    save(null);
+    setSessionId(null);
+    setLines([]);
+    setCaption("");
+    setEvidence(null);
+    setNovelty(null);
+    setCouncil(null);
+    setAction(null);
+  }
+
+  const orbState: OrbState = speaking ? "speaking" : busy ? "thinking" : listening ? "listening" : "idle";
+
+  // ---- before the conversation
+  if (!sessionId) {
+    return (
+      <section aria-labelledby="talk-title">
+        <h1 id="talk-title">Talk through your idea</h1>
+        <p>
+          Describe your idea in your own words, by voice or by typing. I look up what already
+          exists (papers, trials, open projects, patents, Tamil Nadu startups), tell you what is
+          rare, and ask one question at a time.
+        </p>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void begin();
+          }}
+        >
+          <p>
+            <label htmlFor="talk-name">Your name (optional) </label>
+            <input id="talk-name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="given-name" />
+          </p>
+          <p>
+            <input id="talk-private" type="checkbox" checked={isPrivate} onChange={(e) => setPrivate(e.target.checked)} />{" "}
+            <label htmlFor="talk-private">
+              Private: search only Vanigam's own data, nothing outside it
+            </label>
+          </p>
+          <p>
+            <button type="submit">Start</button>
+          </p>
+        </form>
+        {canListen ? (
+          <p>
+            <small>
+              Voice uses your browser's speech service to turn speech into text; Vanigam receives
+              only the text, and no audio is stored.
+            </small>
+          </p>
+        ) : (
+          <p>
+            <small>This browser has no speech recognition; you can type.</small>
+          </p>
+        )}
+        {error ? <p role="alert">{error}</p> : null}
+      </section>
+    );
+  }
+
+  // ---- the conversation
+  return (
+    <section aria-labelledby="talk-title">
+      <h1 id="talk-title">Talk through your idea</h1>
+      {saved === false ? (
+        <p>
+          <small>This conversation is not being saved (no database); it will be lost on restart.</small>
+        </p>
+      ) : null}
+
+      <Orb
+        state={orbState}
+        level={level}
+        onToggle={() => {
+          if (speaking) {
+            mutedRef.current = true;
+            speaker.cancel();
+            return;
+          }
+          if (listening) stopListening();
+          else void startListening();
+        }}
+        disabled={!canListen && !speaking}
+      />
+
+      <p className={`vg-caption${partial ? " vg-caption--partial" : ""}`} aria-live="polite">
+        {partial || caption}
+      </p>
+      {status ? <p aria-live="polite">{status}</p> : null}
+      {error ? <p role="alert">{error}</p> : null}
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          const t = draft;
+          setDraft("");
+          void send(t);
+        }}
+      >
+        <label htmlFor="talk-input">{action?.question ? "Your answer" : "Type instead"} </label>
+        <input
+          id="talk-input"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder={action?.question ?? "Describe your idea"}
+          size={60}
+        />{" "}
+        <button type="submit" disabled={!draft.trim()}>
+          Send
+        </button>{" "}
+        {action?.kind === "ask" ? (
+          <button type="button" onClick={() => void send("skip")} disabled={busy}>
+            Skip question
+          </button>
+        ) : null}
+      </form>
+
+      <p>
+        <label htmlFor="talk-lang">I'll speak in </label>
+        <select id="talk-lang" value={lang} onChange={(e) => setLang(e.target.value)}>
+          <option value="en-IN">English (India)</option>
+          <option value="ta-IN">தமிழ் (Tamil)</option>
+        </select>{" "}
+        <input
+          id="talk-voice"
+          type="checkbox"
+          checked={voiceOn}
+          disabled={!canSpeak}
+          onChange={(e) => {
+            setVoiceOn(e.target.checked);
+            if (!e.target.checked) speaker.cancel();
+          }}
+        />{" "}
+        <label htmlFor="talk-voice">Speak replies aloud</label>{" "}
+        <button type="button" onClick={() => void send("what do you think?")} disabled={busy}>
+          What do you think?
+        </button>{" "}
+        <button type="button" onClick={startOver}>
+          Start over
+        </button>
+      </p>
+      {action ? (
+        <p>
+          <small>
+            {Math.round(action.progress * 100)}% of the essentials known
+            {isPrivate ? " · private mode" : ""}
+          </small>
+        </p>
+      ) : null}
+
+      <h2>Conversation</h2>
+      <ol aria-live="off">
+        {lines.map((l, i) => (
+          <li key={i}>
+            <strong>{l.role === "user" ? "You" : "Vanigam"}:</strong> {l.text}
+          </li>
+        ))}
+      </ol>
+
+      <EvidencePanel evidence={evidence} novelty={novelty} council={council} />
+    </section>
+  );
+}
+
+function EvidencePanel({
+  evidence,
+  novelty,
+  council,
+}: {
+  evidence: Evidence | null;
+  novelty: Novelty | null;
+  council: CouncilBrief | null;
+}) {
+  if (!evidence && !novelty && !council) return null;
+  const notSearched = (evidence?.coverage ?? []).filter((c) => !["ok", "skipped"].includes(c.status));
+  return (
+    <section aria-labelledby="ev-title">
+      <h2 id="ev-title">Where this comes from</h2>
+
+      {council ? (
+        <details open>
+          <summary>
+            Review panel: {council.band} ({council.basis === "model" ? "Claude" : "rules"})
+          </summary>
+          <ul>
+            {council.brief.map((b, i) => (
+              <li key={i}>{b}</li>
+            ))}
+          </ul>
+          {council.blockers.length ? (
+            <p>
+              <strong>Blockers:</strong> {council.blockers.map((b) => b.text).join("; ")}
+            </p>
+          ) : null}
+          <p>
+            <strong>Options:</strong> {council.variants.join(" · ")}
+          </p>
+          <p>
+            <small>
+              Seats:{" "}
+              {Object.entries(council.stances)
+                .map(([seat, stance]) => `${seat.replace("_", " ")} ${stance}`)
+                .join(", ")}
+            </small>
+          </p>
+        </details>
+      ) : null}
+
+      {novelty ? (
+        <details open>
+          <summary>What is rare</summary>
+          <p>{novelty.statement.text}</p>
+          {novelty.pairs.length ? (
+            <ul>
+              {novelty.pairs.map((p, i) => (
+                <li key={i}>
+                  {p.a} with {p.b}: {p.papers.toLocaleString("en-IN")} papers
+                  {p.gap ? " (rare together)" : ""}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {novelty.levers.length ? (
+            <>
+              <p>
+                <strong>Ways to stand out</strong>
+              </p>
+              <ul>
+                {novelty.levers.map((lv, i) => (
+                  <li key={i}>
+                    {lv.text} <small>(because {lv.because})</small>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+          <p>
+            <small>{novelty.caveat}</small>
+          </p>
+        </details>
+      ) : null}
+
+      {evidence ? (
+        <details>
+          <summary>What already exists</summary>
+          {evidence.fields.length ? (
+            <p>Fields: {evidence.fields.map((f) => f.name).join(", ")}</p>
+          ) : null}
+          <SourceList
+            title={`Clinical trials (${evidence.trials.total})`}
+            items={evidence.trials.items.slice(0, 3).map((t) => ({ text: `${t.id}: ${t.title}`, url: t.url }))}
+          />
+          <SourceList
+            title={`Open-source projects (${evidence.projects.total})`}
+            items={evidence.projects.items.slice(0, 3).map((g) => ({ text: g.name, url: g.url }))}
+          />
+          <SourceList
+            title={`Research papers (${evidence.papers.total})`}
+            items={evidence.papers.most_relevant.slice(0, 3).map((p) => ({ text: `${p.title} (${p.year})`, url: p.url }))}
+          />
+          {evidence.local.startups.length ? (
+            <p>
+              Tamil Nadu startups:{" "}
+              {evidence.local.startups.map((s) => `${s.name} (${s.district})`).join(", ")}
+            </p>
+          ) : null}
+          {notSearched.length ? (
+            <p>
+              Not searched:{" "}
+              {notSearched.map((c) => `${c.source} (${c.note || c.status})`).join("; ")}
+            </p>
+          ) : null}
+          <p>
+            <small>{evidence.caveat}</small>
+          </p>
+        </details>
+      ) : null}
+    </section>
+  );
+}
+
+function SourceList({ title, items }: { title: string; items: Array<{ text: string; url: string }> }) {
+  if (!items.length) return null;
+  return (
+    <>
+      <p>{title}</p>
+      <ul>
+        {items.map((it, i) => (
+          <li key={i}>
+            {it.url ? (
+              <a href={it.url} target="_blank" rel="noreferrer">
+                {it.text}
+              </a>
+            ) : (
+              it.text
+            )}
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
