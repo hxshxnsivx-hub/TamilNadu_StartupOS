@@ -48,6 +48,9 @@ class Settings(BaseSettings):
     llm_model_router: str = "claude-haiku-4-5-20251001"
     # Council seats: many short parallel calls on a shared cached prefix.
     llm_model_fast: str = "claude-haiku-4-5-20251001"
+    # Model tokens per conversation (0: no cap). Past it the council runs on rules;
+    # the conversation itself keeps going.
+    session_token_budget: int = 0
 
     translation_provider: str = "sarvam"
     sarvam_api_key: str = ""

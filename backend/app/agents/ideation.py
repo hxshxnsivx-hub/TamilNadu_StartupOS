@@ -31,8 +31,10 @@ from typing import Any
 
 import httpx
 
+from app.agents import council
+from app.agents.council.seats import CRITERION_WORDS
 from app.agents.grounding import NOVELTY_LINE, SentenceSplitter, facts_from, gate, problems
-from app.agents.tools import TOOLS, compact_scan, run_tool
+from app.agents.tools import TOOLS, compact_scan, council_brief, run_tool
 from app.core.config import get_settings
 from app.core.logging import get_logger
 from app.elicitation import engine
@@ -40,6 +42,7 @@ from app.elicitation.answers import SKIP
 from app.elicitation.session import ElicitationSession, SessionState
 from app.elicitation.slots import BY_KEY
 from app.research import novelty
+from app.services.breaker import model_breaker
 
 log = get_logger("ideation_agent")
 
@@ -49,6 +52,12 @@ YES = {"yes", "yeah", "yep", "correct", "right", "ok", "okay", "sure", "seri", "
 NO = {"no", "nope", "wrong", "illai", "not"}
 # What counts as "the same idea": a change here is a new idea version.
 CORE_SLOTS = ("problem", "solution", "product_form", "sector", "beneficiary")
+# The founder asking for a judgement: worth convening the panel inside the turn.
+OPINION = re.compile(
+    r"\b(what do you think|your (honest )?(opinion|view|take)|is (this|it) (a )?good"
+    r"|review (it|this|my idea)|check (it )?again|will (this|it) work)\b",
+    re.I,
+)
 
 SYSTEM = """You are Vanigam's ideation guide for founders in Tamil Nadu. You talk with
 {name} about their idea — hardware, software, a physical product or a service.
@@ -68,7 +77,10 @@ How you work:
   over the next turns, one point per turn: first the statement (what is rare),
   then one way to stand out at a time, always with the reason it gives.
 - Use find_domains and support_for for Tamil Nadu schemes and incubators; never
-  invent a scheme, amount or deadline. Use build_roadmap once they confirm.
+  invent a scheme, amount or deadline.
+- When the founder asks what you think, or before the roadmap, call ask_council
+  and share its brief in your own words, with its one question.
+- Use build_roadmap once they confirm; mention any gates it lists first.
 - Only use numbers that appear in tool results or in what the founder said.
   Sentences with other numbers are removed before they are spoken.
 - Record facts they state with note_fact.
@@ -93,8 +105,10 @@ class AgentSession:
     scan: dict | None = None
     roadmap: dict | None = None
     novelty: dict | None = None
-    # novelty points already said: "statement", "lever:0", "lever:1", ...
+    council: dict | None = None  # the latest review-panel run
+    # points already said: "evidence", "statement", "council:<at>", "lever:0", ...
     narrated: list[str] = field(default_factory=list)
+    usage: dict = field(default_factory=dict)  # model tokens spent in this session
     pending_slot: str | None = None
     private: bool = False  # search nothing outside Vanigam
     version: int = 0  # bumped on every save; guards against lost updates
@@ -119,7 +133,9 @@ class AgentSession:
             "scan": self.scan,
             "roadmap": self.roadmap,
             "novelty": self.novelty,
+            "council": self.council,
             "narrated": self.narrated,
+            "usage": self.usage,
             "pending_slot": self.pending_slot,
             "private": self.private,
             "version": self.version,
@@ -144,7 +160,9 @@ class AgentSession:
             scan=d.get("scan"),
             roadmap=d.get("roadmap"),
             novelty=d.get("novelty"),
+            council=d.get("council"),
             narrated=d.get("narrated", []),
+            usage=d.get("usage", {}),
             pending_slot=d.get("pending_slot"),
             private=d.get("private", False),
             version=d.get("version", 0),
@@ -202,6 +220,7 @@ def snapshot(s: AgentSession) -> dict:
         "evidence": compact_scan(s.scan) if s.scan else None,
         "roadmap": s.roadmap,
         "novelty": s.novelty,
+        "council": council_brief(s.council) if s.council else None,
         "idea_version": s.idea_version,
     }
 
@@ -252,6 +271,7 @@ def _facts(s: AgentSession, question: str):
         compact_scan(s.scan) if s.scan else "",
         s.roadmap or "",
         s.novelty or "",
+        council_brief(s.council) if s.council else "",
         question,
     )
 
@@ -260,7 +280,7 @@ def _facts(s: AgentSession, question: str):
 
 
 async def _model_events(
-    client: httpx.AsyncClient, system: str, messages: list[dict]
+    client: httpx.AsyncClient, system: str, messages: list[dict], usage: dict | None = None
 ) -> AsyncIterator[tuple[str, Any]]:
     """("text", chunk) while streaming, then ("message", (content, stop_reason))."""
     st = get_settings()
@@ -289,6 +309,8 @@ async def _model_events(
                 continue
             ev = json.loads(line[5:].strip())
             kind = ev.get("type")
+            if usage is not None:
+                _add_usage(usage, (ev.get("message") or {}).get("usage") or ev.get("usage"))
             if kind == "content_block_start":
                 blocks[ev["index"]] = dict(ev["content_block"])
             elif kind == "content_block_delta":
@@ -308,6 +330,42 @@ async def _model_events(
     yield "message", (content, stop)
 
 
+def _add_usage(total: dict, use: dict | None) -> None:
+    for k, v in (use or {}).items():
+        if isinstance(v, int):
+            total[k] = total.get(k, 0) + v
+
+
+def _spent(s: AgentSession) -> int:
+    u = s.usage
+    return sum(
+        u.get(k, 0) for k in ("input_tokens", "output_tokens", "cache_creation_input_tokens")
+    )
+
+
+def _model_allowed(s: AgentSession) -> bool:
+    """The model is used only with a key, a closed breaker, and budget left."""
+    budget = get_settings().session_token_budget
+    over = bool(budget) and _spent(s) >= budget
+    return bool(get_settings().anthropic_api_key) and model_breaker.allow() and not over
+
+
+async def _convene(s: AgentSession) -> dict:
+    """Run the review panel for the current idea, and queue its question."""
+    r = await council.convene(
+        _idea_text(s),
+        _known_dict(s),
+        scan=s.scan,
+        novelty=s.novelty,
+        use_model=_model_allowed(s),
+    )
+    s.council = r
+    _add_usage(s.usage, r.get("usage"))
+    if q := r["synthesis"].get("question"):
+        engine.add_dynamic(s.elicitation, q, "review panel")
+    return r
+
+
 def _event(kind: str, data: Any) -> dict:
     return {"event": kind, "data": data}
 
@@ -316,7 +374,13 @@ async def _llm_stream(
     s: AgentSession, question: str, client: httpx.AsyncClient, out: dict
 ) -> AsyncIterator[dict]:
     system = SYSTEM.format(name=s.name, question=question, known=_known(s))
-    state: dict = {"private": s.private, "last_scan": s.scan}
+    state: dict = {
+        "private": s.private,
+        "last_scan": s.scan,
+        "council": s.council,
+        "convene": lambda idea: _convene(s),
+    }
+    had_council = s.council
     facts = _facts(s, question)
     splitter = SentenceSplitter()
     caveat_said = False
@@ -337,7 +401,7 @@ async def _llm_stream(
 
     for _ in range(MAX_TOOL_ROUNDS + 1):
         content, stop = [], None
-        async for kind, payload in _model_events(client, system, s.messages):
+        async for kind, payload in _model_events(client, system, s.messages, out["usage"]):
             if kind == "text":
                 for sentence in splitter.feed(payload):
                     if ev := speak(sentence):
@@ -369,6 +433,9 @@ async def _llm_stream(
         if "novelty" in state:
             s.novelty = state.pop("novelty")
             yield _event("novelty", s.novelty)
+        if s.council is not had_council:
+            had_council = state["council"] = s.council
+            yield _event("council", council_brief(s.council))
         facts = _facts(s, question)  # new tool results can now be cited
     for sentence in splitter.flush():
         if ev := speak(sentence):
@@ -399,6 +466,9 @@ def _next_novelty_point(s: AgentSession) -> str | None:
             else ""
         )
         return st["text"] + caveat
+    if s.council and (key := f"council:{s.council['at']}") not in s.narrated:
+        s.narrated.append(key)
+        return " ".join(s.council["synthesis"]["voice_brief"])
     for i, lever in enumerate(s.novelty.get("levers", [])[:3]):
         if f"lever:{i}" not in s.narrated:
             s.narrated.append(f"lever:{i}")
@@ -486,14 +556,32 @@ async def _offline_stream(
         out["tools"].append("check_novelty")
         yield _event("tool", {"name": "check_novelty", "status": "done"})
         yield _event("novelty", s.novelty)
+        await _convene(s)
+        out["tools"].append("ask_council")
+        yield _event("council", council_brief(s.council))
+    lead = None
+    if out.get("wants_opinion") and fresh is None:
+        before = s.council
+        await _convene(s)  # asked for: worth the wait
+        out["tools"].append("ask_council")
+        yield _event("council", council_brief(s.council))
+        s.narrated.append(f"council:{s.council['at']}")
+        if before and _same_view(before, s.council):
+            lead = _unchanged_line(s.council)
+        else:
+            lead = " ".join(s.council["synthesis"]["voice_brief"])
     if action.kind == "generate":
         if s.roadmap is None:
-            state: dict = {}
+            if s.council is None:
+                await _convene(s)
+                out["tools"].append("ask_council")
+            state: dict = {"council": s.council}
             await run_tool("build_roadmap", {"idea": idea}, s.elicitation, state)
             s.roadmap = state["roadmap"]
             out["tools"].append("build_roadmap")
         question = _roadmap_line(s.roadmap)
-    lead = _next_novelty_point(s) if fresh is None and action.kind == "ask" else None
+    if lead is None and fresh is None and action.kind == "ask":
+        lead = _next_novelty_point(s)
     reply = _fallback_reply(fresh, question, lead)  # templated from the session: no fact check
     s.messages.append({"role": "assistant", "content": reply})
     splitter = SentenceSplitter()
@@ -519,8 +607,46 @@ def _advance(s: AgentSession, text: str) -> engine.Action:
     if s.pending_slot and SKIP.match(text):
         s.elicitation.record(user_text=text, asked=s.pending_slot)
         return engine.skip(s.elicitation, s.pending_slot)
+    if OPINION.search(text):  # a request for a view, not an answer: no miss counted
+        engine.observe(s.elicitation, text)
+        if s.pending_slot:  # keep the open question open, and ask it again after the view
+            return engine.Action(
+                kind="ask",
+                slot=s.pending_slot,
+                question=_question_for(s, s.pending_slot),
+                progress=s.elicitation.progress(),
+                turn=s.elicitation.turn_no,
+                reason="repeat: the founder asked for a view instead of answering",
+            )
+        return engine.step(s.elicitation)
     engine.observe(s.elicitation, text, answering=s.pending_slot)
     return engine.step(s.elicitation)
+
+
+def _question_for(s: AgentSession, slot: str) -> str:
+    if slot.startswith(engine.DYN):
+        return next((d["question"] for d in s.elicitation.dynamic if d["key"] == slot), "")
+    return BY_KEY[slot].question if slot in BY_KEY else ""
+
+
+def _same_view(a: dict, b: dict) -> bool:
+    keys = ("band", "stances", "blockers")
+    return all(a["vote"][k] == b["vote"][k] for k in keys) and (
+        [v["text"] for v in a["vote"]["variants"]] == [v["text"] for v in b["vote"]["variants"]]
+    )
+
+
+def _unchanged_line(r: dict) -> str:
+    """Said when the founder asks again and nothing new has changed the panel's view."""
+    v = r["vote"]
+    line = f"My view hasn't changed since we last looked: the picture is {v['band']}"
+    if v["blockers"]:
+        return line + ", and the biggest concern still stands."
+    crit = v["criteria"]
+    if crit:
+        worst = min(crit, key=lambda c: crit[c]["score"])
+        return line + f", and the weakest point is still {CRITERION_WORDS[worst]}."
+    return line + "."
 
 
 def _roadmap_line(r: dict) -> str:
@@ -552,19 +678,41 @@ async def turn_stream(
     yield _event("ack", {"session_id": s.id, "action": _action_dict(action)})
 
     s.messages.append({"role": "user", "content": text})
-    out: dict = {"spoken": [], "dropped": [], "tools": []}
+    out: dict = {
+        "spoken": [],
+        "dropped": [],
+        "tools": [],
+        "usage": {},
+        "wants_opinion": bool(OPINION.search(text)),
+        "model": "offline",
+    }
     own = client is None
     client = client or httpx.AsyncClient(timeout=120)
     try:
-        if get_settings().anthropic_api_key:
-            stream = _llm_stream(s, question, client, out)
+        if _model_allowed(s):
+            mark = len(s.messages)
+            try:
+                async for ev in _llm_stream(s, question, client, out):
+                    yield ev
+                model_breaker.succeed()
+                out["model"] = "model"
+            except (httpx.HTTPError, RuntimeError, json.JSONDecodeError) as exc:
+                # The model failed: finish this turn offline, and let the breaker
+                # decide whether to skip the model for a while.
+                model_breaker.fail(type(exc).__name__)
+                log.warning("model.failed_turn_offline", error=type(exc).__name__)
+                del s.messages[mark:]  # drop the half-finished exchange
+                out["model"] = "offline (model failed)"
+                if not out["spoken"]:
+                    async for ev in _offline_stream(s, action, question, client, out):
+                        yield ev
         else:
-            stream = _offline_stream(s, action, question, client, out)
-        async for ev in stream:
-            yield ev
+            async for ev in _offline_stream(s, action, question, client, out):
+                yield ev
     finally:
         if own:
             await client.aclose()
+        _add_usage(s.usage, out["usage"])
 
     yield _event(
         "done",
@@ -577,6 +725,9 @@ async def turn_stream(
             "evidence": compact_scan(s.scan) if s.scan else None,
             "roadmap": s.roadmap,
             "novelty": s.novelty,
+            "council": council_brief(s.council) if s.council else None,
+            "model": out["model"],
+            "usage": s.usage,
             "known": _known_dict(s),
             "idea_version": s.idea_version,
         },

@@ -35,13 +35,16 @@ async def convene(
     seats: tuple[str, ...] | None = None,
     previous: list[dict] | None = None,
     client: httpx.AsyncClient | None = None,
+    use_model: bool | None = None,
 ) -> dict:
     """Run the council. `seats` limits the run to those seats; `previous`
-    opinions fill in the others (a partial re-run after a small change)."""
+    opinions fill in the others (a partial re-run after a small change).
+    `use_model=False` forces rules (spend cap reached, or the model is down)."""
     started = time.monotonic()
     district = slots.get("district")
     pack = evidence_mod.build(idea, scan, novelty, str(district) if district else None)
-    use_model = bool(get_settings().anthropic_api_key)
+    if use_model is None:
+        use_model = bool(get_settings().anthropic_api_key)
     wanted = [s for s in SEATS if seats is None or s.id in seats]
     opinions: dict[str, Opinion] = {}
     usage: dict[str, int] = {}

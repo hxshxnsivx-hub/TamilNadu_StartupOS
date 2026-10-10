@@ -21,6 +21,7 @@ without a database.
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -131,7 +132,11 @@ def observe(session: ElicitationSession, text: str, *, answering: str | None = N
     session.state = SessionState.EXTRACTING
     session.learned = []
 
-    if answering and answering in BY_KEY and text.strip():
+    if answering and answering.startswith(DYN) and text.strip():
+        for d in session.dynamic:  # free text: the founder's own answer, kept as said
+            if d["key"] == answering:
+                d["answer"] = text.strip()
+    elif answering and answering in BY_KEY and text.strip():
         value = validate(answering, text)
         if value is not None:
             session.put(answering, value, 0.90, Source.ANSWER)
@@ -165,17 +170,40 @@ def step(session: ElicitationSession) -> Action:
 
     decision = is_objective_clear(session)
 
+    # 1. A question the founder just answered with the wrong kind of reply is
+    #    asked once more first, acknowledging what the reply did tell us.
+    if (
+        not decision.stop
+        and (key := session.reask)
+        and key not in session.filled
+        and key not in session.skipped
+    ):
+        session.state = SessionState.AWAITING_ANSWER
+        return Action(
+            kind="ask",
+            slot=key,
+            question=f"{_acknowledge(session)} {BY_KEY[key].question}",
+            progress=session.progress(),
+            turn=session.turn_no,
+            reason="reask: the reply did not answer the question",
+        )
+
+    # 2. Then a question the review panel raised: it marks where the evidence and
+    #    the advisers disagree most. It still counts toward the Q_MAX ceiling.
+    if (dyn := _pending_dynamic(session)) is not None and session.turn_no < Q_MAX:
+        dyn["asked"] = True
+        session.state = SessionState.AWAITING_ANSWER
+        return Action(
+            kind="ask",
+            slot=dyn["key"],
+            question=dyn["question"],
+            progress=session.progress(),
+            turn=session.turn_no,
+            reason=f"dynamic: raised by {dyn['source']}",
+        )
+
+    # 3. Otherwise the most valuable unanswered slot.
     if not decision.stop:
-        if (key := session.reask) and key not in session.filled and key not in session.skipped:
-            session.state = SessionState.AWAITING_ANSWER
-            return Action(
-                kind="ask",
-                slot=key,
-                question=f"{_acknowledge(session)} {BY_KEY[key].question}",
-                progress=session.progress(),
-                turn=session.turn_no,
-                reason="reask: the reply did not answer the question",
-            )
         nq = next_question(session)
         if nq is not None:
             key, question = nq
@@ -228,6 +256,30 @@ def confirm(session: ElicitationSession, accepted: bool) -> Action:
         progress=session.progress(),
         turn=session.turn_no,
         reason="confirmed",
+    )
+
+
+DYN = "dyn:"
+MAX_DYNAMIC = 3
+
+
+def add_dynamic(session: ElicitationSession, question: str, source: str) -> str | None:
+    """Queue a question specific to this idea; at most three per session, never twice."""
+    q = question.strip()
+    if not q or any(d["question"].lower() == q.lower() for d in session.dynamic):
+        return None
+    if len(session.dynamic) >= MAX_DYNAMIC:
+        return None
+    key = f"{DYN}{hashlib.sha1(q.lower().encode()).hexdigest()[:8]}"
+    session.dynamic.append(
+        {"key": key, "question": q, "source": source, "asked": False, "answer": None}
+    )
+    return key
+
+
+def _pending_dynamic(session: ElicitationSession) -> dict | None:
+    return next(
+        (d for d in session.dynamic if not d["asked"] and d["key"] not in session.skipped), None
     )
 
 
@@ -314,4 +366,14 @@ def restate(session: ElicitationSession) -> str:
     return body + "."
 
 
-__all__ = ["Action", "Q_MAX", "confirm", "observe", "restate", "skip", "start", "step"]
+__all__ = [
+    "Action",
+    "Q_MAX",
+    "add_dynamic",
+    "confirm",
+    "observe",
+    "restate",
+    "skip",
+    "start",
+    "step",
+]

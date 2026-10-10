@@ -43,7 +43,10 @@ def build_plan(
     prices: dict[str, float] | None = None,
     costing: dict | None = None,
     confidence: float = 0.8,
+    council: dict | None = None,
 ) -> dict:
+    """`council`: a council run; its cited objections raise risks and its blockers
+    become gates to clear before the roadmap starts."""
     slots = dict(slots or {})
     packs = load_packs()
     domains = registry.load()["domains"]
@@ -113,7 +116,16 @@ def build_plan(
         ],
     }
     road = build(_templates(pack), facts, context, confidence)
-    risks = by_phase(reg, facts) if reg else {}
+    if reg:
+        risks = by_phase(reg, facts, council=council)
+    elif council:  # no registry domain: the panel's objections are the only risk evidence
+        risks = by_phase({"label": "this idea", "risk": {}, "buyers": []}, facts, council=council)
+    else:
+        risks = {}
+    gates = [
+        {"text": b["text"], "from": b["seat"], "evidence": b["evidence"]}
+        for b in (council or {}).get("vote", {}).get("blockers", [])
+    ]
 
     district_id = district if district in registry.DISTRICTS else None
     return {
@@ -131,6 +143,7 @@ def build_plan(
             )
         ),
         "risks_by_phase": risks,
+        "gates": gates,
         "variants": [
             {
                 "key": v.key,

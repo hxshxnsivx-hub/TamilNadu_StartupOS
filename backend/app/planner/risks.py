@@ -128,8 +128,46 @@ def adjusted_levels(domain: dict, facts: dict) -> tuple[dict[str, int], dict[str
     return lv, why
 
 
-def by_phase(domain: dict, facts: dict, top: int = 4) -> dict[str, list[dict]]:
+# Which risks each council seat speaks to (build spec 11.2).
+SEAT_RISKS = {
+    "customer": ("market",),
+    "technical": ("technical",),
+    "regulatory": ("regulatory",),
+    "cost": ("supply", "capital"),
+    "prior_art": ("competition", "ip"),
+    "funding": ("capital",),
+    "devil": ("execution",),
+}
+
+
+def council_adjust(lv: dict[str, int], why: dict[str, str], council: dict | None) -> None:
+    """Raise a risk by one level where a seat objected with cited evidence.
+
+    A seat objects when it opposes, raises a blocker, or scores a criterion 2 or
+    lower. Only opinions with at least one cited claim count; the reason given
+    is that seat's own first claim.
+    """
+    for op in (council or {}).get("opinions", []):
+        claims = op.get("claims") or []
+        objects = (
+            op.get("stance") == "oppose"
+            or op.get("blocker")
+            or min((op.get("scores") or {"x": 5}).values()) <= 2
+        )
+        if not (objects and (claims or op.get("blocker"))):
+            continue
+        reason = (op.get("blocker") or claims[0])["text"].rstrip(".")
+        for key in SEAT_RISKS.get(op["seat"], ()):
+            if key in lv:
+                lv[key] = min(3, lv[key] + 1)
+                why[key] = f"review panel ({op['seat'].replace('_', ' ')}): {reason}"
+
+
+def by_phase(
+    domain: dict, facts: dict, top: int = 4, council: dict | None = None
+) -> dict[str, list[dict]]:
     lv, why = adjusted_levels(domain, facts)
+    council_adjust(lv, why, council)
     out = {}
     for ph in PHASES:
         rows = []

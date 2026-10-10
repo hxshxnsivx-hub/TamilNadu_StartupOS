@@ -236,7 +236,7 @@ Cohort analysis is offline: it never runs inside a live turn.
 |---|---|---|
 | **1** | answer check · fact check · no idea text leaves · sessions saved · streamed replies | — |
 | **1b** | novelty check (element, combination, context maps) and levers, spoken over turns. *Done 2026-10-09; until Phase 2's background jobs, it runs in the same turn as the evidence search* | 1 |
-| **2** | council: seven seats, vote, synthesis, scheduler; council ranks levers | 1, 1b |
+| **2** | council: seven seats, vote, synthesis, scheduler; council ranks levers. *Council done 2026-10-10 (2a), wired in 2d: it meets inside the turn when the founder asks for a view, before the roadmap, and (without a model, in milliseconds) right after the novelty check; its question joins the question engine and its objections raise roadmap risks. The background scheduler (2b) is not built.* | 1, 1b |
 | **3** | voice and orb | 1 (streaming) |
 | **4** | Indian patents, registry growth, weight tuning, evaluation | 2 |
 | **5** | cohort analysis: reference cohort, then programme cohort | 1 (saved sessions), 1b |

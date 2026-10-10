@@ -101,6 +101,9 @@ class ElicitationSession(BaseModel):
     reask: str | None = None
     # Slots the extractor newly filled on the last turn, to acknowledge them.
     learned: list[str] = Field(default_factory=list)
+    # Questions raised by the council or the scan for this idea specifically
+    # (build spec 3.2): {key: "dyn:…", question, source, asked, answer}.
+    dynamic: list[dict] = Field(default_factory=list)
 
     objective: str | None = None  # the restatement shown at CONFIRMING
     roadmap_id: uuid.UUID | None = None

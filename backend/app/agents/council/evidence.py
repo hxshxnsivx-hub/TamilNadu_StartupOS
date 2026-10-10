@@ -131,12 +131,15 @@ def _add_novelty(pack: EvidencePack, novelty: dict | None) -> None:
             f" papers cover both, {rare}",
         )
     ctx = novelty.get("context", {})
-    if ctx.get("searched"):
+    if ctx.get("searched") and ctx.get("world_papers") is not None:
+        share = ctx.get("india_share_pct")
         pack.add(
             "novelty:context",
             "novelty",
-            f"{ctx['india_papers']} of {ctx['world_papers']} matching papers are India-affiliated"
-            f" ({ctx['india_share_pct']}%); Tamil Nadu startups found: {ctx['tn_startups']}",
+            f"{ctx.get('india_papers')} of {ctx['world_papers']} matching papers are"
+            f" India-affiliated"
+            + (f" ({share}%)" if share is not None else "")
+            + f"; Tamil Nadu startups found: {ctx.get('tn_startups', 0)}",
         )
     for i, lv in enumerate(novelty.get("levers", [])[:4]):
         pack.add(f"novelty:lever:{i}", "novelty", f"Way to stand out ({lv['kind']}): {lv['text']}")

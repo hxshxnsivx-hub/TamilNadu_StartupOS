@@ -185,7 +185,7 @@ def test_greeting_uses_the_founders_name():
 def test_offline_turn_scans_and_cites_evidence(_env):
     s = _new()
     r = _run(agent.turn(s, BCI))
-    assert r["tools_used"] == ["scan_prior_art", "check_novelty"]
+    assert r["tools_used"] == ["scan_prior_art", "check_novelty", "ask_council"]
     assert "23 clinical trials" in r["reply"] and "lab/eeg-bci" in r["reply"]
     assert "could not search patents" in r["reply"]  # not searched is never "nothing"
     assert r["evidence"]["trials"]["total"] == 23
@@ -353,11 +353,89 @@ def test_novelty_is_narrated_one_point_per_turn():
     assert second.startswith("Got it, Chennai. Both parts are well studied")  # ack first
     assert "only what I found in the sources I searched" in second
     third = _run(agent.turn(s, "prototype"))["reply"]
-    assert third.startswith("One way to stand out: build your version around joining")
-    assert "because only 19 papers cover both" in third
+    assert third.startswith("Looking at it from seven angles")  # turn 3: the panel's view
     fourth = _run(agent.turn(s, "skip"))["reply"]
-    assert fourth.startswith("Another way to stand out: make it fit Tamil Nadu")
-    assert s.narrated == ["statement", "lever:0", "lever:1"]
+    assert fourth.startswith("One way to stand out: build your version around joining")
+    assert "because only 19 papers cover both" in fourth
+    fifth = _run(agent.turn(s, "skip"))["reply"]
+    assert fifth.startswith("Another way to stand out: make it fit Tamil Nadu")
+    assert s.narrated[0] == "statement" and s.narrated[1].startswith("council:")
+    assert s.narrated[2:] == ["lever:0", "lever:1"]
+
+
+def test_the_panels_question_is_asked_after_any_reask():
+    s = _new()
+    _run(agent.turn(s, BCI))
+    asked = [d["question"] for d in s.elicitation.dynamic]
+    assert asked and s.council["synthesis"]["question"] == asked[0]
+    second = _run(agent.turn(s, "Chennai"))  # misanswered stage: re-asked first
+    assert second["action"]["slot"] == "stage"
+    third = _run(agent.turn(s, "prototype"))
+    assert third["action"]["slot"].startswith("dyn:") and third["action"]["question"] == asked[0]
+    r = _run(agent.turn(s, "what do you think?"))  # a view first: the question stays open
+    assert r["action"]["slot"] == third["action"]["slot"]
+    _run(agent.turn(s, "hospitals would pay, through their equipment budget"))
+    assert s.elicitation.dynamic[0]["answer"].startswith("hospitals would pay")
+
+
+def test_asking_for_an_opinion_convenes_the_panel():
+    s = _new()
+    _run(agent.turn(s, BCI))
+    first_run = s.council["at"]
+    r = _run(agent.turn(s, "what do you think, honestly?"))
+    assert "ask_council" in r["tools_used"] and s.council["at"] != first_run
+    # nothing changed since the panel first met: a short line, not the whole brief again
+    assert r["reply"].startswith("My view hasn't changed since we last looked")
+    assert r["action"]["slot"] == "stage"  # the open question stays open
+    assert r["council"]["band"] in ("strong", "mixed", "weak")
+
+
+def test_roadmap_carries_the_panels_risks():
+    s = _new("Meena")
+    _run(agent.turn(s, BCI))
+    for _ in range(12):
+        if s.elicitation.state.value == "confirming":
+            break
+        _run(agent.turn(s, "skip"))
+    else:
+        pytest.skip("engine did not reach confirmation")
+    r = _run(agent.turn(s, "yes"))
+    rows = [row for rows in r["roadmap"]["risks_by_phase"].values() for row in rows]
+    assert any(row["why"].startswith("review panel") for row in rows)
+
+
+def test_model_failure_finishes_the_turn_offline(monkeypatch):
+    from app.services.breaker import model_breaker
+
+    model_breaker.succeed()
+    monkeypatch.setattr(get_settings(), "anthropic_api_key", "k")
+
+    def handle(req: httpx.Request) -> httpx.Response:
+        return httpx.Response(529, json={"error": {"message": "overloaded"}})
+
+    s = _new()
+    before = len(s.messages)
+    r = _run(_with(httpx.MockTransport(handle), lambda c: agent.turn(s, BCI, client=c)))
+    assert r["model"] == "offline (model failed)" and r["reply"]
+    assert s.messages[before]["role"] == "user" and s.messages[-1]["role"] == "assistant"
+    roles = [m["role"] for m in s.messages]
+    assert all(a != b for a, b in zip(roles, roles[1:], strict=False))  # still alternating
+    for _ in range(2):
+        _run(_with(httpx.MockTransport(handle), lambda c: agent.turn(s, "Chennai", client=c)))
+    assert model_breaker.state == "open"  # three failures in a minute
+    r = _run(agent.turn(s, "prototype"))  # no call attempted while open
+    assert r["model"] == "offline"
+    model_breaker.succeed()
+
+
+def test_spend_cap_moves_the_panel_to_rules(monkeypatch):
+    monkeypatch.setattr(get_settings(), "session_token_budget", 100)
+    s = _new()
+    s.usage = {"input_tokens": 150}
+    monkeypatch.setattr(get_settings(), "anthropic_api_key", "k")
+    assert agent._model_allowed(s) is False
+    s.usage = {"input_tokens": 50}
+    assert agent._model_allowed(s) is True
 
 
 def test_model_can_call_check_novelty(monkeypatch, _env):

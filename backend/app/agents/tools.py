@@ -97,6 +97,21 @@ TOOLS: list[dict] = [
         },
     },
     {
+        "name": "ask_council",
+        "description": (
+            "Ask the review panel: seven advisers (customer, technical, regulatory, cost, prior"
+            " art, funding, devil's advocate) judge the idea from the evidence, and a vote gives"
+            " an overall view, the main concern, alternatives and one question. Use it when the"
+            " founder asks what you think, or before building the roadmap. Share its brief"
+            " in your own words; do not list all seven opinions."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {"idea": {"type": "string"}},
+            "required": ["idea"],
+        },
+    },
+    {
         "name": "build_roadmap",
         "description": (
             "Build the roadmap from what is known: product variants, cost per unit and"
@@ -206,9 +221,11 @@ def _support_for(domain_id: str, district: str | None) -> dict:
     }
 
 
-def _roadmap(idea: str, domain_id: str | None, session: ElicitationSession) -> dict:
+def _roadmap(
+    idea: str, domain_id: str | None, session: ElicitationSession, council: dict | None = None
+) -> dict:
     slots = {k: getattr(v.value, "value", v.value) for k, v in session.slots.items()}
-    p = build_plan(idea, slots, domain=domain_id)
+    p = build_plan(idea, slots, domain=domain_id, council=council)
     costs, road = p.get("costs") or {}, p.get("roadmap") or {}
     return {
         "domain": p.get("domain"),
@@ -224,7 +241,26 @@ def _roadmap(idea: str, domain_id: str | None, session: ElicitationSession) -> d
             for m in road.get("milestones", [])
         ],
         "months_realistic": road.get("months_realistic"),
+        "gates": p.get("gates", []),
+        "risks_by_phase": {
+            ph: [{k: r[k] for k in ("label", "level", "why")} for r in rows]
+            for ph, rows in (p.get("risks_by_phase") or {}).items()
+        },
         "next_questions": p.get("next_questions"),
+    }
+
+
+def council_brief(r: dict) -> dict:
+    """The council result as the model needs it: the brief, not the bulk."""
+    v = r["vote"]
+    return {
+        "band": v["band"],
+        "brief": r["synthesis"]["voice_brief"],
+        "question": r["synthesis"]["question"],
+        "blockers": v["blockers"],
+        "variants": [x["text"] for x in v["variants"]],
+        "stances": v["stances"],
+        "basis": r["basis"],
     }
 
 
@@ -266,8 +302,11 @@ async def run_tool(name: str, args: dict, session: ElicitationSession, state: di
             return _find_domains(args["idea"])
         if name == "support_for":
             return _support_for(args["domain_id"], args.get("district"))
+        if name == "ask_council":
+            r = await state["convene"](args["idea"])
+            return council_brief(r)
         if name == "build_roadmap":
-            r = _roadmap(args["idea"], args.get("domain_id"), session)
+            r = _roadmap(args["idea"], args.get("domain_id"), session, state.get("council"))
             state["roadmap"] = r
             return r
         if name == "note_fact":
