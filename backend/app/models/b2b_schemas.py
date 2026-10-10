@@ -66,6 +66,8 @@ class SupplyMapLineOut(BaseModel):
     line: BOMLineOut
     gap: bool
     matches: list[MatchItemOut]
+    # real companies registered for this supply, nearest first (MCA data; ask for quotes)
+    nearby_makers: list[dict] = Field(default_factory=list)
 
 
 class DecomposeOut(BaseModel):

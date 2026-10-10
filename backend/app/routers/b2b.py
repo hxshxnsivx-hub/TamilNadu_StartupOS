@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 from fastapi import APIRouter
+from pydantic import BaseModel, Field
 
+from app.b2b.allocate import Line, allocate, pair
 from app.b2b.decompose import build_supply_map
+from app.b2b.directory import suppliers_for
 from app.b2b.matching import match_demand
-from app.b2b.models import DemandRequest, Match, Tier
+from app.b2b.models import DemandRequest, Match, SupplyProfile, Tier
+from app.b2b.seed import SEED_SUPPLY
 from app.models.b2b_schemas import (
     BOMLineOut,
     BreakdownOut,
@@ -83,6 +87,9 @@ async def decompose(body: DecomposeIn) -> DecomposeOut:
             ),
             gap=sl.gap,
             matches=[_item(m) for m in sl.matches],
+            nearby_makers=suppliers_for(
+                sl.line.category, district=body.district.lower() or None, limit=3
+            )["suppliers"],
         )
         for sl in smap
     ]
@@ -93,3 +100,85 @@ async def decompose(body: DecomposeIn) -> DecomposeOut:
         supply_map=supply_map,
         gaps=sum(1 for s in supply_map if s.gap),
     )
+
+
+# ---- real suppliers, order splitting and one-to-one pairing ------------------------
+
+
+class DirectoryIn(BaseModel):
+    category: str = Field(min_length=2, max_length=40)
+    pin: str | None = Field(default=None, pattern=r"^6\d{5}$")
+    district: str | None = Field(default=None, pattern=r"^[a-z]+$")
+    limit: int = Field(default=10, ge=1, le=50)
+
+
+@router.post("/directory")
+async def directory(body: DirectoryIn) -> dict:
+    """Real Tamil Nadu companies registered for this kind of supply, nearest first."""
+    return suppliers_for(body.category, pin=body.pin, district=body.district, limit=body.limit)
+
+
+class QuoteIn(BaseModel):
+    """A supplier with a known price and capacity: a quote the founder received."""
+
+    id: str = Field(min_length=1, max_length=40)
+    name: str = Field(min_length=1, max_length=120)
+    category: str
+    unit_price: float = Field(gt=0)
+    max_capacity: int = Field(gt=0)
+    min_order: int = Field(default=1, ge=1)
+    district: str = ""
+    trust_score: int = Field(default=50, ge=0, le=100)
+
+
+class LineIn(BaseModel):
+    id: str = Field(min_length=1, max_length=40)
+    category: str
+    quantity: int = Field(gt=0, le=10_000_000)
+    max_unit_price: float | None = Field(default=None, gt=0)
+    district: str | None = None
+
+
+class AllocateIn(BaseModel):
+    lines: list[LineIn] = Field(min_length=1, max_length=20)
+    quotes: list[QuoteIn] = Field(default_factory=list, max_length=100)
+    include_catalogue: bool = True  # also use the seeded suppliers with known prices
+    max_suppliers_per_line: int = Field(default=2, ge=1, le=5)
+
+
+def _supply(q: QuoteIn) -> SupplyProfile:
+    return SupplyProfile(
+        q.id, q.name, q.category, Tier.T1_MATERIALS, "", q.unit_price, q.max_capacity,
+        q.min_order, q.district, "Tamil Nadu", trust_score=q.trust_score,
+    )  # fmt: skip
+
+
+@router.post("/allocate")
+async def allocate_orders(body: AllocateIn) -> dict:
+    """Split each line's monthly quantity across suppliers (CP-SAT), with reasons for
+    any shortfall."""
+    suppliers = [_supply(q) for q in body.quotes]
+    if body.include_catalogue:
+        taken = {s.id for s in suppliers}
+        suppliers += [s for s in SEED_SUPPLY if s.id not in taken]
+    lines = [Line(x.id, x.category, x.quantity, x.max_unit_price, x.district) for x in body.lines]
+    return allocate(lines, suppliers, body.max_suppliers_per_line)
+
+
+class PairIn(BaseModel):
+    demands: list[MatchIn] = Field(min_length=1, max_length=50)
+    quotes: list[QuoteIn] = Field(default_factory=list, max_length=100)
+    include_catalogue: bool = True
+
+
+@router.post("/pair")
+async def pair_partners(body: PairIn) -> dict:
+    """One supplier per demand, one demand per supplier, maximising total fit."""
+    suppliers = [_supply(q) for q in body.quotes]
+    if body.include_catalogue:
+        suppliers += SEED_SUPPLY
+    demands = [
+        DemandRequest(d.category, d.spec, d.quantity, d.budget_per_unit, d.district, d.state)
+        for d in body.demands
+    ]
+    return pair(demands, suppliers)
