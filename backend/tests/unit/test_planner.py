@@ -233,3 +233,83 @@ def test_pump_controllers_cost_by_bill_of_materials_and_flag_connected():
     assert any("MTCTE" in d for d in cert["deliverables"])
     assert plan["domain"]["id"] == "pump_controllers"
     assert plan["domain_card"]["id"] == "pump_motor_controllers"
+
+
+# ---- deep packs for the strongest district fits (Madurai, Coimbatore, Tiruppur) ----
+
+
+@pytest.mark.parametrize(
+    "text,pack",
+    [
+        ("export Madurai malli jasmine to Singapore", "jasmine_postharvest"),
+        ("virgin coconut oil unit in Pollachi", "coconut_products"),
+        ("printed t-shirts made through Tiruppur job work", "knitwear_small_batch"),
+        ("banana chips fried in coconut oil", "banana_value_added"),
+    ],
+)
+def test_new_packs_are_detected_without_stealing_others(text, pack):
+    assert detect_pack(text) == pack
+
+
+def test_new_packs_link_to_their_registry_cards():
+    for domain in ("jasmine_postharvest", "coconut_products", "knitwear_small_batch"):
+        plan = build_plan(domain.replace("_", " "), {"stage": "idea"}, domain=domain)
+        assert plan["domain"]["id"] == domain and plan["domain_card"]["id"] == domain
+        assert plan["costs"]["rows"], domain
+
+
+def test_variant_keys_with_underscores_resolve():
+    plan = build_plan("jasmine tea", {}, domain="jasmine_postharvest", variants=["jasmine_tea"])
+    assert plan["unknown_variants"] == [] and plan["variants"][0]["kind"] == "food product"
+
+
+def test_jasmine_milestones_follow_the_products():
+    fresh = build_plan(
+        "jasmine", {}, domain="jasmine_postharvest", variants=["fresh_export"], channels=["export"]
+    )
+    concrete = build_plan("jasmine", {}, domain="jasmine_postharvest", variants=["concrete"])
+    tea = build_plan("jasmine", {}, domain="jasmine_postharvest", variants=["jasmine_tea"])
+    titles = lambda p: {m["title"] for m in p["roadmap"]["milestones"]}  # noqa: E731
+    assert "Cold chain and dispatch" in titles(fresh) and "Cold chain and dispatch" not in titles(
+        tea
+    )
+    assert "Set up or contract extraction" in titles(concrete)
+    assert (
+        concrete["costs"]["rows"][0]["cogs"] > fresh["costs"]["rows"][0]["cogs"] * 50
+    )  # ~350 kg/kg
+
+
+def test_coconut_kinds_and_production_mode():
+    own = build_plan(
+        "coconut",
+        {},
+        domain="coconut_products",
+        variants=["shell_charcoal"],
+        production_mode="own_unit",
+    )
+    contract = build_plan(
+        "coconut",
+        {},
+        domain="coconut_products",
+        variants=["coconut_sugar"],
+        production_mode="co_packer",
+    )
+    assert own["variants"][0]["kind"] == "shell product"
+    assert contract["variants"][0]["kind"] == "neera product"
+    own_titles = {m["title"] for m in own["roadmap"]["milestones"]}
+    contract_titles = {m["title"] for m in contract["roadmap"]["milestones"]}
+    assert "Set up a small processing unit" in own_titles
+    assert "Pilot batch with a contract processor" in contract_titles
+
+
+def test_knitwear_costs_by_the_piece_with_a_lighter_fabric_lever():
+    plan = build_plan(
+        "knitwear", {}, domain="knitwear_small_batch", variants=["basic_tee", "organic_tee"],
+        monthly_packs=2000,
+    )  # fmt: skip
+    rows = {r["key"]: r["cogs"] for r in plan["costs"]["rows"]}
+    assert rows["organic_tee"] > rows["basic_tee"]  # certified fabric costs more
+    assert plan["costs"]["unit"] == "piece"
+    lighter = [lv for lv in plan["costs"]["levers"] if "lighter fabric" in lv["lever"]]
+    assert lighter and lighter[0]["saves_per_pack"] > 0
+    assert {v["kind"] for v in plan["variants"]} == {"plain garment", "organic garment"}

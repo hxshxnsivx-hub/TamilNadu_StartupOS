@@ -32,7 +32,7 @@ class Variant:
 
 
 def _norm(s: str, drop: tuple[str, ...]) -> str:
-    low = s.lower()
+    low = s.lower().replace("_", " ")  # "jasmine_tea" is two words, like the recipe key
     for w in drop:
         low = re.sub(rf"\b{re.escape(w)}\b", " ", low)
     return "_".join(sorted(re.findall(r"[a-z]+", low)))

@@ -111,10 +111,11 @@ def test_risks_by_phase_are_ranked_and_actionable():
 
 def test_card_only_domain_gets_licences_milestone_and_risks():
     p = build_plan(
-        "jasmine flower post-harvest for Madurai Malli growers",
+        "handloom Sungudi sarees sold direct to buyers by Madurai weavers",
         {"district": "Madurai", "stage": "idea", "funding_route": "debt", "capital_band": "2L_10L"},
     )
-    assert p["domain"] is None and p["domain_card"]["id"] == "jasmine_postharvest"
+    # jasmine now has a deep pack; Sungudi is a registry card with no pack yet
+    assert p["domain"] is None and p["domain_card"]["id"] == "sungudi_handloom_d2c"
     assert p["domain_card"]["district_fit"]["madurai"] == 3
     licences = next(m for m in p["roadmap"]["milestones"] if m["id"] == "c_compliance")
     assert any(d.startswith("GI authorised user") for d in licences["deliverables"])

@@ -129,7 +129,8 @@
    "trend_query": "jasmine flower postharvest shelf life",
    "serves": [],
    "batch": 1,
-   "review": "base"
+   "review": "base",
+   "pack": "jasmine_postharvest"
   },
   {
    "id": "coconut_products",
@@ -187,7 +188,8 @@
    "trend_query": "virgin coconut oil processing",
    "serves": [],
    "batch": 1,
-   "review": "base"
+   "review": "base",
+   "pack": "coconut_products"
   },
   {
    "id": "millet_foods",
@@ -602,7 +604,8 @@
     "textile"
    ],
    "batch": 1,
-   "review": "base"
+   "review": "base",
+   "pack": "knitwear_small_batch"
   },
   {
    "id": "textile_effluent",

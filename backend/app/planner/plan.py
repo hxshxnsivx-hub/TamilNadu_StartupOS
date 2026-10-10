@@ -99,6 +99,8 @@ def build_plan(
         "sells_online": "online" in ch,
         "sells_retail": "retail" in ch,
         "sells_horeca": "horeca" in ch,
+        # any other channel a pack offers (export, perfumers, brands): sells_<channel>
+        **{f"sells_{c}": True for c in ch},
         # has_<flag>: some variant's inputs carry the flag; lacks_<flag>: some variant's do not
         **{f"has_{f}": True for v in chosen for f, on in v.flags.items() if on},
         **{f"lacks_{f}": True for v in chosen for f, on in v.flags.items() if not on},
