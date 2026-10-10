@@ -15,6 +15,7 @@ answers and the table exists; otherwise memory, with a warning).
 
 from __future__ import annotations
 
+import contextlib
 import json
 from datetime import UTC, datetime, timedelta
 from typing import Protocol
@@ -22,6 +23,7 @@ from typing import Protocol
 from app.agents.ideation import AgentSession
 from app.core.config import get_settings
 from app.core.logging import get_logger
+from app.core.redis import get_redis
 
 log = get_logger("agent_store")
 IDLE_EXPIRY = timedelta(hours=6)
@@ -172,6 +174,65 @@ async def _database_ready() -> bool:
 _store: SessionStore | None = None
 
 
+class CachedStore:
+    """A Redis copy of live sessions in front of the database (SYSTEM-DESIGN.md §4.3).
+
+    The database is the truth and is written first; Redis holds a copy for six
+    idle hours. Reads try Redis, then the database. A refused save (someone else
+    saved first) also drops the Redis copy, so the next read fetches the newer
+    version instead of looping on a stale one.
+    """
+
+    def __init__(self, inner: SessionStore, redis) -> None:
+        self.inner = inner
+        self.redis = redis
+        self.name = f"{inner.name}+redis"
+
+    @staticmethod
+    def _key(session_id: str) -> str:
+        return f"sess:{session_id}"
+
+    async def _put(self, s: AgentSession) -> None:
+        try:
+            doc = json.dumps(s.to_dict(), default=str)
+            await self.redis.set(self._key(s.id), doc, ex=int(IDLE_EXPIRY.total_seconds()))
+        except Exception:  # the copy is optional
+            pass
+
+    async def _drop(self, session_id: str) -> None:
+        with contextlib.suppress(Exception):
+            await self.redis.delete(self._key(session_id))
+
+    async def get(self, session_id: str) -> AgentSession | None:
+        try:
+            doc = await self.redis.get(self._key(session_id))
+        except Exception:
+            doc = None
+        if doc is not None:
+            s = AgentSession.from_dict(json.loads(doc))
+            return None if _expired(s) else s
+        s = await self.inner.get(session_id)
+        if s is not None:
+            await self._put(s)
+        return s
+
+    async def create(self, s: AgentSession) -> None:
+        await self.inner.create(s)
+        await self._put(s)
+
+    async def save(self, s: AgentSession) -> None:
+        try:
+            await self.inner.save(s)
+        except VersionConflict:
+            await self._drop(s.id)
+            raise
+        await self._put(s)
+
+    async def delete(self, session_id: str) -> bool:
+        await self._drop(session_id)
+        return await self.inner.delete(session_id)
+
+
 async def get_store() -> SessionStore:
     global _store
     if _store is None:
@@ -182,6 +243,8 @@ async def get_store() -> SessionStore:
             _store = SqlStore()
         else:
             _store = SqlStore() if await _database_ready() else MemoryStore()
+        if isinstance(_store, SqlStore) and (r := await get_redis()) is not None:
+            _store = CachedStore(_store, r)  # memory needs no cache in front of it
         log.info("agent_store.selected", store=_store.name)
     return _store
 

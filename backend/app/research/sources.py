@@ -7,11 +7,14 @@
 
 Every result says what happened — ok, no_key, budget_exhausted, error — so a
 report never implies "nothing exists" when the truth is "not searched".
-Responses are cached on disk for `research_cache_days`.
+Responses are cached for `research_cache_days`, in Redis when it runs and on disk.
+A 429 pauses that source for everyone until its Retry-After; RESEARCH_DAILY_LIMIT
+caps requests per source per day (0: no cap).
 """
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 import time
@@ -22,6 +25,7 @@ from typing import Any
 import httpx
 
 from app.core.config import get_settings
+from app.core.redis import get_redis
 
 OPENALEX = "https://api.openalex.org/works"
 CTGOV = "https://clinicaltrials.gov/api/v2/studies"
@@ -41,12 +45,22 @@ class SourceResult:
 
 
 class Cache:
+    """Research responses: Redis first when it is running, then disk (SYSTEM-DESIGN.md §4).
+
+    Keys are hashes of the request, so API keys in parameters never appear in a
+    key. A disk hit is copied into Redis so other workers find it there.
+    """
+
     def __init__(self, root: str | Path, days: int) -> None:
         self.root = Path(root)
         self.ttl = days * 86400
 
+    @staticmethod
+    def _hash(key: str) -> str:
+        return hashlib.sha1(key.encode()).hexdigest()
+
     def _path(self, key: str) -> Path:
-        return self.root / (hashlib.sha1(key.encode()).hexdigest() + ".json")
+        return self.root / (self._hash(key) + ".json")
 
     def get(self, key: str) -> Any | None:
         p = self._path(key)
@@ -58,19 +72,112 @@ class Cache:
         self.root.mkdir(parents=True, exist_ok=True)
         self._path(key).write_text(json.dumps(value), encoding="utf8")
 
+    async def aget(self, key: str) -> Any | None:
+        r = await get_redis()
+        if r is not None:
+            try:
+                if (doc := await r.get(f"rs:{self._hash(key)}")) is not None:
+                    return json.loads(doc)
+            except Exception:  # Redis trouble is never a reason to fail a search
+                r = None
+        hit = self.get(key)
+        if hit is not None and r is not None:
+            await _quiet(r.set(f"rs:{self._hash(key)}", json.dumps(hit), ex=self.ttl))
+        return hit
+
+    async def aput(self, key: str, value: Any) -> None:
+        self.put(key, value)
+        r = await get_redis()
+        if r is not None:
+            await _quiet(r.set(f"rs:{self._hash(key)}", json.dumps(value), ex=self.ttl))
+
+
+async def _quiet(awaitable) -> None:
+    with contextlib.suppress(Exception):  # Redis trouble never fails a search
+        await awaitable
+
+
+# ---- rate limits: remembered pauses and an optional daily cap per source ----------
+
+_SOURCE_BY_HOST = {
+    "api.openalex.org": "openalex",
+    "clinicaltrials.gov": "ctgov",
+    "api.github.com": "github",
+    "search.patentsview.org": "patentsview",
+}
+MAX_PAUSE_S = 86400
+_local_pause: dict[str, float] = {}  # source -> monotonic time the pause ends
+_local_count: dict[str, int] = {}  # "source:date" -> requests sent
+
+
+def _source(url: str) -> str:
+    return _SOURCE_BY_HOST.get(httpx.URL(url).host, "other")
+
+
+def _today() -> str:
+    return time.strftime("%Y-%m-%d", time.gmtime())
+
+
+async def _paused(source: str) -> bool:
+    r = await get_redis()
+    if r is not None:
+        try:
+            return bool(await r.exists(f"rs:neg:{source}"))
+        except Exception:
+            pass
+    return _local_pause.get(source, 0) > time.monotonic()
+
+
+async def _pause(source: str, retry_after: str | None) -> None:
+    """A 429: stop calling this source until it says to retry, for everyone."""
+    try:
+        seconds = int(float(retry_after)) if retry_after else 60
+    except ValueError:
+        seconds = 60
+    seconds = max(1, min(seconds, MAX_PAUSE_S))
+    _local_pause[source] = time.monotonic() + seconds
+    r = await get_redis()
+    if r is not None:
+        await _quiet(r.set(f"rs:neg:{source}", "1", ex=seconds))
+
+
+async def _over_budget(source: str) -> bool:
+    """Count one request; True when today's cap for this source is used up."""
+    limit = get_settings().research_daily_limit
+    key = f"{source}:{_today()}"
+    r = await get_redis()
+    used = None
+    if r is not None:
+        try:
+            used = await r.incr(f"budget:{key}")
+            if used == 1:
+                await r.expire(f"budget:{key}", 2 * 86400)
+        except Exception:
+            used = None
+    if used is None:
+        _local_count[key] = used = _local_count.get(key, 0) + 1
+    return bool(limit) and used > limit
+
 
 async def _get_json(
     client: httpx.AsyncClient, cache: Cache | None, url: str, **kw
 ) -> tuple[int, Any]:
     key = f"GET {url} {json.dumps(kw.get('params', {}), sort_keys=True)}"
-    if cache and (hit := cache.get(key)) is not None:
+    if cache and (hit := await cache.aget(key)) is not None:
         return 200, hit
+    source = _source(url)
+    if await _paused(source):
+        return 429, f"{source} asked us to wait; paused"
+    if await _over_budget(source):
+        return 429, f"daily request limit for {source} reached"
     r = await client.get(url, **kw)
     if r.status_code == 200:
         data = r.json()
         if cache:
-            cache.put(key, data)
+            await cache.aput(key, data)
         return 200, data
+    if r.status_code == 429:
+        await _pause(source, r.headers.get("Retry-After"))
     return r.status_code, r.text[:300]
 
 

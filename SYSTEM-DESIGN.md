@@ -334,7 +334,7 @@ sequenceDiagram
 | Phase | System work |
 |---|---|
 | **1** | `agent_sessions` table and migration; PostgreSQL store with an in-memory fallback; version-checked saves; first decision records and runbooks. *Done 2026-10-09, except the consent table, moved to the phase that links conversations to signed-in founders: conversations are anonymous today, so there is no one to record consent for.* |
-| **2** | Redis: live sessions, research cache, source budgets, job queue for the council; rolling summaries |
+| **2** | Redis: live sessions, research cache, source budgets, job queue for the council; rolling summaries. *Redis layer done 2026-10-10 (live-session copy in front of the database, research cache, source pauses after a 429, optional daily caps), all optional when Redis is absent. The job queue waits on the background-jobs stage (2b).* |
 | **3** | Object storage for voice-related files if ever kept (audio is not kept by default) |
 | **4** | Data dictionary generation; JSON schemas and freshness gates in CI; monitoring dashboard |
 | **5** | Split session documents into tables; `analytics` schema; nightly cohort rebuild |

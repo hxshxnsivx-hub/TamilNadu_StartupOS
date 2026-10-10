@@ -66,6 +66,8 @@ class Settings(BaseSettings):
     github_token: str = ""  # raises GitHub's search rate limit
     research_cache_dir: str = ".cache/research"
     research_cache_days: int = 7
+    # Requests per research source per UTC day (0: no cap). Counted in Redis when it runs.
+    research_daily_limit: int = 0
 
     # Where ideation conversations are saved: "database", "memory", or "auto"
     # (the database when it answers and the agent_sessions table exists).

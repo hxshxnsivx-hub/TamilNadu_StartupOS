@@ -20,6 +20,11 @@ ideas in one day) can use it up. OpenAlex then answers 429 with a `Retry-After` 
 2. If there is no key yet, wait for the reset (OpenAlex resets at midnight UTC, 05:30 IST).
    Do not retry in a loop.
 3. Cached results (7 days, `.cache/research`) keep working meanwhile.
+4. After a 429, the app pauses that source by itself until the source's `Retry-After` time
+   (at most a day), for every worker when Redis runs. To lift the pause early after adding a
+   key, restart the app; with Redis, also delete the key `rs:neg:openalex` (or `rs:neg:github`).
+5. To stop a large job from using up the day, set `RESEARCH_DAILY_LIMIT` (requests per source
+   per UTC day); requests over the cap are reported as not searched.
 
 ## Confirm
 
