@@ -111,16 +111,19 @@ export function getSession(id: string): Promise<Snapshot> {
 export type Lang = "ta-IN" | "en-IN" | "hi-IN";
 
 export interface VoiceStatus {
-  provider: "sarvam" | "browser";
+  provider: "sarvam" | "browser"; // who listens
+  speech: "sarvam" | "phrasebook" | "browser"; // who speaks
+  phrases_recorded: number;
   languages: Record<Lang, string>;
-  voice: string | null;
+  voice: string | Record<Lang, string> | null;
 }
 
 export function voiceStatus(): Promise<VoiceStatus> {
   return fetch("/api/v1/voice/status").then((r) => json<VoiceStatus>(r));
 }
 
-/** One sentence in the mentor's voice (MP3), from the server's Sarvam proxy. */
+/** One sentence in the mentor's voice: a recorded phrase (WAV) or Sarvam (MP3).
+ * Rejects when the server has no audio for it; the caller then uses the browser voice. */
 export async function speakAudio(text: string, language: Lang): Promise<Blob> {
   const res = await fetch("/api/v1/voice/speak", {
     method: "POST",
@@ -128,6 +131,7 @@ export async function speakAudio(text: string, language: Lang): Promise<Blob> {
     body: JSON.stringify({ text, language }),
   });
   if (!res.ok) await json(res);
+  if (res.status === 204) throw new Error("no recording of this sentence");
   return res.blob();
 }
 

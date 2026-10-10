@@ -1,5 +1,7 @@
-/* The mentor's voice with Sarvam AI (through Vanigam's server; the key never
- * reaches the browser). Same shape as the browser-voice classes in speech.ts,
+/* The mentor's voice from Vanigam's server: Sarvam AI when it has a key (the key
+ * never reaches the browser), or else the phrasebook of fixed sentences recorded
+ * once with a free local voice. A sentence the server has no audio for is spoken
+ * by the browser's voice. Same shape as the browser-voice classes in speech.ts,
  * so the Talk page can use either.
  *
  * Latency, by design:
@@ -19,6 +21,22 @@ const ACKS: Record<Lang, string[]> = {
   "en-IN": ["Okay.", "Mm, I see."],
 };
 
+// Sentence ends as the server splits them (app/agents/grounding.py), so that a
+// fixed sentence inside a longer reply still matches its recording.
+const SENTENCE_END = /(?<!\b(?:Dr|Rs|Mr|Ms|vs))[.!?।॥](?=\s|$)/g;
+
+export function sentences(text: string): string[] {
+  const out: string[] = [];
+  let from = 0;
+  for (const m of text.matchAll(SENTENCE_END)) {
+    const end = (m.index ?? 0) + 1;
+    out.push(text.slice(from, end).trim());
+    from = end;
+  }
+  out.push(text.slice(from).trim());
+  return out.filter(Boolean);
+}
+
 let sharedCtx: AudioContext | null = null;
 function audioContext(): AudioContext {
   sharedCtx ??= new AudioContext();
@@ -29,7 +47,7 @@ function audioContext(): AudioContext {
 export class AudioSpeaker {
   language: Lang = "en-IN";
   current = "";
-  private queue: Array<{ text: string; audio: Promise<Blob | null> }> = [];
+  private queue: Array<{ text: string; language: Lang; audio: Promise<Blob | null> }> = [];
   private busy = false;
   private gen = 0;
   private el = new Audio();
@@ -42,11 +60,16 @@ export class AudioSpeaker {
     return this.busy;
   }
 
-  /** Queue a sentence; its audio is requested now, so it is ready when its turn comes. */
-  say(sentence: string, language: Lang = this.language) {
-    const text = sentence.trim();
-    if (!text) return;
-    this.queue.push({ text, audio: speakAudio(text, language).catch(() => null) });
+  /** Queue text sentence by sentence; each one's audio is requested now, so it is
+   * ready when its turn comes, and each can be a recorded phrase on its own. */
+  say(text: string, language: Lang = this.language) {
+    for (const sentence of sentences(text)) {
+      this.queue.push({
+        text: sentence,
+        language,
+        audio: speakAudio(sentence, language).catch(() => null),
+      });
+    }
     if (!this.busy) void this.next();
   }
 
@@ -92,7 +115,7 @@ export class AudioSpeaker {
     const gen = this.gen;
     const blob = await item.audio;
     if (gen !== this.gen) return; // cancelled while waiting
-    if (!blob) return void this.fallback(item.text, gen); // Sarvam failed: never go silent
+    if (!blob) return void this.fallback(item.text, item.language, gen); // never go silent
     const url = URL.createObjectURL(blob);
     this.el.src = url;
     this.el.onended = () => {
@@ -109,10 +132,10 @@ export class AudioSpeaker {
   }
 
   /** Speak one sentence with the browser's voice when the mentor's voice is unavailable. */
-  private fallback(text: string, gen: number) {
+  private fallback(text: string, language: Lang, gen: number) {
     if (!("speechSynthesis" in window)) return void this.next();
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = this.language;
+    u.lang = language;
     u.onend = u.onerror = () => {
       if (gen === this.gen) void this.next();
     };

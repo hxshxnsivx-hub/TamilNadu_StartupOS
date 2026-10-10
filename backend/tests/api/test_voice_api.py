@@ -9,6 +9,7 @@ import httpx
 import pytest
 from app.core.config import get_settings
 from app.routers import voice
+from app.voice import phrasebook
 from httpx import AsyncClient
 
 MP3 = b"ID3fake-mp3-bytes"
@@ -42,12 +43,43 @@ def sarvam(monkeypatch, tmp_path):
     monkeypatch.setattr(voice, "_client", None)
 
 
-async def test_status_without_a_key_falls_back_to_the_browser(client: AsyncClient, monkeypatch):
+async def test_status_without_a_key_falls_back_to_the_browser(
+    client: AsyncClient, monkeypatch, tmp_path
+):
     monkeypatch.setattr(get_settings(), "sarvam_api_key", "")
+    monkeypatch.setattr(phrasebook, "PHRASEBOOK_DIR", tmp_path)
     r = await client.get("/api/v1/voice/status")
-    assert r.json()["provider"] == "browser"
+    assert r.json()["provider"] == "browser" and r.json()["speech"] == "browser"
     r = await client.post("/api/v1/voice/speak", json={"text": "Hello", "language": "en-IN"})
-    assert r.status_code == 503
+    assert r.status_code == 204 and not r.content
+
+
+async def test_recorded_phrases_speak_without_a_key(client: AsyncClient, monkeypatch, tmp_path):
+    monkeypatch.setattr(get_settings(), "sarvam_api_key", "")
+    monkeypatch.setattr(phrasebook, "PHRASEBOOK_DIR", tmp_path)
+    (tmp_path / f"{phrasebook.key('Is that right?', 'en-IN')}.wav").write_bytes(b"RIFFwav")
+    st = (await client.get("/api/v1/voice/status")).json()
+    assert st["speech"] == "phrasebook" and st["provider"] == "browser"  # listening stays local
+    assert st["phrases_recorded"] == 1 and st["voice"]["en-IN"] == "Thoma"
+    # spacing does not matter; the sentence does
+    r = await client.post(
+        "/api/v1/voice/speak", json={"text": "  Is that   right? ", "language": "en-IN"}
+    )
+    assert r.status_code == 200 and r.content == b"RIFFwav"
+    assert r.headers["content-type"] == "audio/wav"
+    r = await client.post(
+        "/api/v1/voice/speak", json={"text": "Is that right?", "language": "ta-IN"}
+    )
+    assert r.status_code == 204  # recorded in English only
+
+
+def test_the_phrasebook_lists_every_fixed_question_once():
+    rows = phrasebook.wanted()
+    texts = {(r["language"], r["text"]) for r in rows}
+    assert ("en-IN", "Which district will you operate from?") in texts
+    assert ("en-IN", "Is that right?") in texts and ("ta-IN", "சரி.") in texts
+    assert len(rows) == len({r["key"] for r in rows})
+    assert all(r["voice"] == phrasebook.VOICES[r["language"]] for r in rows)
 
 
 async def test_speak_sends_the_mentor_voice_and_caches_repeats(client: AsyncClient, sarvam):

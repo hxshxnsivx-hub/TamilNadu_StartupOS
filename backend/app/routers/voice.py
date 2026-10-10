@@ -1,7 +1,9 @@
-"""Voice endpoints: the mentor's voice out, the founder's speech in (Sarvam AI).
+"""Voice endpoints: the mentor's voice out, the founder's speech in.
 
     GET  /api/v1/voice/status       which voice is available, and its languages
-    POST /api/v1/voice/speak        one sentence -> MP3 (cached: fixed phrases cost once)
+    POST /api/v1/voice/speak        one sentence -> audio: a recorded phrase (free, local),
+                                    else Sarvam MP3 when a key is set (cached), else 204 (no audio)
+                                    and the browser speaks it
     POST /api/v1/voice/transcribe   one utterance (audio file) -> text + detected language
 
 Audio is passed straight through and never stored; only synthesised speech
@@ -19,7 +21,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 from app.core.config import get_settings
-from app.voice import sarvam
+from app.voice import phrasebook, sarvam
 
 router = APIRouter(prefix="/api/v1/voice", tags=["voice"])
 
@@ -42,10 +44,15 @@ class SpeakIn(BaseModel):
 @router.get("/status")
 async def status() -> dict:
     st = get_settings()
+    recorded = phrasebook.recorded()
     return {
+        # who listens: Sarvam when a key is set, otherwise the browser
         "provider": "sarvam" if sarvam.configured() else "browser",
+        # who speaks: Sarvam, else the recorded phrasebook with the browser for the rest
+        "speech": "sarvam" if sarvam.configured() else "phrasebook" if recorded else "browser",
+        "phrases_recorded": recorded,
         "languages": sarvam.LANGUAGES,
-        "voice": st.sarvam_tts_speaker if sarvam.configured() else None,
+        "voice": st.sarvam_tts_speaker if sarvam.configured() else phrasebook.VOICES,
     }
 
 
@@ -57,10 +64,15 @@ def _cache_path(text: str, language: str) -> Path:
 
 @router.post("/speak")
 async def speak(body: SpeakIn) -> Response:
-    if not sarvam.configured():
-        raise HTTPException(
-            status_code=503, detail="No voice service configured; use the browser voice"
+    # without Sarvam, the recorded phrases speak; with it, one voice says everything
+    if not sarvam.configured() and (recorded := phrasebook.lookup(body.text, body.language)):
+        return Response(
+            content=recorded.read_bytes(),
+            media_type="audio/wav",
+            headers={"Cache-Control": "public, max-age=86400"},
         )
+    if not sarvam.configured():
+        return Response(status_code=204)  # no recording of this sentence: the browser says it
     path = _cache_path(body.text.strip(), body.language)
     if path.exists():
         audio = path.read_bytes()

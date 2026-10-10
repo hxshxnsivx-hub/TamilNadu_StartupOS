@@ -10,6 +10,15 @@ Work that is decided but parked. Each item says why it waits and what unblocks i
 not power the app's backend. `ANTHROPIC_API_KEY` and `SARVAM_API_KEY` stay unset, so `/talk`
 runs offline: template replies in English and the browser's default voice.
 
+**Done (2026-10-10): recorded phrasebook.** The mentor's fixed sentences (greeting, the
+questions, the confirmation, acknowledgements) are recorded once with Indic Parler-TTS, a free
+local model (Apache 2.0), in the voices chosen by listening: Kavitha (Tamil), Rohit (Hindi),
+Thoma (English). `/api/v1/voice/speak` serves them instantly; other sentences use the
+browser's voice. Parler is too slow to speak live on a laptop CPU (8 to 50 times slower than
+speech). Re-record after changing a question: `python -m app.voice.phrasebook` (backend), then
+`voice-worker/record_phrases.py`. Once item 2 below exists, its Tamil and Hindi templates go
+into the phrasebook too.
+
 **Free fixes, ready to build:**
 
 1. **Best free voice.** Pick the best neural voice the browser offers per language: Microsoft

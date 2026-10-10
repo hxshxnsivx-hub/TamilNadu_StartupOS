@@ -76,7 +76,8 @@ export default function Talk() {
   const [level, setLevel] = useState(0);
   const [voiceOn, setVoiceOn] = useState(canSpeak);
   const [lang, setLang] = useState<Lang | "auto">("auto");
-  const [provider, setProvider] = useState<"browser" | "sarvam">("browser");
+  const [provider, setProvider] = useState<"browser" | "sarvam">("browser"); // who listens
+  const [speech, setSpeech] = useState<"browser" | "phrasebook" | "sarvam">("browser");
   const [draft, setDraft] = useState("");
   const [action, setAction] = useState<Action | null>(null);
   const [evidence, setEvidence] = useState<Evidence | null>(null);
@@ -93,11 +94,18 @@ export default function Talk() {
   const langRef = useRef(lang);
   langRef.current = lang;
 
-  // The mentor's voice: Sarvam when the server has a key, otherwise the browser's.
+  // The mentor's voice: Sarvam when the server has a key; else the recorded
+  // phrasebook, with the browser's voice for other sentences; else the browser's.
   useEffect(() => {
     voiceStatus()
-      .then((v) => setProvider(v.provider))
-      .catch(() => setProvider("browser"));
+      .then((v) => {
+        setProvider(v.provider);
+        setSpeech(v.speech ?? v.provider);
+      })
+      .catch(() => {
+        setProvider("browser");
+        setSpeech("browser");
+      });
   }, []);
 
   const speaker: VoiceOut = useMemo(() => {
@@ -106,8 +114,8 @@ export default function Talk() {
       onEnd: () => setSpeaking(false),
       onPulse: (v: number) => setLevel(v),
     };
-    return provider === "sarvam" ? new AudioSpeaker(ev) : new Speaker(ev);
-  }, [provider]);
+    return speech !== "browser" ? new AudioSpeaker(ev) : new Speaker(ev);
+  }, [speech]);
 
   /** The language to send with a turn: chosen, or last heard when on auto. */
   const turnLang = (heard?: Lang): Lang | undefined =>
