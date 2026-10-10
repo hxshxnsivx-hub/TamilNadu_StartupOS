@@ -127,10 +127,12 @@ def load_packs() -> dict[str, Pack]:
 
 def detect_pack(text: str) -> str | None:
     """The domain pack whose cue words appear most in the founder's text, if any."""
-    low = f" {(text or '').lower()} "
+    low = f" {(text or '').lower().replace('-', ' ')} "  # "dry-run" matches the cue "dry run"
     best, best_hits = None, 0
     for pack in load_packs().values():
-        hits = sum(1 for c in pack.cues if re.search(rf"\b{re.escape(c)}\b", low))
+        hits = sum(
+            1 for c in pack.cues if re.search(rf"\b{re.escape(c.lower().replace('-', ' '))}\b", low)
+        )
         if hits > best_hits:
             best, best_hits = pack.id, hits
     return best

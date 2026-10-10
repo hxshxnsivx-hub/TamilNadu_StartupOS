@@ -3,7 +3,7 @@
  "label": "Small-batch knitwear",
  "sector": "textile",
  "about": "Small runs of cotton knitwear (t-shirts, polos, leggings, organic basics) made through Tiruppur's job-work network of knitting, dyeing, printing and stitching units, for D2C brands, online sellers, corporate orders and export.",
- "cues": ["knitwear", "t-shirt", "tshirt", "t-shirts", "tee", "polo", "leggings", "innerwear", "hosiery", "garment", "garments", "apparel", "tiruppur", "job work", "stitching unit"],
+ "cues": ["knitwear", "t-shirt", "tshirt", "t-shirts", "tee", "polo", "leggings", "innerwear", "hosiery", "garment", "garments", "apparel", "job work", "stitching unit"],
  "name_noise": ["knitwear", "product", "products", "cotton"],
  "questions": [
   {"slot": "variants", "ask": "Which garments do you want to start with?", "kind": "multi", "examples": ["basic t-shirt", "printed t-shirt", "polo", "leggings", "organic t-shirt"]},

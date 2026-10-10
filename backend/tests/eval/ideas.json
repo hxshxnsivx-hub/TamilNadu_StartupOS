@@ -1,0 +1,298 @@
+{
+ "_about": "Quality test set for the ideation conversation (build spec 13). Each idea is run as a full offline conversation: the idea, scripted answers to the engine's questions, a yes to the restated objective, then the roadmap. Research results are replayed from fixtures/ (record them with scripts/record_eval_fixtures.py). Every check below must hold; scripts/eval_report.py writes docs/eval/report.md.",
+ "_checks": {
+  "domain": "registry domain chosen for the plan (null: none expected)",
+  "pack": "deep pack chosen (null: none expected)",
+  "categories_include": "Vanigam categories the research must associate with the idea",
+  "must_not_ask": "slots the founder already gave in the idea text, so the engine must not ask them",
+  "must_mention": "text that must appear somewhere in the agent's replies",
+  "roadmap_must_include": "words that must appear in some milestone title",
+  "risks_must_include": "risk types that must appear in the roadmap's risks",
+  "max_questions": "ceiling on questions asked before the restatement",
+  "must_not_mention": "text that must never appear in the agent's replies"
+ },
+ "ideas": [
+  {
+   "id": "bci_medication",
+   "idea": "developing a project for communication with physically challenged patients through brain waves for change in medication",
+   "answers": {
+    "stage": "prototype",
+    "district": "Chennai",
+    "capital_band": "5 lakh",
+    "funding_route": "grant",
+    "beneficiary": "paralysed patients in hospital ICUs",
+    "product_form": "hybrid"
+   },
+   "expect": {
+    "domain": null,
+    "pack": null,
+    "categories_include": [
+     "health_bio"
+    ],
+    "must_not_ask": [],
+    "must_mention": [
+     "clinical trials",
+     "open-source projects",
+     "Looking at it from seven angles"
+    ],
+    "roadmap_must_include": [],
+    "risks_must_include": [
+     "regulatory"
+    ],
+    "max_questions": 7,
+    "must_not_mention": []
+   }
+  },
+  {
+   "id": "banana_trichy",
+   "idea": "I want to start a banana chips and banana flour unit in Tiruchirappalli using B-grade fruit from Thottiyam farmers",
+   "answers": {
+    "stage": "idea",
+    "capital_band": "10 lakh",
+    "funding_route": "debt",
+    "product_form": "physical",
+    "beneficiary": "banana farmers"
+   },
+   "expect": {
+    "domain": "banana_value_added",
+    "pack": "banana_value_added",
+    "categories_include": [
+     "agriculture"
+    ],
+    "must_not_ask": [
+     "district"
+    ],
+    "must_mention": [],
+    "roadmap_must_include": [
+     "FSSAI",
+     "yield"
+    ],
+    "risks_must_include": [
+     "capital"
+    ],
+    "max_questions": 7,
+    "must_not_mention": [
+     "medical-device",
+     "which patients"
+    ]
+   }
+  },
+  {
+   "id": "tea_madurai",
+   "idea": "I want to sell mint hibiscus and lemon tea infusions as a brand from Madurai",
+   "answers": {
+    "stage": "idea",
+    "capital_band": "5 lakh",
+    "funding_route": "self",
+    "product_form": "physical"
+   },
+   "expect": {
+    "domain": "tea_infusions",
+    "pack": "tea_infusions",
+    "categories_include": [],
+    "must_not_ask": [
+     "district"
+    ],
+    "must_mention": [],
+    "roadmap_must_include": [
+     "FSSAI"
+    ],
+    "risks_must_include": [],
+    "max_questions": 7,
+    "must_not_mention": [
+     "medical-device",
+     "which patients"
+    ]
+   }
+  },
+  {
+   "id": "jasmine_export",
+   "idea": "I want to export fresh Madurai malli jasmine flowers to Singapore and the Gulf with a proper cold chain",
+   "answers": {
+    "stage": "idea",
+    "capital_band": "25 lakh",
+    "funding_route": "mixed",
+    "product_form": "physical",
+    "beneficiary": "jasmine growers"
+   },
+   "expect": {
+    "domain": "jasmine_postharvest",
+    "pack": "jasmine_postharvest",
+    "categories_include": [],
+    "must_not_ask": [
+     "district"
+    ],
+    "must_mention": [],
+    "roadmap_must_include": [
+     "GI",
+     "flowers"
+    ],
+    "risks_must_include": [],
+    "max_questions": 7,
+    "must_not_mention": [
+     "medical-device",
+     "which patients"
+    ]
+   }
+  },
+  {
+   "id": "coconut_vco",
+   "idea": "virgin coconut oil and desiccated coconut unit in Pollachi buying nuts directly from farmers",
+   "answers": {
+    "stage": "idea",
+    "district": "Coimbatore",
+    "capital_band": "30 lakh",
+    "funding_route": "debt",
+    "product_form": "physical"
+   },
+   "expect": {
+    "domain": "coconut_products",
+    "pack": "coconut_products",
+    "categories_include": [],
+    "must_not_ask": [],
+    "must_mention": [],
+    "roadmap_must_include": [
+     "yield",
+     "Licences"
+    ],
+    "risks_must_include": [],
+    "max_questions": 7,
+    "must_not_mention": [
+     "medical-device",
+     "which patients"
+    ]
+   }
+  },
+  {
+   "id": "knitwear_tiruppur",
+   "idea": "I want to start a printed t-shirt brand made through job work units in Tiruppur and sell online",
+   "answers": {
+    "stage": "idea",
+    "capital_band": "10 lakh",
+    "funding_route": "self",
+    "product_form": "physical"
+   },
+   "expect": {
+    "domain": "knitwear_small_batch",
+    "pack": "knitwear_small_batch",
+    "categories_include": [],
+    "must_not_ask": [
+     "district"
+    ],
+    "must_mention": [],
+    "roadmap_must_include": [
+     "sample",
+     "marker"
+    ],
+    "risks_must_include": [],
+    "max_questions": 7,
+    "must_not_mention": [
+     "medical-device",
+     "which patients"
+    ]
+   }
+  },
+  {
+   "id": "pump_controller",
+   "idea": "a dry-run protection starter for farm pump motors made in Coimbatore with phone alerts",
+   "answers": {
+    "stage": "prototype",
+    "capital_band": "15 lakh",
+    "funding_route": "grant",
+    "product_form": "physical",
+    "beneficiary": "farmers with borewell pumps"
+   },
+   "expect": {
+    "domain": "pump_motor_controllers",
+    "pack": "pump_controllers",
+    "categories_include": [],
+    "must_not_ask": [
+     "district"
+    ],
+    "must_mention": [],
+    "roadmap_must_include": [],
+    "risks_must_include": [],
+    "max_questions": 7,
+    "must_not_mention": [
+     "medical-device",
+     "which patients"
+    ]
+   }
+  },
+  {
+   "id": "yarn_marketplace",
+   "idea": "a yarn price marketplace app where small knitting units in Tiruppur buy from spinning mills on credit",
+   "answers": {
+    "stage": "idea",
+    "capital_band": "10 lakh",
+    "funding_route": "equity",
+    "product_form": "software"
+   },
+   "expect": {
+    "domain": "yarn_b2b_marketplace",
+    "pack": null,
+    "categories_include": [],
+    "must_not_ask": [
+     "district"
+    ],
+    "must_mention": [],
+    "roadmap_must_include": [],
+    "risks_must_include": [],
+    "max_questions": 7,
+    "must_not_mention": [
+     "medical-device",
+     "which patients"
+    ]
+   }
+  },
+  {
+   "id": "medical_emi",
+   "idea": "instalment plans for medical treatment offered at hospital billing desks in Chennai",
+   "answers": {
+    "stage": "idea",
+    "capital_band": "50 lakh",
+    "funding_route": "equity",
+    "product_form": "software"
+   },
+   "expect": {
+    "domain": "medical_emi",
+    "pack": null,
+    "categories_include": [],
+    "must_not_ask": [
+     "district"
+    ],
+    "must_mention": [],
+    "roadmap_must_include": [],
+    "risks_must_include": [],
+    "max_questions": 7,
+    "must_not_mention": []
+   }
+  },
+  {
+   "id": "inverter_repair",
+   "idea": "board-level repair of solar inverters out of warranty for farm and rooftop solar owners near Madurai",
+   "answers": {
+    "stage": "idea",
+    "capital_band": "3 lakh",
+    "funding_route": "self",
+    "product_form": "service"
+   },
+   "expect": {
+    "domain": "solar_inverter_repair",
+    "pack": null,
+    "categories_include": [],
+    "must_not_ask": [
+     "district"
+    ],
+    "must_mention": [],
+    "roadmap_must_include": [],
+    "risks_must_include": [],
+    "max_questions": 7,
+    "must_not_mention": [
+     "medical-device",
+     "which patients"
+    ]
+   }
+  }
+ ]
+}

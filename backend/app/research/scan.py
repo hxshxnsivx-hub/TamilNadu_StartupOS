@@ -113,6 +113,7 @@ GENERIC = {
     "technologies",
     "technology",
 }
+CLINICAL_FIELDS = {"Medicine", "Nursing", "Health Professions"}
 GENERAL_QUESTIONS = [
     "Who is the first buyer, and what do they use today instead?",
     "What exactly is new compared with the closest prior art found?",
@@ -268,8 +269,13 @@ async def scan(
         }
     fields = [f["name"] for f in domains.get("fields", [])]
     categories = sorted({FIELD_TO_CATEGORY[f] for f in fields if f in FIELD_TO_CATEGORY})
+    # Clinical questions only for health ideas or when trials were found: herbal-tea
+    # papers list Medicine as a field, and "which patients?" is no question for a tea brand.
+    clinical_ok = health or results["trials"].total > 0
     questions = [
-        {"field": f, "questions": FIELD_QUESTIONS[f]} for f in fields if f in FIELD_QUESTIONS
+        {"field": f, "questions": FIELD_QUESTIONS[f]}
+        for f in fields
+        if f in FIELD_QUESTIONS and (clinical_ok or f not in CLINICAL_FIELDS)
     ]
     coverage = [
         {"source": r.source, "status": r.status, "found": r.total, "note": r.note}

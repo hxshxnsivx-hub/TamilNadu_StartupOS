@@ -3,7 +3,7 @@
  "label": "Coconut value-chain products",
  "sector": "food",
  "about": "Virgin coconut oil, desiccated coconut, coconut sugar from neera, and shell charcoal from the Pollachi coconut belt, where farmers sell whole nuts and copra cheap and price swings hit them hardest.",
- "cues": ["coconut", "virgin coconut oil", "vco", "desiccated coconut", "coconut sugar", "neera", "copra", "coconut shell", "shell charcoal", "pollachi", "coconut milk"],
+ "cues": ["coconut", "virgin coconut oil", "vco", "desiccated coconut", "coconut sugar", "neera", "copra", "coconut shell", "shell charcoal", "coconut milk"],
  "name_noise": ["coconut", "product", "products"],
  "questions": [
   {"slot": "variants", "ask": "Which coconut products do you want to start with?", "kind": "multi", "examples": ["virgin coconut oil", "desiccated coconut", "coconut sugar", "shell charcoal"]},

@@ -23,7 +23,7 @@ import httpx
 
 from app.core.config import get_settings
 from app.research import sources
-from app.research.terms import element_query, or_query, public_vocabulary, term_groups
+from app.research.terms import element_query, is_health, or_query, public_vocabulary, term_groups
 
 MAX_ELEMENTS = 6  # 15 pairs at most
 AUTO_ELEMENTS = 4  # parts found by the lexicon alone: 6 pairs at most
@@ -137,7 +137,9 @@ async def check(
         "pairs": sorted(pair_rows, key=lambda r: (not r["gap"], r["papers"])),
         "context": context,
         "statement": statement,
-        "levers": _levers(searched, pair_rows, context, retarget, scan, statement),
+        "levers": _levers(
+            searched, pair_rows, context, retarget, scan, statement, _is_health(idea, scan)
+        ),
         "thresholds": {
             "active_papers": ACTIVE,
             "crowded_papers": CROWDED,
@@ -235,7 +237,13 @@ def _statement(parts: list[dict], pairs: list[dict], context: dict) -> dict:
     }
 
 
-def _levers(parts, pairs, context, retarget, scan, statement) -> list[dict]:
+def _is_health(idea: str, scan: dict | None) -> bool:
+    """A health product by its own words, or trials actually found; papers that merely
+    touch medicine do not count (herbal tea papers list Medicine as a field)."""
+    return is_health(idea) or bool((scan or {}).get("trials", {}).get("total"))
+
+
+def _levers(parts, pairs, context, retarget, scan, statement, health=False) -> list[dict]:
     """Ways to stand out. Each is offered only with the gap that justifies it."""
     out: list[dict] = []
     for g in [p for p in pairs if p["gap"]][:2]:
@@ -268,8 +276,7 @@ def _levers(parts, pairs, context, retarget, scan, statement) -> list[dict]:
                 "because": f"only {retarget['papers']:,} papers focus on them",
             }
         )
-    fields = {f["name"] for f in (scan or {}).get("associated_domains", {}).get("fields", [])}
-    if "Medicine" in fields:
+    if health:
         trials = (scan or {}).get("trials", {}).get("total", 0)
         out.append(
             {
@@ -285,7 +292,7 @@ def _levers(parts, pairs, context, retarget, scan, statement) -> list[dict]:
         out.append(
             {
                 "kind": "cost-down",
-                "text": "Compete on cost: the costing for this domain shows where to cut.",
+                "text": "Compete on cost, using the costing for this domain to see where to cut.",
                 "because": "a Vanigam cost pack exists for this domain",
             }
         )
@@ -294,7 +301,7 @@ def _levers(parts, pairs, context, retarget, scan, statement) -> list[dict]:
             {
                 "kind": "business model",
                 "text": (
-                    "Compete on how it is delivered: as a service, a rental, or a"
+                    "Compete on how it is delivered, as a service, a rental, or a"
                     " scheme-backed rollout rather than a product sale."
                 ),
                 "because": "every part and combination is crowded",

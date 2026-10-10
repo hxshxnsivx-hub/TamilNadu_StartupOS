@@ -1,0 +1,751 @@
+{
+ "id": "banana_trichy",
+ "idea": "I want to start a banana chips and banana flour unit in Tiruchirappalli using B-grade fruit from Thottiyam farmers",
+ "recorded": "2026-10-10",
+ "coverage": [
+  {
+   "source": "papers",
+   "status": "ok"
+  },
+  {
+   "source": "projects",
+   "status": "ok"
+  },
+  {
+   "source": "patents",
+   "status": "no_key"
+  },
+  {
+   "source": "trials",
+   "status": "skipped"
+  }
+ ],
+ "scan": {
+  "idea": "I want to start a banana chips and banana flour unit in Tiruchirappalli using B-grade fruit from Thottiyam farmers",
+  "queries": {
+   "papers": "smallholder agriculture banana chips flour",
+   "trials": "smallholder agriculture",
+   "projects": "smallholder agriculture banana chips",
+   "patents": "smallholder agriculture banana chips flour",
+   "local": "chips flour fruit smallholder agriculture banana"
+  },
+  "associated_domains": {
+   "basis": "papers",
+   "domains": [
+    {
+     "name": "Life Sciences",
+     "share_pct": 92
+    },
+    {
+     "name": "Physical Sciences",
+     "share_pct": 7
+    },
+    {
+     "name": "Health Sciences",
+     "share_pct": 1
+    },
+    {
+     "name": "Social Sciences",
+     "share_pct": 0
+    }
+   ],
+   "fields": [
+    {
+     "name": "Agricultural and Biological Sciences",
+     "share_pct": 92
+    },
+    {
+     "name": "Engineering",
+     "share_pct": 4
+    },
+    {
+     "name": "Environmental Science",
+     "share_pct": 2
+    },
+    {
+     "name": "Energy",
+     "share_pct": 1
+    },
+    {
+     "name": "Nursing",
+     "share_pct": 1
+    },
+    {
+     "name": "Economics, Econometrics and Finance",
+     "share_pct": 0
+    },
+    {
+     "name": "Social Sciences",
+     "share_pct": 0
+    },
+    {
+     "name": "Business, Management and Accounting",
+     "share_pct": 0
+    }
+   ],
+   "subfields": [
+    {
+     "name": "General Agricultural and Biological Sciences",
+     "share_pct": 39
+    },
+    {
+     "name": "Plant Science",
+     "share_pct": 34
+    },
+    {
+     "name": "Food Science",
+     "share_pct": 13
+    },
+    {
+     "name": "Agronomy and Crop Science",
+     "share_pct": 6
+    },
+    {
+     "name": "Biomedical Engineering",
+     "share_pct": 4
+    },
+    {
+     "name": "Nutrition and Dietetics",
+     "share_pct": 1
+    },
+    {
+     "name": "Management, Monitoring, Policy and Law",
+     "share_pct": 1
+    },
+    {
+     "name": "Energy Engineering and Power Technology",
+     "share_pct": 1
+    }
+   ],
+   "topics": [
+    {
+     "name": "Banana Cultivation and Research",
+     "share_pct": 30
+    },
+    {
+     "name": "Agricultural Innovations and Practices",
+     "share_pct": 17
+    },
+    {
+     "name": "Agriculture and Agroindustry Studies",
+     "share_pct": 8
+    },
+    {
+     "name": "Bioeconomy and Sustainability Development",
+     "share_pct": 6
+    },
+    {
+     "name": "Livestock Farming and Management",
+     "share_pct": 6
+    },
+    {
+     "name": "Agricultural Research and Practices",
+     "share_pct": 4
+    },
+    {
+     "name": "Food Waste Reduction and Sustainability",
+     "share_pct": 4
+    },
+    {
+     "name": "Sensory Analysis and Statistical Methods",
+     "share_pct": 4
+    }
+   ]
+  },
+  "vanigam_categories": [
+   "agriculture",
+   "climate",
+   "electrical",
+   "fintech",
+   "health_bio",
+   "renewable",
+   "saas"
+  ],
+  "papers": {
+   "total": 535,
+   "by_year": {
+    "2025": 64,
+    "2019": 44,
+    "2022": 43,
+    "2026": 43,
+    "2020": 42,
+    "2021": 42,
+    "2023": 39,
+    "2017": 28,
+    "2024": 28,
+    "2018": 26,
+    "2013": 18,
+    "2012": 16,
+    "2014": 14,
+    "2016": 14,
+    "2015": 12,
+    "2011": 11,
+    "2001": 6,
+    "2005": 6,
+    "2010": 5,
+    "2006": 4,
+    "1991": 3,
+    "2003": 3,
+    "1987": 2,
+    "1990": 2,
+    "1992": 2,
+    "1999": 2,
+    "2000": 2,
+    "2004": 2,
+    "2007": 2,
+    "2008": 2,
+    "1985": 1,
+    "1986": 1,
+    "1988": 1,
+    "1997": 1,
+    "1998": 1,
+    "2002": 1,
+    "2009": 1
+   },
+   "most_relevant": [
+    {
+     "title": "Solomon Islands Smallholder Agriculture Study",
+     "year": 2006,
+     "cited_by": 40,
+     "venue": "ANU Open Research (Australian National University)",
+     "url": "https://openalex.org/W2890155721",
+     "topics": [
+      {
+       "topic": "Agricultural Innovations and Practices",
+       "subfield": "General Agricultural and Biological Sciences",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.7401999831199646
+      },
+      {
+       "topic": "Agricultural Research and Practices",
+       "subfield": "General Agricultural and Biological Sciences",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.09009999781847
+      },
+      {
+       "topic": "Agricultural Development and Management",
+       "subfield": "General Agricultural and Biological Sciences",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.06679999828338623
+      }
+     ]
+    },
+    {
+     "title": "Banana and plantain in West Africa: Production and marketing",
+     "year": 2020,
+     "cited_by": 51,
+     "venue": "African Journal of Food Agriculture Nutrition and Development",
+     "url": "https://doi.org/10.18697/ajfand.90.18365",
+     "topics": [
+      {
+       "topic": "Banana Cultivation and Research",
+       "subfield": "Plant Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.9945999979972839
+      },
+      {
+       "topic": "Economics of Agriculture and Food Markets",
+       "subfield": "Economics and Econometrics",
+       "field": "Economics, Econometrics and Finance",
+       "domain": "Social Sciences",
+       "score": 0.0019000000320374966
+      },
+      {
+       "topic": "Agriculture and Agroindustry Studies",
+       "subfield": "General Agricultural and Biological Sciences",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.0007999999797903001
+      }
+     ]
+    },
+    {
+     "title": "Development and Characterization of Fortified Ready‐to‐Eat Banana Porridge Flour: A Multi‐Age Nutritional Intervention",
+     "year": 2026,
+     "cited_by": 0,
+     "venue": "Journal of Food Processing and Preservation",
+     "url": "https://doi.org/10.1155/jfpp/9211449",
+     "topics": [
+      {
+       "topic": "Food and Agricultural Sciences",
+       "subfield": "Food Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.3799000084400177
+      },
+      {
+       "topic": "Child Nutrition and Water Access",
+       "subfield": "Nutrition and Dietetics",
+       "field": "Nursing",
+       "domain": "Health Sciences",
+       "score": 0.2184000015258789
+      },
+      {
+       "topic": "Moringa oleifera research and applications",
+       "subfield": "Plant Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.1378999948501587
+      }
+     ]
+    },
+    {
+     "title": "Strategies and Techniques Employed by Saba Banana Growers in Addressing the Problem of Unsold Bananas in the City of Puerto Princesa",
+     "year": 2026,
+     "cited_by": 0,
+     "venue": "International Journal of Sustainability and Advanced Integrated Research",
+     "url": "https://doi.org/10.65339/ijsair.v2.i1.71",
+     "topics": [
+      {
+       "topic": "Agricultural Innovations and Practices",
+       "subfield": "General Agricultural and Biological Sciences",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.43849998712539673
+      },
+      {
+       "topic": "Agriculture and Agroindustry Studies",
+       "subfield": "General Agricultural and Biological Sciences",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.22179999947547913
+      },
+      {
+       "topic": "Agricultural Development and Management",
+       "subfield": "General Agricultural and Biological Sciences",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.11680000275373459
+      }
+     ]
+    },
+    {
+     "title": "Socio-economic Factors Affecting Uptake of Banana Value Addition among Smallholders in Chuka Sub-county, Tharaka Nithi County, Kenya",
+     "year": 2021,
+     "cited_by": 4,
+     "venue": "Asian Journal of Agricultural Extension Economics & Sociology",
+     "url": "https://doi.org/10.9734/ajaees/2021/v39i130497",
+     "topics": [
+      {
+       "topic": "Agricultural Innovations and Practices",
+       "subfield": "General Agricultural and Biological Sciences",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.9984999895095825
+      },
+      {
+       "topic": "Agricultural Development and Management",
+       "subfield": "General Agricultural and Biological Sciences",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.0008999999845400453
+      },
+      {
+       "topic": "Agriculture and Agroindustry Studies",
+       "subfield": "General Agricultural and Biological Sciences",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 9.999999747378752e-05
+      }
+     ]
+    },
+    {
+     "title": "Assessment Of Food Losses in Rwanda's Semi-Industrial Banana Chip Production: Case Study of Zean Ltd.",
+     "year": 2025,
+     "cited_by": 0,
+     "venue": "Agro-Science",
+     "url": "https://doi.org/10.4314/as.v24i1.9",
+     "topics": [
+      {
+       "topic": "Food Waste Reduction and Sustainability",
+       "subfield": "Food Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.9976000189781189
+      },
+      {
+       "topic": "Agricultural and Food Production Studies",
+       "subfield": "Food Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.0006000000284984708
+      },
+      {
+       "topic": "Banana Cultivation and Research",
+       "subfield": "Plant Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 9.999999747378752e-05
+      }
+     ]
+    },
+    {
+     "title": "New Sustainable Banana Value Chain: Waste Valuation toward a Circular Bioeconomy",
+     "year": 2023,
+     "cited_by": 12,
+     "venue": "Energies",
+     "url": "https://doi.org/10.3390/en16083453",
+     "topics": [
+      {
+       "topic": "Bioeconomy and Sustainability Development",
+       "subfield": "General Agricultural and Biological Sciences",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.9437999725341797
+      },
+      {
+       "topic": "Agriculture and Agroindustry Studies",
+       "subfield": "General Agricultural and Biological Sciences",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.018400000408291817
+      },
+      {
+       "topic": "Sustainable Supply Chain Management",
+       "subfield": "Strategy and Management",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.010700000450015068
+      }
+     ]
+    },
+    {
+     "title": "Biomass waste-to-energy valorisation technologies: a review case for banana processing in Uganda",
+     "year": 2017,
+     "cited_by": 214,
+     "venue": "Biotechnology for Biofuels",
+     "url": "https://doi.org/10.1186/s13068-016-0689-5",
+     "topics": [
+      {
+       "topic": "Thermochemical Biomass Conversion Processes",
+       "subfield": "Biomedical Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.8877000212669373
+      },
+      {
+       "topic": "Municipal Solid Waste Management",
+       "subfield": "Waste Management and Disposal",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 0.05510000139474869
+      },
+      {
+       "topic": "Anaerobic Digestion and Biogas Production",
+       "subfield": "Building and Construction",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.04349999874830246
+      }
+     ]
+    }
+   ],
+   "most_cited": [
+    {
+     "title": "An ecological future for weed science to sustain crop production and the environment. A review",
+     "year": 2020,
+     "cited_by": 348,
+     "venue": "Agronomy for Sustainable Development",
+     "url": "https://doi.org/10.1007/s13593-020-00631-6",
+     "topics": [
+      {
+       "topic": "Weed Control and Herbicide Applications",
+       "subfield": "Plant Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.9965999722480774
+      },
+      {
+       "topic": "Ecology and Vegetation Dynamics Studies",
+       "subfield": "Nature and Landscape Conservation",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 0.0010999999940395355
+      },
+      {
+       "topic": "Allelopathy and phytotoxic interactions",
+       "subfield": "Plant Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.000699999975040555
+      }
+     ]
+    },
+    {
+     "title": "Review of solar dryers for agricultural products in Asia and Africa: An innovation landscape approach",
+     "year": 2020,
+     "cited_by": 283,
+     "venue": "Journal of Environmental Management",
+     "url": "https://doi.org/10.1016/j.jenvman.2020.110730",
+     "topics": [
+      {
+       "topic": "Food Drying and Modeling",
+       "subfield": "Food Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.9984999895095825
+      },
+      {
+       "topic": "Agricultural Innovations and Practices",
+       "subfield": "General Agricultural and Biological Sciences",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.00039999998989515007
+      },
+      {
+       "topic": "Agricultural Engineering and Mechanization",
+       "subfield": "Mechanical Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.00019999999494757503
+      }
+     ]
+    },
+    {
+     "title": "Food systems and diets: Facing the challenges of the 21st century",
+     "year": 2016,
+     "cited_by": 246,
+     "venue": "City Research Online (City University London)",
+     "url": "https://openalex.org/W2887021699",
+     "topics": [
+      {
+       "topic": "Agriculture Sustainability and Environmental Impact",
+       "subfield": "Ecology",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 0.6934000253677368
+      },
+      {
+       "topic": "Nutrition, Health, and Society Studies",
+       "subfield": "Food Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.10499999672174454
+      },
+      {
+       "topic": "Agricultural and Food Production Studies",
+       "subfield": "Food Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.09650000184774399
+      }
+     ]
+    },
+    {
+     "title": "Biomass waste-to-energy valorisation technologies: a review case for banana processing in Uganda",
+     "year": 2017,
+     "cited_by": 214,
+     "venue": "Biotechnology for Biofuels",
+     "url": "https://doi.org/10.1186/s13068-016-0689-5",
+     "topics": [
+      {
+       "topic": "Thermochemical Biomass Conversion Processes",
+       "subfield": "Biomedical Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.8877000212669373
+      },
+      {
+       "topic": "Municipal Solid Waste Management",
+       "subfield": "Waste Management and Disposal",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 0.05510000139474869
+      },
+      {
+       "topic": "Anaerobic Digestion and Biogas Production",
+       "subfield": "Building and Construction",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.04349999874830246
+      }
+     ]
+    },
+    {
+     "title": "Application of Agri-Food By-Products in the Food Industry",
+     "year": 2023,
+     "cited_by": 191,
+     "venue": "Agriculture",
+     "url": "https://doi.org/10.3390/agriculture13081559",
+     "topics": [
+      {
+       "topic": "Phytochemicals and Antioxidant Activities",
+       "subfield": "Biochemistry",
+       "field": "Medicine",
+       "domain": "Health Sciences",
+       "score": 0.19740000367164612
+      },
+      {
+       "topic": "Food and Agricultural Sciences",
+       "subfield": "Food Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.1881999969482422
+      },
+      {
+       "topic": "Food composition and properties",
+       "subfield": "Nutrition and Dietetics",
+       "field": "Nursing",
+       "domain": "Health Sciences",
+       "score": 0.1565999984741211
+      }
+     ]
+    }
+   ]
+  },
+  "trials": {
+   "total": 0,
+   "items": []
+  },
+  "projects": {
+   "total": 0,
+   "items": []
+  },
+  "patents": {
+   "total": 0,
+   "items": []
+  },
+  "local": {
+   "startups": [],
+   "registry_domains": [
+    {
+     "id": "banana_value_added",
+     "label": "Banana value-added products"
+    }
+   ]
+  },
+  "elements": [],
+  "discuss": [
+   {
+    "field": "Agricultural and Biological Sciences",
+    "questions": [
+     "Which crop or animal, which season, and which FPO or farmers will pilot it?"
+    ]
+   },
+   {
+    "field": "Engineering",
+    "questions": [
+     "Which sensors and hardware, at what unit cost, and how durable in Indian conditions?",
+     "What certification does the hardware need before sale?"
+    ]
+   },
+   {
+    "field": "Environmental Science",
+    "questions": [
+     "What is measured, by whom, and who pays for the improvement?"
+    ]
+   },
+   {
+    "field": "Energy",
+    "questions": [
+     "What does it cost per unit of energy saved or produced, and who finances it?"
+    ]
+   },
+   {
+    "field": "Economics, Econometrics and Finance",
+    "questions": [
+     "Which regulated entity (bank, NBFC, insurer) do you partner with?"
+    ]
+   },
+   {
+    "field": "Any idea",
+    "questions": [
+     "Who is the first buyer, and what do they use today instead?",
+     "What exactly is new compared with the closest prior art found?",
+     "Which part could be protected (patent, design, trademark), and which is already public?"
+    ]
+   }
+  ],
+  "coverage": [
+   {
+    "source": "papers",
+    "status": "ok",
+    "found": 535,
+    "note": ""
+   },
+   {
+    "source": "projects",
+    "status": "ok",
+    "found": 0,
+    "note": ""
+   },
+   {
+    "source": "patents",
+    "status": "no_key",
+    "found": 0,
+    "note": "Patents not searched: add a free PatentsView key (PATENTSVIEW_API_KEY)"
+   },
+   {
+    "source": "trials",
+    "status": "skipped",
+    "found": 0,
+    "note": "Not a health idea, so clinical trials were not searched"
+   }
+  ],
+  "caveat": "Counts come from the sources listed in coverage. 'Nothing found' means nothing in those sources, not that the idea is new; have a patent attorney search before filing."
+ },
+ "novelty": {
+  "elements": [
+   {
+    "element": "farmers",
+    "query": "\"smallholder agriculture\"",
+    "papers": 60031,
+    "label": "crowded"
+   },
+   {
+    "element": "banana",
+    "query": "banana",
+    "papers": 463604,
+    "label": "crowded"
+   }
+  ],
+  "pairs": [
+   {
+    "a": "farmers",
+    "b": "banana",
+    "a_papers": 60031,
+    "b_papers": 463604,
+    "papers": 4428,
+    "share_pct": 7.38,
+    "gap": false
+   }
+  ],
+  "context": {
+   "query": "banana \"smallholder agriculture\"",
+   "searched": true,
+   "world_papers": 4428,
+   "india_papers": 170,
+   "india_share_pct": 3.8,
+   "tn_startups": 0,
+   "gap": true
+  },
+  "statement": {
+   "type": "context",
+   "text": "Work on this is active worldwide (4,428 papers), but only 170 come from Indian institutions, and I found no Tamil Nadu startup doing it."
+  },
+  "levers": [
+   {
+    "kind": "localise",
+    "text": "Make it fit Tamil Nadu, with the Tamil language, local hospital or market routines, and a local price.",
+    "because": "170 of 4,428 papers are from India, and no Tamil Nadu startup was found"
+   },
+   {
+    "kind": "cost-down",
+    "text": "Compete on cost, using the costing for this domain to see where to cut.",
+    "because": "a Vanigam cost pack exists for this domain"
+   }
+  ],
+  "thresholds": {
+   "active_papers": 300,
+   "crowded_papers": 5000,
+   "rare_pair_share_pct": 2.0,
+   "rare_pair_papers": 30,
+   "india_low_share_pct": 5.0
+  },
+  "caveat": "Not found in these sources is not proof of novelty; have a patent attorney search before filing."
+ }
+}

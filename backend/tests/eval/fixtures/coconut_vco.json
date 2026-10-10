@@ -1,0 +1,824 @@
+{
+ "id": "coconut_vco",
+ "idea": "virgin coconut oil and desiccated coconut unit in Pollachi buying nuts directly from farmers",
+ "recorded": "2026-10-10",
+ "coverage": [
+  {
+   "source": "papers",
+   "status": "ok"
+  },
+  {
+   "source": "projects",
+   "status": "ok"
+  },
+  {
+   "source": "patents",
+   "status": "no_key"
+  },
+  {
+   "source": "trials",
+   "status": "skipped"
+  }
+ ],
+ "scan": {
+  "idea": "virgin coconut oil and desiccated coconut unit in Pollachi buying nuts directly from farmers",
+  "queries": {
+   "papers": "virgin coconut oil coconut smallholder agriculture desiccated",
+   "trials": "virgin coconut oil coconut",
+   "projects": "virgin coconut oil",
+   "patents": "virgin coconut oil coconut smallholder agriculture desiccated",
+   "local": "desiccated virgin coconut oil coconut smallholder agriculture"
+  },
+  "associated_domains": {
+   "basis": "papers",
+   "domains": [
+    {
+     "name": "Physical Sciences",
+     "share_pct": 61
+    },
+    {
+     "name": "Life Sciences",
+     "share_pct": 22
+    },
+    {
+     "name": "Social Sciences",
+     "share_pct": 15
+    },
+    {
+     "name": "Health Sciences",
+     "share_pct": 2
+    }
+   ],
+   "fields": [
+    {
+     "name": "Chemistry",
+     "share_pct": 55
+    },
+    {
+     "name": "Agricultural and Biological Sciences",
+     "share_pct": 18
+    },
+    {
+     "name": "Economics, Econometrics and Finance",
+     "share_pct": 7
+    },
+    {
+     "name": "Environmental Science",
+     "share_pct": 5
+    },
+    {
+     "name": "Decision Sciences",
+     "share_pct": 4
+    },
+    {
+     "name": "Biochemistry, Genetics and Molecular Biology",
+     "share_pct": 4
+    },
+    {
+     "name": "Business, Management and Accounting",
+     "share_pct": 4
+    },
+    {
+     "name": "Nursing",
+     "share_pct": 2
+    }
+   ],
+   "subfields": [
+    {
+     "name": "Inorganic Chemistry",
+     "share_pct": 55
+    },
+    {
+     "name": "General Agricultural and Biological Sciences",
+     "share_pct": 13
+    },
+    {
+     "name": "Economics and Econometrics",
+     "share_pct": 7
+    },
+    {
+     "name": "Ecology",
+     "share_pct": 5
+    },
+    {
+     "name": "Management Science and Operations Research",
+     "share_pct": 4
+    },
+    {
+     "name": "Molecular Biology",
+     "share_pct": 4
+    },
+    {
+     "name": "Strategy and Management",
+     "share_pct": 4
+    },
+    {
+     "name": "Plant Science",
+     "share_pct": 2
+    }
+   ],
+   "topics": [
+    {
+     "name": "Coconut Research and Applications",
+     "share_pct": 55
+    },
+    {
+     "name": "Economics of Agriculture and Food Markets",
+     "share_pct": 7
+    },
+    {
+     "name": "Agriculture and Agroindustry Studies",
+     "share_pct": 7
+    },
+    {
+     "name": "Oil Palm Production and Sustainability",
+     "share_pct": 5
+    },
+    {
+     "name": "Efficiency Analysis Using DEA",
+     "share_pct": 4
+    },
+    {
+     "name": "Plant tissue culture and regeneration",
+     "share_pct": 4
+    },
+    {
+     "name": "Global Trade and Competitiveness",
+     "share_pct": 4
+    },
+    {
+     "name": "Agricultural Innovations and Practices",
+     "share_pct": 3
+    }
+   ]
+  },
+  "vanigam_categories": [
+   "agriculture",
+   "climate",
+   "fintech",
+   "health_bio",
+   "saas"
+  ],
+  "papers": {
+   "total": 81,
+   "by_year": {
+    "2025": 11,
+    "2026": 11,
+    "2024": 10,
+    "2020": 6,
+    "2023": 6,
+    "2016": 5,
+    "2022": 5,
+    "2015": 4,
+    "2014": 3,
+    "2021": 3,
+    "1988": 2,
+    "2005": 2,
+    "2012": 2,
+    "2013": 2,
+    "2017": 2,
+    "2018": 2,
+    "1990": 1,
+    "2006": 1,
+    "2009": 1,
+    "2019": 1
+   },
+   "most_relevant": [
+    {
+     "title": "Present status and outlook of coconut development in Indonesia",
+     "year": 2020,
+     "cited_by": 103,
+     "venue": "IOP Conference Series Earth and Environmental Science",
+     "url": "https://doi.org/10.1088/1755-1315/418/1/012035",
+     "topics": [
+      {
+       "topic": "Coconut Research and Applications",
+       "subfield": "Inorganic Chemistry",
+       "field": "Chemistry",
+       "domain": "Physical Sciences",
+       "score": 1.0
+      },
+      {
+       "topic": "Oil Palm Production and Sustainability",
+       "subfield": "Ecology",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 9.999999747378752e-05
+      },
+      {
+       "topic": "Agriculture and Agroindustry Studies",
+       "subfield": "General Agricultural and Biological Sciences",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.0
+      }
+     ]
+    },
+    {
+     "title": "Nature-based solutions in agriculture: A review of the coconut (Cocos nucifera L.)-based farming systems in Kerala, “the Land of Coconut Trees”",
+     "year": 2022,
+     "cited_by": 70,
+     "venue": "Nature-Based Solutions",
+     "url": "https://doi.org/10.1016/j.nbsj.2022.100012",
+     "topics": [
+      {
+       "topic": "Coconut Research and Applications",
+       "subfield": "Inorganic Chemistry",
+       "field": "Chemistry",
+       "domain": "Physical Sciences",
+       "score": 0.5313000082969666
+      },
+      {
+       "topic": "Agroforestry and silvopastoral systems",
+       "subfield": "Forestry",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.3107999861240387
+      },
+      {
+       "topic": "Agronomic Practices and Intercropping Systems",
+       "subfield": "Agronomy and Crop Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.038100000470876694
+      }
+     ]
+    },
+    {
+     "title": "The Coconut Industry: A Review of Price Forecasting Modelling in Major Coconut Producing Countries",
+     "year": 2020,
+     "cited_by": 33,
+     "venue": "CORD",
+     "url": "https://doi.org/10.37833/cord.v36i.422",
+     "topics": [
+      {
+       "topic": "Economics of Agriculture and Food Markets",
+       "subfield": "Economics and Econometrics",
+       "field": "Economics, Econometrics and Finance",
+       "domain": "Social Sciences",
+       "score": 0.9682999849319458
+      },
+      {
+       "topic": "Coconut Research and Applications",
+       "subfield": "Inorganic Chemistry",
+       "field": "Chemistry",
+       "domain": "Physical Sciences",
+       "score": 0.01590000092983246
+      },
+      {
+       "topic": "Forecasting Techniques and Applications",
+       "subfield": "Management Science and Operations Research",
+       "field": "Decision Sciences",
+       "domain": "Social Sciences",
+       "score": 0.013899999670684338
+      }
+     ]
+    },
+    {
+     "title": "Coconut water preservation and processing: a review",
+     "year": 2012,
+     "cited_by": 91,
+     "venue": "Fruits",
+     "url": "https://doi.org/10.1051/fruits/2012009",
+     "topics": [
+      {
+       "topic": "Coconut Research and Applications",
+       "subfield": "Inorganic Chemistry",
+       "field": "Chemistry",
+       "domain": "Physical Sciences",
+       "score": 0.9980000257492065
+      },
+      {
+       "topic": "Postharvest Quality and Shelf Life Management",
+       "subfield": "Plant Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.0003000000142492354
+      },
+      {
+       "topic": "Microbial Inactivation Methods",
+       "subfield": "Biotechnology",
+       "field": "Biochemistry, Genetics and Molecular Biology",
+       "domain": "Life Sciences",
+       "score": 0.0003000000142492354
+      }
+     ]
+    },
+    {
+     "title": "Overview and Constraints of the Coconut Supply Chain in the Philippines",
+     "year": 2020,
+     "cited_by": 56,
+     "venue": "International Journal of Fruit Science",
+     "url": "https://doi.org/10.1080/15538362.2020.1746727",
+     "topics": [
+      {
+       "topic": "Coconut Research and Applications",
+       "subfield": "Inorganic Chemistry",
+       "field": "Chemistry",
+       "domain": "Physical Sciences",
+       "score": 0.8964999914169312
+      },
+      {
+       "topic": "Agriculture and Agroindustry Studies",
+       "subfield": "General Agricultural and Biological Sciences",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.093299999833107
+      },
+      {
+       "topic": "Economics of Agriculture and Food Markets",
+       "subfield": "Economics and Econometrics",
+       "field": "Economics, Econometrics and Finance",
+       "domain": "Social Sciences",
+       "score": 0.002899999963119626
+      }
+     ]
+    },
+    {
+     "title": "Coconut Value Chain Analysis: A Systematic Review",
+     "year": 2023,
+     "cited_by": 53,
+     "venue": "Agriculture",
+     "url": "https://doi.org/10.3390/agriculture13071379",
+     "topics": [
+      {
+       "topic": "Coconut Research and Applications",
+       "subfield": "Inorganic Chemistry",
+       "field": "Chemistry",
+       "domain": "Physical Sciences",
+       "score": 0.9878000020980835
+      },
+      {
+       "topic": "Agriculture and Agroindustry Studies",
+       "subfield": "General Agricultural and Biological Sciences",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.007699999958276749
+      },
+      {
+       "topic": "Oil Palm Production and Sustainability",
+       "subfield": "Ecology",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 0.0031999999191612005
+      }
+     ]
+    },
+    {
+     "title": "Price Competition and Shifting Demand: The Relation between Palm and Coconut Oil Exports",
+     "year": 2023,
+     "cited_by": 9,
+     "venue": "Sustainability",
+     "url": "https://doi.org/10.3390/su16010101",
+     "topics": [
+      {
+       "topic": "Economics of Agriculture and Food Markets",
+       "subfield": "Economics and Econometrics",
+       "field": "Economics, Econometrics and Finance",
+       "domain": "Social Sciences",
+       "score": 0.9702000021934509
+      },
+      {
+       "topic": "Coconut Research and Applications",
+       "subfield": "Inorganic Chemistry",
+       "field": "Chemistry",
+       "domain": "Physical Sciences",
+       "score": 0.01860000006854534
+      },
+      {
+       "topic": "Market Dynamics and Volatility",
+       "subfield": "Economics and Econometrics",
+       "field": "Economics, Econometrics and Finance",
+       "domain": "Social Sciences",
+       "score": 0.007699999958276749
+      }
+     ]
+    },
+    {
+     "title": "The Present and Future of the Coconut Cultivation towards the Export Industry: A Case on the Coconut Triangle in Sri Lanka",
+     "year": 2024,
+     "cited_by": 0,
+     "venue": "Asian Journal of Agricultural Extension Economics & Sociology",
+     "url": "https://doi.org/10.9734/ajaees/2024/v42i112608",
+     "topics": [
+      {
+       "topic": "Coconut Research and Applications",
+       "subfield": "Inorganic Chemistry",
+       "field": "Chemistry",
+       "domain": "Physical Sciences",
+       "score": 0.9409000277519226
+      },
+      {
+       "topic": "Agriculture and Agroindustry Studies",
+       "subfield": "General Agricultural and Biological Sciences",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.03739999979734421
+      },
+      {
+       "topic": "Agricultural Economics and Practices",
+       "subfield": "General Agricultural and Biological Sciences",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.00860000029206276
+      }
+     ]
+    }
+   ],
+   "most_cited": [
+    {
+     "title": "Locusts and remote sensing: a review",
+     "year": 2013,
+     "cited_by": 115,
+     "venue": "Journal of Applied Remote Sensing",
+     "url": "https://doi.org/10.1117/1.jrs.7.075099",
+     "topics": [
+      {
+       "topic": "Remote Sensing in Agriculture",
+       "subfield": "Ecology",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 0.423799991607666
+      },
+      {
+       "topic": "Orthoptera Research and Taxonomy",
+       "subfield": "Ecology, Evolution, Behavior and Systematics",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.41990000009536743
+      },
+      {
+       "topic": "Remote Sensing and Land Use",
+       "subfield": "Atmospheric Science",
+       "field": "Earth and Planetary Sciences",
+       "domain": "Physical Sciences",
+       "score": 0.013000000268220901
+      }
+     ]
+    },
+    {
+     "title": "Present status and outlook of coconut development in Indonesia",
+     "year": 2020,
+     "cited_by": 103,
+     "venue": "IOP Conference Series Earth and Environmental Science",
+     "url": "https://doi.org/10.1088/1755-1315/418/1/012035",
+     "topics": [
+      {
+       "topic": "Coconut Research and Applications",
+       "subfield": "Inorganic Chemistry",
+       "field": "Chemistry",
+       "domain": "Physical Sciences",
+       "score": 1.0
+      },
+      {
+       "topic": "Oil Palm Production and Sustainability",
+       "subfield": "Ecology",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 9.999999747378752e-05
+      },
+      {
+       "topic": "Agriculture and Agroindustry Studies",
+       "subfield": "General Agricultural and Biological Sciences",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.0
+      }
+     ]
+    },
+    {
+     "title": "Coconut water preservation and processing: a review",
+     "year": 2012,
+     "cited_by": 91,
+     "venue": "Fruits",
+     "url": "https://doi.org/10.1051/fruits/2012009",
+     "topics": [
+      {
+       "topic": "Coconut Research and Applications",
+       "subfield": "Inorganic Chemistry",
+       "field": "Chemistry",
+       "domain": "Physical Sciences",
+       "score": 0.9980000257492065
+      },
+      {
+       "topic": "Postharvest Quality and Shelf Life Management",
+       "subfield": "Plant Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.0003000000142492354
+      },
+      {
+       "topic": "Microbial Inactivation Methods",
+       "subfield": "Biotechnology",
+       "field": "Biochemistry, Genetics and Molecular Biology",
+       "domain": "Life Sciences",
+       "score": 0.0003000000142492354
+      }
+     ]
+    },
+    {
+     "title": "Nature-based solutions in agriculture: A review of the coconut (Cocos nucifera L.)-based farming systems in Kerala, “the Land of Coconut Trees”",
+     "year": 2022,
+     "cited_by": 70,
+     "venue": "Nature-Based Solutions",
+     "url": "https://doi.org/10.1016/j.nbsj.2022.100012",
+     "topics": [
+      {
+       "topic": "Coconut Research and Applications",
+       "subfield": "Inorganic Chemistry",
+       "field": "Chemistry",
+       "domain": "Physical Sciences",
+       "score": 0.5313000082969666
+      },
+      {
+       "topic": "Agroforestry and silvopastoral systems",
+       "subfield": "Forestry",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.3107999861240387
+      },
+      {
+       "topic": "Agronomic Practices and Intercropping Systems",
+       "subfield": "Agronomy and Crop Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.038100000470876694
+      }
+     ]
+    },
+    {
+     "title": "Drivers of Change in Socio-Ecological Production Landscapes: Implications for Better Management",
+     "year": 2014,
+     "cited_by": 66,
+     "venue": "Ecology and Society",
+     "url": "https://doi.org/10.5751/es-06283-190141",
+     "topics": [
+      {
+       "topic": "Land Use and Ecosystem Services",
+       "subfield": "Global and Planetary Change",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 0.8604000210762024
+      },
+      {
+       "topic": "Urban and spatial planning",
+       "subfield": "Nature and Landscape Conservation",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 0.11860000342130661
+      },
+      {
+       "topic": "Agriculture, Land Use, Rural Development",
+       "subfield": "General Agricultural and Biological Sciences",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.010900000110268593
+      }
+     ]
+    }
+   ]
+  },
+  "trials": {
+   "total": 0,
+   "items": []
+  },
+  "projects": {
+   "total": 12,
+   "items": [
+    {
+     "name": "buddha4527/aelcoconut",
+     "description": "ael virgin coconut oil ",
+     "stars": 0,
+     "updated": "2025-10-07T12:31:36Z",
+     "license": null,
+     "url": "https://github.com/buddha4527/aelcoconut"
+    },
+    {
+     "name": "joshuafabiyi2025-wq/virgin-oil",
+     "description": "coconut ",
+     "stars": 0,
+     "updated": "2026-09-15T11:57:59Z",
+     "license": null,
+     "url": "https://github.com/joshuafabiyi2025-wq/virgin-oil"
+    },
+    {
+     "name": "Mbegu/John",
+     "description": "Virgin Coconut Oil Project",
+     "stars": 0,
+     "updated": "2018-08-29T09:00:24Z",
+     "license": null,
+     "url": "https://github.com/Mbegu/John"
+    },
+    {
+     "name": "Abhijitjagtap522/Virgin-coconut-oil",
+     "description": null,
+     "stars": 0,
+     "updated": "2024-08-01T06:40:25Z",
+     "license": null,
+     "url": "https://github.com/Abhijitjagtap522/Virgin-coconut-oil"
+    },
+    {
+     "name": "myaidmaidm-collab/Virgin-Coconut-Oil",
+     "description": "Virgin coconut oil repository description - taken from bootstrap - bootstrap template name is active clean bootstrap tempalte",
+     "stars": 0,
+     "updated": "2026-03-19T18:30:46Z",
+     "license": null,
+     "url": "https://github.com/myaidmaidm-collab/Virgin-Coconut-Oil"
+    },
+    {
+     "name": "cathreeena/Virgin-Coconut-Oil",
+     "description": null,
+     "stars": 0,
+     "updated": "2026-03-03T06:53:43Z",
+     "license": null,
+     "url": "https://github.com/cathreeena/Virgin-Coconut-Oil"
+    },
+    {
+     "name": "Mohamed-Asif-1000/COCOMPIRE-Virgin-Coconut-Oil-Brand-Website",
+     "description": "COCOMPIRE is a responsive and modern website designed to promote a premium virgin coconut oil brand. It features a clean layout, smooth animations, and an elegant presentation of products, testimonials, and contact information. Built using HTML, CSS, and JavaScript, the site highlights purity, sustainability, and natural living reflects its brand",
+     "stars": 0,
+     "updated": "2025-10-25T11:50:12Z",
+     "license": "MIT",
+     "url": "https://github.com/Mohamed-Asif-1000/COCOMPIRE-Virgin-Coconut-Oil-Brand-Website"
+    },
+    {
+     "name": "morodonorojo/web-vco",
+     "description": "Web Informasi mengenai Virgin Coconut Oil untuk Program Kerja KKN-PPM UGM Periode II Tahun 2022",
+     "stars": 0,
+     "updated": "2022-07-25T15:53:34Z",
+     "license": null,
+     "url": "https://github.com/morodonorojo/web-vco"
+    },
+    {
+     "name": "nssptrading/moona-minyak-kelapa-dara",
+     "description": "This is a website about Moona's brand - Virgin Coconut Oil, local product from Malaysia since 2009.",
+     "stars": 0,
+     "updated": "2025-05-09T18:42:56Z",
+     "license": null,
+     "url": "https://github.com/nssptrading/moona-minyak-kelapa-dara"
+    },
+    {
+     "name": "Vis8hnu/Vitara-Herbal",
+     "description": "Cold-pressed Virgin Coconut Oil and antioxidant-rich Matcha Green Tea Powder support overall wellness by boosting metabolism, enhancing energy, improving focus, and promoting heart, skin, and immune health. Perfect for daily use in cooking, beverages, and natural self-care routines.",
+     "stars": 0,
+     "updated": "2026-03-28T10:01:27Z",
+     "license": null,
+     "url": "https://github.com/Vis8hnu/Vitara-Herbal"
+    }
+   ]
+  },
+  "patents": {
+   "total": 0,
+   "items": []
+  },
+  "local": {
+   "startups": [],
+   "registry_domains": [
+    {
+     "id": "coconut_products",
+     "label": "Coconut value chain products"
+    }
+   ]
+  },
+  "elements": [],
+  "discuss": [
+   {
+    "field": "Agricultural and Biological Sciences",
+    "questions": [
+     "Which crop or animal, which season, and which FPO or farmers will pilot it?"
+    ]
+   },
+   {
+    "field": "Economics, Econometrics and Finance",
+    "questions": [
+     "Which regulated entity (bank, NBFC, insurer) do you partner with?"
+    ]
+   },
+   {
+    "field": "Environmental Science",
+    "questions": [
+     "What is measured, by whom, and who pays for the improvement?"
+    ]
+   },
+   {
+    "field": "Any idea",
+    "questions": [
+     "Who is the first buyer, and what do they use today instead?",
+     "What exactly is new compared with the closest prior art found?",
+     "Which part could be protected (patent, design, trademark), and which is already public?"
+    ]
+   }
+  ],
+  "coverage": [
+   {
+    "source": "papers",
+    "status": "ok",
+    "found": 81,
+    "note": ""
+   },
+   {
+    "source": "projects",
+    "status": "ok",
+    "found": 12,
+    "note": ""
+   },
+   {
+    "source": "patents",
+    "status": "no_key",
+    "found": 0,
+    "note": "Patents not searched: add a free PatentsView key (PATENTSVIEW_API_KEY)"
+   },
+   {
+    "source": "trials",
+    "status": "skipped",
+    "found": 0,
+    "note": "Not a health idea, so clinical trials were not searched"
+   }
+  ],
+  "caveat": "Counts come from the sources listed in coverage. 'Nothing found' means nothing in those sources, not that the idea is new; have a patent attorney search before filing."
+ },
+ "novelty": {
+  "elements": [
+   {
+    "element": "virgin coconut oil",
+    "query": "\"virgin coconut oil\"",
+    "papers": 13338,
+    "label": "crowded"
+   },
+   {
+    "element": "coconut",
+    "query": "coconut",
+    "papers": 287036,
+    "label": "crowded"
+   },
+   {
+    "element": "farmers",
+    "query": "\"smallholder agriculture\"",
+    "papers": 60031,
+    "label": "crowded"
+   }
+  ],
+  "pairs": [
+   {
+    "a": "virgin coconut oil",
+    "b": "farmers",
+    "a_papers": 13338,
+    "b_papers": 60031,
+    "papers": 28,
+    "share_pct": 0.21,
+    "gap": true
+   },
+   {
+    "a": "coconut",
+    "b": "farmers",
+    "a_papers": 287036,
+    "b_papers": 60031,
+    "papers": 1207,
+    "share_pct": 2.01,
+    "gap": false
+   },
+   {
+    "a": "virgin coconut oil",
+    "b": "coconut",
+    "a_papers": 13338,
+    "b_papers": 287036,
+    "papers": 13137,
+    "share_pct": 98.49,
+    "gap": false
+   }
+  ],
+  "context": {
+   "query": "coconut \"smallholder agriculture\"",
+   "searched": true,
+   "world_papers": 1207,
+   "india_papers": 76,
+   "india_share_pct": 6.3,
+   "tn_startups": 0,
+   "gap": false
+  },
+  "statement": {
+   "type": "combination",
+   "text": "Both parts are well studied on their own: virgin coconut oil (13,338 papers) and farmers (60,031). Together, I found only 28."
+  },
+  "levers": [
+   {
+    "kind": "combine",
+    "text": "Build your version around joining virgin coconut oil with farmers.",
+    "because": "only 28 papers cover both"
+   },
+   {
+    "kind": "cost-down",
+    "text": "Compete on cost, using the costing for this domain to see where to cut.",
+    "because": "a Vanigam cost pack exists for this domain"
+   }
+  ],
+  "thresholds": {
+   "active_papers": 300,
+   "crowded_papers": 5000,
+   "rare_pair_share_pct": 2.0,
+   "rare_pair_papers": 30,
+   "india_low_share_pct": 5.0
+  },
+  "caveat": "Not found in these sources is not proof of novelty; have a patent attorney search before filing."
+ }
+}

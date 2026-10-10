@@ -15,6 +15,7 @@ import re
 from dataclasses import dataclass, field
 
 from app.planner import registry
+from app.research.terms import is_health
 
 
 def _slug(s: str) -> str:
@@ -25,6 +26,9 @@ def _slug(s: str) -> str:
 class EvidencePack:
     items: dict[str, dict] = field(default_factory=dict)
     domain_id: str | None = None
+    # A health idea by its own words, or trials actually found. Papers that merely touch
+    # medicine do not count: "tea infusions" once read as a medical device.
+    health: bool = False
 
     def add(self, id_: str, kind: str, text: str, **extra) -> None:
         self.items[id_] = {"kind": kind, "text": text, **extra}
@@ -48,6 +52,7 @@ class EvidencePack:
 def build(idea: str, scan: dict | None, novelty: dict | None, district: str | None) -> EvidencePack:
     pack = EvidencePack()
     s = scan or {}
+    pack.health = is_health(idea) or bool(s.get("trials", {}).get("total"))
 
     for f in s.get("associated_domains", {}).get("fields", [])[:6]:
         share = f" ({f['share_pct']}% of matching papers)" if f.get("share_pct") else ""

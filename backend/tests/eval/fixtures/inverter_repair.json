@@ -1,0 +1,823 @@
+{
+ "id": "inverter_repair",
+ "idea": "board-level repair of solar inverters out of warranty for farm and rooftop solar owners near Madurai",
+ "recorded": "2026-10-10",
+ "coverage": [
+  {
+   "source": "papers",
+   "status": "ok"
+  },
+  {
+   "source": "projects",
+   "status": "ok"
+  },
+  {
+   "source": "patents",
+   "status": "no_key"
+  },
+  {
+   "source": "trials",
+   "status": "skipped"
+  }
+ ],
+ "scan": {
+  "idea": "board-level repair of solar inverters out of warranty for farm and rooftop solar owners near Madurai",
+  "queries": {
+   "papers": "photovoltaic inverter photovoltaic board-level repair",
+   "trials": "photovoltaic inverter photovoltaic",
+   "projects": "photovoltaic inverter photovoltaic",
+   "patents": "photovoltaic inverter photovoltaic board-level repair",
+   "local": "board-level repair warranty farm rooftop owners near photovoltaic inverter photovoltaic"
+  },
+  "associated_domains": {
+   "basis": "papers",
+   "domains": [
+    {
+     "name": "Physical Sciences",
+     "share_pct": 100
+    },
+    {
+     "name": "Social Sciences",
+     "share_pct": 0
+    }
+   ],
+   "fields": [
+    {
+     "name": "Engineering",
+     "share_pct": 39
+    },
+    {
+     "name": "Environmental Science",
+     "share_pct": 30
+    },
+    {
+     "name": "Energy",
+     "share_pct": 20
+    },
+    {
+     "name": "Computer Science",
+     "share_pct": 5
+    },
+    {
+     "name": "Physics and Astronomy",
+     "share_pct": 4
+    },
+    {
+     "name": "Social Sciences",
+     "share_pct": 0
+    },
+    {
+     "name": "Materials Science",
+     "share_pct": 0
+    }
+   ],
+   "subfields": [
+    {
+     "name": "Environmental Engineering",
+     "share_pct": 30
+    },
+    {
+     "name": "Electrical and Electronic Engineering",
+     "share_pct": 23
+    },
+    {
+     "name": "Renewable Energy, Sustainability and the Environment",
+     "share_pct": 18
+    },
+    {
+     "name": "Safety, Risk, Reliability and Quality",
+     "share_pct": 9
+    },
+    {
+     "name": "Artificial Intelligence",
+     "share_pct": 5
+    },
+    {
+     "name": "Astronomy and Astrophysics",
+     "share_pct": 4
+    },
+    {
+     "name": "Media Technology",
+     "share_pct": 3
+    },
+    {
+     "name": "Mechanics of Materials",
+     "share_pct": 3
+    }
+   ],
+   "topics": [
+    {
+     "name": "Photovoltaic Systems and Sustainability",
+     "share_pct": 30
+    },
+    {
+     "name": "Photovoltaic System Optimization Techniques",
+     "share_pct": 16
+    },
+    {
+     "name": "Silicon and Solar Cell Technologies",
+     "share_pct": 11
+    },
+    {
+     "name": "Multilevel Inverters and Converters",
+     "share_pct": 9
+    },
+    {
+     "name": "Power System Reliability and Maintenance",
+     "share_pct": 8
+    },
+    {
+     "name": "Solar Radiation and Photovoltaics",
+     "share_pct": 5
+    },
+    {
+     "name": "Lightning and Electromagnetic Phenomena",
+     "share_pct": 4
+    },
+    {
+     "name": "Experimental Learning in Engineering",
+     "share_pct": 3
+    }
+   ]
+  },
+  "vanigam_categories": [
+   "ai_ml",
+   "climate",
+   "electrical",
+   "renewable"
+  ],
+  "papers": {
+   "total": 2352,
+   "by_year": {
+    "2022": 219,
+    "2021": 218,
+    "2023": 217,
+    "2024": 200,
+    "2025": 188,
+    "2026": 175,
+    "2020": 110,
+    "2019": 99,
+    "2018": 90,
+    "2016": 86,
+    "2015": 68,
+    "2017": 68,
+    "2014": 62,
+    "2012": 51,
+    "2013": 49,
+    "2011": 44,
+    "2007": 42,
+    "2010": 38,
+    "2009": 32,
+    "2005": 25,
+    "2006": 25,
+    "2008": 25,
+    "2003": 22,
+    "2000": 18,
+    "2004": 16,
+    "2002": 13,
+    "1982": 10,
+    "1980": 9,
+    "1994": 9,
+    "2001": 9,
+    "1979": 7,
+    "1983": 7,
+    "1988": 7,
+    "1995": 7,
+    "1999": 7,
+    "1997": 6,
+    "1985": 5,
+    "1991": 5,
+    "1993": 5,
+    "1977": 4,
+    "1981": 4,
+    "1990": 4,
+    "1992": 4,
+    "1996": 4,
+    "1998": 4,
+    "1978": 3,
+    "1987": 3,
+    "1984": 2,
+    "1989": 2,
+    "1957": 1,
+    "1965": 1,
+    "1970": 1,
+    "1973": 1,
+    "1974": 1,
+    "1976": 1,
+    "1986": 1
+   },
+   "most_relevant": [
+    {
+     "title": "Status and Needs of Power Electronics for Photovoltaic Inverters",
+     "year": 2002,
+     "cited_by": 29,
+     "venue": null,
+     "url": "https://doi.org/10.2172/800985",
+     "topics": [
+      {
+       "topic": "Multilevel Inverters and Converters",
+       "subfield": "Electrical and Electronic Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.8438000082969666
+      },
+      {
+       "topic": "Photovoltaic System Optimization Techniques",
+       "subfield": "Renewable Energy, Sustainability and the Environment",
+       "field": "Energy",
+       "domain": "Physical Sciences",
+       "score": 0.06369999796152115
+      },
+      {
+       "topic": "Advanced DC-DC Converters",
+       "subfield": "Electrical and Electronic Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.026499999687075615
+      }
+     ]
+    },
+    {
+     "title": "A Photovoltaic Technology Review: History, Fundamentals and Applications",
+     "year": 2022,
+     "cited_by": 173,
+     "venue": "Energies",
+     "url": "https://doi.org/10.3390/en15051823",
+     "topics": [
+      {
+       "topic": "Silicon and Solar Cell Technologies",
+       "subfield": "Electrical and Electronic Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.7846999764442444
+      },
+      {
+       "topic": "Photovoltaic Systems and Sustainability",
+       "subfield": "Environmental Engineering",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 0.11869999766349792
+      },
+      {
+       "topic": "Photovoltaic System Optimization Techniques",
+       "subfield": "Renewable Energy, Sustainability and the Environment",
+       "field": "Energy",
+       "domain": "Physical Sciences",
+       "score": 0.043299999088048935
+      }
+     ]
+    },
+    {
+     "title": "End of Life Management: Solar Photovoltaic Panels",
+     "year": 2016,
+     "cited_by": 644,
+     "venue": null,
+     "url": "https://doi.org/10.2172/1561525",
+     "topics": [
+      {
+       "topic": "Photovoltaic Systems and Sustainability",
+       "subfield": "Environmental Engineering",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 0.9976000189781189
+      },
+      {
+       "topic": "Recycling and Waste Management Techniques",
+       "subfield": "Waste Management and Disposal",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 0.0010000000474974513
+      },
+      {
+       "topic": "Extraction and Separation Processes",
+       "subfield": "Mechanical Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.0006000000284984708
+      }
+     ]
+    },
+    {
+     "title": "Status and Needs of Power Electronics for Photovoltaic Inverters: Summary Document",
+     "year": 2002,
+     "cited_by": 7,
+     "venue": null,
+     "url": "https://doi.org/10.2172/800947",
+     "topics": [
+      {
+       "topic": "Multilevel Inverters and Converters",
+       "subfield": "Electrical and Electronic Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.7699999809265137
+      },
+      {
+       "topic": "Photovoltaic System Optimization Techniques",
+       "subfield": "Renewable Energy, Sustainability and the Environment",
+       "field": "Energy",
+       "domain": "Physical Sciences",
+       "score": 0.13830000162124634
+      },
+      {
+       "topic": "Advanced DC-DC Converters",
+       "subfield": "Electrical and Electronic Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.02410000003874302
+      }
+     ]
+    },
+    {
+     "title": "Reliability Evaluation of Photovoltaic System Considering Inverter Thermal Characteristics",
+     "year": 2021,
+     "cited_by": 14,
+     "venue": "Electronics",
+     "url": "https://doi.org/10.3390/electronics10151763",
+     "topics": [
+      {
+       "topic": "Power System Reliability and Maintenance",
+       "subfield": "Safety, Risk, Reliability and Quality",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.9082000255584717
+      },
+      {
+       "topic": "Photovoltaic System Optimization Techniques",
+       "subfield": "Renewable Energy, Sustainability and the Environment",
+       "field": "Energy",
+       "domain": "Physical Sciences",
+       "score": 0.04580000042915344
+      },
+      {
+       "topic": "Reliability and Maintenance Optimization",
+       "subfield": "Safety, Risk, Reliability and Quality",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.03500000014901161
+      }
+     ]
+    },
+    {
+     "title": "Field tests of a novel inverter for photovoltaic power conditioning",
+     "year": 1989,
+     "cited_by": 0,
+     "venue": null,
+     "url": "https://doi.org/10.2172/5962916",
+     "topics": [
+      {
+       "topic": "Multilevel Inverters and Converters",
+       "subfield": "Electrical and Electronic Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.6195999979972839
+      },
+      {
+       "topic": "Photovoltaic System Optimization Techniques",
+       "subfield": "Renewable Energy, Sustainability and the Environment",
+       "field": "Energy",
+       "domain": "Physical Sciences",
+       "score": 0.29660001397132874
+      },
+      {
+       "topic": "Power Quality and Harmonics",
+       "subfield": "Electrical and Electronic Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.04050000011920929
+      }
+     ]
+    },
+    {
+     "title": "The effect of backsheet repairs on insulation resistance in photovoltaic modules",
+     "year": 2025,
+     "cited_by": 2,
+     "venue": "Monatshefte für Chemie - Chemical Monthly",
+     "url": "https://doi.org/10.1007/s00706-025-03314-8",
+     "topics": [
+      {
+       "topic": "Silicon and Solar Cell Technologies",
+       "subfield": "Electrical and Electronic Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.8217999935150146
+      },
+      {
+       "topic": "High voltage insulation and dielectric phenomena",
+       "subfield": "Materials Chemistry",
+       "field": "Materials Science",
+       "domain": "Physical Sciences",
+       "score": 0.05290000140666962
+      },
+      {
+       "topic": "Solar Thermal and Photovoltaic Systems",
+       "subfield": "Renewable Energy, Sustainability and the Environment",
+       "field": "Energy",
+       "domain": "Physical Sciences",
+       "score": 0.026799999177455902
+      }
+     ]
+    },
+    {
+     "title": "Sustainable Development Perspectives of Solar Energy Technologies with Focus on Solar Photovoltaic—A Review",
+     "year": 2022,
+     "cited_by": 239,
+     "venue": "Energies",
+     "url": "https://doi.org/10.3390/en15082790",
+     "topics": [
+      {
+       "topic": "Photovoltaic Systems and Sustainability",
+       "subfield": "Environmental Engineering",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 0.8539999723434448
+      },
+      {
+       "topic": "Renewable Energy and Sustainability",
+       "subfield": "Renewable Energy, Sustainability and the Environment",
+       "field": "Energy",
+       "domain": "Physical Sciences",
+       "score": 0.049400001764297485
+      },
+      {
+       "topic": "Energy and Environmental Sustainability",
+       "subfield": "Renewable Energy, Sustainability and the Environment",
+       "field": "Energy",
+       "domain": "Physical Sciences",
+       "score": 0.0421999990940094
+      }
+     ]
+    }
+   ],
+   "most_cited": [
+    {
+     "title": "Firm‐Level Climate Change Exposure",
+     "year": 2023,
+     "cited_by": 1371,
+     "venue": "The Journal of Finance",
+     "url": "https://doi.org/10.1111/jofi.13219",
+     "topics": [
+      {
+       "topic": "Sustainable Finance and Green Bonds",
+       "subfield": "Finance",
+       "field": "Economics, Econometrics and Finance",
+       "domain": "Social Sciences",
+       "score": 0.8984000086784363
+      },
+      {
+       "topic": "Climate Change Policy and Economics",
+       "subfield": "Economics and Econometrics",
+       "field": "Economics, Econometrics and Finance",
+       "domain": "Social Sciences",
+       "score": 0.054999999701976776
+      },
+      {
+       "topic": "Corporate Social Responsibility Reporting",
+       "subfield": "Strategy and Management",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.013399999588727951
+      }
+     ]
+    },
+    {
+     "title": "Experimenting for Sustainable Transport: The Approach of Strategic Niche Management",
+     "year": 2002,
+     "cited_by": 704,
+     "venue": "DORA Eawag (Swiss Federal Institute of Aquatic Science and Technology (Eawag))",
+     "url": "https://doi.org/10.4324/9780203994061",
+     "topics": [
+      {
+       "topic": "Transportation and Mobility Innovations",
+       "subfield": "Automotive Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.6269999742507935
+      },
+      {
+       "topic": "Sustainability and Climate Change Governance",
+       "subfield": "Global and Planetary Change",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 0.18850000202655792
+      },
+      {
+       "topic": "Electric Vehicles and Infrastructure",
+       "subfield": "Electrical and Electronic Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.13590000569820404
+      }
+     ]
+    },
+    {
+     "title": "Transitioning to Physics-of-Failure as a Reliability Driver in Power Electronics",
+     "year": 2013,
+     "cited_by": 687,
+     "venue": "IEEE Journal of Emerging and Selected Topics in Power Electronics",
+     "url": "https://doi.org/10.1109/jestpe.2013.2290282",
+     "topics": [
+      {
+       "topic": "Silicon Carbide Semiconductor Technologies",
+       "subfield": "Electrical and Electronic Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.7836999893188477
+      },
+      {
+       "topic": "Reliability and Maintenance Optimization",
+       "subfield": "Safety, Risk, Reliability and Quality",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.12780000269412994
+      },
+      {
+       "topic": "Advanced DC-DC Converters",
+       "subfield": "Electrical and Electronic Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.017899999395012856
+      }
+     ]
+    },
+    {
+     "title": "End of Life Management: Solar Photovoltaic Panels",
+     "year": 2016,
+     "cited_by": 644,
+     "venue": null,
+     "url": "https://doi.org/10.2172/1561525",
+     "topics": [
+      {
+       "topic": "Photovoltaic Systems and Sustainability",
+       "subfield": "Environmental Engineering",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 0.9976000189781189
+      },
+      {
+       "topic": "Recycling and Waste Management Techniques",
+       "subfield": "Waste Management and Disposal",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 0.0010000000474974513
+      },
+      {
+       "topic": "Extraction and Separation Processes",
+       "subfield": "Mechanical Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.0006000000284984708
+      }
+     ]
+    },
+    {
+     "title": "The Role of AI, Machine Learning, and Big Data in Digital Twinning: A Systematic Literature Review, Challenges, and Opportunities",
+     "year": 2021,
+     "cited_by": 612,
+     "venue": "IEEE Access",
+     "url": "https://doi.org/10.1109/access.2021.3060863",
+     "topics": [
+      {
+       "topic": "Digital Transformation in Industry",
+       "subfield": "Industrial and Manufacturing Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.9980000257492065
+      },
+      {
+       "topic": "Impact of AI and Big Data on Business and Society",
+       "subfield": "Management Science and Operations Research",
+       "field": "Decision Sciences",
+       "domain": "Social Sciences",
+       "score": 0.0005000000237487257
+      },
+      {
+       "topic": "Applied Advanced Technologies",
+       "subfield": "Industrial and Manufacturing Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.00039999998989515007
+      }
+     ]
+    }
+   ]
+  },
+  "trials": {
+   "total": 0,
+   "items": []
+  },
+  "projects": {
+   "total": 197,
+   "items": [
+    {
+     "name": "OpenInverterGateway/OpenInverterGateway",
+     "description": "Firmware replacement for Growatt ShineWiFi-S",
+     "stars": 448,
+     "updated": "2026-05-16T17:38:56Z",
+     "license": "MIT",
+     "url": "https://github.com/OpenInverterGateway/OpenInverterGateway"
+    },
+    {
+     "name": "TimSoethout/goodwe-sems-home-assistant",
+     "description": "Home Assistant integration for monitoring GoodWe SEMS+ solar inverters, batteries, smart meters, and energy data.",
+     "stars": 147,
+     "updated": "2026-10-03T16:59:22Z",
+     "license": "MIT",
+     "url": "https://github.com/TimSoethout/goodwe-sems-home-assistant"
+    },
+    {
+     "name": "squishykid/solax",
+     "description": "🌞 Solax Inverter API Wrapper",
+     "stars": 118,
+     "updated": "2025-12-03T16:28:59Z",
+     "license": "MIT",
+     "url": "https://github.com/squishykid/solax"
+    },
+    {
+     "name": "Lewa-Reka/esphome-deye-inverter",
+     "description": "An easy way to integrate Deye 3P & 1P PV inverters with Home Assistant using the ESPHome platform.",
+     "stars": 106,
+     "updated": "2026-09-09T21:56:16Z",
+     "license": "Apache-2.0",
+     "url": "https://github.com/Lewa-Reka/esphome-deye-inverter"
+    },
+    {
+     "name": "mr-manuel/venus-os_dbus-mqtt-pv",
+     "description": "This Venus OS driver gets the data from MQTT and displays it as pv inverter.",
+     "stars": 103,
+     "updated": "2025-09-29T10:02:36Z",
+     "license": "MIT",
+     "url": "https://github.com/mr-manuel/venus-os_dbus-mqtt-pv"
+    },
+    {
+     "name": "szymi-/fronius-to-influx",
+     "description": "Collect Fronius inverter data and save in Influxdb for Grafana",
+     "stars": 58,
+     "updated": "2025-08-07T10:24:26Z",
+     "license": null,
+     "url": "https://github.com/szymi-/fronius-to-influx"
+    },
+    {
+     "name": "OpenCleanEnergy/OpenMI",
+     "description": "Open source grid-tied photovoltaic micro-inverter",
+     "stars": 56,
+     "updated": "2024-05-11T18:12:12Z",
+     "license": "GPL-3.0",
+     "url": "https://github.com/OpenCleanEnergy/OpenMI"
+    },
+    {
+     "name": "chpro/fronius-grafana-dashboard",
+     "description": "Setting up and visualizing data from your Fronius Symo GEN24 10.0 inverter and Smart Meter TS 65A-3 using InfluxDB and Grafana.",
+     "stars": 52,
+     "updated": "2026-02-24T18:36:14Z",
+     "license": "MIT",
+     "url": "https://github.com/chpro/fronius-grafana-dashboard"
+    },
+    {
+     "name": "gonzojive/solar",
+     "description": "Open source Maximum Power Point Tracking (MPPT) and inverter hardware/software for photovoltaic projects.",
+     "stars": 48,
+     "updated": "2020-02-20T05:09:42Z",
+     "license": "Apache-2.0",
+     "url": "https://github.com/gonzojive/solar"
+    },
+    {
+     "name": "tdcosim/SolarPV-DER-simulation-tool",
+     "description": "Allows user to run dynamics simulations for solar photovoltaic distributed energy resource connected to a stiff voltage source or to an external program. It allows modifying DER parameters, introducing external disturbance events, and visualizing the simulation results. The PV-DER (inverter) is modeled using dynamic phasor concept.",
+     "stars": 44,
+     "updated": "2023-09-29T01:26:45Z",
+     "license": "NOASSERTION",
+     "url": "https://github.com/tdcosim/SolarPV-DER-simulation-tool"
+    }
+   ]
+  },
+  "patents": {
+   "total": 0,
+   "items": []
+  },
+  "local": {
+   "startups": [],
+   "registry_domains": [
+    {
+     "id": "solar_inverter_repair",
+     "label": "Solar inverter repair and servicing"
+    }
+   ]
+  },
+  "elements": [],
+  "discuss": [
+   {
+    "field": "Engineering",
+    "questions": [
+     "Which sensors and hardware, at what unit cost, and how durable in Indian conditions?",
+     "What certification does the hardware need before sale?"
+    ]
+   },
+   {
+    "field": "Environmental Science",
+    "questions": [
+     "What is measured, by whom, and who pays for the improvement?"
+    ]
+   },
+   {
+    "field": "Energy",
+    "questions": [
+     "What does it cost per unit of energy saved or produced, and who finances it?"
+    ]
+   },
+   {
+    "field": "Computer Science",
+    "questions": [
+     "What data trains the model, who owns it, and what accuracy is good enough to act on?",
+     "Does it run on the device or in the cloud, and what happens offline?"
+    ]
+   },
+   {
+    "field": "Any idea",
+    "questions": [
+     "Who is the first buyer, and what do they use today instead?",
+     "What exactly is new compared with the closest prior art found?",
+     "Which part could be protected (patent, design, trademark), and which is already public?"
+    ]
+   }
+  ],
+  "coverage": [
+   {
+    "source": "papers",
+    "status": "ok",
+    "found": 2352,
+    "note": ""
+   },
+   {
+    "source": "projects",
+    "status": "ok",
+    "found": 197,
+    "note": ""
+   },
+   {
+    "source": "patents",
+    "status": "no_key",
+    "found": 0,
+    "note": "Patents not searched: add a free PatentsView key (PATENTSVIEW_API_KEY)"
+   },
+   {
+    "source": "trials",
+    "status": "skipped",
+    "found": 0,
+    "note": "Not a health idea, so clinical trials were not searched"
+   }
+  ],
+  "caveat": "Counts come from the sources listed in coverage. 'Nothing found' means nothing in those sources, not that the idea is new; have a patent attorney search before filing."
+ },
+ "novelty": {
+  "elements": [
+   {
+    "element": "solar inverters",
+    "query": "\"photovoltaic inverter\"",
+    "papers": 17633,
+    "label": "crowded"
+   },
+   {
+    "element": "solar",
+    "query": "photovoltaic",
+    "papers": 774323,
+    "label": "crowded"
+   }
+  ],
+  "pairs": [
+   {
+    "a": "solar inverters",
+    "b": "solar",
+    "a_papers": 17633,
+    "b_papers": 774323,
+    "papers": 14665,
+    "share_pct": 83.17,
+    "gap": false
+   }
+  ],
+  "context": {
+   "query": "photovoltaic \"photovoltaic inverter\"",
+   "searched": false,
+   "tn_startups": 0,
+   "gap": false
+  },
+  "statement": {
+   "type": "crowded",
+   "text": "Each part is well studied, and so are their combinations. The edge has to come from who you serve, the cost, or how you deliver it."
+  },
+  "levers": [
+   {
+    "kind": "business model",
+    "text": "Compete on how it is delivered, as a service, a rental, or a scheme-backed rollout rather than a product sale.",
+    "because": "every part and combination is crowded"
+   }
+  ],
+  "thresholds": {
+   "active_papers": 300,
+   "crowded_papers": 5000,
+   "rare_pair_share_pct": 2.0,
+   "rare_pair_papers": 30,
+   "india_low_share_pct": 5.0
+  },
+  "caveat": "Not found in these sources is not proof of novelty; have a patent attorney search before filing."
+ }
+}

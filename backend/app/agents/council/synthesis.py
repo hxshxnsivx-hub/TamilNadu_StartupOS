@@ -18,10 +18,23 @@ BAND_LINE = {
 }
 
 
+PROPER = {"Tamil", "India", "Indian", "Madurai", "Chennai", "Coimbatore", "Tiruppur", "Erode",
+          "Pollachi", "Tiruchirappalli", "Salem", "Google", "Vanigam"}  # fmt: skip
+
+
 def _clause(text: str) -> str:
-    """A claim placed after a colon: lower-case start (unless an acronym), no full stop."""
+    """A claim placed after a colon: lower-case start, no full stop.
+
+    Kept as written when it starts with an acronym (PMEGP), a known proper noun,
+    or a name of two capitalised words ("Tamil Nadu startups ...").
+    """
     t = text.strip().rstrip(".")
-    return t if t[:2].isupper() else t[:1].lower() + t[1:]
+    words = t.split()
+    if not words or t[:2].isupper() or words[0].strip(",") in PROPER:
+        return t
+    if len(words) > 1 and words[1][:1].isupper():
+        return t
+    return t[:1].lower() + t[1:]
 
 
 def synthesise(vote: dict, opinions: list[Opinion], pack: EvidencePack) -> dict:

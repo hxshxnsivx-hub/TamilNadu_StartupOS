@@ -17,7 +17,7 @@ def _cite(pack: EvidencePack, *prefixes: str, n: int = 2) -> list[str]:
 
 
 def _health(pack: EvidencePack) -> bool:
-    return any(i in pack.items for i in ("field:medicine", "field:nursing", "trials:total"))
+    return pack.health
 
 
 def _num(pack: EvidencePack, id_: str) -> int:

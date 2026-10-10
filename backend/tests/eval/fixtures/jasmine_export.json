@@ -1,0 +1,711 @@
+{
+ "id": "jasmine_export",
+ "idea": "I want to export fresh Madurai malli jasmine flowers to Singapore and the Gulf with a proper cold chain",
+ "recorded": "2026-10-10",
+ "coverage": [
+  {
+   "source": "papers",
+   "status": "ok"
+  },
+  {
+   "source": "projects",
+   "status": "ok"
+  },
+  {
+   "source": "patents",
+   "status": "no_key"
+  },
+  {
+   "source": "trials",
+   "status": "skipped"
+  }
+ ],
+ "scan": {
+  "idea": "I want to export fresh Madurai malli jasmine flowers to Singapore and the Gulf with a proper cold chain",
+  "queries": {
+   "papers": "Jasminum sambac export fresh",
+   "trials": "Jasminum sambac",
+   "projects": "Jasminum sambac",
+   "patents": "Jasminum sambac export fresh",
+   "local": "export fresh flowers cold chain Jasminum sambac"
+  },
+  "associated_domains": {
+   "basis": "papers",
+   "domains": [
+    {
+     "name": "Life Sciences",
+     "share_pct": 96
+    },
+    {
+     "name": "Physical Sciences",
+     "share_pct": 4
+    },
+    {
+     "name": "Social Sciences",
+     "share_pct": 0
+    },
+    {
+     "name": "Health Sciences",
+     "share_pct": 0
+    }
+   ],
+   "fields": [
+    {
+     "name": "Agricultural and Biological Sciences",
+     "share_pct": 96
+    },
+    {
+     "name": "Engineering",
+     "share_pct": 3
+    },
+    {
+     "name": "Materials Science",
+     "share_pct": 1
+    },
+    {
+     "name": "Social Sciences",
+     "share_pct": 0
+    },
+    {
+     "name": "Biochemistry, Genetics and Molecular Biology",
+     "share_pct": 0
+    },
+    {
+     "name": "Medicine",
+     "share_pct": 0
+    }
+   ],
+   "subfields": [
+    {
+     "name": "Plant Science",
+     "share_pct": 69
+    },
+    {
+     "name": "Food Science",
+     "share_pct": 15
+    },
+    {
+     "name": "Animal Science and Zoology",
+     "share_pct": 7
+    },
+    {
+     "name": "Biomedical Engineering",
+     "share_pct": 3
+    },
+    {
+     "name": "General Agricultural and Biological Sciences",
+     "share_pct": 3
+    },
+    {
+     "name": "Soil Science",
+     "share_pct": 2
+    },
+    {
+     "name": "Biomaterials",
+     "share_pct": 1
+    },
+    {
+     "name": "Safety Research",
+     "share_pct": 0
+    }
+   ],
+   "topics": [
+    {
+     "name": "Postharvest Quality and Shelf Life Management",
+     "share_pct": 30
+    },
+    {
+     "name": "Flowering Plant Growth and Cultivation",
+     "share_pct": 18
+    },
+    {
+     "name": "Essential Oils and Antimicrobial Activity",
+     "share_pct": 12
+    },
+    {
+     "name": "Meat and Animal Product Quality",
+     "share_pct": 7
+    },
+    {
+     "name": "Silicon Effects in Agriculture",
+     "share_pct": 3
+    },
+    {
+     "name": "Plant-Microbe Interactions and Immunity",
+     "share_pct": 3
+    },
+    {
+     "name": "Insect Pest Control Strategies",
+     "share_pct": 3
+    },
+    {
+     "name": "Phase Equilibria and Thermodynamics",
+     "share_pct": 3
+    }
+   ]
+  },
+  "vanigam_categories": [
+   "agriculture",
+   "electrical",
+   "health_bio"
+  ],
+  "papers": {
+   "total": 170,
+   "by_year": {
+    "2026": 26,
+    "2025": 25,
+    "2024": 21,
+    "2022": 17,
+    "2023": 16,
+    "2017": 11,
+    "2020": 9,
+    "2018": 7,
+    "2021": 7,
+    "2016": 6,
+    "2019": 4,
+    "1891": 2,
+    "2001": 2,
+    "2012": 2,
+    "2014": 2,
+    "1871": 1,
+    "1893": 1,
+    "1903": 1,
+    "1912": 1,
+    "1927": 1,
+    "1992": 1,
+    "2004": 1,
+    "2005": 1,
+    "2006": 1,
+    "2007": 1,
+    "2009": 1,
+    "2011": 1,
+    "2013": 1
+   },
+   "most_relevant": [
+    {
+     "title": "Packaging Technology for Export of Jasmine (Jasminum sambac Ait.) Flowers",
+     "year": 2012,
+     "cited_by": 12,
+     "venue": "Journal of Horticultural Sciences",
+     "url": "https://doi.org/10.24154/jhs.v7i2.372",
+     "topics": [
+      {
+       "topic": "Postharvest Quality and Shelf Life Management",
+       "subfield": "Plant Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.9980000257492065
+      },
+      {
+       "topic": "Flowering Plant Growth and Cultivation",
+       "subfield": "Plant Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.001500000013038516
+      },
+      {
+       "topic": "Meat and Animal Product Quality",
+       "subfield": "Animal Science and Zoology",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.0
+      }
+     ]
+    },
+    {
+     "title": "Chitosan-based biodegradable packaging: Enhancing the shelf life and quality of Jasminum sambac L. flowers",
+     "year": 2024,
+     "cited_by": 0,
+     "venue": "Plant Science Today",
+     "url": "https://doi.org/10.14719/pst.5438",
+     "topics": [
+      {
+       "topic": "Postharvest Quality and Shelf Life Management",
+       "subfield": "Plant Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.8036999702453613
+      },
+      {
+       "topic": "Nanocomposite Films for Food Packaging",
+       "subfield": "Biomaterials",
+       "field": "Materials Science",
+       "domain": "Physical Sciences",
+       "score": 0.19480000436306
+      },
+      {
+       "topic": "Polymer-Based Agricultural Enhancements",
+       "subfield": "Biomedical Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.0006000000284984708
+      }
+     ]
+    },
+    {
+     "title": "Jasmine (Jasminum sambac (L.) Aiton): Potential Utilization and Bioactivity",
+     "year": 2023,
+     "cited_by": 5,
+     "venue": "Asian Journal of Research in Agriculture and Forestry",
+     "url": "https://doi.org/10.9734/ajraf/2023/v9i2198",
+     "topics": [
+      {
+       "topic": "Essential Oils and Antimicrobial Activity",
+       "subfield": "Food Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.9945999979972839
+      },
+      {
+       "topic": "Medicinal Plant Research",
+       "subfield": "Plant Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.004699999932199717
+      },
+      {
+       "topic": "Phytochemistry and Biological Activities",
+       "subfield": "Plant Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.00019999999494757503
+      }
+     ]
+    },
+    {
+     "title": "Physiological characterization of Jasmine flower (Jasminum sambac) senescence during storage",
+     "year": 2016,
+     "cited_by": 3,
+     "venue": "Journal of Applied and Natural Science",
+     "url": "https://doi.org/10.31018/jans.v8i3.986",
+     "topics": [
+      {
+       "topic": "Postharvest Quality and Shelf Life Management",
+       "subfield": "Plant Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 1.0
+      },
+      {
+       "topic": "Flowering Plant Growth and Cultivation",
+       "subfield": "Plant Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 9.999999747378752e-05
+      },
+      {
+       "topic": "Seed Germination and Physiology",
+       "subfield": "Plant Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.0
+      }
+     ]
+    },
+    {
+     "title": "Cloning and Functional Assessments of Floral-Expressed SWEET Transporter Genes from Jasminum sambac",
+     "year": 2019,
+     "cited_by": 27,
+     "venue": "International Journal of Molecular Sciences",
+     "url": "https://doi.org/10.3390/ijms20164001",
+     "topics": [
+      {
+       "topic": "Plant nutrient uptake and metabolism",
+       "subfield": "Plant Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.5224999785423279
+      },
+      {
+       "topic": "Plant Molecular Biology Research",
+       "subfield": "Plant Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.4214000105857849
+      },
+      {
+       "topic": "Plant Gene Expression Analysis",
+       "subfield": "Molecular Biology",
+       "field": "Biochemistry, Genetics and Molecular Biology",
+       "domain": "Life Sciences",
+       "score": 0.011699999682605267
+      }
+     ]
+    },
+    {
+     "title": "Evaluation of mycelium foam packaging for quality preservation of Jasminum sambac (L.) Aiton during long-distance transport",
+     "year": 2026,
+     "cited_by": 0,
+     "venue": "Plant Science Today",
+     "url": "https://doi.org/10.14719/pst.13853",
+     "topics": [
+      {
+       "topic": "Postharvest Quality and Shelf Life Management",
+       "subfield": "Plant Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.9932000041007996
+      },
+      {
+       "topic": "Flowering Plant Growth and Cultivation",
+       "subfield": "Plant Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.002899999963119626
+      },
+      {
+       "topic": "Material Properties and Processing",
+       "subfield": "Mechanics of Materials",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.0007999999797903001
+      }
+     ]
+    },
+    {
+     "title": "Impact of Silicon on Vegetative Growth and Flower Production in Jasmine (Jasminum sambac L.)",
+     "year": 2026,
+     "cited_by": 0,
+     "venue": "Acta Agricultural Sciences",
+     "url": "https://doi.org/10.68163/aas.2025.46",
+     "topics": [
+      {
+       "topic": "Silicon Effects in Agriculture",
+       "subfield": "Plant Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 1.0
+      },
+      {
+       "topic": "Plant Growth and Agriculture Techniques",
+       "subfield": "Soil Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.0
+      },
+      {
+       "topic": "Flowering Plant Growth and Cultivation",
+       "subfield": "Plant Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.0
+      }
+     ]
+    },
+    {
+     "title": "Influence of postharvest treatments on quality and shelf life of flowers of Jasminum sambac cv. Gundumalli",
+     "year": 2020,
+     "cited_by": 0,
+     "venue": "International Journal of Chemical Studies",
+     "url": "https://doi.org/10.22271/chemi.2020.v8.i2i.8833",
+     "topics": [
+      {
+       "topic": "Postharvest Quality and Shelf Life Management",
+       "subfield": "Plant Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 1.0
+      },
+      {
+       "topic": "Flowering Plant Growth and Cultivation",
+       "subfield": "Plant Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 9.999999747378752e-05
+      },
+      {
+       "topic": "Meat and Animal Product Quality",
+       "subfield": "Animal Science and Zoology",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.0
+      }
+     ]
+    }
+   ],
+   "most_cited": [
+    {
+     "title": "Modified Atmosphere Packaging Technology of Fresh and Fresh-cut Produce and the Microbial Consequences—A Review",
+     "year": 2012,
+     "cited_by": 348,
+     "venue": "Food and Bioprocess Technology",
+     "url": "https://doi.org/10.1007/s11947-012-0932-4",
+     "topics": [
+      {
+       "topic": "Listeria monocytogenes in Food Safety",
+       "subfield": "Biotechnology",
+       "field": "Biochemistry, Genetics and Molecular Biology",
+       "domain": "Life Sciences",
+       "score": 0.7782999873161316
+      },
+      {
+       "topic": "Postharvest Quality and Shelf Life Management",
+       "subfield": "Plant Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.17260000109672546
+      },
+      {
+       "topic": "Microbial Inactivation Methods",
+       "subfield": "Biotechnology",
+       "field": "Biochemistry, Genetics and Molecular Biology",
+       "domain": "Life Sciences",
+       "score": 0.013899999670684338
+      }
+     ]
+    },
+    {
+     "title": "Colletotrichum species causing anthracnose disease of chili in China",
+     "year": 2016,
+     "cited_by": 189,
+     "venue": "Persoonia - Molecular Phylogeny and Evolution of Fungi",
+     "url": "https://doi.org/10.3767/003158517x692788",
+     "topics": [
+      {
+       "topic": "Plant Pathogens and Fungal Diseases",
+       "subfield": "Cell Biology",
+       "field": "Biochemistry, Genetics and Molecular Biology",
+       "domain": "Life Sciences",
+       "score": 0.9990000128746033
+      },
+      {
+       "topic": "Yeasts and Rust Fungi Studies",
+       "subfield": "Molecular Biology",
+       "field": "Biochemistry, Genetics and Molecular Biology",
+       "domain": "Life Sciences",
+       "score": 0.0003000000142492354
+      },
+      {
+       "topic": "Fungal Plant Pathogen Control",
+       "subfield": "Ecology, Evolution, Behavior and Systematics",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.00019999999494757503
+      }
+     ]
+    },
+    {
+     "title": "Fungal and bacterial nematicides in integrated nematode management strategies",
+     "year": 2018,
+     "cited_by": 160,
+     "venue": "Egyptian Journal of Biological Pest Control",
+     "url": "https://doi.org/10.1186/s41938-018-0080-x",
+     "topics": [
+      {
+       "topic": "Nematode management and characterization studies",
+       "subfield": "Plant Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 1.0
+      },
+      {
+       "topic": "Entomopathogenic Microorganisms in Pest Control",
+       "subfield": "Insect Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.0
+      },
+      {
+       "topic": "Plant Disease Management Techniques",
+       "subfield": "Plant Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.0
+      }
+     ]
+    },
+    {
+     "title": "Epidemiology, pathology and identification of Colletotrichum including a novel species associated with avocado (Persea americana) anthracnose in Israel",
+     "year": 2017,
+     "cited_by": 152,
+     "venue": "Scientific Reports",
+     "url": "https://doi.org/10.1038/s41598-017-15946-w",
+     "topics": [
+      {
+       "topic": "Plant Pathogens and Fungal Diseases",
+       "subfield": "Cell Biology",
+       "field": "Biochemistry, Genetics and Molecular Biology",
+       "domain": "Life Sciences",
+       "score": 0.9994999766349792
+      },
+      {
+       "topic": "Yeasts and Rust Fungi Studies",
+       "subfield": "Molecular Biology",
+       "field": "Biochemistry, Genetics and Molecular Biology",
+       "domain": "Life Sciences",
+       "score": 0.0003000000142492354
+      },
+      {
+       "topic": "Fungal Plant Pathogen Control",
+       "subfield": "Ecology, Evolution, Behavior and Systematics",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.00019999999494757503
+      }
+     ]
+    },
+    {
+     "title": "Phytochemicals from edible flowers: Opening a new arena for healthy lifestyle",
+     "year": 2021,
+     "cited_by": 151,
+     "venue": "Journal of Functional Foods",
+     "url": "https://doi.org/10.1016/j.jff.2021.104375",
+     "topics": [
+      {
+       "topic": "Phytochemicals and Antioxidant Activities",
+       "subfield": "Biochemistry",
+       "field": "Medicine",
+       "domain": "Health Sciences",
+       "score": 0.9003999829292297
+      },
+      {
+       "topic": "Food and Agricultural Sciences",
+       "subfield": "Food Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.028200000524520874
+      },
+      {
+       "topic": "Seed and Plant Biochemistry",
+       "subfield": "Food Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.018200000748038292
+      }
+     ]
+    }
+   ]
+  },
+  "trials": {
+   "total": 0,
+   "items": []
+  },
+  "projects": {
+   "total": 3,
+   "items": [
+    {
+     "name": "Ly1874dia/jasminum-sambac-benchmark",
+     "description": null,
+     "stars": 1,
+     "updated": "2025-02-14T06:01:10Z",
+     "license": "Apache-2.0",
+     "url": "https://github.com/Ly1874dia/jasminum-sambac-benchmark"
+    },
+    {
+     "name": "maypoleflyn/Jasminum-sambac-genome",
+     "description": "Jasminum sambac genome",
+     "stars": 0,
+     "updated": "2021-09-11T02:02:02Z",
+     "license": null,
+     "url": "https://github.com/maypoleflyn/Jasminum-sambac-genome"
+    },
+    {
+     "name": "Suanqin/hxmlh",
+     "description": "heng town Jasminum sambac",
+     "stars": 0,
+     "updated": "2019-10-23T03:39:13Z",
+     "license": null,
+     "url": "https://github.com/Suanqin/hxmlh"
+    }
+   ]
+  },
+  "patents": {
+   "total": 0,
+   "items": []
+  },
+  "local": {
+   "startups": [],
+   "registry_domains": []
+  },
+  "elements": [],
+  "discuss": [
+   {
+    "field": "Agricultural and Biological Sciences",
+    "questions": [
+     "Which crop or animal, which season, and which FPO or farmers will pilot it?"
+    ]
+   },
+   {
+    "field": "Engineering",
+    "questions": [
+     "Which sensors and hardware, at what unit cost, and how durable in Indian conditions?",
+     "What certification does the hardware need before sale?"
+    ]
+   },
+   {
+    "field": "Any idea",
+    "questions": [
+     "Who is the first buyer, and what do they use today instead?",
+     "What exactly is new compared with the closest prior art found?",
+     "Which part could be protected (patent, design, trademark), and which is already public?"
+    ]
+   }
+  ],
+  "coverage": [
+   {
+    "source": "papers",
+    "status": "ok",
+    "found": 170,
+    "note": ""
+   },
+   {
+    "source": "projects",
+    "status": "ok",
+    "found": 3,
+    "note": ""
+   },
+   {
+    "source": "patents",
+    "status": "no_key",
+    "found": 0,
+    "note": "Patents not searched: add a free PatentsView key (PATENTSVIEW_API_KEY)"
+   },
+   {
+    "source": "trials",
+    "status": "skipped",
+    "found": 0,
+    "note": "Not a health idea, so clinical trials were not searched"
+   }
+  ],
+  "caveat": "Counts come from the sources listed in coverage. 'Nothing found' means nothing in those sources, not that the idea is new; have a patent attorney search before filing."
+ },
+ "novelty": {
+  "elements": [
+   {
+    "element": "jasmine",
+    "query": "\"Jasminum sambac\"",
+    "papers": 4871,
+    "label": "active"
+   }
+  ],
+  "pairs": [],
+  "context": {
+   "query": "\"Jasminum sambac\"",
+   "searched": true,
+   "world_papers": 4871,
+   "india_papers": 570,
+   "india_share_pct": 11.7,
+   "tn_startups": 0,
+   "gap": false
+  },
+  "statement": {
+   "type": "crowded",
+   "text": "Each part is well studied, and so are their combinations. The edge has to come from who you serve, the cost, or how you deliver it."
+  },
+  "levers": [
+   {
+    "kind": "business model",
+    "text": "Compete on how it is delivered, as a service, a rental, or a scheme-backed rollout rather than a product sale.",
+    "because": "every part and combination is crowded"
+   }
+  ],
+  "thresholds": {
+   "active_papers": 300,
+   "crowded_papers": 5000,
+   "rare_pair_share_pct": 2.0,
+   "rare_pair_papers": 30,
+   "india_low_share_pct": 5.0
+  },
+  "caveat": "Not found in these sources is not proof of novelty; have a patent attorney search before filing."
+ }
+}

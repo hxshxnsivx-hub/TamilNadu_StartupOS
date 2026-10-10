@@ -495,12 +495,8 @@ def _next_novelty_point(s: AgentSession) -> str | None:
     if "statement" not in s.narrated:
         s.narrated.append("statement")
         st = s.novelty["statement"]
-        caveat = (
-            " That is only what I found in the sources I searched."
-            if st["type"] != ("unclear")
-            else ""
-        )
-        return st["text"] + caveat
+        if st["type"] != "unclear":  # "I can't judge novelty yet" is not worth a turn
+            return st["text"] + " That is only what I found in the sources I searched."
     if s.council and (key := f"council:{s.council['at']}") not in s.narrated:
         s.narrated.append(key)
         return " ".join(s.council["synthesis"]["voice_brief"])
@@ -511,6 +507,11 @@ def _next_novelty_point(s: AgentSession) -> str | None:
             text = lever["text"].rstrip(".")
             return f"{first}: {text[:1].lower()}{text[1:]}, because {lever['because']}."
     return None
+
+
+def _count(n: int, noun: str) -> str:
+    """1 clinical trial, 23 clinical trials, 34,463 research papers."""
+    return f"{n:,} {noun}" + ("" if n == 1 else "s")
 
 
 def _fallback_reply(scan: dict | None, question: str | None, lead: str | None = None) -> str:
@@ -530,21 +531,23 @@ def _fallback_reply(scan: dict | None, question: str | None, lead: str | None = 
         if c["trials"]["total"]:
             t = c["trials"]["items"][0]
             parts.append(
-                f"I found {c['trials']['total']} clinical trials, for example \"{t['title']}\"."
+                f"I found {_count(c['trials']['total'], 'clinical trial')}, for example"
+                f" \"{t['title']}\"."
             )
         if c["projects"]["total"]:
             g = c["projects"]["items"][0]
             parts.append(
-                f"There are {c['projects']['total']} open-source projects, such as {g['name']}."
+                f"I found {_count(c['projects']['total'], 'open-source project')}, such as"
+                f" {g['name']}."
             )
         if c["papers"]["total"]:
             p = c["papers"]["most_relevant"][0]
             parts.append(
-                f"About {c['papers']['total']} research papers, the closest being"
+                f"About {_count(c['papers']['total'], 'research paper')}, the closest being"
                 f" \"{p['title']}\" ({p['year']})."
             )
         if c["patents"]["total"]:
-            parts.append(f"{c['patents']['total']} related patents came up.")
+            parts.append(f"{_count(c['patents']['total'], 'related patent')} came up.")
         if c["local"]["startups"]:
             names = ", ".join(x["name"] for x in c["local"]["startups"][:3])
             parts.append(f"In Tamil Nadu, {names} work in this space.")
@@ -713,7 +716,7 @@ async def turn_stream(
     action = _advance(s, text)
     s.pending_slot = action.slot if action.kind == "ask" else None
     if action.kind == "confirm":
-        question = f"Here is what I understood: {action.objective} Is that right?"
+        question = f"Here is what I understood. {action.objective} Is that right?"
     elif action.kind == "generate":
         question = "They confirmed: build the roadmap now and walk them through it."
     else:

@@ -20,6 +20,7 @@ carry their batch and a review state ("base", "draft", "approved").
 from __future__ import annotations
 
 import json
+import math
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -240,16 +241,39 @@ def _terms(text: str) -> set[str]:
     }
 
 
+@lru_cache
+def _index() -> tuple[dict[str, tuple[set[str], set[str]]], dict[str, float]]:
+    """Each domain's (label terms, all terms), and how rare each term is across domains."""
+    doms = load()["domains"]
+    terms = {
+        i: (_terms(d["label"]), _terms(f"{d['label']} {d['summary']}")) for i, d in doms.items()
+    }
+    df: dict[str, int] = {}
+    for _, every in terms.values():
+        for w in every:
+            df[w] = df.get(w, 0) + 1
+    n = len(doms)
+    return terms, {w: math.log(n / c) for w, c in df.items()}
+
+
 def detect_domain(text: str) -> str | None:
-    """Best registry domain for free text, by overlapping words in label and summary."""
+    """Best registry domain for free text.
+
+    Shared words are weighted by how rare they are across the registry, so
+    "pump" and "motor" outweigh "farm", "phone" and "alerts", and words in a
+    card's title count half again. At least two words must be shared.
+    """
     words = _terms(text)
-    best, score = None, 0
-    for d in load()["domains"].values():
-        vocab = _terms(f"{d['label']} {d['summary']}")
-        s = len(words & vocab)
-        if s > score:
-            best, score = d["id"], s
-    return best if score >= 2 else None
+    terms, idf = _index()
+    best, best_score = None, 0.0
+    for i, (label, every) in terms.items():
+        shared = words & every
+        if len(shared) < 2:
+            continue
+        score = sum(idf[w] * (1.5 if w in label else 1.0) for w in shared)
+        if score > best_score:
+            best, best_score = i, score
+    return best
 
 
 # ---- Hybrids -------------------------------------------------------------------
