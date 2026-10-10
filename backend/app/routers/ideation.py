@@ -248,6 +248,9 @@ class AgentStartIn(BaseModel):
     profile: dict | None = None
     # search nothing outside Vanigam for this conversation
     private: bool = False
+    # the founder agrees that their incubator or programme may see this session in
+    # aggregates of 5 or more founders (never the idea text or name)
+    share_with_programme: bool = False
 
 
 class AgentTurnIn(BaseModel):
@@ -281,7 +284,12 @@ async def _save(s: agent.AgentSession) -> None:
 @router.post("/ideation/agent/sessions")
 async def agent_start(body: AgentStartIn) -> dict:
     """Open an ideation conversation; the reply is the greeting."""
-    s, greeting = agent.new_session(body.name, body.profile, private=body.private)
+    s, greeting = agent.new_session(
+        body.name,
+        body.profile,
+        private=body.private,
+        share_with_programme=body.share_with_programme,
+    )
     store = await get_store()
     await store.create(s)
     return {

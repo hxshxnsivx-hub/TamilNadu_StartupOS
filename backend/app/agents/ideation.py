@@ -122,6 +122,8 @@ class AgentSession:
     narrated: list[str] = field(default_factory=list)
     usage: dict = field(default_factory=dict)  # model tokens spent in this session
     language: str | None = None  # ta-IN | en-IN | hi-IN: the founder's last spoken language
+    # the founder agreed that their programme may see this session in aggregates
+    cohort_consent: bool = False
     pending_slot: str | None = None
     private: bool = False  # search nothing outside Vanigam
     version: int = 0  # bumped on every save; guards against lost updates
@@ -150,6 +152,7 @@ class AgentSession:
             "narrated": self.narrated,
             "usage": self.usage,
             "language": self.language,
+            "cohort_consent": self.cohort_consent,
             "pending_slot": self.pending_slot,
             "private": self.private,
             "version": self.version,
@@ -178,6 +181,7 @@ class AgentSession:
             narrated=d.get("narrated", []),
             usage=d.get("usage", {}),
             language=d.get("language"),
+            cohort_consent=d.get("cohort_consent", False),
             pending_slot=d.get("pending_slot"),
             private=d.get("private", False),
             version=d.get("version", 0),
@@ -194,10 +198,12 @@ def new_session(
     profile: dict | None = None,
     user_id: str = "anon",
     private: bool = False,
+    share_with_programme: bool = False,
 ) -> tuple[AgentSession, str]:
     who = (name or "").strip() or "there"
     s = AgentSession(name=who, elicitation=engine.start(user_id, profile=profile), user_id=user_id)
     s.private = private
+    s.cohort_consent = share_with_programme
     greeting = (
         f"Vanakkam {who}! Tell me about the idea you are working on, in your own words."
         " It can be a product, a machine, an app or a service. I will look up what already"
