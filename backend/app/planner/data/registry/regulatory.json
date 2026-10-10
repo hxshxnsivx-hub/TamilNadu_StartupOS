@@ -186,6 +186,36 @@
    "text": "Content and tools used inside schools are adopted through school managements or the education department; children's data needs verifiable parental consent under the DPDP Act.",
    "confidence": "secondary",
    "source": "https://www.meity.gov.in/"
+  },
+  "drug_licence": {
+   "title": "Drug licence for selling medicines",
+   "text": "Retail and wholesale sale of medicines needs a drug licence from the Tamil Nadu Drugs Control Department under the Drugs and Cosmetics Rules, with a registered pharmacist on site.",
+   "confidence": "secondary",
+   "source": "https://cdsco.gov.in/"
+  },
+  "nabl": {
+   "title": "NABL accreditation for testing labs",
+   "text": "Accreditation is voluntary but most buyers, exporters and regulators accept only results from NABL-accredited labs.",
+   "confidence": "secondary",
+   "source": "https://nabl-india.org/"
+  },
+  "iec_export": {
+   "title": "Import Export Code (IEC)",
+   "text": "Anyone importing or exporting needs an Import Export Code from DGFT; product export councils add registration (RCMC) for export benefits.",
+   "confidence": "secondary",
+   "source": "https://www.dgft.gov.in/"
+  },
+  "bis_hallmark": {
+   "title": "BIS hallmarking for gold jewellery",
+   "text": "Gold jewellery sold in notified districts must carry a BIS hallmark with a unique ID, and jewellers must register with BIS.",
+   "confidence": "secondary",
+   "source": "https://www.bis.gov.in/"
+  },
+  "rera": {
+   "title": "TNRERA registration for projects and agents",
+   "text": "Real-estate projects above the set size, and the agents who sell them, register with the Tamil Nadu Real Estate Regulatory Authority.",
+   "confidence": "secondary",
+   "source": "https://www.rera.tn.gov.in/"
   }
  }
 }

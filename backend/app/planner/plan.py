@@ -57,8 +57,11 @@ def build_plan(
         reg = domains.get(found) if found else None
     pack_id = (reg or {}).get("pack") or (domain if domain in packs else None) or detect_pack(text)
     pack = packs.get(pack_id) if pack_id and pack_id != COMMON else None
-    if reg is None and pack is not None:  # a pack's registry card names the pack
-        reg = next((d for d in domains.values() if d.get("pack") == pack.id), None)
+    detected = not domain  # the founder's words chose both, not an explicit domain
+    if pack is not None and (reg is None or (detected and reg.get("pack") != pack.id)):
+        # A deep pack's cue words are stronger evidence than word overlap with some other
+        # card, so the pack's own registry card wins (when it has one).
+        reg = next((d for d in domains.values() if d.get("pack") == pack.id), reg)
 
     answered = {
         "variants": variants,

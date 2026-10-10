@@ -40,3 +40,6 @@ voice and listening (decision 0008). They switch on by themselves when the keys 
 | Pushing `feature/bank-loan-routing` | the owner's go-ahead |
 | Weekly data jobs opening pull requests | "Allow GitHub Actions to create and approve pull requests" in repository settings |
 | The uncommitted frontend theme removal (since 2026-10-02) | the owner's decision to commit it |
+| Review of 190 draft registry cards (batch 2: 70, batch 3: 120) against each batch's checklist | a reviewer who knows the districts; drafts are labelled as drafts wherever they are used |
+| Research-trend signals for batch 2 and 3 domains (`signals.json` covers batch 1 only) | the weekly signals job running within OpenAlex's free daily budget, or a free OpenAlex key |
+| Registry batches 4 to 6 (toward about 600 domains) | after batch 3 is reviewed, so mistakes are not copied forward |

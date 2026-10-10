@@ -211,20 +211,41 @@ def domains(category: str | None = None, district: str | None = None) -> list[di
     return rows
 
 
+# Words too common to say anything about a domain ("a tea brand with mint" once matched a
+# honey card on "with" and "brand").
+_DETECT_STOP = frozenset(
+    {
+        "with", "from", "that", "this", "into", "than", "them", "they", "their", "there", "these",
+        "those", "what", "when", "where", "which", "while", "your", "have", "will", "would",
+        "about", "after", "under", "over", "sold", "sell", "sells", "selling", "brand", "brands",
+        "make", "makes", "made", "using", "used", "small", "local", "based", "near", "more", "most",
+        "also", "only",
+    }
+)  # fmt: skip
+
+
+def _stem(w: str) -> str:
+    """Light ending match: prices/price, knitters/knitting, units/unit."""
+    for suffix in ("ings", "ing", "ers", "er", "s"):
+        if w.endswith(suffix) and len(w) - len(suffix) >= 4:
+            return w[: -len(suffix)]
+    return w
+
+
+def _terms(text: str) -> set[str]:
+    return {
+        _stem(w)
+        for w in "".join(c if c.isalpha() else " " for c in (text or "").lower()).split()
+        if len(w) > 3 and w not in _DETECT_STOP
+    }
+
+
 def detect_domain(text: str) -> str | None:
     """Best registry domain for free text, by overlapping words in label and summary."""
-    words = {
-        w
-        for w in "".join(c if c.isalpha() else " " for c in (text or "").lower()).split()
-        if len(w) > 3
-    }
+    words = _terms(text)
     best, score = None, 0
     for d in load()["domains"].values():
-        vocab = set(
-            "".join(
-                c if c.isalpha() else " " for c in f"{d['label']} {d['summary']}".lower()
-            ).split()
-        )
+        vocab = _terms(f"{d['label']} {d['summary']}")
         s = len(words & vocab)
         if s > score:
             best, score = d["id"], s

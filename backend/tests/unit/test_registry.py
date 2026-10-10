@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import Counter
 
+import pytest
 from app.planner import registry
 from app.planner.plan import build_plan
 from app.planner.risks import PHASES, RISKS, adjusted_levels, by_phase
@@ -139,3 +140,30 @@ def test_batch_two_cards_are_drafts_with_a_review_checklist():
     drafts = [d for d in DOMAINS.values() if d["batch"] == 2]
     assert len(drafts) == 70 and all(d["review"] == "draft" for d in drafts)
     assert REG["batches"][2]["review_checklist"]
+
+
+def test_batch_three_brings_every_category_to_twenty_drafts():
+    batch3 = [d for d in DOMAINS.values() if d["batch"] == 3]
+    assert len(batch3) == 120 and all(d["review"] == "draft" for d in batch3)
+    assert set(Counter(d["category"] for d in DOMAINS.values()).values()) == {20}
+    assert REG["batches"][3]["review_checklist"]
+    for lic in ("drug_licence", "nabl", "iec_export", "bis_hallmark", "rera"):
+        assert REG["regulatory"][lic]["source"].startswith("https://")
+
+
+@pytest.mark.parametrize(
+    "text,domain",
+    [
+        ("yarn price marketplace for knitting units in Tiruppur", "yarn_b2b_marketplace"),
+        ("software for jewellery shops with gold rate", "jewellery_erp"),
+        ("EV scooter rentals for delivery riders", "rider_ev_rentals"),
+        ("crop price forecast for farmers", "mandi_price_forecasting"),
+        ("banana chips and banana flour unit", "banana_value_added"),
+    ],
+)
+def test_domain_detection_matches_word_endings_and_ignores_filler(text, domain):
+    assert registry.detect_domain(text) == domain
+
+
+def test_filler_words_alone_never_pick_a_domain():
+    assert registry.detect_domain("a brand with more of this, made and sold by them") is None
