@@ -1,0 +1,152 @@
+{
+ "_meta": {
+  "about": "Registrations a Tamil Nadu startup may need, in order. Each step says who must do it (rules on the founder's facts), why, documents, the official place to do it, and typical time. Licences specific to a product come from the planner's regulatory library through the domain card.",
+  "checked_on": "2026-10-10",
+  "confidence": {"official": "read on the regulator's own site", "secondary": "well established; confirm details on the source", "to_verify": "likely applies; confirm with the authority before relying on it"},
+  "phases": ["Set up", "Tax", "Recognition", "Protect", "People", "Licences"]
+ },
+ "facts": {
+  "entity": {"ask": "How is the business set up: not registered yet, proprietorship, partnership, LLP, private limited company, or one-person company?", "choices": ["none", "proprietorship", "partnership", "llp", "pvt_ltd", "opc"]},
+  "registered": {"ask": "Is that entity already registered?", "kind": "bool"},
+  "years_since_incorporation": {"ask": "How many years ago was it registered?", "kind": "int"},
+  "turnover_lakh": {"ask": "Roughly what yearly turnover do you expect, in lakh rupees?", "kind": "int"},
+  "goods": {"ask": "Do you sell goods (physical products)?", "kind": "bool"},
+  "services": {"ask": "Do you sell services?", "kind": "bool"},
+  "interstate": {"ask": "Will you sell goods to buyers in other states?", "kind": "bool"},
+  "sells_online": {"ask": "Will you sell through online marketplaces such as Amazon or Flipkart?", "kind": "bool"},
+  "exports": {"ask": "Will you export or import?", "kind": "bool"},
+  "innovative": {"ask": "Is the business built on a new or clearly better product, process or business model?", "kind": "bool"},
+  "has_brand": {"ask": "Will you sell under your own brand name?", "kind": "bool"},
+  "has_premises": {"ask": "Do you have a shop, office, factory or workshop?", "kind": "bool"},
+  "employees": {"ask": "How many people will you employ, not counting founders?", "kind": "int"},
+  "raise_equity": {"ask": "Do you plan to raise money from investors for a share of the company?", "kind": "bool"}
+ },
+ "steps": [
+  {
+   "id": "choose_entity", "phase": "Set up", "title": "Choose the business structure",
+   "why": "The structure decides your liability, how you can raise money, and whether you qualify for startup recognition.",
+   "applies": {"field": "entity", "op": "eq", "value": "none", "label": "the business is not registered yet"},
+   "advice": [
+    {"text": "A private limited company is the usual choice if you will raise investor money; investors buy shares.", "when": {"field": "raise_equity", "op": "is_true"}},
+    {"text": "An LLP has lower running compliance and still qualifies for startup recognition, but investors rarely fund LLPs.", "when": null},
+    {"text": "A proprietorship is quickest, but it does not qualify for DPIIT startup recognition.", "when": null}
+   ],
+   "documents": [], "link": "https://www.mca.gov.in/", "days": "1", "confidence": "secondary"
+  },
+  {
+   "id": "incorporate", "phase": "Set up", "title": "Incorporate the company or LLP on the MCA portal",
+   "why": "Gives the business its own legal identity; company forms (SPICe+) can also apply for PAN, TAN, EPFO and ESIC registration and a bank account together.",
+   "applies": {"all": [
+     {"field": "entity", "op": "in", "value": ["pvt_ltd", "opc", "llp"], "label": "you chose a company or LLP"},
+     {"field": "registered", "op": "is_false", "label": "it is not registered yet"}]},
+   "depends_on": ["choose_entity"],
+   "documents": ["PAN and Aadhaar of every director or partner", "Address proof of the registered office (rent agreement with owner's NOC, and a recent utility bill)", "Digital signature certificates for directors or designated partners", "Two or three name options"],
+   "link": "https://www.mca.gov.in/", "days": "7–15", "confidence": "secondary"
+  },
+  {
+   "id": "partnership_deed", "phase": "Set up", "title": "Register the partnership firm",
+   "why": "A registered partnership can sue to enforce contracts and qualifies for DPIIT recognition; an unregistered one cannot.",
+   "applies": {"all": [
+     {"field": "entity", "op": "eq", "value": "partnership", "label": "you chose a partnership"},
+     {"field": "registered", "op": "is_false", "label": "it is not registered yet"}]},
+   "depends_on": ["choose_entity"],
+   "documents": ["Partnership deed on stamp paper", "PAN and Aadhaar of partners", "Address proof of the place of business"],
+   "link": "https://tnreginet.gov.in/", "days": "7–30", "confidence": "to_verify"
+  },
+  {
+   "id": "bank_account", "phase": "Set up", "title": "Open a current account in the business's name",
+   "why": "Keeps business money separate; banks, schemes and investors all ask for it.",
+   "applies": {"field": "entity", "op": "ne", "value": "none", "label": "the business structure is chosen"},
+   "depends_on": ["incorporate", "partnership_deed"],
+   "documents": ["Incorporation or registration certificate", "PAN of the business", "KYC of directors or partners"],
+   "link": "https://www.rbi.org.in/", "days": "1–7", "confidence": "secondary"
+  },
+  {
+   "id": "udyam", "phase": "Set up", "title": "Udyam registration (MSME)",
+   "why": "Free and online. Unlocks MSME benefits: collateral-free loan guarantees (CGTMSE), priority-sector lending, many state schemes, and protection against buyers who pay late.",
+   "applies": {"field": "entity", "op": "ne", "value": "none", "label": "the business exists"},
+   "depends_on": ["bank_account"],
+   "documents": ["Aadhaar of the owner, a partner or a director", "PAN and GSTIN of the business (GSTIN where you have one)", "Bank account details"],
+   "link": "https://udyamregistration.gov.in/", "days": "1", "fee": "free", "confidence": "secondary"
+  },
+  {
+   "id": "gst", "phase": "Tax", "title": "GST registration",
+   "why": "Needed to collect GST and to claim the GST you pay on inputs; business buyers and marketplaces usually need your GSTIN.",
+   "applies": {"any": [
+     {"all": [{"field": "goods", "op": "is_true"}, {"field": "turnover_lakh", "op": "gt", "value": 40}]},
+     {"all": [{"field": "services", "op": "is_true"}, {"field": "turnover_lakh", "op": "gt", "value": 20}]},
+     {"all": [{"field": "goods", "op": "is_true"}, {"field": "interstate", "op": "is_true"}]},
+     {"all": [{"field": "goods", "op": "is_true"}, {"field": "sells_online", "op": "is_true"}]}],
+    "label": "compulsory above ₹40 lakh turnover for goods (₹20 lakh for services), for inter-state supply of goods, and for selling goods through online marketplaces"},
+   "recommended": {"any": [{"field": "goods", "op": "is_true"}, {"field": "services", "op": "is_true"}],
+    "label": "below the limits it is optional, but it lets you claim input tax and sell to businesses that want GST invoices"},
+   "depends_on": ["bank_account"],
+   "documents": ["PAN of the business", "Aadhaar and photos of the owners or directors", "Address proof of the place of business", "Bank account details"],
+   "link": "https://www.gst.gov.in/", "days": "3–7", "fee": "free", "confidence": "secondary"
+  },
+  {
+   "id": "iec", "phase": "Tax", "title": "Import Export Code",
+   "why": "Customs will not clear an export or import without it.",
+   "applies": {"field": "exports", "op": "is_true", "label": "you export or import"},
+   "depends_on": ["bank_account"],
+   "documents": ["PAN of the business", "Bank certificate or cancelled cheque", "Address proof"],
+   "link": "https://www.dgft.gov.in/", "days": "1–3", "confidence": "secondary"
+  },
+  {
+   "id": "dpiit", "phase": "Recognition", "title": "DPIIT startup recognition",
+   "why": "Opens Startup India benefits: self-certification under several labour and environment laws, cheaper and faster patents and trademarks, relaxed rules in government tenders, and the route to tax holidays and fund-of-funds investors.",
+   "applies": {"all": [
+     {"field": "entity", "op": "in", "value": ["pvt_ltd", "opc", "llp", "partnership"], "label": "a private limited company, LLP or registered partnership (a proprietorship does not qualify)"},
+     {"field": "years_since_incorporation", "op": "lte", "value": 10, "label": "registered within the last 10 years"},
+     {"field": "turnover_lakh", "op": "lte", "value": 10000, "label": "turnover under ₹100 crore in every year"},
+     {"field": "innovative", "op": "is_true", "label": "working on innovation, or a clearly better product, process or scalable business model"}]},
+   "depends_on": ["incorporate", "partnership_deed"],
+   "documents": ["Incorporation or registration certificate", "A short write-up on what is new and how it creates jobs or wealth", "Website, pitch deck or video (helps)", "Director or partner details"],
+   "link": "https://www.startupindia.gov.in/", "days": "7–21", "fee": "free", "confidence": "secondary"
+  },
+  {
+   "id": "startuptn", "phase": "Recognition", "title": "Register on StartupTN",
+   "why": "Tamil Nadu's startup mission: needed for TANSEED and other state support, incubator programmes and events.",
+   "applies": {"field": "entity", "op": "ne", "value": "none", "label": "the business exists"},
+   "recommended_only": true,
+   "depends_on": ["udyam"],
+   "documents": ["Business registration details", "DPIIT recognition number, if you have it"],
+   "link": "https://startuptn.in/", "days": "1", "fee": "free", "confidence": "secondary"
+  },
+  {
+   "id": "trademark", "phase": "Protect", "title": "File a trademark for your brand name",
+   "why": "Stops others registering your name first; marketplaces need it for brand registry. Startups and small enterprises pay a lower fee.",
+   "applies": {"field": "has_brand", "op": "is_true", "label": "you sell under your own brand"},
+   "documents": ["The brand name or logo", "The classes of goods or services", "Udyam or DPIIT certificate for the lower fee"],
+   "link": "https://ipindia.gov.in/", "days": "1 to file; registration takes months", "confidence": "secondary"
+  },
+  {
+   "id": "shops_establishment", "phase": "People", "title": "Shops and establishments registration (Tamil Nadu)",
+   "why": "Shops, offices and commercial establishments in Tamil Nadu register under the state's shops and establishments law.",
+   "applies": {"field": "has_premises", "op": "is_true", "label": "you have a shop, office or workshop"},
+   "documents": ["Address proof of the premises", "Owner or director ID", "Number of employees"],
+   "link": "https://labour.tn.gov.in/", "days": "7–30", "confidence": "to_verify"
+  },
+  {
+   "id": "professional_tax", "phase": "People", "title": "Professional tax enrolment",
+   "why": "In Tamil Nadu the local body (corporation or municipality) levies professional tax on businesses and on salaries above set limits.",
+   "applies": {"field": "employees", "op": "gt", "value": 0, "label": "you employ people"},
+   "documents": ["Business registration", "Employee list with salaries"],
+   "link": "https://www.tn.gov.in/", "days": "7–15", "confidence": "to_verify"
+  },
+  {
+   "id": "esi", "phase": "People", "title": "ESIC registration",
+   "why": "Employee health insurance; compulsory once you employ 10 or more people (company forms can register at incorporation).",
+   "applies": {"field": "employees", "op": "gte", "value": 10, "label": "10 or more employees"},
+   "documents": ["Business registration", "Employee details", "Bank details"],
+   "link": "https://www.esic.gov.in/", "days": "1–7", "confidence": "secondary"
+  },
+  {
+   "id": "epf", "phase": "People", "title": "EPFO registration (provident fund)",
+   "why": "Retirement savings for employees; compulsory once you employ 20 or more people.",
+   "applies": {"field": "employees", "op": "gte", "value": 20, "label": "20 or more employees"},
+   "documents": ["Business registration", "Employee details", "Bank details"],
+   "link": "https://www.epfindia.gov.in/", "days": "1–7", "confidence": "secondary"
+  }
+ ]
+}

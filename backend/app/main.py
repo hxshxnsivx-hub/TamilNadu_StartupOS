@@ -21,6 +21,7 @@ from app.routers import (
     funding,
     health,
     ideation,
+    journey,
     news,
     schemes,
     verification,
@@ -69,6 +70,7 @@ def create_app() -> FastAPI:
     app.include_router(banking.router)
     app.include_router(ecosystem.router)
     app.include_router(voice.router)
+    app.include_router(journey.router)
     # Later: profiles/startups persistence ...
 
     return app
