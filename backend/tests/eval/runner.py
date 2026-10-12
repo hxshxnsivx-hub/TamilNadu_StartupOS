@@ -33,6 +33,7 @@ WRITING = [
     ),
     ("numbers are readable", re.compile(r"\b\d{5,}\b")),
     ("one colon per sentence", re.compile(r":[^.?!:]*:\s")),
+    ("zero is said as none", re.compile(r"\bonly 0\b")),
 ]
 
 

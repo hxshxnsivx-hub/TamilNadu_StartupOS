@@ -34,6 +34,10 @@ ACKS = {
     "en-IN": ["Okay.", "Mm, I see."],
 }
 
+# Template sentences that recur across conversations, found by replaying the
+# quality set (scripts/voice_coverage.py --write); none holds a figure or a name.
+RECURRING = Path(__file__).parent / "data" / "recurring.json"
+
 # Fixed English sentences from the agent (app/agents/ideation.py, app/elicitation).
 FIXED_EN = [
     "Tell me about the idea you are working on, in your own words.",
@@ -72,7 +76,8 @@ def wanted() -> list[dict]:
     for language, acks in ACKS.items():
         for a in acks:
             add(a, language)
-    for text in FIXED_EN + [s.question for s in SLOTS if s.question]:
+    recurring = json.loads(RECURRING.read_text(encoding="utf8")) if RECURRING.exists() else []
+    for text in FIXED_EN + [s.question for s in SLOTS if s.question] + recurring:
         add(text, "en-IN")
     return list(rows.values())
 

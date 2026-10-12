@@ -203,8 +203,8 @@ def _statement(parts: list[dict], pairs: list[dict], context: dict) -> dict:
             "type": "combination",
             "text": (
                 f"Both parts are well studied on their own: {g['a']} ({g['a_papers']:,}"
-                f" papers) and {g['b']} ({g['b_papers']:,}). Together, I found only"
-                f" {g['papers']:,}."
+                f" papers) and {g['b']} ({g['b_papers']:,}). Together, I found"
+                f" {_few(g['papers'], 'paper', 'papers', none='none')}."
             ),
         }
     if context.get("gap"):
@@ -212,7 +212,8 @@ def _statement(parts: list[dict], pairs: list[dict], context: dict) -> dict:
             "type": "context",
             "text": (
                 f"Work on this is active worldwide ({context['world_papers']:,} papers), but"
-                f" only {context['india_papers']:,} come from Indian institutions, and I found no"
+                f" {_few(context['india_papers'], 'comes', 'come', none='none')} from Indian"
+                " institutions, and I found no"
                 " Tamil Nadu startup doing it."
             ),
         }
@@ -221,7 +222,7 @@ def _statement(parts: list[dict], pairs: list[dict], context: dict) -> dict:
         s = min(sparse, key=lambda p: p["papers"])
         return {
             "type": "element",
-            "text": f"The rarest part is {s['element']}: only {s['papers']:,} papers.",
+            "text": f"The rarest part is {s['element']}: {_few(s['papers'], 'paper', 'papers')}.",
         }
     if sparse:
         return {
@@ -235,6 +236,13 @@ def _statement(parts: list[dict], pairs: list[dict], context: dict) -> dict:
             " from who you serve, the cost, or how you deliver it."
         ),
     }
+
+
+def _few(n: int, one: str, many: str, none: str = "") -> str:
+    """'only 3 papers', 'only 1 paper', and 'no papers' rather than 'only 0 papers'."""
+    if n == 0:
+        return none or f"no {many}"
+    return f"only 1 {one}" if n == 1 else f"only {n:,} {many}"
 
 
 def _is_health(idea: str, scan: dict | None) -> bool:
@@ -251,7 +259,7 @@ def _levers(parts, pairs, context, retarget, scan, statement, health=False) -> l
             {
                 "kind": "combine",
                 "text": f"Build your version around joining {g['a']} with {g['b']}.",
-                "because": f"only {g['papers']:,} papers cover both",
+                "because": f"{_few(g['papers'], 'paper covers', 'papers cover')} both",
             }
         )
     if context.get("gap"):
@@ -273,7 +281,7 @@ def _levers(parts, pairs, context, retarget, scan, statement, health=False) -> l
             {
                 "kind": "re-target",
                 "text": f"Design it specifically for {retarget['who']}.",
-                "because": f"only {retarget['papers']:,} papers focus on them",
+                "because": f"{_few(retarget['papers'], 'paper focuses', 'papers focus')} on them",
             }
         )
     if health:

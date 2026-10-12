@@ -141,25 +141,52 @@ export interface SpeakerEvents {
   onPulse: (level: number) => void; // 0..1 for the orb
 }
 
+// The browser voice closest to the recorded mentor voices (Thoma, Rohit,
+// Kavitha), so a sentence with no recording does not sound like someone else.
+// Edge offers natural Indian voices to web pages for free; these are their names.
+const MATCH: Record<string, string[]> = {
+  "en-IN": ["Prabhat", "Ravi"],
+  "hi-IN": ["Madhur", "Hemant"],
+  "ta-IN": ["Pallavi", "Valluvar"],
+};
+/** Slightly slower than the browser default, like the recorded mentor. */
+export const MENTOR_RATE = 0.95;
+
+function score(v: SpeechSynthesisVoice, lang: string): number {
+  const vl = v.lang.replace("_", "-");
+  let s = 0;
+  if (vl === lang) s += 100;
+  else if (vl.split("-")[0] === lang.split("-")[0]) s += 40;
+  else return -1;
+  if (/natural|neural|online/i.test(v.name)) s += 30; // neural voices sound far less robotic
+  if ((MATCH[lang] ?? []).some((n) => v.name.includes(n))) s += 20;
+  if (v.localService) s += 1; // starts sooner
+  return s;
+}
+
+/** The best voice the browser has for a language, or null to use its default. */
+export function bestVoice(lang: string): SpeechSynthesisVoice | null {
+  if (!canSpeak) return null;
+  let best: SpeechSynthesisVoice | null = null;
+  let top = 0;
+  for (const v of window.speechSynthesis.getVoices()) {
+    const s = score(v, lang);
+    if (s > top) [best, top] = [v, s];
+  }
+  return best;
+}
+
+if (canSpeak) {
+  // voices load asynchronously in Chrome and Edge; asking once starts the load
+  window.speechSynthesis.getVoices();
+}
+
 export class Speaker {
   private queue: string[] = [];
   private busy = false;
-  private voice: SpeechSynthesisVoice | null = null;
   current = "";
 
-  constructor(private ev: SpeakerEvents) {
-    if (canSpeak) {
-      const pick = () => {
-        const voices = window.speechSynthesis.getVoices();
-        this.voice =
-          voices.find((v) => v.lang === "en-IN") ??
-          voices.find((v) => v.lang.startsWith("en-")) ??
-          null;
-      };
-      pick();
-      window.speechSynthesis.onvoiceschanged = pick;
-    }
-  }
+  constructor(private ev: SpeakerEvents) {}
 
   get speaking() {
     return this.busy;
@@ -195,8 +222,9 @@ export class Speaker {
     this.current = sentence;
     const u = new SpeechSynthesisUtterance(sentence);
     u.lang = "en-IN";
-    if (this.voice) u.voice = this.voice;
-    u.rate = 1.0;
+    const voice = bestVoice("en-IN");
+    if (voice) u.voice = voice;
+    u.rate = MENTOR_RATE;
     u.onboundary = () => this.ev.onPulse(0.6 + Math.random() * 0.4);
     u.onend = () => this.next();
     u.onerror = () => this.next();

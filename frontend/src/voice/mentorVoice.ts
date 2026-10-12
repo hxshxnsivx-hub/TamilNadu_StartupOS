@@ -13,7 +13,7 @@
  */
 
 import { speakAudio, transcribe, type Lang } from "./agentClient";
-import type { ListenerEvents, SpeakerEvents } from "./speech";
+import { bestVoice, MENTOR_RATE, type ListenerEvents, type SpeakerEvents } from "./speech";
 
 const ACKS: Record<Lang, string[]> = {
   "ta-IN": ["சரி.", "ம்ம், சரி."],
@@ -136,9 +136,30 @@ export class AudioSpeaker {
     if (!("speechSynthesis" in window)) return void this.next();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = language;
-    u.onend = u.onerror = () => {
+    const voice = bestVoice(language);
+    if (voice) u.voice = voice;
+    u.rate = MENTOR_RATE;
+    cancelAnimationFrame(this.raf); // no audio element to meter: pulse on word boundaries
+    u.onboundary = () => this.ev.onPulse(0.6 + Math.random() * 0.4);
+    let finished = false;
+    const done = () => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(watchdog);
       if (gen === this.gen) void this.next();
     };
+    // Some browsers never report the end of an utterance, and some have no voice
+    // at all (the sentence is still on screen): never let one sentence stop the
+    // mentor for long.
+    const hasVoices = window.speechSynthesis.getVoices().length > 0;
+    const watchdog = setTimeout(
+      () => {
+        window.speechSynthesis.cancel();
+        done();
+      },
+      hasVoices ? 3000 + text.length * 100 : 1000,
+    );
+    u.onend = u.onerror = done;
     window.speechSynthesis.speak(u);
   }
 

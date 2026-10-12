@@ -19,6 +19,13 @@ speech). Re-record after changing a question: `python -m app.voice.phrasebook` (
 `voice-worker/record_phrases.py`. Once item 2 below exists, its Tamil and Hindi templates go
 into the phrasebook too.
 
+The phrasebook also holds the template sentences that recur across the quality-set
+conversations (`scripts/voice_coverage.py --write`, which also reports coverage). Recordings
+are trimmed and levelled, and a take of implausible length is recorded again. Sentences
+with no recording use the closest natural browser voice: on Edge, Prabhat (English),
+Madhur (Hindi) and Pallavi (Tamil). Chrome on Windows has no Tamil voice, so Edge is the
+browser to recommend.
+
 **Free fixes, ready to build:**
 
 1. **Best free voice.** Pick the best neural voice the browser offers per language: Microsoft
