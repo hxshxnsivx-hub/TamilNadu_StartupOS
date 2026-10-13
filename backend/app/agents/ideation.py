@@ -13,8 +13,11 @@ Each founder turn (IDEATION-PIPELINE-DESIGN.md §1):
 `turn_stream` yields the events of §1.2 (ack, sentence, tool, evidence, done);
 `turn` runs the same stream and returns the final `done` payload.
 
-Without an API key the same turn runs offline: the scan runs once the idea is
-clear, and a templated reply summarises it.
+Which model talks is app/agents/providers.py: Claude when paid for, else the free
+Gemini tier, else Ollama on this machine; each failure moves the turn to the next.
+Ollama rewords the reply the code built instead of calling tools (too slow and
+unreliable on a CPU). With no model at all the same turn runs offline: the scan
+runs once the idea is clear, and a templated reply summarises it.
 """
 
 from __future__ import annotations
@@ -31,7 +34,7 @@ from typing import Any
 
 import httpx
 
-from app.agents import council
+from app.agents import council, providers
 from app.agents.council.seats import CRITERION_WORDS
 from app.agents.grounding import NOVELTY_LINE, SentenceSplitter, facts_from, gate, problems
 from app.agents.tools import TOOLS, compact_scan, council_brief, run_tool
@@ -42,11 +45,9 @@ from app.elicitation.answers import SKIP
 from app.elicitation.session import ElicitationSession, SessionState
 from app.elicitation.slots import BY_KEY
 from app.research import novelty
-from app.services.breaker import model_breaker
 
 log = get_logger("ideation_agent")
 
-ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
 MAX_TOOL_ROUNDS = 4
 YES = {"yes", "yeah", "yep", "correct", "right", "ok", "okay", "sure", "seri", "aamaa", "aama"}
 NO = {"no", "nope", "wrong", "illai", "not"}
@@ -271,7 +272,7 @@ def _idea_text(s: AgentSession) -> str:
     return " ".join(parts) or s.idea
 
 
-def _facts(s: AgentSession, question: str):
+def _facts(s: AgentSession, question: str, *extra: object):
     """Everything this session can back, for the fact check."""
     tool_results = [
         b.get("content")
@@ -294,61 +295,11 @@ def _facts(s: AgentSession, question: str):
         s.novelty or "",
         council_brief(s.council) if s.council else "",
         question,
+        *extra,
     )
 
 
 # ---- the model, streamed ----------------------------------------------------
-
-
-async def _model_events(
-    client: httpx.AsyncClient, system: str, messages: list[dict], usage: dict | None = None
-) -> AsyncIterator[tuple[str, Any]]:
-    """("text", chunk) while streaming, then ("message", (content, stop_reason))."""
-    st = get_settings()
-    body = {
-        "model": st.llm_model_main,
-        "max_tokens": 1024,
-        "system": system,
-        "tools": TOOLS,
-        "messages": messages,
-        "stream": True,
-    }
-    headers = {
-        "x-api-key": st.anthropic_api_key,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-    }
-    blocks: dict[int, dict] = {}
-    partial_json: dict[int, str] = {}
-    stop = None
-    async with client.stream("POST", ANTHROPIC_URL, headers=headers, json=body) as r:
-        if r.status_code != 200:
-            await r.aread()
-            r.raise_for_status()
-        async for line in r.aiter_lines():
-            if not line.startswith("data:"):
-                continue
-            ev = json.loads(line[5:].strip())
-            kind = ev.get("type")
-            if usage is not None:
-                _add_usage(usage, (ev.get("message") or {}).get("usage") or ev.get("usage"))
-            if kind == "content_block_start":
-                blocks[ev["index"]] = dict(ev["content_block"])
-            elif kind == "content_block_delta":
-                i, d = ev["index"], ev["delta"]
-                if d.get("type") == "text_delta":
-                    blocks[i]["text"] = blocks[i].get("text", "") + d["text"]
-                    yield "text", d["text"]
-                elif d.get("type") == "input_json_delta":
-                    partial_json[i] = partial_json.get(i, "") + d.get("partial_json", "")
-            elif kind == "message_delta":
-                stop = ev.get("delta", {}).get("stop_reason", stop)
-            elif kind == "error":
-                raise RuntimeError(ev.get("error", {}).get("message", "model stream error"))
-    for i, raw in partial_json.items():
-        blocks[i]["input"] = json.loads(raw) if raw.strip() else {}
-    content = [blocks[i] for i in sorted(blocks)]
-    yield "message", (content, stop)
 
 
 LANGUAGE_NAMES = {"ta-IN": "Tamil", "en-IN": "English", "hi-IN": "Hindi"}
@@ -382,11 +333,14 @@ def _spent(s: AgentSession) -> int:
     )
 
 
-def _model_allowed(s: AgentSession) -> bool:
-    """The model is used only with a key, a closed breaker, and budget left."""
+def _budget_left(s: AgentSession) -> bool:
     budget = get_settings().session_token_budget
-    over = bool(budget) and _spent(s) >= budget
-    return bool(get_settings().anthropic_api_key) and model_breaker.allow() and not over
+    return not (budget and _spent(s) >= budget)
+
+
+def _model_allowed(s: AgentSession) -> bool:
+    """A model talks only when one is configured, its breaker closed, and budget left."""
+    return _budget_left(s) and bool(providers.chain())
 
 
 async def _convene(s: AgentSession) -> dict:
@@ -396,7 +350,7 @@ async def _convene(s: AgentSession) -> dict:
         _known_dict(s),
         scan=s.scan,
         novelty=s.novelty,
-        use_model=_model_allowed(s),
+        use_model=_budget_left(s) and providers.judge() is not None,
     )
     s.council = r
     _add_usage(s.usage, r.get("usage"))
@@ -409,8 +363,34 @@ def _event(kind: str, data: Any) -> dict:
     return {"event": kind, "data": data}
 
 
+class _Gate:
+    """Every sentence a model wrote passes the fact check before it is spoken."""
+
+    def __init__(self, out: dict, facts) -> None:
+        self.out, self.facts, self.caveat_said = out, facts, False
+
+    def __call__(self, sentence: str) -> dict | None:
+        said = gate(sentence, self.facts)
+        if said is None:
+            self.out["dropped"].append(
+                {"sentence": sentence, "why": problems(sentence, self.facts)}
+            )
+            log.info("grounding.dropped", sentence=sentence)
+            return None
+        if said == NOVELTY_LINE:
+            if self.caveat_said:
+                return None
+            self.caveat_said = True
+        self.out["spoken"].append(said)
+        return _event("sentence", said)
+
+
 async def _llm_stream(
-    s: AgentSession, question: str, client: httpx.AsyncClient, out: dict
+    s: AgentSession,
+    question: str,
+    client: httpx.AsyncClient,
+    out: dict,
+    provider: providers.Provider,
 ) -> AsyncIterator[dict]:
     system = SYSTEM.format(
         name=s.name, question=question, known=_known(s), language_rule=_language_rule(s)
@@ -422,34 +402,19 @@ async def _llm_stream(
         "convene": lambda idea: _convene(s),
     }
     had_council = s.council
-    facts = _facts(s, question)
+    speak = _Gate(out, _facts(s, question))
     splitter = SentenceSplitter()
-    caveat_said = False
-
-    def speak(sentence: str) -> dict | None:
-        nonlocal caveat_said
-        said = gate(sentence, facts)
-        if said is None:
-            out["dropped"].append({"sentence": sentence, "why": problems(sentence, facts)})
-            log.info("grounding.dropped", sentence=sentence)
-            return None
-        if said == NOVELTY_LINE:
-            if caveat_said:
-                return None
-            caveat_said = True
-        out["spoken"].append(said)
-        return _event("sentence", said)
 
     for _ in range(MAX_TOOL_ROUNDS + 1):
-        content, stop = [], None
-        async for kind, payload in _model_events(client, system, s.messages, out["usage"]):
+        content, stop, extra = [], None, {}
+        async for kind, payload in provider.stream(client, system, s.messages, TOOLS, out["usage"]):
             if kind == "text":
                 for sentence in splitter.feed(payload):
                     if ev := speak(sentence):
                         yield ev
             else:
-                content, stop = payload
-        s.messages.append({"role": "assistant", "content": content})
+                content, stop, extra = payload
+        s.messages.append({"role": "assistant", "content": content, **extra})
         calls = [b for b in content if b.get("type") == "tool_use"]
         if stop != "tool_use" or not calls:
             break
@@ -477,7 +442,7 @@ async def _llm_stream(
         if s.council is not had_council:
             had_council = state["council"] = s.council
             yield _event("council", council_brief(s.council))
-        facts = _facts(s, question)  # new tool results can now be cited
+        speak.facts = _facts(s, question)  # new tool results can now be cited
     for sentence in splitter.flush():
         if ev := speak(sentence):
             yield ev
@@ -634,6 +599,63 @@ async def _offline_stream(
         yield _event("sentence", sentence)
 
 
+REWORD = """You are Vanigam's mentor for founders in Tamil Nadu: an experienced, warm
+guide. This is a spoken conversation with {name}.
+
+- {language_rule}
+- Below is the reply to give, written by the system. Say it as you would aloud:
+  calm, encouraging, direct about risks, in short sentences of under 20 words.
+- Keep every fact, name, title and number exactly as written. Add no new facts,
+  numbers, schemes or names. Keep the order. Leave out nothing important.
+- End with the reply's question, in your own words.
+- No lists, no markdown, no notes about what you are doing: only the words to say.
+"""
+
+
+async def _reword_stream(
+    s: AgentSession,
+    action: engine.Action,
+    question: str,
+    client: httpx.AsyncClient,
+    out: dict,
+    provider: providers.Provider,
+) -> AsyncIterator[dict]:
+    """The offline turn (scan, novelty, panel, roadmap: all code), with its reply
+    reworded by the model. If the model fails, the code's own reply is spoken."""
+    async for ev in _offline_stream(s, action, question, client, out):
+        if ev["event"] != "sentence":
+            yield ev
+    draft = s.messages.pop()["content"]
+    built = out["spoken"][:]
+    out["spoken"].clear()
+    speak = _Gate(out, _facts(s, question, draft))
+    system = REWORD.format(name=s.name, language_rule=_language_rule(s))
+    splitter = SentenceSplitter()
+    try:
+        async for kind, payload in provider.stream(
+            client, system, [{"role": "user", "content": draft}], None, out["usage"]
+        ):
+            if kind == "text":
+                for sentence in splitter.feed(payload):
+                    if ev := speak(sentence):
+                        yield ev
+        for sentence in splitter.flush():
+            if ev := speak(sentence):
+                yield ev
+        provider.breaker.succeed()
+        if out["spoken"]:
+            out["model"], out["provider"] = "model", provider.name
+    except (httpx.HTTPError, RuntimeError, json.JSONDecodeError) as exc:
+        provider.breaker.fail(type(exc).__name__)
+        log.warning("model.reword_failed", provider=provider.name, error=type(exc).__name__)
+    if not out["spoken"]:  # the model failed, or nothing it said passed the check
+        out["model"] = "offline (model failed)"
+        for sentence in built:
+            out["spoken"].append(sentence)
+            yield _event("sentence", sentence)
+    s.messages.append({"role": "assistant", "content": " ".join(out["spoken"])})
+
+
 # ---- the turn -----------------------------------------------------------------
 
 
@@ -747,28 +769,36 @@ async def turn_stream(
         "usage": {},
         "wants_opinion": bool(OPINION.search(text)),
         "model": "offline",
+        "provider": None,
     }
     own = client is None
     client = client or httpx.AsyncClient(timeout=120)
     try:
-        if _model_allowed(s):
+        failed = []
+        for p in providers.chain() if _budget_left(s) else []:
+            if not p.tools:  # rewords the code's reply; handles its own failure
+                async for ev in _reword_stream(s, action, question, client, out, p):
+                    yield ev
+                break
             mark = len(s.messages)
             try:
-                async for ev in _llm_stream(s, question, client, out):
+                async for ev in _llm_stream(s, question, client, out, p):
                     yield ev
-                model_breaker.succeed()
-                out["model"] = "model"
+                p.breaker.succeed()
+                out["model"], out["provider"] = "model", p.name
+                break
             except (httpx.HTTPError, RuntimeError, json.JSONDecodeError) as exc:
-                # The model failed: finish this turn offline, and let the breaker
-                # decide whether to skip the model for a while.
-                model_breaker.fail(type(exc).__name__)
-                log.warning("model.failed_turn_offline", error=type(exc).__name__)
+                # This model failed: the breaker decides whether to skip it for a
+                # while, and the turn moves to the next provider.
+                p.breaker.fail(type(exc).__name__)
+                log.warning("model.failed", provider=p.name, error=type(exc).__name__)
                 del s.messages[mark:]  # drop the half-finished exchange
-                out["model"] = "offline (model failed)"
-                if not out["spoken"]:
-                    async for ev in _offline_stream(s, action, question, client, out):
-                        yield ev
+                failed.append(p.name)
+                if out["spoken"]:  # already heard part of it: do not start over
+                    out["model"] = "model (cut short)"
+                    break
         else:
+            out["model"] = "offline (model failed)" if failed else "offline"
             async for ev in _offline_stream(s, action, question, client, out):
                 yield ev
     finally:
@@ -789,6 +819,7 @@ async def turn_stream(
             "novelty": s.novelty,
             "council": council_brief(s.council) if s.council else None,
             "model": out["model"],
+            "provider": out["provider"],
             # the language the reply was written in: offline templates are English only
             "language": (s.language or "en-IN") if out["model"] == "model" else "en-IN",
             "usage": s.usage,

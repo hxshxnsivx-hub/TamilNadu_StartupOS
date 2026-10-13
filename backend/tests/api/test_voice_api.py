@@ -49,7 +49,7 @@ async def test_status_without_a_key_falls_back_to_the_browser(
     monkeypatch.setattr(get_settings(), "sarvam_api_key", "")
     monkeypatch.setattr(phrasebook, "PHRASEBOOK_DIR", tmp_path)
     r = await client.get("/api/v1/voice/status")
-    assert r.json()["provider"] == "browser" and r.json()["speech"] == "browser"
+    assert r.json()["provider"] == "browser" and r.json()["speech"] == "none"
     r = await client.post("/api/v1/voice/speak", json={"text": "Hello", "language": "en-IN"})
     assert r.status_code == 204 and not r.content
 

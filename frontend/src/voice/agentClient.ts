@@ -112,7 +112,7 @@ export type Lang = "ta-IN" | "en-IN" | "hi-IN";
 
 export interface VoiceStatus {
   provider: "sarvam" | "browser"; // who listens
-  speech: "sarvam" | "phrasebook" | "browser"; // who speaks
+  speech: "sarvam" | "gemini" | "phrasebook" | "none"; // who speaks (never the browser)
   phrases_recorded: number;
   languages: Record<Lang, string>;
   voice: string | Record<Lang, string> | null;
@@ -122,8 +122,8 @@ export function voiceStatus(): Promise<VoiceStatus> {
   return fetch("/api/v1/voice/status").then((r) => json<VoiceStatus>(r));
 }
 
-/** One sentence in the mentor's voice: a recorded phrase (WAV) or Sarvam (MP3).
- * Rejects when the server has no audio for it; the caller then uses the browser voice. */
+/** Sentences in the mentor's voice: Sarvam (MP3), Gemini or a recording (WAV).
+ * Rejects when the server has no audio for them; the words are then only shown. */
 export async function speakAudio(text: string, language: Lang): Promise<Blob> {
   const res = await fetch("/api/v1/voice/speak", {
     method: "POST",

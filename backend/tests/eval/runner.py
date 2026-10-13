@@ -71,7 +71,13 @@ class Result:
 def offline(fixture: dict):
     """No model, no Redis, and research answered from the recording."""
     st = get_settings()
-    saved = (st.anthropic_api_key, scan_mod.scan, novelty_mod.check)
+    saved = (
+        st.anthropic_api_key,
+        st.gemini_api_key,
+        st.ollama_model,
+        scan_mod.scan,
+        novelty_mod.check,
+    )
 
     async def replay_scan(*_a, **_k):
         return fixture["scan"]
@@ -79,13 +85,19 @@ def offline(fixture: dict):
     async def replay_novelty(*_a, **_k):
         return fixture["novelty"]
 
-    st.anthropic_api_key = ""
+    st.anthropic_api_key = st.gemini_api_key = st.ollama_model = ""
     set_redis(None)
     scan_mod.scan, novelty_mod.check = replay_scan, replay_novelty
     try:
         yield
     finally:
-        st.anthropic_api_key, scan_mod.scan, novelty_mod.check = saved
+        (
+            st.anthropic_api_key,
+            st.gemini_api_key,
+            st.ollama_model,
+            scan_mod.scan,
+            novelty_mod.check,
+        ) = saved
 
 
 def _answer(action: dict, answers: dict) -> str:

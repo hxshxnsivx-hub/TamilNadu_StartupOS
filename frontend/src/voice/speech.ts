@@ -1,11 +1,9 @@
-/* Speech in and out, with the browser's own engines (build spec 1.1–1.5).
+/* Listening with the browser's own recognition (build spec 1.1–1.5). The
+ * mentor's voice is never the browser's: it comes from the server (mentorVoice.ts).
  *
  * Listener: streaming recognition. A turn ends after 700 ms of silence, or
  * 1,200 ms when the last word is a joiner or filler ("and", "so", "um",
  * "athu"), so founders are not cut off while they think.
- *
- * Speaker: speaks sentence by sentence as they arrive; `cancel()` stops at
- * once (barge-in). Word boundaries drive the orb's level while speaking.
  *
  * Audio never leaves the browser through Vanigam: the browser's recognition
  * service handles it (in Chrome that is Google's), and only text reaches the
@@ -36,7 +34,6 @@ const RecCtor: (new () => Rec) | undefined =
     : undefined;
 
 export const canListen = Boolean(RecCtor);
-export const canSpeak = typeof window !== "undefined" && "speechSynthesis" in window;
 
 const TRAILING = /\b(and|so|but|because|um+|uh+|like|then|athu|apram|ana)\s*$/i;
 export const SILENCE_MS = 700;
@@ -139,97 +136,6 @@ export interface SpeakerEvents {
   onStart: () => void;
   onEnd: () => void; // the queue is empty and nothing is playing
   onPulse: (level: number) => void; // 0..1 for the orb
-}
-
-// The browser voice closest to the recorded mentor voices (Thoma, Rohit,
-// Kavitha), so a sentence with no recording does not sound like someone else.
-// Edge offers natural Indian voices to web pages for free; these are their names.
-const MATCH: Record<string, string[]> = {
-  "en-IN": ["Prabhat", "Ravi"],
-  "hi-IN": ["Madhur", "Hemant"],
-  "ta-IN": ["Pallavi", "Valluvar"],
-};
-/** Slightly slower than the browser default, like the recorded mentor. */
-export const MENTOR_RATE = 0.95;
-
-function score(v: SpeechSynthesisVoice, lang: string): number {
-  const vl = v.lang.replace("_", "-");
-  let s = 0;
-  if (vl === lang) s += 100;
-  else if (vl.split("-")[0] === lang.split("-")[0]) s += 40;
-  else return -1;
-  if (/natural|neural|online/i.test(v.name)) s += 30; // neural voices sound far less robotic
-  if ((MATCH[lang] ?? []).some((n) => v.name.includes(n))) s += 20;
-  if (v.localService) s += 1; // starts sooner
-  return s;
-}
-
-/** The best voice the browser has for a language, or null to use its default. */
-export function bestVoice(lang: string): SpeechSynthesisVoice | null {
-  if (!canSpeak) return null;
-  let best: SpeechSynthesisVoice | null = null;
-  let top = 0;
-  for (const v of window.speechSynthesis.getVoices()) {
-    const s = score(v, lang);
-    if (s > top) [best, top] = [v, s];
-  }
-  return best;
-}
-
-if (canSpeak) {
-  // voices load asynchronously in Chrome and Edge; asking once starts the load
-  window.speechSynthesis.getVoices();
-}
-
-export class Speaker {
-  private queue: string[] = [];
-  private busy = false;
-  current = "";
-
-  constructor(private ev: SpeakerEvents) {}
-
-  get speaking() {
-    return this.busy;
-  }
-
-  say(sentence: string) {
-    if (!canSpeak || !sentence.trim()) return;
-    this.queue.push(sentence);
-    if (!this.busy) this.next();
-  }
-
-  cancel() {
-    this.queue = [];
-    if (canSpeak) window.speechSynthesis.cancel();
-    if (this.busy) {
-      this.busy = false;
-      this.current = "";
-      this.ev.onEnd();
-    }
-  }
-
-  private next() {
-    const sentence = this.queue.shift();
-    if (sentence === undefined) {
-      this.busy = false;
-      this.current = "";
-      this.ev.onPulse(0);
-      this.ev.onEnd();
-      return;
-    }
-    if (!this.busy) this.ev.onStart();
-    this.busy = true;
-    this.current = sentence;
-    const u = new SpeechSynthesisUtterance(sentence);
-    u.lang = "en-IN";
-    const voice = bestVoice("en-IN");
-    if (voice) u.voice = voice;
-    u.rate = MENTOR_RATE;
-    u.onboundary = () => this.ev.onPulse(0.6 + Math.random() * 0.4);
-    u.onend = () => this.next();
-    u.onerror = () => this.next();
-    window.speechSynthesis.speak(u);
-  }
 }
 
 /** True when what the microphone heard is the founder, not our own voice echoing back. */

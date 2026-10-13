@@ -52,6 +52,22 @@ class Settings(BaseSettings):
     # the conversation itself keeps going.
     session_token_budget: int = 0
 
+    # Free models (app/agents/providers.py). The mentor tries, in this order, every
+    # provider that is configured: a failure or a used-up free quota moves the turn to
+    # the next one; templates are the last resort.
+    llm_order: str = "anthropic,gemini,ollama"
+    # Google Gemini API, free tier: a key from aistudio.google.com, no payment.
+    # On the free tier Google may use the text to improve its products.
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-3.8-flash"  # the conversation, with tools
+    gemini_model_fast: str = "gemini-3.5-flash-lite"  # review-panel seats: many short calls
+    gemini_thinking: str = "low"  # minimal | low | medium | high: low keeps replies quick
+    # Ollama on this machine: offline backup. Empty model = not used.
+    # Small models on a CPU are slow and unreliable with tools, so Ollama rewords the
+    # reply the code built (facts and question included) rather than calling tools.
+    ollama_url: str = "http://localhost:11434"
+    ollama_model: str = ""  # e.g. gemma3:4b
+
     # Mentor voice: Sarvam AI speech (app/voice). Without a key the browser's own
     # speech is used. One speaker for every language keeps the mentor's voice the same.
     # The key is SARVAM_API_KEY, shared with translation below.
@@ -60,6 +76,16 @@ class Settings(BaseSettings):
     sarvam_tts_pace: float = 0.95  # a touch slower than default: a mentor, not an announcer
     sarvam_stt_model: str = "saaras:v4"
     voice_cache_dir: str = ".cache/voice"
+    # Gemini text-to-speech (same free key as above): speaks any sentence the model
+    # writes, in Tamil, Hindi or English. Voices from the Gemini voice list, one per
+    # language; the style is the delivery for every sentence.
+    gemini_tts_model: str = "gemini-3.8-flash-tts"
+    gemini_tts_voice_en: str = "Sadaltager"  # "knowledgeable"
+    gemini_tts_voice_hi: str = "Sadaltager"
+    gemini_tts_voice_ta: str = "Sulafat"  # "warm"
+    gemini_tts_style: str = (
+        "a calm, warm mentor speaking to a young founder: unhurried, encouraging, clear"
+    )
 
     translation_provider: str = "sarvam"
     sarvam_api_key: str = ""

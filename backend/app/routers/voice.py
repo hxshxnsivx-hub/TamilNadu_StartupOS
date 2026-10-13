@@ -1,9 +1,10 @@
 """Voice endpoints: the mentor's voice out, the founder's speech in.
 
     GET  /api/v1/voice/status       which voice is available, and its languages
-    POST /api/v1/voice/speak        one sentence -> audio: a recorded phrase (free, local),
-                                    else Sarvam MP3 when a key is set (cached), else 204 (no audio)
-                                    and the browser speaks it
+    POST /api/v1/voice/speak        one or more sentences -> the mentor's voice:
+                                    Sarvam (paid, if a key is set), else Gemini (free
+                                    tier), else a recorded phrase; else 204 and the
+                                    sentence is shown, not spoken
     POST /api/v1/voice/transcribe   one utterance (audio file) -> text + detected language
 
 Audio is passed straight through and never stored; only synthesised speech
@@ -21,7 +22,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 from app.core.config import get_settings
-from app.voice import phrasebook, sarvam
+from app.voice import gemini_tts, phrasebook, sarvam
 
 router = APIRouter(prefix="/api/v1/voice", tags=["voice"])
 
@@ -45,14 +46,21 @@ class SpeakIn(BaseModel):
 async def status() -> dict:
     st = get_settings()
     recorded = phrasebook.recorded()
+    if sarvam.configured():
+        speech, voice = "sarvam", st.sarvam_tts_speaker
+    elif gemini_tts.configured():
+        speech, voice = "gemini", {lang: gemini_tts.voice_for(lang) for lang in sarvam.LANGUAGES}
+    elif recorded:
+        speech, voice = "phrasebook", phrasebook.VOICES
+    else:
+        speech, voice = "none", None  # the mentor's words are shown, not spoken
     return {
         # who listens: Sarvam when a key is set, otherwise the browser
         "provider": "sarvam" if sarvam.configured() else "browser",
-        # who speaks: Sarvam, else the recorded phrasebook with the browser for the rest
-        "speech": "sarvam" if sarvam.configured() else "phrasebook" if recorded else "browser",
+        "speech": speech,
         "phrases_recorded": recorded,
         "languages": sarvam.LANGUAGES,
-        "voice": st.sarvam_tts_speaker if sarvam.configured() else phrasebook.VOICES,
+        "voice": voice,
     }
 
 
@@ -62,17 +70,45 @@ def _cache_path(text: str, language: str) -> Path:
     return Path(st.voice_cache_dir) / (hashlib.sha1(key.encode()).hexdigest() + ".mp3")
 
 
+def _gemini_cache_path(text: str, language: str) -> Path:
+    st = get_settings()
+    voice = gemini_tts.voice_for(language)
+    key = f"gemini|{st.gemini_tts_model}|{voice}|{st.gemini_tts_style}|{language}|{text}"
+    return Path(st.voice_cache_dir) / (hashlib.sha1(key.encode()).hexdigest() + ".wav")
+
+
+async def _gemini(text: str, language: str) -> bytes | None:
+    """Gemini's voice, cached so a repeated sentence costs one request ever. None
+    when it cannot speak now (quota, outage): the next voice down takes over."""
+    path = _gemini_cache_path(text, language)
+    if path.exists():
+        return path.read_bytes()
+    if not gemini_tts.ready():
+        return None
+    try:
+        audio = await gemini_tts.speak(text, language, _http())
+    except (gemini_tts.SpeechError, httpx.HTTPError) as exc:
+        gemini_tts.breaker.fail(type(exc).__name__)
+        return None
+    gemini_tts.breaker.succeed()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(audio)
+    return audio
+
+
 @router.post("/speak")
 async def speak(body: SpeakIn) -> Response:
-    # without Sarvam, the recorded phrases speak; with it, one voice says everything
-    if not sarvam.configured() and (recorded := phrasebook.lookup(body.text, body.language)):
-        return Response(
-            content=recorded.read_bytes(),
-            media_type="audio/wav",
-            headers={"Cache-Control": "public, max-age=86400"},
-        )
+    text = body.text.strip()
     if not sarvam.configured():
-        return Response(status_code=204)  # no recording of this sentence: the browser says it
+        if gemini_tts.configured() and (audio := await _gemini(text, body.language)):
+            return Response(content=audio, media_type="audio/wav")
+        if recorded := phrasebook.lookup(text, body.language):
+            return Response(
+                content=recorded.read_bytes(),
+                media_type="audio/wav",
+                headers={"Cache-Control": "public, max-age=86400"},
+            )
+        return Response(status_code=204)  # no voice for this now: the words are shown
     path = _cache_path(body.text.strip(), body.language)
     if path.exists():
         audio = path.read_bytes()

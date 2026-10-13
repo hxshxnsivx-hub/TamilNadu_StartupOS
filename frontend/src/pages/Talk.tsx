@@ -18,17 +18,11 @@ import {
   type CouncilBrief,
   type Evidence,
   type Novelty,
+  type VoiceStatus,
 } from "../voice/agentClient";
-import { Listener, Speaker, canListen, canSpeak, isBargeIn, micLevel } from "../voice/speech";
+import { Listener, canListen, isBargeIn, micLevel } from "../voice/speech";
 import { AudioSpeaker, RecordingListener } from "../voice/mentorVoice";
 
-/* Either voice, browser or Sarvam, behind the same small interface. */
-interface VoiceOut {
-  say(sentence: string, language?: Lang): void;
-  cancel(): void;
-  readonly speaking: boolean;
-  current: string;
-}
 const LANGS: Lang[] = ["ta-IN", "en-IN", "hi-IN"];
 
 const SESSION_KEY = "vanigam_talk_session";
@@ -74,10 +68,10 @@ export default function Talk() {
   const [speaking, setSpeaking] = useState(false);
   const [listening, setListening] = useState(false);
   const [level, setLevel] = useState(0);
-  const [voiceOn, setVoiceOn] = useState(canSpeak);
+  const [voiceOn, setVoiceOn] = useState(true);
   const [lang, setLang] = useState<Lang | "auto">("auto");
   const [provider, setProvider] = useState<"browser" | "sarvam">("browser"); // who listens
-  const [speech, setSpeech] = useState<"browser" | "phrasebook" | "sarvam">("browser");
+  const [speech, setSpeech] = useState<VoiceStatus["speech"]>("none");
   const [draft, setDraft] = useState("");
   const [action, setAction] = useState<Action | null>(null);
   const [evidence, setEvidence] = useState<Evidence | null>(null);
@@ -94,27 +88,28 @@ export default function Talk() {
   const langRef = useRef(lang);
   langRef.current = lang;
 
-  // The mentor's voice: Sarvam when the server has a key; else the recorded
-  // phrasebook, with the browser's voice for other sentences; else the browser's.
+  // The mentor's voice comes from the server: Sarvam, Gemini's free voice, or the
+  // recorded phrasebook. Never the browser's own voice; with none, replies are shown.
   useEffect(() => {
     voiceStatus()
       .then((v) => {
         setProvider(v.provider);
-        setSpeech(v.speech ?? v.provider);
+        setSpeech(v.speech ?? "none");
       })
       .catch(() => {
         setProvider("browser");
-        setSpeech("browser");
+        setSpeech("none");
       });
   }, []);
 
-  const speaker: VoiceOut = useMemo(() => {
+  const speaker = useMemo(() => {
     const ev = {
       onStart: () => setSpeaking(true),
       onEnd: () => setSpeaking(false),
       onPulse: (v: number) => setLevel(v),
     };
-    return speech !== "browser" ? new AudioSpeaker(ev) : new Speaker(ev);
+    // Gemini and Sarvam take several sentences per request; recordings, one each
+    return new AudioSpeaker(ev, speech === "gemini" || speech === "sarvam");
   }, [speech]);
 
   /** The language to send with a turn: chosen, or last heard when on auto. */
@@ -182,6 +177,7 @@ export default function Talk() {
               setCouncil(ev.data);
               break;
             case "done":
+              speaker.flush(); // the reply is complete: say what is still waiting
               setAction(ev.data.action);
               if (ev.data.evidence) setEvidence(ev.data.evidence);
               if (ev.data.novelty) setNovelty(ev.data.novelty);
@@ -471,14 +467,16 @@ export default function Talk() {
         <input
           id="talk-voice"
           type="checkbox"
-          checked={voiceOn}
-          disabled={!canSpeak}
+          checked={voiceOn && speech !== "none"}
+          disabled={speech === "none"}
           onChange={(e) => {
             setVoiceOn(e.target.checked);
             if (!e.target.checked) speaker.cancel();
           }}
         />{" "}
-        <label htmlFor="talk-voice">Speak replies aloud</label>{" "}
+        <label htmlFor="talk-voice">
+          {speech === "none" ? "Speak replies aloud (no mentor voice set up)" : "Speak replies aloud"}
+        </label>{" "}
         <button type="button" onClick={() => void send("what do you think?")} disabled={busy}>
           What do you think?
         </button>{" "}

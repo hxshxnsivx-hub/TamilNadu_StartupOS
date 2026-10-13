@@ -1,19 +1,23 @@
-/* The mentor's voice from Vanigam's server: Sarvam AI when it has a key (the key
- * never reaches the browser), or else the phrasebook of fixed sentences recorded
- * once with a free local voice. A sentence the server has no audio for is spoken
- * by the browser's voice. Same shape as the browser-voice classes in speech.ts,
- * so the Talk page can use either.
+/* The mentor's voice, always from Vanigam's server (never the browser's own):
+ * Sarvam AI when it has a key, else Gemini's free voice, else the phrasebook of
+ * fixed sentences recorded once with a free local voice. A sentence the server
+ * has no audio for is shown, not spoken.
  *
- * Latency, by design:
- *  - every sentence's audio is requested the moment the sentence arrives, so
- *    the next one is ready while the current one plays;
+ * Latency and quota, by design:
+ *  - the first sentence of a reply is requested the moment it arrives, so the
+ *    mentor starts speaking at once;
+ *  - with Gemini or Sarvam, the sentences that follow while it speaks are joined
+ *    into one request (fewer requests on a free quota, the same natural flow);
+ *    the phrasebook matches single sentences, so it gets them one by one;
+ *  - each request goes out as soon as its text is ready, so the next audio is
+ *    ready while the current one plays;
  *  - the moment the founder stops speaking, a short acknowledgement ("சரி.",
  *    "अच्छा।", "Okay.") plays from cache while the words are transcribed and
  *    the reply is prepared: no dead air.
  */
 
 import { speakAudio, transcribe, type Lang } from "./agentClient";
-import { bestVoice, MENTOR_RATE, type ListenerEvents, type SpeakerEvents } from "./speech";
+import type { ListenerEvents, SpeakerEvents } from "./speech";
 
 const ACKS: Record<Lang, string[]> = {
   "ta-IN": ["சரி.", "ம்ம், சரி."],
@@ -37,6 +41,9 @@ export function sentences(text: string): string[] {
   return out.filter(Boolean);
 }
 
+const GROUP_CHARS = 260; // send a group once it is this long
+const GROUP_WAIT_MS = 400; // or once no sentence has come for this long
+
 let sharedCtx: AudioContext | null = null;
 function audioContext(): AudioContext {
   sharedCtx ??= new AudioContext();
@@ -48,28 +55,52 @@ export class AudioSpeaker {
   language: Lang = "en-IN";
   current = "";
   private queue: Array<{ text: string; language: Lang; audio: Promise<Blob | null> }> = [];
+  private held: { text: string[]; language: Lang } | null = null;
+  private holdTimer = 0;
   private busy = false;
   private gen = 0;
   private el = new Audio();
   private analyser: AnalyserNode | null = null;
   private raf = 0;
 
-  constructor(private ev: SpeakerEvents) {}
+  /** `group`: join the sentences that follow the first into fewer requests. */
+  constructor(
+    private ev: SpeakerEvents,
+    private group = false,
+  ) {}
 
   get speaking() {
     return this.busy;
   }
 
-  /** Queue text sentence by sentence; each one's audio is requested now, so it is
-   * ready when its turn comes, and each can be a recorded phrase on its own. */
+  /** Queue text sentence by sentence. The first goes at once; with grouping on,
+   * later ones wait briefly to travel together. */
   say(text: string, language: Lang = this.language) {
     for (const sentence of sentences(text)) {
-      this.queue.push({
-        text: sentence,
-        language,
-        audio: speakAudio(sentence, language).catch(() => null),
-      });
+      const idle = !this.busy && this.queue.length === 0 && !this.held;
+      if (!this.group || idle) {
+        this.enqueue(sentence, language);
+        continue;
+      }
+      if (this.held && this.held.language !== language) this.flush();
+      this.held ??= { text: [], language };
+      this.held.text.push(sentence);
+      window.clearTimeout(this.holdTimer);
+      if (this.held.text.join(" ").length >= GROUP_CHARS) this.flush();
+      else this.holdTimer = window.setTimeout(() => this.flush(), GROUP_WAIT_MS);
     }
+  }
+
+  /** Send whatever is waiting to be grouped (the reply has ended). */
+  flush() {
+    window.clearTimeout(this.holdTimer);
+    const held = this.held;
+    this.held = null;
+    if (held) this.enqueue(held.text.join(" "), held.language);
+  }
+
+  private enqueue(text: string, language: Lang) {
+    this.queue.push({ text, language, audio: speakAudio(text, language).catch(() => null) });
     if (!this.busy) void this.next();
   }
 
@@ -87,7 +118,8 @@ export class AudioSpeaker {
   cancel() {
     this.gen++;
     this.queue = [];
-    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    window.clearTimeout(this.holdTimer);
+    this.held = null;
     this.el.pause();
     this.el.removeAttribute("src");
     cancelAnimationFrame(this.raf);
@@ -100,6 +132,7 @@ export class AudioSpeaker {
   }
 
   private async next() {
+    if (!this.queue.length && this.held) this.flush(); // never pause for a timer
     const item = this.queue.shift();
     if (!item) {
       this.busy = false;
@@ -115,7 +148,11 @@ export class AudioSpeaker {
     const gen = this.gen;
     const blob = await item.audio;
     if (gen !== this.gen) return; // cancelled while waiting
-    if (!blob) return void this.fallback(item.text, item.language, gen); // never go silent
+    if (!blob) {
+      // no voice for this now (quota used up, offline): the words are on screen
+      window.setTimeout(() => gen === this.gen && void this.next(), 150);
+      return;
+    }
     const url = URL.createObjectURL(blob);
     this.el.src = url;
     this.el.onended = () => {
@@ -129,38 +166,6 @@ export class AudioSpeaker {
       URL.revokeObjectURL(url);
       if (gen === this.gen) void this.next();
     }
-  }
-
-  /** Speak one sentence with the browser's voice when the mentor's voice is unavailable. */
-  private fallback(text: string, language: Lang, gen: number) {
-    if (!("speechSynthesis" in window)) return void this.next();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = language;
-    const voice = bestVoice(language);
-    if (voice) u.voice = voice;
-    u.rate = MENTOR_RATE;
-    cancelAnimationFrame(this.raf); // no audio element to meter: pulse on word boundaries
-    u.onboundary = () => this.ev.onPulse(0.6 + Math.random() * 0.4);
-    let finished = false;
-    const done = () => {
-      if (finished) return;
-      finished = true;
-      clearTimeout(watchdog);
-      if (gen === this.gen) void this.next();
-    };
-    // Some browsers never report the end of an utterance, and some have no voice
-    // at all (the sentence is still on screen): never let one sentence stop the
-    // mentor for long.
-    const hasVoices = window.speechSynthesis.getVoices().length > 0;
-    const watchdog = setTimeout(
-      () => {
-        window.speechSynthesis.cancel();
-        done();
-      },
-      hasVoices ? 3000 + text.length * 100 : 1000,
-    );
-    u.onend = u.onerror = done;
-    window.speechSynthesis.speak(u);
   }
 
   private meter() {

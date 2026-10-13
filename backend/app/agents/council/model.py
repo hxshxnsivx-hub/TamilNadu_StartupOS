@@ -13,11 +13,10 @@ import re
 
 import httpx
 
+from app.agents import providers
 from app.agents.council.evidence import EvidencePack
 from app.agents.council.seats import CRITERIA, Seat
-from app.core.config import get_settings
-
-ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
+from app.agents.providers import Provider
 
 INSTRUCTIONS = (
     """You are one seat on Vanigam's review panel for a Tamil Nadu founder's idea.
@@ -71,25 +70,20 @@ def _json(text: str) -> dict | None:
 
 
 async def ask_seat(
-    client: httpx.AsyncClient, seat: Seat, pack: EvidencePack, idea: str, slots: dict
+    client: httpx.AsyncClient,
+    seat: Seat,
+    pack: EvidencePack,
+    idea: str,
+    slots: dict,
+    provider: Provider | None = None,
 ) -> tuple[dict | None, dict]:
-    """(the raw opinion or None, token usage)."""
-    st = get_settings()
-    r = await client.post(
-        ANTHROPIC_URL,
-        headers={
-            "x-api-key": st.anthropic_api_key,
-            "anthropic-version": "2023-06-01",
-            "content-type": "application/json",
-        },
-        json={
-            "model": st.llm_model_fast,
-            "max_tokens": 700,
-            "system": _system(pack),
-            "messages": [{"role": "user", "content": _user(seat, idea, slots)}],
-        },
-    )
-    r.raise_for_status()
-    data = r.json()
-    text = "".join(b.get("text", "") for b in data.get("content", []) if b.get("type") == "text")
-    return _json(text), data.get("usage", {})
+    """(the raw opinion or None, token usage), from the first provider fit to judge."""
+    provider = provider or providers.judge()
+    if provider is None:
+        raise providers.ModelError("no model available for the review panel")
+    # Claude caches the shared evidence block; other models take the same text plainly.
+    system: list[dict] | str = _system(pack)
+    if provider.name != "anthropic":
+        system = "\n\n".join(b["text"] for b in system)
+    text, usage = await provider.complete(client, system, _user(seat, idea, slots), 700)
+    return _json(text), usage

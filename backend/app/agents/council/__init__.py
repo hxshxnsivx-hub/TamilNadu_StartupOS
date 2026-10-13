@@ -13,13 +13,13 @@ from datetime import UTC, datetime
 
 import httpx
 
+from app.agents import providers
 from app.agents.council import evidence as evidence_mod
 from app.agents.council.model import ask_seat
 from app.agents.council.rules import RULES
 from app.agents.council.seats import SEATS, Opinion, validate
 from app.agents.council.synthesis import synthesise
 from app.agents.council.vote import idea_type, vote
-from app.core.config import get_settings
 from app.core.logging import get_logger
 
 log = get_logger("council")
@@ -43,8 +43,10 @@ async def convene(
     started = time.monotonic()
     district = slots.get("district")
     pack = evidence_mod.build(idea, scan, novelty, str(district) if district else None)
+    judge = providers.judge()
     if use_model is None:
-        use_model = bool(get_settings().anthropic_api_key)
+        use_model = judge is not None
+    use_model = use_model and judge is not None
     wanted = [s for s in SEATS if seats is None or s.id in seats]
     opinions: dict[str, Opinion] = {}
     usage: dict[str, int] = {}
@@ -55,7 +57,8 @@ async def convene(
         client = client or httpx.AsyncClient(timeout=SEAT_TIMEOUT_S + 2)
         try:
             tasks = {
-                s.id: asyncio.create_task(ask_seat(client, s, pack, idea, slots)) for s in wanted
+                s.id: asyncio.create_task(ask_seat(client, s, pack, idea, slots, judge))
+                for s in wanted
             }
             done, pending = await asyncio.wait(tasks.values(), timeout=SEAT_TIMEOUT_S)
             for t in pending:
