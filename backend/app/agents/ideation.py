@@ -600,16 +600,45 @@ async def _offline_stream(
 
 
 REWORD = """You are Vanigam's mentor for founders in Tamil Nadu: an experienced, warm
-guide. This is a spoken conversation with {name}.
+guide, speaking with {name}.
 
 - {language_rule}
-- Below is the reply to give, written by the system. Say it as you would aloud:
-  calm, encouraging, direct about risks, in short sentences of under 20 words.
-- Keep every fact, name, title and number exactly as written. Add no new facts,
-  numbers, schemes or names. Keep the order. Leave out nothing important.
-- End with the reply's question, in your own words.
-- No lists, no markdown, no notes about what you are doing: only the words to say.
+- {script}
+- You are given ONE sentence you are about to say. Say it again as one sentence:
+  the same meaning, in calm, warm spoken words.
+- Keep every fact, name, title and number exactly as written. Add nothing: no
+  praise, no opinion, no greeting, no extra question.
+- If it is a question, keep it a question.
+- Never add a translation, a transliteration or anything in brackets.
+- Reply with that one sentence only.
 """
+
+SCRIPTS = {"ta-IN": ("Tamil", "஀-௿"), "hi-IN": ("Hindi", "ऀ-ॿ")}
+BRACKETS = re.compile(r"\s*[(\[][^)\]]*[)\]]")
+# a bracket the sentence splitter cut in two: "… (Nallaa." and "kaavileen.) That's …"
+OPEN_TAIL = re.compile(r"\s*[(\[][^)\]]*$")
+CLOSE_HEAD = re.compile(r"^[^(\[]*[)\]]")
+QUOTES = "\"'“”‘’"
+
+
+def _script_rule(s: AgentSession) -> str:
+    if s.language in SCRIPTS:
+        name = SCRIPTS[s.language][0]
+        return f"Write in {name} script only; English words the founder used may stay as they are."
+    return "Write in English."
+
+
+def _plain_words(sentence: str, language: str | None) -> str:
+    """What a small model adds that is not for speaking: the whole sentence in
+    quotes; and in Tamil or Hindi, bracketed transliterations and translations,
+    and sentences repeated in English. (English keeps its brackets: "(2020)".)"""
+    sentence = sentence.strip()
+    if len(sentence) > 2 and sentence[0] in QUOTES and sentence[-1] in QUOTES:
+        sentence = sentence[1:-1].strip()
+    if language not in SCRIPTS:
+        return sentence
+    sentence = CLOSE_HEAD.sub("", OPEN_TAIL.sub("", BRACKETS.sub("", sentence))).strip()
+    return sentence if re.search(f"[{SCRIPTS[language][1]}]", sentence) else ""
 
 
 async def _reword_stream(
@@ -620,8 +649,11 @@ async def _reword_stream(
     out: dict,
     provider: providers.Provider,
 ) -> AsyncIterator[dict]:
-    """The offline turn (scan, novelty, panel, roadmap: all code), with its reply
-    reworded by the model. If the model fails, the code's own reply is spoken."""
+    """The offline turn (scan, novelty, panel, roadmap: all code), each sentence of
+    its reply reworded by the model, one at a time: a small model given one
+    sentence cannot add lines or lose the question. A sentence it garbles, or that
+    fails the fact check, is said as the code wrote it; so is the rest of the reply
+    if the model stops answering."""
     async for ev in _offline_stream(s, action, question, client, out):
         if ev["event"] != "sentence":
             yield ev
@@ -629,31 +661,50 @@ async def _reword_stream(
     built = out["spoken"][:]
     out["spoken"].clear()
     speak = _Gate(out, _facts(s, question, draft))
-    system = REWORD.format(name=s.name, language_rule=_language_rule(s))
-    splitter = SentenceSplitter()
-    try:
-        async for kind, payload in provider.stream(
-            client, system, [{"role": "user", "content": draft}], None, out["usage"]
-        ):
-            if kind == "text":
-                for sentence in splitter.feed(payload):
-                    if ev := speak(sentence):
-                        yield ev
-        for sentence in splitter.flush():
-            if ev := speak(sentence):
-                yield ev
+    system = REWORD.format(name=s.name, language_rule=_language_rule(s), script=_script_rule(s))
+    reworded, working = 0, True
+    for line in built:
+        said = None
+        if working:
+            try:
+                said = await _reword_one(provider, client, system, line, out["usage"])
+            except (httpx.HTTPError, RuntimeError, json.JSONDecodeError) as exc:
+                provider.breaker.fail(type(exc).__name__)
+                log.warning("model.reword_failed", provider=provider.name, error=type(exc).__name__)
+                working = False
+        said = _plain_words(said or "", s.language)
+        if said and (ev := speak(said)):
+            reworded += 1
+            yield ev
+        else:  # garbled, empty or not backed: the code's own sentence
+            out["spoken"].append(line)
+            yield _event("sentence", line)
+    if working:
         provider.breaker.succeed()
-        if out["spoken"]:
-            out["model"], out["provider"] = "model", provider.name
-    except (httpx.HTTPError, RuntimeError, json.JSONDecodeError) as exc:
-        provider.breaker.fail(type(exc).__name__)
-        log.warning("model.reword_failed", provider=provider.name, error=type(exc).__name__)
-    if not out["spoken"]:  # the model failed, or nothing it said passed the check
+    if reworded:
+        out["model"], out["provider"] = "model", provider.name
+    else:
         out["model"] = "offline (model failed)"
-        for sentence in built:
-            out["spoken"].append(sentence)
-            yield _event("sentence", sentence)
     s.messages.append({"role": "assistant", "content": " ".join(out["spoken"])})
+
+
+async def _reword_one(
+    provider: providers.Provider,
+    client: httpx.AsyncClient,
+    system: str,
+    line: str,
+    usage: dict,
+) -> str:
+    """The model's first sentence for this line; the stream is closed right after,
+    so a model that runs on costs no more time."""
+    splitter = SentenceSplitter()
+    async for kind, payload in provider.stream(
+        client, system, [{"role": "user", "content": line}], None, usage
+    ):
+        if kind == "text" and (done := splitter.feed(payload)):
+            return done[0]
+    rest = splitter.flush()
+    return rest[0] if rest else ""
 
 
 # ---- the turn -----------------------------------------------------------------

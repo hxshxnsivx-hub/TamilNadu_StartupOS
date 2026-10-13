@@ -167,6 +167,11 @@ def test_gemini_runs_the_turn_with_tools_and_the_fact_check(monkeypatch):
     assert s.usage["input_tokens"] >= 200
 
 
+def _line(req: httpx.Request) -> str:
+    """The one sentence Ollama was asked to reword."""
+    return json.loads(req.content)["messages"][1]["content"]
+
+
 def test_a_used_up_gemini_quota_moves_the_turn_to_ollama(monkeypatch):
     st = get_settings()
     monkeypatch.setattr(st, "gemini_api_key", "g-key")
@@ -178,32 +183,36 @@ def test_a_used_up_gemini_quota_moves_the_turn_to_ollama(monkeypatch):
             asked.append("gemini")
             return httpx.Response(429, json={"error": {"message": "quota"}})
         body = json.loads(req.content)
-        asked.append("ollama")
+        asked.append(_line(req))
         assert body["model"] == "gemma3:4b" and body["messages"][0]["role"] == "system"
-        assert "23 clinical trials" in body["messages"][1]["content"]  # the code's draft
-        return httpx.Response(200, content=_ndjson(
-            "Kavya, I found 23 clinical trials close to your idea. Which district will you"
-            " work from?"))  # fmt: skip
+        # a model that runs on: only its first sentence is taken
+        return httpx.Response(200, content=_ndjson(f"Kavya, {_line(req)} Also, great idea!"))
 
     s = agent.new_session("Kavya")[0]
     r = _turn(s, BCI, handle)
-    assert asked[0] == "gemini" and "ollama" in asked
+    lines = [a for a in asked if a != "gemini"]
+    assert asked[0] == "gemini" and len(lines) >= 3  # one sentence of the reply per call
     assert r["provider"] == "ollama" and r["model"] == "model"
-    assert r["reply"].startswith("Kavya, I found 23 clinical trials")
+    assert "Kavya, I found 23 clinical trials" in r["reply"]
+    assert "great idea" not in r["reply"]
+    assert r["reply"].rstrip().endswith("?")  # the question survives, last
     assert s.messages[-1] == {"role": "assistant", "content": r["reply"]}
 
 
-def test_ollama_rewording_is_fact_checked_and_falls_back_to_the_code_reply(monkeypatch):
+def test_ollama_rewording_is_fact_checked_and_falls_back_sentence_by_sentence(monkeypatch):
     monkeypatch.setattr(get_settings(), "ollama_model", "gemma3:4b")
-    say = ["It will earn ₹73 lakh in a year. Which district will you work from?"]
 
     def handle(req: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, content=_ndjson(say[0]))
+        line = _line(req)
+        if "clinical trials" in line:  # an invented figure in place of the real one
+            return httpx.Response(200, content=_ndjson("It will earn ₹73 lakh in a year."))
+        return httpx.Response(200, content=_ndjson(f"“{line}”"))  # quoted, as small models do
 
     s = agent.new_session("Kavya")[0]
     r = _turn(s, BCI, handle)
     assert "73 lakh" not in r["reply"] and r["dropped"] == 1
-    assert r["reply"] == "Which district will you work from?"
+    assert "I found 23 clinical trials" in r["reply"]  # the code's sentence instead
+    assert "“" not in r["reply"]
 
     def down(req: httpx.Request) -> httpx.Response:
         raise httpx.ConnectError("ollama is not running")
@@ -212,6 +221,8 @@ def test_ollama_rewording_is_fact_checked_and_falls_back_to_the_code_reply(monke
     r2 = _turn(s2, BCI, down)
     assert r2["model"] == "offline (model failed)"
     assert "23 clinical trials" in r2["reply"]  # the code's own reply, unchanged
+    assert PROVIDERS["ollama"].breaker.failures  # counted once, not once per sentence
+    assert len(PROVIDERS["ollama"].breaker.failures) == 1
 
 
 def test_the_reply_follows_the_founders_language_with_a_model(monkeypatch):
@@ -220,7 +231,9 @@ def test_the_reply_follows_the_founders_language_with_a_model(monkeypatch):
 
     def handle(req: httpx.Request) -> httpx.Response:
         seen.append(json.loads(req.content)["messages"][0]["content"])
-        return httpx.Response(200, content=_ndjson("சரி, எந்த மாவட்டத்தில் தொடங்குவீர்கள்?"))
+        if "clinical trials" in _line(req):  # a sentence repeated in English: not said
+            return httpx.Response(200, content=_ndjson("(Clinical trials) I found trials."))
+        return httpx.Response(200, content=_ndjson("சரி, எந்த மாவட்டத்தில் தொடங்குவீர்கள்? (Sari, entha?)"))
 
     async def go():
         async with _transport(handle) as c:
@@ -228,8 +241,12 @@ def test_the_reply_follows_the_founders_language_with_a_model(monkeypatch):
 
     s = agent.new_session("Kavya")[0]
     events = asyncio.run(go())
+    said = [e["data"] for e in events if e["event"] == "sentence"]
     assert events[0]["data"]["reply_language"] == "ta-IN"
-    assert "Reply in Tamil" in seen[0]
+    assert "Reply in Tamil" in seen[0] and "Tamil script only" in seen[0]
+    assert "சரி, எந்த மாவட்டத்தில் தொடங்குவீர்கள்?" in said  # the bracketed transliteration gone
+    assert not any("Sari" in x for x in said)
+    assert any("23 clinical trials" in x for x in said)  # the English repeat replaced by the code's
     assert events[-1]["data"]["language"] == "ta-IN"
 
 
