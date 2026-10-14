@@ -1,0 +1,195 @@
+{
+ "_about": "The mentor's fixed sentences in Tamil and Hindi, keyed by the English. Drafts written 2026-10-14: a native speaker of each language should review them before founders hear them; set reviewed to true per entry once checked. Scheme names and English words Tamil Nadu founders use (app, prototype, patents, startups) stay in English, as people say them.",
+ "phrases": {
+  "Tell me about the idea you are working on, in your own words.": {
+   "ta-IN": "நீங்கள் செய்து கொண்டிருக்கும் யோசனையைப் பற்றி, உங்கள் சொந்த வார்த்தைகளில் சொல்லுங்கள்.",
+   "hi-IN": "आप जिस आइडिया पर काम कर रहे हैं, उसके बारे में अपने शब्दों में बताइए।",
+   "reviewed": false
+  },
+  "It can be a product, a machine, an app or a service.": {
+   "ta-IN": "அது ஒரு பொருளாக, இயந்திரமாக, app-ஆக அல்லது சேவையாக இருக்கலாம்.",
+   "hi-IN": "यह कोई प्रोडक्ट, मशीन, ऐप या सर्विस हो सकती है।",
+   "reviewed": false
+  },
+  "I will look up what already exists for it, papers, patents, projects and products, and we will shape it together.": {
+   "ta-IN": "இதற்கு ஏற்கனவே என்ன இருக்கிறது என்று, ஆய்வுக் கட்டுரைகள், patents, projects, products எல்லாவற்றிலும் தேடிப் பார்க்கிறேன்; பிறகு இருவரும் சேர்ந்து இதை வடிவமைப்போம்.",
+   "hi-IN": "मैं देखूँगा कि इसके लिए पहले से क्या मौजूद है, रिसर्च पेपर, पेटेंट, प्रोजेक्ट और प्रोडक्ट, और फिर हम मिलकर इसे आकार देंगे।",
+   "reviewed": false
+  },
+  "You chose private mode, so I will search only Vanigam's own data.": {
+   "ta-IN": "நீங்கள் private mode-ஐத் தேர்ந்தெடுத்துள்ளீர்கள், அதனால் Vanigam-இன் சொந்தத் தரவில் மட்டுமே தேடுவேன்.",
+   "hi-IN": "आपने प्राइवेट मोड चुना है, इसलिए मैं सिर्फ़ Vanigam के अपने डेटा में ही खोजूँगा।",
+   "reviewed": false
+  },
+  "Here is what I understood.": {
+   "ta-IN": "நான் புரிந்துகொண்டது இதுதான்.",
+   "hi-IN": "मैंने यह समझा है।",
+   "reviewed": false
+  },
+  "Is that right?": {
+   "ta-IN": "அது சரியா?",
+   "hi-IN": "क्या यह सही है?",
+   "reviewed": false
+  },
+  "Sorry, I didn't catch that.": {
+   "ta-IN": "மன்னிக்கவும், எனக்குச் சரியாகப் புரியவில்லை.",
+   "hi-IN": "माफ़ कीजिए, मैं ठीक से समझ नहीं पाया।",
+   "reviewed": false
+  },
+  "Let me look up what already exists for this; I will tell you what I find.": {
+   "ta-IN": "இதற்கு ஏற்கனவே என்ன இருக்கிறது என்று தேடிப் பார்க்கிறேன்; கிடைத்ததைச் சொல்கிறேன்.",
+   "hi-IN": "मैं देखता हूँ कि इसके लिए पहले से क्या मौजूद है; जो मिलेगा, आपको बताऊँगा।",
+   "reviewed": false
+  },
+  "The review panel is still looking at it; I will share its view next.": {
+   "ta-IN": "மதிப்பாய்வுக் குழு இன்னும் இதைப் பார்த்துக்கொண்டிருக்கிறது; அவர்களின் கருத்தை அடுத்துச் சொல்கிறேன்.",
+   "hi-IN": "रिव्यू पैनल अभी इसे देख रहा है; उसकी राय मैं आगे बताऊँगा।",
+   "reviewed": false
+  },
+  "What problem are you trying to solve, and for whom?": {
+   "ta-IN": "நீங்கள் எந்தப் பிரச்சனையைத் தீர்க்க நினைக்கிறீர்கள், யாருக்காக?",
+   "hi-IN": "आप कौन सी समस्या हल करना चाहते हैं, और किसके लिए?",
+   "reviewed": false
+  },
+  "What will you actually make or do to solve it?": {
+   "ta-IN": "அதைத் தீர்க்க நீங்கள் உண்மையில் என்ன தயாரிக்கப் போகிறீர்கள், அல்லது என்ன செய்யப் போகிறீர்கள்?",
+   "hi-IN": "इसे हल करने के लिए आप असल में क्या बनाएँगे या क्या करेंगे?",
+   "reviewed": false
+  },
+  "Which sector does this sit in?": {
+   "ta-IN": "இது எந்தத் துறையைச் சேர்ந்தது?",
+   "hi-IN": "यह किस सेक्टर में आता है?",
+   "reviewed": false
+  },
+  "Is this software, a physical product, a service, or a mix?": {
+   "ta-IN": "இது software-ஆ, ஒரு physical product-ஆ, சேவையா, அல்லது இவற்றின் கலவையா?",
+   "hi-IN": "यह सॉफ़्टवेयर है, कोई फ़िज़िकल प्रोडक्ट, सर्विस, या इनका मेल?",
+   "reviewed": false
+  },
+  "Who pays for it, or benefits from it?": {
+   "ta-IN": "இதற்கு யார் பணம் செலுத்துவார்கள், அல்லது யார் பயன் பெறுவார்கள்?",
+   "hi-IN": "इसके लिए पैसे कौन देगा, या इससे फ़ायदा किसे होगा?",
+   "reviewed": false
+  },
+  "Which district will you operate from?": {
+   "ta-IN": "எந்த மாவட்டத்திலிருந்து செயல்படப் போகிறீர்கள்?",
+   "hi-IN": "आप किस ज़िले से काम करेंगे?",
+   "reviewed": false
+  },
+  "How far do you want to reach — local, state, national, export?": {
+   "ta-IN": "எவ்வளவு தூரம் கொண்டு செல்ல விரும்புகிறீர்கள்: உள்ளூர், மாநிலம், நாடு முழுவதும், அல்லது ஏற்றுமதி?",
+   "hi-IN": "आप इसे कितनी दूर तक ले जाना चाहते हैं: लोकल, राज्य, पूरे देश, या एक्सपोर्ट?",
+   "reviewed": false
+  },
+  "Where are you today — just an idea, a prototype, already selling?": {
+   "ta-IN": "இப்போது நீங்கள் எந்த நிலையில் இருக்கிறீர்கள்: யோசனை மட்டுமா, prototype-ஆ, ஏற்கனவே விற்பனை செய்கிறீர்களா?",
+   "hi-IN": "आप अभी कहाँ हैं: सिर्फ़ आइडिया, प्रोटोटाइप, या बिक्री शुरू हो चुकी है?",
+   "reviewed": false
+  },
+  "When do you want to be running?": {
+   "ta-IN": "எப்போது தொடங்கி இயங்க விரும்புகிறீர்கள்?",
+   "hi-IN": "आप इसे कब तक चालू करना चाहते हैं?",
+   "reviewed": false
+  },
+  "Is anything forcing the timing?": {
+   "ta-IN": "இந்த நேரத்தில் தொடங்க ஏதாவது கட்டாயம் இருக்கிறதா?",
+   "hi-IN": "क्या कोई बात है जो इसी समय शुरू करने पर मजबूर कर रही है?",
+   "reviewed": false
+  },
+  "Roughly how much can you put in to start?": {
+   "ta-IN": "தொடங்க நீங்கள் தோராயமாக எவ்வளவு பணம் போட முடியும்?",
+   "hi-IN": "शुरू करने के लिए आप लगभग कितना पैसा लगा सकते हैं?",
+   "reviewed": false
+  },
+  "How do you expect to fund it — your own money, a loan, a grant, investors?": {
+   "ta-IN": "இதற்கு எப்படி நிதி திரட்டுவீர்கள்: சொந்தப் பணம், கடன், மானியம், அல்லது முதலீட்டாளர்கள்?",
+   "hi-IN": "इसके लिए पैसा कहाँ से आएगा: अपनी बचत, लोन, ग्रांट, या निवेशक?",
+   "reviewed": false
+  },
+  "How many people will be working on this?": {
+   "ta-IN": "இதில் எத்தனை பேர் வேலை செய்வார்கள்?",
+   "hi-IN": "इस पर कितने लोग काम करेंगे?",
+   "reviewed": false
+  },
+  "How many years have you worked in this line?": {
+   "ta-IN": "இந்தத் துறையில் நீங்கள் எத்தனை ஆண்டுகள் வேலை செய்திருக்கிறீர்கள்?",
+   "hi-IN": "आपने इस क्षेत्र में कितने साल काम किया है?",
+   "reviewed": false
+  },
+  "What can you already do well?": {
+   "ta-IN": "நீங்கள் ஏற்கனவே எதில் நன்றாகச் செய்கிறீர்கள்?",
+   "hi-IN": "आप अभी किस काम में अच्छे हैं?",
+   "reviewed": false
+  },
+  "Do you already own land, machinery or premises you'd use?": {
+   "ta-IN": "இதற்குப் பயன்படுத்தக்கூடிய நிலம், இயந்திரங்கள் அல்லது இடம் ஏற்கனவே உங்களிடம் இருக்கிறதா?",
+   "hi-IN": "क्या आपके पास पहले से ज़मीन, मशीनें या जगह है जिसका आप इसमें इस्तेमाल करेंगे?",
+   "reviewed": false
+  },
+  "Why is now the right time for this?": {
+   "ta-IN": "இதற்கு இப்போது ஏன் சரியான நேரம்?",
+   "hi-IN": "इसके लिए अभी सही समय क्यों है?",
+   "reviewed": false
+  },
+  "What makes yours different from what already exists?": {
+   "ta-IN": "ஏற்கனவே இருப்பவற்றிலிருந்து உங்களுடையது எப்படி வேறுபடுகிறது?",
+   "hi-IN": "जो पहले से मौजूद है, उससे आपका किस तरह अलग है?",
+   "reviewed": false
+  },
+  "What are you mainly after — income, independence, impact, continuing a family business?": {
+   "ta-IN": "உங்கள் முக்கிய நோக்கம் என்ன: வருமானமா, சுதந்திரமா, சமூகத்தில் தாக்கமா, அல்லது குடும்பத் தொழிலைத் தொடர்வதா?",
+   "hi-IN": "आपका मुख्य मकसद क्या है: कमाई, आज़ादी, समाज पर असर, या परिवार का कारोबार आगे बढ़ाना?",
+   "reviewed": false
+  },
+  "I could not search patents this time.": {
+   "ta-IN": "இந்த முறை patents-ஐத் தேட முடியவில்லை.",
+   "hi-IN": "इस बार मैं पेटेंट नहीं खोज पाया।",
+   "reviewed": false
+  },
+  "That is only what I found in the sources I searched.": {
+   "ta-IN": "இது நான் தேடிய ஆதாரங்களில் கிடைத்தது மட்டுமே.",
+   "hi-IN": "यह सिर्फ़ उन स्रोतों में मिला है जहाँ मैंने खोजा।",
+   "reviewed": false
+  },
+  "Shall we go through the costs or the licences first?": {
+   "ta-IN": "முதலில் செலவுகளைப் பார்க்கலாமா, அல்லது licences-ஐப் பார்க்கலாமா?",
+   "hi-IN": "पहले लागत देखें या लाइसेंस?",
+   "reviewed": false
+  },
+  "Looking at it from seven angles, the picture is mixed.": {
+   "ta-IN": "ஏழு கோணங்களில் பார்த்தால், நிலைமை கலவையாக இருக்கிறது.",
+   "hi-IN": "सात पहलुओं से देखें तो तस्वीर मिली-जुली है।",
+   "reviewed": false
+  },
+  "Looking at it from seven angles, there are serious concerns to work through.": {
+   "ta-IN": "ஏழு கோணங்களில் பார்த்தால், சரிசெய்ய வேண்டிய முக்கியமான கவலைகள் உள்ளன.",
+   "hi-IN": "सात पहलुओं से देखें तो कुछ गंभीर चिंताएँ हैं जिन पर काम करना होगा।",
+   "reviewed": false
+  },
+  "Each part is well studied, and so are their combinations.": {
+   "ta-IN": "ஒவ்வொரு பகுதியும், அவற்றின் சேர்க்கைகளும் நன்கு ஆய்வு செய்யப்பட்டுள்ளன.",
+   "hi-IN": "हर हिस्से पर, और उनके मेल पर भी, काफ़ी अध्ययन हो चुका है।",
+   "reviewed": false
+  },
+  "The edge has to come from who you serve, the cost, or how you deliver it.": {
+   "ta-IN": "உங்கள் தனித்துவம், நீங்கள் யாருக்குச் சேவை செய்கிறீர்கள், செலவு, அல்லது எப்படி வழங்குகிறீர்கள் என்பதிலிருந்தே வர வேண்டும்.",
+   "hi-IN": "आपकी बढ़त इस बात से आएगी कि आप किसे सेवा देते हैं, लागत क्या है, या आप इसे कैसे पहुँचाते हैं।",
+   "reviewed": false
+  },
+  "Who exactly would pay for this, and what do they use today instead?": {
+   "ta-IN": "இதற்குச் சரியாக யார் பணம் செலுத்துவார்கள், இப்போது அவர்கள் இதற்குப் பதிலாக என்ன பயன்படுத்துகிறார்கள்?",
+   "hi-IN": "इसके लिए असल में पैसे कौन देगा, और वे आज इसकी जगह क्या इस्तेमाल करते हैं?",
+   "reviewed": false
+  },
+  "What would make a buyer leave the startups already serving them?": {
+   "ta-IN": "ஏற்கனவே சேவை செய்யும் startups-ஐ விட்டு, ஒரு வாங்குபவர் உங்களிடம் ஏன் வருவார்?",
+   "hi-IN": "जो स्टार्टअप पहले से उन्हें सेवा दे रहे हैं, उन्हें छोड़कर कोई खरीदार आपके पास क्यों आएगा?",
+   "reviewed": false
+  },
+  "I still don't know your beneficiary — I'll use safe defaults and widen the estimates.": {
+   "ta-IN": "யார் பயன் பெறுவார்கள் என்று இன்னும் எனக்குத் தெரியவில்லை; அதனால் பாதுகாப்பான அனுமானங்களை வைத்து, மதிப்பீடுகளை விரிவாக வைக்கிறேன்.",
+   "hi-IN": "मुझे अभी पता नहीं कि फ़ायदा किसे होगा; इसलिए मैं सुरक्षित अनुमान लेकर आँकड़ों का दायरा बड़ा रख रहा हूँ।",
+   "reviewed": false
+  }
+ }
+}

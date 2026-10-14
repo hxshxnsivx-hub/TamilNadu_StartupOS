@@ -47,6 +47,7 @@ from app.elicitation.answers import SKIP
 from app.elicitation.session import ElicitationSession, SessionState
 from app.elicitation.slots import BY_KEY
 from app.research import novelty
+from app.voice.phrasebook import translation
 
 log = get_logger("ideation_agent")
 
@@ -428,6 +429,7 @@ async def _absorb(s: AgentSession, out: dict) -> list[dict]:
 
 
 SEARCHING = "Let me look up what already exists for this; I will tell you what I find."
+PANEL_BUSY = "The review panel is still looking at it; I will share its view next."
 
 
 def _event(kind: str, data: Any) -> dict:
@@ -637,7 +639,7 @@ async def _offline_stream(
     if out.get("wants_opinion") and fresh is None:
         before = s.council
         if await _convene(s) is None:  # asked for: worth a wait, but not forever
-            lead = "The review panel is still looking at it; I will share its view next."
+            lead = PANEL_BUSY
         else:
             out["tools"].append("ask_council")
             yield _event("council", council_brief(s.council))
@@ -703,7 +705,7 @@ def _fixed_sentences() -> frozenset[str]:
     from app.voice.phrasebook import wanted
 
     texts = {r["text"] for r in wanted() if r["language"] == "en-IN"}
-    return frozenset(texts | {SEARCHING})
+    return frozenset(texts | {SEARCHING, PANEL_BUSY})
 
 
 def _script_rule(s: AgentSession) -> str:
@@ -754,6 +756,11 @@ async def _reword_stream(
         if english and line in _fixed_sentences():  # already in the mentor's words
             out["spoken"].append(line)
             yield _event("sentence", line)
+            continue
+        if not english and (written := translation(line, s.language or "")):
+            out["spoken"].append(written)  # written once in Tamil or Hindi: no model needed
+            yield _event("sentence", written)
+            reworded += 1
             continue
         if working:
             try:

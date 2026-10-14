@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from functools import cache
 from pathlib import Path
 
 from app.agents.grounding import SentenceSplitter
@@ -33,6 +34,23 @@ ACKS = {
     "hi-IN": ["अच्छा।", "हाँ, ठीक है।"],
     "en-IN": ["Okay.", "Mm, I see."],
 }
+
+# The fixed sentences in Tamil and Hindi, keyed by the English (drafts until a
+# native speaker reviews them; see the file).
+TRANSLATIONS = Path(__file__).parent / "data" / "translations.json"
+
+
+@cache
+def _translations() -> dict[str, dict]:
+    if not TRANSLATIONS.exists():
+        return {}
+    return json.loads(TRANSLATIONS.read_text(encoding="utf8"))["phrases"]
+
+
+def translation(text: str, language: str) -> str | None:
+    """The fixed sentence in Tamil or Hindi, or None."""
+    return _translations().get(normalise(text), {}).get(language)
+
 
 # Template sentences that recur across conversations, found by replaying the
 # quality set (scripts/voice_coverage.py --write); none holds a figure or a name.
@@ -79,6 +97,10 @@ def wanted() -> list[dict]:
     recurring = json.loads(RECURRING.read_text(encoding="utf8")) if RECURRING.exists() else []
     for text in FIXED_EN + [s.question for s in SLOTS if s.question] + recurring:
         add(text, "en-IN")
+    for langs in _translations().values():  # the same sentences for Kavitha and Rohit
+        for language in ("ta-IN", "hi-IN"):
+            if langs.get(language):
+                add(langs[language], language)
     return list(rows.values())
 
 

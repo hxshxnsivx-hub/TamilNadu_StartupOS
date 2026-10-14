@@ -54,6 +54,7 @@ voice and listening (decision 0008). They switch on by themselves when the keys 
 | Database store tested live, migration `0004` applied | correct local PostgreSQL credentials in `backend/.env` |
 | A database table for background results, and a Redis queue so several server processes share jobs (decision 0010) | the database being reachable |
 | The live Gemini check and choosing Gemini voices | `GEMINI_API_KEY` saved in `backend/.env` |
+| Native-speaker review of the Tamil and Hindi fixed sentences (`backend/app/voice/data/translations.json`, 38 drafts each; set `reviewed` per entry) | a Tamil and a Hindi speaker |
 | Pushing `feature/bank-loan-routing` | the owner's go-ahead |
 | Weekly data jobs opening pull requests | "Allow GitHub Actions to create and approve pull requests" in repository settings |
 | The uncommitted frontend theme removal (since 2026-10-02) | the owner's decision to commit it |
