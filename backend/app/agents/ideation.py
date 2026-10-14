@@ -677,6 +677,7 @@ guide, speaking with {name}.
   praise, no opinion, no greeting, no extra question.
 - If it is a question, keep it a question.
 - Never add a translation, a transliteration or anything in brackets.
+- Start with the substance: no lead-in such as "Let's revisit", "Well" or "So".
 - Reply with that one sentence only.
 """
 
@@ -774,8 +775,9 @@ async def _reword_stream(
         provider.breaker.succeed()
     if reworded:
         out["model"], out["provider"] = "model", provider.name
-    else:
+    elif not working:
         out["model"] = "offline (model failed)"
+    # else: every sentence was fixed, or none of the rewording passed: the code's reply
     s.messages.append({"role": "assistant", "content": " ".join(out["spoken"])})
 
 
