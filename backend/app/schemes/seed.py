@@ -10,7 +10,9 @@ from __future__ import annotations
 from app.schemes.models import Scheme, SchemeType
 from app.schemes.rules import Combinator, Op, Rule, RuleGroup
 
-_V = "2026-07-01"  # last-verified stamp for this seed batch
+# Checked again against official and published sources on this date (amounts, who is
+# eligible): all eight.
+_CHECKED = "2026-10-14"
 
 
 def _all(*rules) -> RuleGroup:
@@ -24,8 +26,8 @@ SEED_SCHEMES: list[Scheme] = [
         type=SchemeType.GRANT,
         agency="DPIIT",
         level="central",
-        min_funding=2_000_000,
-        max_funding=5_000_000,
+        min_funding=0,
+        max_funding=2_000_000,  # the grant; the ₹50L part is debt, in the benefits
         sectors=[],
         eligibility=_all(
             Rule("startup.dpiit_recognized", Op.IS_TRUE, label="Requires DPIIT recognition"),
@@ -34,15 +36,24 @@ SEED_SCHEMES: list[Scheme] = [
             ),
             Rule(
                 "startup.entity_type",
-                Op.IN,
-                ["private_limited", "llp"],
-                label="Entity must be Private Limited or LLP",
+                Op.NOT_IN,
+                ["sole_proprietor"],
+                label="Not open to sole proprietorships (or public limited companies)",
             ),
         ),
-        benefits="Up to ₹20L validation grant; up to ₹50L via convertible debenture.",
+        benefits=(
+            "A grant of up to ₹20 lakh for proof of concept, prototype or trials, paid in"
+            " milestone instalments; separately, up to ₹50 lakh as convertible debentures or"
+            " debt for market entry. Applied for through an approved incubator."
+        ),
         source_url="https://seedfund.startupindia.gov.in/",
-        last_verified=_V,
-        unmodelled_notes=["Must not have received > ₹10L from other central schemes."],
+        last_verified=_CHECKED,
+        unmodelled_notes=[
+            "Must not have received more than ₹10 lakh from other central or state schemes"
+            " (prizes and subsidised space do not count).",
+            "Indian promoters must hold at least 51%.",
+            "Not formed by splitting up or reconstructing an existing business.",
+        ],
     ),
     Scheme(
         id="tanseed",
@@ -50,11 +61,12 @@ SEED_SCHEMES: list[Scheme] = [
         type=SchemeType.GRANT,
         agency="StartupTN",
         level="state",
-        min_funding=1_000_000,
+        min_funding=0,
         max_funding=1_500_000,
         sectors=[],
         eligibility=_all(
             Rule("founder.state", Op.EQ, "Tamil Nadu", label="Founder must be in Tamil Nadu"),
+            Rule("startup.dpiit_recognized", Op.IS_TRUE, label="Requires DPIIT recognition"),
             Rule(
                 "startup.stage",
                 Op.IN,
@@ -62,9 +74,17 @@ SEED_SCHEMES: list[Scheme] = [
                 label="Early-stage startups only (idea → MVP)",
             ),
         ),
-        benefits="Equity-free grant up to ₹10–15L per cohort edition.",
+        benefits=(
+            "An equity-linked grant (StartupTN takes a 3% stake): up to ₹15 lakh for green-tech,"
+            " rural-impact and women-led startups, up to ₹10 lakh for others, paid in"
+            " instalments, with a one-year accelerator programme."
+        ),
         source_url="https://startuptn.in/",
-        last_verified=_V,
+        last_verified=_CHECKED,
+        unmodelled_notes=[
+            "Opens in rounds (TANSEED 8.0 closed on 20 December 2025): watch startuptn.in.",
+            "The startup must be registered in Tamil Nadu and listed with StartupTN.",
+        ],
     ),
     Scheme(
         id="pmegp",
@@ -73,7 +93,7 @@ SEED_SCHEMES: list[Scheme] = [
         agency="KVIC",
         level="central",
         min_funding=0,
-        max_funding=5_000_000,
+        max_funding=1_750_000,  # 35% of a ₹50L project, the highest rate
         sectors=[],
         eligibility=_all(
             Rule("founder.age", Op.GTE, 18, label="Founder must be at least 18"),
@@ -81,9 +101,13 @@ SEED_SCHEMES: list[Scheme] = [
                 "startup.incorporation_age_years", Op.LTE, 1, label="For new units only (≤ 1 year)"
             ),
         ),
-        benefits="15–35% margin-money subsidy (higher for SC/ST/OBC/women/rural).",
+        benefits=(
+            "A subsidy of 15–35% of the project cost (35% for special categories in rural areas)"
+            " on projects up to ₹50 lakh in manufacturing or ₹20 lakh in services; a bank lends"
+            " the rest after your own 5–10%."
+        ),
         source_url="https://www.kviconline.gov.in/pmegpeportal/",
-        last_verified=_V,
+        last_verified=_CHECKED,
     ),
     Scheme(
         id="mudra",
@@ -91,20 +115,25 @@ SEED_SCHEMES: list[Scheme] = [
         type=SchemeType.LOAN,
         agency="MUDRA / SIDBI",
         level="bank",
-        min_funding=50_000,
-        max_funding=2_000_000,
+        min_funding=0,
+        max_funding=1_000_000,  # for a first loan; Tarun Plus (₹20L) needs a repaid Tarun loan
         sectors=[],
         eligibility=_all(
             Rule(
                 "startup.annual_revenue",
                 Op.LTE,
-                10_000_000,
-                label="For micro/small enterprises (revenue ≤ ₹1Cr)",
+                100_000_000,
+                label="For micro enterprises (turnover up to ₹10 crore)",
             ),
         ),
-        benefits="Collateral-free loan: Shishu/Kishore/Tarun tiers up to ₹20L.",
+        benefits=(
+            "A collateral-free loan for a non-farm business: Shishu up to ₹50,000, Kishore up to"
+            " ₹5 lakh, Tarun up to ₹10 lakh; Tarun Plus, up to ₹20 lakh, only after repaying a"
+            " Tarun loan."
+        ),
         source_url="https://www.mudra.org.in/",
-        last_verified=_V,
+        last_verified=_CHECKED,
+        unmodelled_notes=["Not open to anyone in default with a bank or lender."],
     ),
     Scheme(
         id="standup_india",
@@ -129,9 +158,16 @@ SEED_SCHEMES: list[Scheme] = [
                 ),
             ],
         ),
-        benefits="₹10L–₹1Cr composite loan for greenfield enterprises.",
+        benefits=(
+            "A composite loan (term loan and working capital) of ₹10 lakh to ₹1 crore, without"
+            " collateral, for a first-time (greenfield) business."
+        ),
         source_url="https://www.standupmitra.in/",
-        last_verified=_V,
+        last_verified=_CHECKED,
+        unmodelled_notes=[
+            "Extended to FY 2025; confirm on standupmitra.in or with your bank that it is open.",
+            "In a company or firm, SC/ST or women founders must hold at least 51%.",
+        ],
     ),
     Scheme(
         id="needs",
@@ -144,12 +180,21 @@ SEED_SCHEMES: list[Scheme] = [
         sectors=[],
         eligibility=_all(
             Rule("founder.state", Op.EQ, "Tamil Nadu", label="Founder must be in Tamil Nadu"),
-            Rule("founder.age", Op.BETWEEN, [21, 45], label="Founder aged 21–45"),
+            Rule(
+                "founder.age",
+                Op.BETWEEN,
+                [21, 45],
+                label="Founder aged 21–45 (some sources: 21–35 for the general category)",
+            ),
             Rule("founder.first_graduate", Op.IS_TRUE, label="For first-generation entrepreneurs"),
         ),
-        benefits="25% capital subsidy (cap ~₹75L) + 3% interest subvention + EDP training.",
+        benefits=(
+            "A 25% capital subsidy (up to ₹75 lakh; 10% more for SC/ST and differently-abled"
+            " founders) on projects up to ₹5 crore, a 3% interest subvention, and"
+            " entrepreneurship training."
+        ),
         source_url="https://www.msmeonline.tn.gov.in/",
-        last_verified=_V,
+        last_verified=_CHECKED,
     ),
     Scheme(
         id="uyegp",
@@ -158,15 +203,29 @@ SEED_SCHEMES: list[Scheme] = [
         agency="MSME Tamil Nadu",
         level="state",
         min_funding=0,
-        max_funding=1_000_000,
+        max_funding=375_000,
         sectors=[],
         eligibility=_all(
             Rule("founder.state", Op.EQ, "Tamil Nadu", label="Founder must be in Tamil Nadu"),
-            Rule("founder.age", Op.GTE, 18, label="Founder must be at least 18"),
+            Rule(
+                "founder.age",
+                Op.BETWEEN,
+                [18, 45],
+                label="Founder aged 18–45 (18–35 for the general category)",
+            ),
         ),
-        benefits="25% subsidy (caps ~₹2.5L) for TN unemployed youth ventures.",
+        benefits=(
+            "A 25% subsidy on projects up to ₹15 lakh in manufacturing or ₹5 lakh in services"
+            " and business, capped at about ₹3.75 lakh (published figures differ; confirm with"
+            " your District Industries Centre)."
+        ),
         source_url="https://www.msmeonline.tn.gov.in/",
-        last_verified=_V,
+        last_verified=_CHECKED,
+        unmodelled_notes=[
+            "Family income up to ₹5 lakh a year.",
+            "At least 8th standard, and 3 years' residence in Tamil Nadu.",
+            "Entrepreneurship training (EDP) is required.",
+        ],
     ),
     Scheme(
         id="cgtmse",
@@ -175,15 +234,9 @@ SEED_SCHEMES: list[Scheme] = [
         agency="CGTMSE",
         level="bank",
         min_funding=0,
-        max_funding=50_000_000,
+        max_funding=100_000_000,
         sectors=[],
         eligibility=_all(
-            Rule(
-                "startup.entity_type",
-                Op.NOT_IN,
-                ["sole_proprietor"],
-                label="Registered entity required (not sole proprietor)",
-            ),
             Rule(
                 "startup.annual_revenue",
                 Op.LTE,
@@ -191,9 +244,14 @@ SEED_SCHEMES: list[Scheme] = [
                 label="Micro & small enterprises only",
             ),
         ),
-        benefits="Collateral-free loan guarantee cover (ceiling ~₹5Cr).",
+        benefits=(
+            "A guarantee (75–85% of the loan) that lets a bank lend without collateral to micro"
+            " and small enterprises, up to ₹10 crore since 1 April 2025. The lender pays the"
+            " fee, though some pass it on."
+        ),
         source_url="https://www.cgtmse.in/",
-        last_verified=_V,
+        last_verified=_CHECKED,
+        unmodelled_notes=["Udyam registration is required."],
     ),
 ]
 

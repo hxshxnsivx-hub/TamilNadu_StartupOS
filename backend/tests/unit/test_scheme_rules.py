@@ -122,3 +122,40 @@ def test_or_branch_via_female_general_founder():
     }
     res = check_eligibility(profile)
     assert "standup_india" in {s.id for s in res.eligible}
+
+
+def test_corrections_checked_against_the_sources_on_2026_10_14():
+    """Amounts and exclusions that were wrong before the check (see app/schemes/seed.py)."""
+    from app.schemes.seed import SEED_SCHEMES
+
+    by_id = {s.id: s for s in SEED_SCHEMES}
+    # a subsidy is a share of the project cost, never the project cost itself
+    assert by_id["pmegp"].max_funding == 1_750_000
+    assert by_id["uyegp"].max_funding < 500_000
+    assert by_id["sisfs"].max_funding == 2_000_000 and "₹50 lakh" in by_id["sisfs"].benefits
+    assert by_id["cgtmse"].max_funding == 100_000_000
+    assert "3% stake" in by_id["tanseed"].benefits  # not "equity-free"
+
+    proprietor = {
+        "founder": {"state": "Tamil Nadu", "age": 30},
+        "startup": {"entity_type": "sole_proprietor", "annual_revenue": 2_000_000},
+    }
+    res = check_eligibility(proprietor)
+    assert "cgtmse" in {s.id for s in res.eligible}  # proprietorships are covered
+    sisfs = {i.scheme.id: i for i in res.ineligible}["sisfs"]
+    assert any("sole proprietorships" in r for r in sisfs.reasons)
+
+    partnership = {
+        "founder": {"state": "Tamil Nadu", "age": 30},
+        "startup": {"entity_type": "partnership", "dpiit_recognized": True,
+                    "incorporation_age_years": 1, "stage": "prototype"},
+    }  # fmt: skip
+    ids = {s.id for s in check_eligibility(partnership).eligible}
+    assert "sisfs" in ids and "tanseed" in ids
+
+    older = {"founder": {"state": "Tamil Nadu", "age": 50}, "startup": {}}
+    uyegp = {i.scheme.id: i for i in check_eligibility(older).ineligible}["uyegp"]
+    assert any("18–45" in r for r in uyegp.reasons)
+    no_dpiit = {"founder": {"state": "Tamil Nadu"}, "startup": {"dpiit_recognized": False}}
+    tanseed = {i.scheme.id: i for i in check_eligibility(no_dpiit).ineligible}["tanseed"]
+    assert any("DPIIT" in r for r in tanseed.reasons)
