@@ -91,7 +91,18 @@ async def test_hub_endpoints(client: AsyncClient):
               "quotes": [{"id": "q1", "name": "Quote", "category": "yarn", "unit_price": 175,
                           "max_capacity": 3000}]},
     )  # fmt: skip
-    assert r.status_code == 200 and r.json()["lines"][0]["unmet"] == 0
+    line = r.json()["lines"][0]
+    # only the founder's own quote: no invented supplier fills the rest
+    assert r.status_code == 200 and line["unmet"] == 9000 and line["why_unmet"]
+    assert {s["supplier_id"] for s in line["splits"]} == {"q1"}
+    r = await client.post(
+        "/api/v1/b2b/allocate",
+        json={"lines": [{"id": "a", "category": "yarn", "quantity": 12000, "max_unit_price": 215}],
+              "quotes": [{"id": "q1", "name": "Quote", "category": "yarn", "unit_price": 175,
+                          "max_capacity": 3000}],
+              "include_catalogue": True},
+    )  # fmt: skip
+    assert r.json()["lines"][0]["unmet"] == 0  # the examples still work for demos
     r = await client.post(
         "/api/v1/b2b/decompose", json={"product": "smart sensor device", "district": "Chennai"}
     )

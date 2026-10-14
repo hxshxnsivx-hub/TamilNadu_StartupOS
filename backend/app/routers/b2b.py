@@ -142,7 +142,8 @@ class LineIn(BaseModel):
 class AllocateIn(BaseModel):
     lines: list[LineIn] = Field(min_length=1, max_length=20)
     quotes: list[QuoteIn] = Field(default_factory=list, max_length=100)
-    include_catalogue: bool = True  # also use the seeded suppliers with known prices
+    # the invented example suppliers (app/b2b/seed.py): tests and demos only
+    include_catalogue: bool = False
     max_suppliers_per_line: int = Field(default=2, ge=1, le=5)
 
 
@@ -168,7 +169,7 @@ async def allocate_orders(body: AllocateIn) -> dict:
 class PairIn(BaseModel):
     demands: list[MatchIn] = Field(min_length=1, max_length=50)
     quotes: list[QuoteIn] = Field(default_factory=list, max_length=100)
-    include_catalogue: bool = True
+    include_catalogue: bool = False  # invented examples: tests and demos only
 
 
 @router.post("/pair")

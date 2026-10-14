@@ -23,6 +23,7 @@ import Pipeline from "./pages/Pipeline";
 import Intel from "./pages/Intel";
 import Journey from "./pages/Journey";
 import Cohort from "./pages/Cohort";
+import Suppliers from "./pages/Suppliers";
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   isActive ? "navlink is-active" : "navlink";
@@ -37,6 +38,7 @@ const NAV = [
   { to: "/schemes", key: "schemes" },
   { to: "/journey", label: "Journey" },
   { to: "/cohort", label: "Cohort" },
+  { to: "/suppliers", label: "Suppliers" },
   { to: "/b2b", key: "b2b" },
   { to: "/funding", key: "funding" },
 ];
@@ -115,6 +117,7 @@ export default function App() {
           <Route path="/cohort" element={<Cohort />} />
           <Route path="/b2b" element={<B2B />} />
           <Route path="/supply" element={<Supply />} />
+          <Route path="/suppliers" element={<Suppliers />} />
           <Route path="/funding" element={<Funding />} />
           <Route path="/pipeline" element={<Pipeline />} />
           <Route path="/intel" element={<Intel />} />

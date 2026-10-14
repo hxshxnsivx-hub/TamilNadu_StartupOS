@@ -1,4 +1,10 @@
-"""Seed B2B supplier catalogue — real Tamil Nadu industrial clusters (Task 3.1)."""
+"""Example B2B suppliers for tests and demos (Task 3.1).
+
+The clusters are real (Tiruppur yarn, Sivakasi printing, Hosur electronics), but
+these companies, prices, capacities and trust scores are invented examples. They
+are never offered to founders as suppliers: real companies come from the MCA
+directory (app/b2b/directory.py), and prices only from quotes the founder enters.
+"""
 
 from __future__ import annotations
 
