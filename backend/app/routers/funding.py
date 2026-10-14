@@ -41,7 +41,7 @@ def _investor_out(inv: Investor) -> InvestorOut:
         type=inv.type,
         min_ticket=inv.min_ticket,
         max_ticket=inv.max_ticket,
-        track_record_score=inv.track_record_score,
+        track_record_score=inv.track_record_score if inv.track_record_known else None,
         thesis=inv.thesis,
         ticket_known=inv.ticket_known,
         source_url=inv.source_url,

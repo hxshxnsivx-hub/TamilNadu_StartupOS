@@ -93,3 +93,10 @@ async def test_investor_match_uses_real_investors_with_sources(client):
     top = body["eligible"][0]["investor"]
     assert top["source_url"].startswith("https://tamilnadustartupmap.com")
     assert top["ticket_known"] in (True, False)
+    everyone = [e["investor"] for e in body["eligible"]] + [
+        x["investor"] for x in body["ineligible"]
+    ]
+    # no source rates real investors: no invented score is shown
+    assert all(i["track_record_score"] is None for i in everyone)
+    unpublished = [i for i in everyone if not i["ticket_known"]]
+    assert unpublished and all(i["min_ticket"] == i["max_ticket"] == 0 for i in unpublished)

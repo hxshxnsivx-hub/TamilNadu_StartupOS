@@ -271,8 +271,10 @@ export interface InvestorInfo {
   type: string;
   min_ticket: number;
   max_ticket: number;
-  track_record_score: number;
+  track_record_score: number | null; // null: no source rates this investor
   thesis: string;
+  ticket_known?: boolean; // false: the investor does not publish a ticket size
+  source_url?: string | null;
 }
 export interface EligibleInvestor {
   investor: InvestorInfo;

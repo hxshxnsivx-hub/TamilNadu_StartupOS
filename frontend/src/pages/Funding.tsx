@@ -31,6 +31,9 @@ const TONE: Record<string, string> = {
 };
 
 const money = (n: number) => `₹${Number(n).toLocaleString("en-IN")}`;
+/* Most investors do not publish a ticket size: say so, rather than ₹0 – ₹0. */
+const ticket = (inv: { min_ticket: number; max_ticket: number; ticket_known?: boolean }) =>
+  inv.ticket_known === false ? "not published" : `${money(inv.min_ticket)} – ${money(inv.max_ticket)}`;
 
 export default function Funding() {
   const { t } = useTranslation();
@@ -327,12 +330,12 @@ export default function Funding() {
                     <div>
                       <dt>ticket</dt>
                       <dd>
-                        {money(e.investor.min_ticket)} – {money(e.investor.max_ticket)}
+                        {ticket(e.investor)}
                       </dd>
                     </div>
                     <div>
                       <dt>track record</dt>
-                      <dd>{e.investor.track_record_score}</dd>
+                      <dd>{e.investor.track_record_score ?? "not rated"}</dd>
                     </div>
                   </dl>
 
@@ -369,8 +372,7 @@ export default function Funding() {
                       <div>
                         <dt>ticket</dt>
                         <dd>
-                          {money(x.investor.min_ticket)} –{" "}
-                          {money(x.investor.max_ticket)}
+                          {ticket(x.investor)}
                         </dd>
                       </div>
                     </dl>

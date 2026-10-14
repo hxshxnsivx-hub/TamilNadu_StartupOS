@@ -33,6 +33,8 @@ class Investor:
     track_record_score: int = 60  # 0–100
     thesis: str = ""
     ticket_known: bool = True
+    # no source rates investors: 60 is a neutral value for ranking, never shown
+    track_record_known: bool = True
     not_investing_reason: str = ""
     source_url: str | None = None
 
@@ -167,6 +169,7 @@ def real_investors() -> tuple[Investor, ...]:
                 availability="not_investing" if reason else "actively_investing",
                 thesis=r.get("summary") or "",
                 ticket_known=bool(ticket),
+                track_record_known=False,
                 not_investing_reason=reason,
                 source_url=r.get("source_url"),
             )
