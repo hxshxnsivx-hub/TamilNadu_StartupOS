@@ -357,20 +357,41 @@ def _council_work(s: AgentSession):
     return work
 
 
-def _research_work(s: AgentSession):
-    """The prior-art search and novelty check, on a snapshot. The job has its own
-    HTTP client: the turn's closes when the turn ends."""
-    idea, private, who = _idea_text(s), s.private, _slot_text(s, "beneficiary")
+def _research_work(s: AgentSession, args: dict | None = None):
+    """The prior-art search and novelty check, on a snapshot. `args` are a model's
+    own search terms (its scan_prior_art call); without them, the founder's words.
+    The job has its own HTTP client: the turn's closes when the turn ends."""
+    args = args or {}
+    idea = args.get("idea") or _idea_text(s)
+    elements, queries = args.get("elements"), args.get("queries")
+    private, who = s.private, _slot_text(s, "beneficiary")
 
     async def work() -> dict:
         from app.research.scan import scan
 
         async with httpx.AsyncClient(timeout=60) as c:
-            found = await scan(idea, client=c, private=private)
-            nov = await novelty.check(idea, scan=found, beneficiary=who, client=c, private=private)
+            if elements or queries:
+                found = await scan(
+                    idea, elements=elements, queries=queries, client=c, private=private
+                )
+            else:
+                found = await scan(idea, client=c, private=private)
+            nov = await novelty.check(
+                idea, elements=elements, scan=found, beneficiary=who, client=c, private=private
+            )
         return {"scan": found, "novelty": nov}
 
     return work
+
+
+async def _search(s: AgentSession, args: dict) -> dict | None:
+    """A model's scan_prior_art call, on the job board: the result if it finishes
+    within the turn's wait, else None (it enters a later turn)."""
+    job = board.start(s.id, "research", _research_work(s, args), reuse_done=True)
+    if not await board.wait(job, get_settings().research_wait_s):
+        s.narrated.append("searching")
+        return None
+    return job.task.result()
 
 
 def _apply_council(s: AgentSession, r: dict) -> None:
@@ -478,6 +499,7 @@ async def _llm_stream(
         "last_scan": s.scan,
         "council": s.council,
         "convene": lambda idea: _convene(s),  # None while it is still deliberating
+        "search": lambda args: _search(s, args),  # None while it is still searching
     }
     had_council = s.council
     speak = _Gate(out, _facts(s, question))

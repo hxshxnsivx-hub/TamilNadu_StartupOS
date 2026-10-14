@@ -38,5 +38,6 @@ to be the slow lane (decision 0001), but until now they ran inside the turn (dec
 - Jobs live in the server process: a restart loses running jobs (the next turn starts the
   search again) and results that no turn took in yet. Several server processes would each have
   their own board; the database-backed result store and the queue come with that.
-- The model's own `scan_prior_art` tool call still runs inside the turn; the model is told to
-  say it is looking first. Moving it onto the board is a later step.
+- A model's own `scan_prior_art` call goes through the same board (added 2026-10-14): if the
+  search outlasts the wait, the tool answers "still running", the model says it is looking and
+  asks its question, and the next turn tells it the results have arrived.

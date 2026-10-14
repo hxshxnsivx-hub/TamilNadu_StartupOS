@@ -274,6 +274,18 @@ def _note_fact(key: str, value: Any, session: ElicitationSession) -> dict:
 async def run_tool(name: str, args: dict, session: ElicitationSession, state: dict) -> dict:
     """Dispatch one tool call. `state` keeps the latest scan for the response."""
     try:
+        if name == "scan_prior_art" and "search" in state:
+            # the conversation's job board: the turn waits briefly, never 20 s
+            done = await state["search"](args)
+            if done is None:
+                return {
+                    "status": "searching",
+                    "note": "The search is still running; its results reach you on a later"
+                    " turn. Tell the founder you are looking it up, then ask your question.",
+                }
+            state["scan"] = state["last_scan"] = done["scan"]
+            state["novelty"] = done["novelty"]
+            return compact_scan(done["scan"])
         if name == "scan_prior_art":
             r = await research.scan(
                 args["idea"],
