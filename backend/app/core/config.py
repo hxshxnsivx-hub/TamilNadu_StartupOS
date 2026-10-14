@@ -107,6 +107,10 @@ class Settings(BaseSettings):
     # required key is reported as "not searched", never silently skipped.
     openalex_api_key: str = ""  # free key; without it OpenAlex allows a small shared daily budget
     patentsview_api_key: str = ""  # free key from PatentsView; patents are skipped without it
+    # EPO Open Patent Services: free registration at developers.epo.org; worldwide
+    # patents with Indian filings. Preferred over PatentsView (US only) when set.
+    epo_ops_key: str = ""
+    epo_ops_secret: str = ""
     github_token: str = ""  # raises GitHub's search rate limit
     research_cache_dir: str = ".cache/research"
     research_cache_days: int = 7

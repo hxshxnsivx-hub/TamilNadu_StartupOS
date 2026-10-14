@@ -146,7 +146,7 @@ def test_scan_reports_every_source_honestly():
     assert cov["papers"]["status"] == "ok" and r["papers"]["total"] == 12000
     assert cov["trials"]["status"] == "ok" and r["trials"]["items"][0]["id"] == "NCT00000001"
     assert cov["projects"]["status"] == "ok" and r["projects"]["total"] == 702
-    assert cov["patents"]["status"] == "no_key" and "PATENTSVIEW_API_KEY" in cov["patents"]["note"]
+    assert cov["patents"]["status"] == "no_key" and "EPO_OPS_KEY" in cov["patents"]["note"]
     assert r["associated_domains"]["basis"] == "papers"
     assert "health_bio" in r["vanigam_categories"] and "ai_ml" in r["vanigam_categories"]
     assert any(d["field"] == "Neuroscience" for d in r["discuss"])

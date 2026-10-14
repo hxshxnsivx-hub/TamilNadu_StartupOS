@@ -18,6 +18,8 @@ def _no_free_models(monkeypatch):
     st = get_settings()
     monkeypatch.setattr(st, "gemini_api_key", "")
     monkeypatch.setattr(st, "ollama_model", "")
+    monkeypatch.setattr(st, "epo_ops_key", "")
+    monkeypatch.setattr(st, "epo_ops_secret", "")
     for p in PROVIDERS.values():
         p.breaker.succeed()
 

@@ -17,6 +17,7 @@ from __future__ import annotations
 import contextlib
 import hashlib
 import json
+import re
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -104,6 +105,7 @@ _SOURCE_BY_HOST = {
     "clinicaltrials.gov": "ctgov",
     "api.github.com": "github",
     "search.patentsview.org": "patentsview",
+    "ops.epo.org": "epo",
 }
 MAX_PAUSE_S = 86400
 _local_pause: dict[str, float] = {}  # source -> monotonic time the pause ends
@@ -333,12 +335,18 @@ async def projects(
 async def patents(
     client: httpx.AsyncClient, query: str, cache: Cache | None = None
 ) -> SourceResult:
-    key = get_settings().patentsview_api_key
+    """Worldwide patents with the Indian filings among them (EPO, free registration);
+    else US patents (PatentsView, free key); else reported as not searched."""
+    st = get_settings()
+    if st.epo_ops_key and st.epo_ops_secret:
+        return await epo_patents(client, query, cache)
+    key = st.patentsview_api_key
     if not key:
         return SourceResult(
             "patents",
             "no_key",
-            note="Patents not searched: add a free PatentsView key (PATENTSVIEW_API_KEY)",
+            note="Patents not searched: register free with the EPO (EPO_OPS_KEY and"
+            " EPO_OPS_SECRET) for worldwide and Indian patents",
         )
     body = {
         "q": {"_text_any": {"patent_abstract": query}},
@@ -366,4 +374,131 @@ async def patents(
         total=data.get("total_hits", len(items)),
         items=items,
         note="US patents (PatentsView); Indian and other filings are not covered by this source",
+    )
+
+
+# ---- EPO Open Patent Services: worldwide patents, Indian filings included -----------
+#
+# Free with registration (developers.epo.org; fair use up to 4 GB a week, about ten
+# searches a minute). OAuth client credentials give a token for about 20 minutes.
+# Two searches per idea: worldwide (closest ten) and Indian publications only
+# (pn=IN). A search with no hits answers 404, which means none found, not an error.
+
+EPO_TOKEN = "https://ops.epo.org/3.2/auth/accesstoken"
+EPO_SEARCH = "https://ops.epo.org/3.2/rest-services/published-data/search/biblio"
+EPO_TERMS = 3  # all of these words in the title or abstract: precise without being empty
+_epo_token: tuple[str, float] | None = None  # (token, monotonic expiry)
+
+
+async def _epo_auth(client: httpx.AsyncClient) -> str | None:
+    global _epo_token
+    if _epo_token and _epo_token[1] > time.monotonic():
+        return _epo_token[0]
+    st = get_settings()
+    r = await client.post(
+        EPO_TOKEN,
+        auth=(st.epo_ops_key, st.epo_ops_secret),
+        data={"grant_type": "client_credentials"},
+        headers={"User-Agent": UA},
+    )
+    if r.status_code != 200:
+        return None
+    data = r.json()
+    ttl = int(float(data.get("expires_in") or 1200))
+    _epo_token = (data["access_token"], time.monotonic() + max(60, ttl - 60))
+    return _epo_token[0]
+
+
+def epo_cql(query: str, country: str | None = None) -> str:
+    """Public-vocabulary words to a CQL search on titles and abstracts."""
+    words = re.findall(r"[A-Za-z][A-Za-z0-9-]*", query)[:EPO_TERMS]
+    cql = f'ta all "{" ".join(words)}"'
+    return f"{cql} and pn={country}" if country else cql
+
+
+def _text(v: Any) -> str:
+    """OPS JSON wraps text as {"$": "..."}."""
+    if isinstance(v, dict):
+        return str(v.get("$", ""))
+    return "" if v is None else str(v)
+
+
+def _as_list(v: Any) -> list:
+    return v if isinstance(v, list) else ([] if v is None else [v])
+
+
+def epo_documents(data: dict) -> tuple[int, list[dict]]:
+    """(total hits, the documents) from a biblio search answer."""
+    found = (data.get("ops:world-patent-data") or {}).get("ops:biblio-search") or {}
+    total = int(found.get("@total-result-count") or 0)
+    docs = _as_list((found.get("ops:search-result") or {}).get("exchange-documents"))
+    items = []
+    for d in docs:
+        ex = d.get("exchange-document", d) if isinstance(d, dict) else {}
+        ex = _as_list(ex)[0] if ex else {}
+        bib = ex.get("bibliographic-data") or {}
+        titles = _as_list(bib.get("invention-title"))
+        title = next((_text(t) for t in titles if t.get("@lang") == "en"), "")
+        title = title or (_text(titles[0]) if titles else "")
+        ids = _as_list((bib.get("publication-reference") or {}).get("document-id"))
+        date = next((_text(i.get("date")) for i in ids if i.get("date")), "")
+        applicants = []
+        for a in _as_list(((bib.get("parties") or {}).get("applicants") or {}).get("applicant")):
+            if a.get("@data-format") == "docdb":
+                continue  # the same names again, in capitals
+            name = _text((a.get("applicant-name") or {}).get("name")).strip(" ,")
+            if name and name not in applicants:
+                applicants.append(name)
+        country, number, kind = (
+            ex.get("@country", ""),
+            ex.get("@doc-number", ""),
+            ex.get("@kind", ""),
+        )
+        items.append(
+            {
+                "id": f"{country}{number}{kind}",
+                "country": country,
+                "title": title,
+                "date": f"{date[:4]}-{date[4:6]}-{date[6:8]}" if len(date) == 8 else date,
+                "assignees": applicants[:3],
+                "url": f"https://worldwide.espacenet.com/patent/search?q=pn%3D{country}{number}",
+            }
+        )
+    return total, items
+
+
+async def epo_patents(
+    client: httpx.AsyncClient, query: str, cache: Cache | None = None
+) -> SourceResult:
+    if not re.search(r"[A-Za-z]", query):
+        return SourceResult("patents", "skipped", note="Patents not searched: no safe terms")
+    token = await _epo_auth(client)
+    if token is None:
+        return SourceResult(
+            "patents", "error", note="EPO did not accept the key; check EPO_OPS_KEY and SECRET"
+        )
+    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json", "User-Agent": UA}
+    found: dict[str, tuple[int, list[dict]]] = {}
+    for scope, country, size in (("world", None, 10), ("india", "IN", 5)):
+        params = {"q": epo_cql(query, country), "Range": f"1-{size}"}
+        status, data = await _get_json(client, cache, EPO_SEARCH, params=params, headers=headers)
+        if status == 404:  # OPS answers "no entity found" for zero hits
+            found[scope] = (0, [])
+        elif status == 200:
+            found[scope] = epo_documents(data)
+        elif scope == "world":
+            if status == 429:
+                return SourceResult("patents", "budget_exhausted", note="EPO asked us to wait")
+            return SourceResult("patents", "error", note=f"EPO returned {status}")
+        else:
+            found[scope] = (0, [])  # India is a refinement: the world result still stands
+    world_total, world_items = found["world"]
+    india_total, india_items = found.get("india", (0, []))
+    return SourceResult(
+        "patents",
+        "ok",
+        total=world_total,
+        items=world_items,
+        note="Worldwide patents, Indian filings included (EPO Open Patent Services)",
+        extra={"india": {"total": india_total, "items": india_items}},
     )

@@ -618,7 +618,18 @@ def _fallback_reply(scan: dict | None, question: str | None, lead: str | None = 
                 f" \"{p['title']}\" ({p['year']})."
             )
         if c["patents"]["total"]:
-            parts.append(f"{_count(c['patents']['total'], 'related patent')} came up.")
+            line = f"{_count(c['patents']['total'], 'related patent')} came up"
+            india = c["patents"].get("india")
+            if india is not None:
+                n = india["total"]
+                line += (
+                    ", none of them filed in India"
+                    if not n
+                    else (
+                        f", {n:,} of them filed in India" if n > 1 else ", 1 of them filed in India"
+                    )
+                )
+            parts.append(line + ".")
         if c["local"]["startups"]:
             names = ", ".join(x["name"] for x in c["local"]["startups"][:3])
             parts.append(f"In Tamil Nadu, {names} work in this space.")

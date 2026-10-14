@@ -177,7 +177,11 @@ def compact_scan(r: dict) -> dict:
                 for g in r["projects"]["items"][:5]
             ],
         },
-        "patents": {"total": r["patents"]["total"], "items": r["patents"]["items"][:5]},
+        "patents": {
+            "total": r["patents"]["total"],
+            "items": r["patents"]["items"][:5],
+            "india": r["patents"].get("india"),
+        },
         "local": r["local"],
         "elements": [{k: e[k] for k in ("element", "label", "papers")} for e in r["elements"]],
         "discuss": r["discuss"],

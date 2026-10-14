@@ -294,7 +294,12 @@ async def scan(
         },
         "trials": {"total": results["trials"].total, "items": results["trials"].items},
         "projects": {"total": results["projects"].total, "items": results["projects"].items},
-        "patents": {"total": results["patents"].total, "items": results["patents"].items},
+        "patents": {
+            "total": results["patents"].total,
+            "items": results["patents"].items,
+            # Indian filings among them, when the source can tell (EPO)
+            "india": results["patents"].extra.get("india"),
+        },
         "local": _local(text),
         "elements": element_rows,
         "discuss": questions + [{"field": "Any idea", "questions": GENERAL_QUESTIONS}],
