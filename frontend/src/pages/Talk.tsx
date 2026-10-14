@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Orb, { type OrbState } from "../voice/Orb";
 import {
   getSession,
+  listenNotices,
   startSession,
   streamTurn,
   voiceStatus,
@@ -133,6 +134,16 @@ export default function Talk() {
       })
       .catch(() => save(null)); // expired or gone: start fresh
   }, []);
+
+  // ---- slow work (search, novelty, review panel) shows up the moment it finishes
+  useEffect(() => {
+    if (!sessionId) return;
+    return listenNotices(sessionId, {
+      evidence: setEvidence,
+      novelty: setNovelty,
+      council: setCouncil,
+    });
+  }, [sessionId]);
 
   // ---- one turn
   const send = useCallback(

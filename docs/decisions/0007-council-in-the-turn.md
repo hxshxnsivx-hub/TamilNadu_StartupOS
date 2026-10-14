@@ -1,6 +1,6 @@
 # 0007. The review panel meets inside the turn, at three moments, until background jobs exist
 
-**Status:** Accepted · **Date:** 2026-10-10 · Superseded in part when background jobs (2b) ship
+**Status:** Accepted · **Date:** 2026-10-10 · Superseded in part by [0010](0010-background-jobs-with-a-short-wait.md) (2026-10-14)
 
 ## Context
 

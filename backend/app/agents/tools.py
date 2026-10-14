@@ -304,6 +304,12 @@ async def run_tool(name: str, args: dict, session: ElicitationSession, state: di
             return _support_for(args["domain_id"], args.get("district"))
         if name == "ask_council":
             r = await state["convene"](args["idea"])
+            if r is None:  # the panel runs on in the background
+                return {
+                    "status": "still deliberating",
+                    "note": "Tell the founder the review panel is still looking at the idea and"
+                    " that you will share its view next; then ask your question.",
+                }
             return council_brief(r)
         if name == "build_roadmap":
             r = _roadmap(args["idea"], args.get("domain_id"), session, state.get("council"))

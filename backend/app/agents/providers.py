@@ -24,6 +24,7 @@ failure opens the way to the next one.
 
 from __future__ import annotations
 
+import asyncio
 import json
 from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
@@ -364,6 +365,19 @@ class Ollama(Provider):
     def configured(self) -> bool:
         return bool(get_settings().ollama_model)
 
+    async def warm(self) -> None:
+        """Load the model into memory now (it takes tens of seconds from disk), so
+        the founder's first reply does not wait for it. Failures are ignored."""
+        st = get_settings()
+        try:
+            async with httpx.AsyncClient(timeout=120) as c:
+                await c.post(
+                    f"{st.ollama_url}/api/generate",
+                    json={"model": st.ollama_model, "keep_alive": "30m"},
+                )
+        except httpx.HTTPError:
+            pass
+
     async def stream(self, client, system, messages, tools, usage=None):
         st = get_settings()
         body = {
@@ -416,6 +430,18 @@ def chain() -> list[Provider]:
     """The providers to try for a turn, in order: configured, breaker closed."""
     names = [n.strip() for n in get_settings().llm_order.split(",") if n.strip()]
     return [PROVIDERS[n] for n in names if n in PROVIDERS and PROVIDERS[n].ready()]
+
+
+_warming: set[asyncio.Task] = set()
+
+
+def warm_up() -> None:
+    """A conversation is starting: load the local model if it may be needed."""
+    p = PROVIDERS["ollama"]
+    if p.ready() and isinstance(p, Ollama):
+        task = asyncio.get_running_loop().create_task(p.warm())
+        _warming.add(task)  # keep a reference until it is done
+        task.add_done_callback(_warming.discard)
 
 
 def judge() -> Provider | None:

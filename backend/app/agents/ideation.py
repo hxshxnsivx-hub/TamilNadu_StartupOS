@@ -23,6 +23,7 @@ runs once the idea is clear, and a templated reply summarises it.
 from __future__ import annotations
 
 import contextlib
+import functools
 import hashlib
 import json
 import re
@@ -37,6 +38,7 @@ import httpx
 from app.agents import council, providers
 from app.agents.council.seats import CRITERION_WORDS
 from app.agents.grounding import NOVELTY_LINE, SentenceSplitter, facts_from, gate, problems
+from app.agents.jobs import board
 from app.agents.tools import TOOLS, compact_scan, council_brief, run_tool
 from app.core.config import get_settings
 from app.core.logging import get_logger
@@ -343,20 +345,89 @@ def _model_allowed(s: AgentSession) -> bool:
     return _budget_left(s) and bool(providers.chain())
 
 
-async def _convene(s: AgentSession) -> dict:
-    """Run the review panel for the current idea, and queue its question."""
-    r = await council.convene(
-        _idea_text(s),
-        _known_dict(s),
-        scan=s.scan,
-        novelty=s.novelty,
-        use_model=_budget_left(s) and providers.judge() is not None,
-    )
+def _council_work(s: AgentSession):
+    """The panel's work on a snapshot of the session (a job never touches it)."""
+    idea, known, scan, nov = _idea_text(s), _known_dict(s), s.scan, s.novelty
+    use_model = _budget_left(s) and providers.judge() is not None
+
+    async def work() -> dict:
+        return await council.convene(idea, known, scan=scan, novelty=nov, use_model=use_model)
+
+    return work
+
+
+def _research_work(s: AgentSession):
+    """The prior-art search and novelty check, on a snapshot. The job has its own
+    HTTP client: the turn's closes when the turn ends."""
+    idea, private, who = _idea_text(s), s.private, _slot_text(s, "beneficiary")
+
+    async def work() -> dict:
+        from app.research.scan import scan
+
+        async with httpx.AsyncClient(timeout=60) as c:
+            found = await scan(idea, client=c, private=private)
+            nov = await novelty.check(idea, scan=found, beneficiary=who, client=c, private=private)
+        return {"scan": found, "novelty": nov}
+
+    return work
+
+
+def _apply_council(s: AgentSession, r: dict) -> None:
     s.council = r
     _add_usage(s.usage, r.get("usage"))
     if q := r["synthesis"].get("question"):
         engine.add_dynamic(s.elicitation, q, "review panel")
-    return r
+
+
+async def _convene(s: AgentSession, wait: float | None = None) -> dict | None:
+    """Run the review panel and wait for it up to `wait` seconds (default: the
+    founder asked, or the roadmap needs it). None if it is still deliberating:
+    its view then enters a later turn."""
+    wait = get_settings().opinion_wait_s if wait is None else wait
+    job = board.running(s.id, "council") or board.start(s.id, "council", _council_work(s))
+    if not await board.wait(job, wait):
+        return None
+    r = job.task.result()
+    if not s.council or s.council.get("at") != r.get("at"):
+        _apply_council(s, r)
+    return s.council
+
+
+async def _absorb(s: AgentSession, out: dict) -> list[dict]:
+    """Take in background results that finished since the last turn (or within
+    this turn's wait): research first, then the panel. Returns the events."""
+    evs: list[dict] = []
+    if s.scan is None and (r := await board.take(s.id, "research")):
+        s.scan, s.novelty = r["scan"], r["novelty"]
+        out["fresh"] = s.scan
+        out["tools"] += ["scan_prior_art", "check_novelty"]
+        out.setdefault("news", []).append(
+            "The prior-art search you started has finished: "
+            + json.dumps(compact_scan(s.scan), default=str)
+            + " Novelty: "
+            + json.dumps(s.novelty.get("statement"), default=str)
+        )
+        evs += [
+            _event("tool", {"name": "scan_prior_art", "status": "done"}),
+            _event("evidence", compact_scan(s.scan)),
+            _event("tool", {"name": "check_novelty", "status": "done"}),
+            _event("novelty", s.novelty),
+        ]
+        # the panel follows on its own; rule seats finish within the wait
+        job = board.start(s.id, "council", _council_work(s))
+        await board.wait(job, get_settings().council_wait_s)
+    c = await board.take(s.id, "council")
+    if c and s.scan is not None and (not s.council or s.council.get("at") != c.get("at")):
+        _apply_council(s, c)
+        out["tools"].append("ask_council")
+        evs.append(_event("council", council_brief(s.council)))
+        out.setdefault("news", []).append(
+            "The review panel has finished: " + json.dumps(council_brief(s.council), default=str)
+        )
+    return evs
+
+
+SEARCHING = "Let me look up what already exists for this; I will tell you what I find."
 
 
 def _event(kind: str, data: Any) -> dict:
@@ -395,11 +466,16 @@ async def _llm_stream(
     system = SYSTEM.format(
         name=s.name, question=question, known=_known(s), language_rule=_language_rule(s)
     )
+    if out.get("news"):  # finished in the background since the last turn
+        system += (
+            "\nNew since your last reply (share the main point in a sentence or two;"
+            " do not run these tools again):\n" + "\n".join(out["news"])
+        )
     state: dict = {
         "private": s.private,
         "last_scan": s.scan,
         "council": s.council,
-        "convene": lambda idea: _convene(s),
+        "convene": lambda idea: _convene(s),  # None while it is still deliberating
     }
     had_council = s.council
     speak = _Gate(out, _facts(s, question))
@@ -545,44 +621,34 @@ async def _offline_stream(
     s: AgentSession, action: engine.Action, question: str, client: httpx.AsyncClient, out: dict
 ) -> AsyncIterator[dict]:
     idea = _idea_text(s)
-    fresh = None
-    if s.scan is None and len(idea) >= 20:
-        from app.research.scan import scan
-
-        yield _event("tool", {"name": "scan_prior_art", "status": "started"})
-        s.scan = fresh = await scan(idea, client=client, private=s.private)
-        out["tools"].append("scan_prior_art")
-        yield _event("tool", {"name": "scan_prior_art", "status": "done"})
-        yield _event("evidence", compact_scan(s.scan))
-        yield _event("tool", {"name": "check_novelty", "status": "started"})
-        s.novelty = await novelty.check(
-            idea,
-            scan=s.scan,
-            beneficiary=_slot_text(s, "beneficiary"),
-            client=client,
-            private=s.private,
-        )
-        out["tools"].append("check_novelty")
-        yield _event("tool", {"name": "check_novelty", "status": "done"})
-        yield _event("novelty", s.novelty)
-        await _convene(s)
-        out["tools"].append("ask_council")
-        yield _event("council", council_brief(s.council))
     lead = None
+    if s.scan is None and len(idea) >= 20:
+        job = board.start(s.id, "research", _research_work(s), reuse_done=True)
+        if "searching" not in s.narrated:
+            yield _event("tool", {"name": "scan_prior_art", "status": "started"})
+            yield _event("tool", {"name": "check_novelty", "status": "started"})
+        if await board.wait(job, get_settings().research_wait_s):
+            for ev in await _absorb(s, out):
+                yield ev
+        elif "searching" not in s.narrated:  # still searching: say so once, ask on
+            s.narrated.append("searching")
+            lead = SEARCHING
+    fresh = out.get("fresh")
     if out.get("wants_opinion") and fresh is None:
         before = s.council
-        await _convene(s)  # asked for: worth the wait
-        out["tools"].append("ask_council")
-        yield _event("council", council_brief(s.council))
-        s.narrated.append(f"council:{s.council['at']}")
-        if before and _same_view(before, s.council):
-            lead = _unchanged_line(s.council)
+        if await _convene(s) is None:  # asked for: worth a wait, but not forever
+            lead = "The review panel is still looking at it; I will share its view next."
         else:
-            lead = " ".join(s.council["synthesis"]["voice_brief"])
+            out["tools"].append("ask_council")
+            yield _event("council", council_brief(s.council))
+            s.narrated.append(f"council:{s.council['at']}")
+            if before and _same_view(before, s.council):
+                lead = _unchanged_line(s.council)
+            else:
+                lead = " ".join(s.council["synthesis"]["voice_brief"])
     if action.kind == "generate":
         if s.roadmap is None:
-            if s.council is None:
-                await _convene(s)
+            if s.council is None and await _convene(s) is not None:
                 out["tools"].append("ask_council")
             state: dict = {"council": s.council}
             await run_tool("build_roadmap", {"idea": idea}, s.elicitation, state)
@@ -606,6 +672,7 @@ guide, speaking with {name}.
 - {script}
 - You are given ONE sentence you are about to say. Say it again as one sentence:
   the same meaning, in calm, warm spoken words.
+- Write every number in digits, exactly as given (3,467, not three thousand...).
 - Keep every fact, name, title and number exactly as written. Add nothing: no
   praise, no opinion, no greeting, no extra question.
 - If it is a question, keep it a question.
@@ -619,6 +686,23 @@ BRACKETS = re.compile(r"\s*[(\[][^)\]]*[)\]]")
 OPEN_TAIL = re.compile(r"\s*[(\[][^)\]]*$")
 CLOSE_HEAD = re.compile(r"^[^(\[]*[)\]]")
 QUOTES = "\"'“”‘’"
+# Large figures written out ("three thousand", "forty lakh"): the fact check reads
+# digits, so a reworded sentence may not turn digits into these words.
+NUMBER_WORDS = re.compile(
+    r"\b(hundred|thousand|lakh|lakhs|crore|crores|million|billion)\b"
+    r"|ஆயிரம்|லட்சம்|கோடி|हज़ार|हजार|लाख|करोड़",
+    re.I,
+)
+
+
+@functools.cache
+def _fixed_sentences() -> frozenset[str]:
+    """Sentences that never change (the greeting, the questions, the templates that
+    recur): in English they are said as written, without a call to the model."""
+    from app.voice.phrasebook import wanted
+
+    texts = {r["text"] for r in wanted() if r["language"] == "en-IN"}
+    return frozenset(texts | {SEARCHING})
 
 
 def _script_rule(s: AgentSession) -> str:
@@ -663,8 +747,13 @@ async def _reword_stream(
     speak = _Gate(out, _facts(s, question, draft))
     system = REWORD.format(name=s.name, language_rule=_language_rule(s), script=_script_rule(s))
     reworded, working = 0, True
+    english = s.language in (None, "en-IN")
     for line in built:
         said = None
+        if english and line in _fixed_sentences():  # already in the mentor's words
+            out["spoken"].append(line)
+            yield _event("sentence", line)
+            continue
         if working:
             try:
                 said = await _reword_one(provider, client, system, line, out["usage"])
@@ -673,6 +762,8 @@ async def _reword_stream(
                 log.warning("model.reword_failed", provider=provider.name, error=type(exc).__name__)
                 working = False
         said = _plain_words(said or "", s.language)
+        if said and NUMBER_WORDS.search(said) and not NUMBER_WORDS.search(line):
+            said = ""  # a figure in words would slip past the fact check: keep the digits
         if said and (ev := speak(said)):
             reworded += 1
             yield ev
@@ -814,6 +905,7 @@ async def turn_stream(
 
     s.messages.append({"role": "user", "content": text})
     out: dict = {
+        "fresh": None,
         "spoken": [],
         "dropped": [],
         "tools": [],
@@ -825,6 +917,8 @@ async def turn_stream(
     own = client is None
     client = client or httpx.AsyncClient(timeout=120)
     try:
+        for ev in await _absorb(s, out):  # background work finished since the last turn
+            yield ev
         failed = []
         for p in providers.chain() if _budget_left(s) else []:
             if not p.tools:  # rewords the code's reply; handles its own failure

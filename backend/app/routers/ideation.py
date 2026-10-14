@@ -15,7 +15,10 @@ from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, Field
 
 from app.agents import ideation as agent
+from app.agents import providers
+from app.agents.jobs import board
 from app.agents.store import VersionConflict, get_store
+from app.agents.tools import compact_scan, council_brief
 from app.models.ideation_schemas import (
     CategoryOut,
     CompletenessIn,
@@ -292,6 +295,7 @@ async def agent_start(body: AgentStartIn) -> dict:
     )
     store = await get_store()
     await store.create(s)
+    providers.warm_up()  # the local backup model loads while the founder reads and types
     return {
         "session_id": s.id,
         "reply": greeting,
@@ -311,6 +315,7 @@ async def agent_delete(session_id: str = _SESSION_ID) -> Response:
     """Delete a conversation with its transcript, evidence and roadmap."""
     if not await (await get_store()).delete(session_id):
         raise HTTPException(status_code=404, detail="Session not found")
+    await board.forget(session_id)  # its background work and results go too
     return Response(status_code=204)
 
 
@@ -352,6 +357,39 @@ async def agent_turn_stream(body: AgentTurnIn, session_id: str = _SESSION_ID):
             yield _sse("error", {"detail": f"turn failed: {type(exc).__name__}"})
         finally:
             lock.release()
+
+    return StreamingResponse(events(), media_type="text/event-stream")
+
+
+@router.get("/ideation/agent/sessions/{session_id}/notices")
+async def agent_notices(
+    session_id: str = _SESSION_ID,
+    limit: int = Query(default=0, ge=0, le=100),
+):
+    """Background work as it finishes (server-sent events), so the screen can show the
+    evidence, novelty and review panel before the next turn: `evidence`, `novelty`,
+    `council`. A comment line every 15 s keeps the connection open. `limit` ends the
+    stream after that many notices (0: until the screen closes it)."""
+    await _load(session_id)  # 404 for an unknown session
+    q = board.subscribe(session_id)
+
+    async def events():
+        sent = 0
+        try:
+            while not limit or sent < limit:
+                try:
+                    n = await asyncio.wait_for(q.get(), timeout=15)
+                except TimeoutError:
+                    yield ": still here\n\n"
+                    continue
+                if n["kind"] == "research":
+                    yield _sse("evidence", compact_scan(n["payload"]["scan"]))
+                    yield _sse("novelty", n["payload"]["novelty"])
+                elif n["kind"] == "council":
+                    yield _sse("council", council_brief(n["payload"]))
+                sent += 1
+        finally:
+            board.unsubscribe(session_id, q)
 
     return StreamingResponse(events(), media_type="text/event-stream")
 

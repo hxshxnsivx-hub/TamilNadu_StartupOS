@@ -205,12 +205,12 @@ def test_ollama_rewording_is_fact_checked_and_falls_back_sentence_by_sentence(mo
     def handle(req: httpx.Request) -> httpx.Response:
         line = _line(req)
         if "clinical trials" in line:  # an invented figure in place of the real one
-            return httpx.Response(200, content=_ndjson("It will earn ₹73 lakh in a year."))
+            return httpx.Response(200, content=_ndjson("It will sell 7,300 units a month."))
         return httpx.Response(200, content=_ndjson(f"“{line}”"))  # quoted, as small models do
 
     s = agent.new_session("Kavya")[0]
     r = _turn(s, BCI, handle)
-    assert "73 lakh" not in r["reply"] and r["dropped"] == 1
+    assert "7,300" not in r["reply"] and r["dropped"] == 1
     assert "I found 23 clinical trials" in r["reply"]  # the code's sentence instead
     assert "“" not in r["reply"]
 
@@ -294,3 +294,42 @@ async def test_gemini_speaks_any_sentence_and_caches_it(client, monkeypatch, tmp
     assert r.status_code == 204
     gemini_tts.breaker.succeed()
     monkeypatch.setattr(voice, "_client", None)
+
+
+async def test_starting_a_conversation_loads_the_local_model(client, monkeypatch):
+    from app.agents.providers import Ollama
+
+    warmed: list[str] = []
+
+    async def fake_warm(self):
+        warmed.append(get_settings().ollama_model)
+
+    monkeypatch.setattr(Ollama, "warm", fake_warm)
+    await client.post("/api/v1/ideation/agent/sessions", json={"name": "Kavya"})
+    await asyncio.sleep(0)
+    assert warmed == []  # Ollama is off: nothing to load
+
+    monkeypatch.setattr(get_settings(), "ollama_model", "gemma3:4b")
+    await client.post("/api/v1/ideation/agent/sessions", json={"name": "Kavya"})
+    await asyncio.sleep(0)
+    assert warmed == ["gemma3:4b"]
+
+
+def test_fixed_sentences_skip_the_model_and_figures_stay_in_digits(monkeypatch):
+    monkeypatch.setattr(get_settings(), "ollama_model", "gemma3:4b")
+    asked: list[str] = []
+
+    def handle(req: httpx.Request) -> httpx.Response:
+        line = _line(req)
+        asked.append(line)
+        if "clinical trials" in line:  # digits turned into words: not accepted
+            return httpx.Response(200, content=_ndjson("I found twenty-three thousand trials."))
+        return httpx.Response(200, content=_ndjson(f"Well, {line}"))
+
+    s = agent.new_session("Kavya")[0]
+    r = _turn(s, BCI, handle)
+    fixed = agent._fixed_sentences()
+    assert not any(a in fixed for a in asked)  # the questions and templates were not sent
+    assert any(x in r["reply"] for x in fixed)  # but they were said
+    assert "twenty-three thousand" not in r["reply"]
+    assert "I found 23 clinical trials" in r["reply"]

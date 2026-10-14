@@ -5,6 +5,9 @@ rate-limit middleware, and mounts the API v1 routers. Domain routers (auth,
 profiles, startups, ideation) attach here as later tasks land.
 """
 
+import asyncio
+import contextlib
+import importlib
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -37,8 +40,17 @@ async def lifespan(app: FastAPI):
     log = get_logger("startup")
     log.info("app.start", app=settings.app_name, env=settings.app_env)
     # DB / Redis / S3 connection pools initialize in Task 5 (db.session).
+    # The question solver takes about 11 s to import the first time; load it now, in
+    # a thread, so the first founder after a restart does not wait for it.
+    warm = asyncio.create_task(asyncio.to_thread(_preload, "ortools.sat.python.cp_model"))
     yield
+    warm.cancel()
     log.info("app.stop")
+
+
+def _preload(module: str) -> None:
+    with contextlib.suppress(ImportError):
+        importlib.import_module(module)
 
 
 def create_app() -> FastAPI:

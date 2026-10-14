@@ -108,6 +108,29 @@ export function getSession(id: string): Promise<Snapshot> {
   return fetch(`${BASE}/${id}`).then((r) => json<Snapshot>(r));
 }
 
+export interface Notices {
+  evidence: (e: Evidence) => void;
+  novelty: (n: Novelty) => void;
+  council: (c: CouncilBrief) => void;
+}
+
+/** Background work as it finishes (the search, the novelty check, the review
+ * panel), so the panels fill in before the next turn. Returns a function that
+ * stops listening. The browser reconnects by itself if the connection drops. */
+export function listenNotices(id: string, on: Notices): () => void {
+  const src = new EventSource(`${BASE}/${id}/notices`);
+  for (const kind of ["evidence", "novelty", "council"] as const) {
+    src.addEventListener(kind, (e) => {
+      try {
+        on[kind](JSON.parse((e as MessageEvent).data));
+      } catch {
+        /* a malformed notice: the next turn brings the same result */
+      }
+    });
+  }
+  return () => src.close();
+}
+
 export type Lang = "ta-IN" | "en-IN" | "hi-IN";
 
 export interface VoiceStatus {

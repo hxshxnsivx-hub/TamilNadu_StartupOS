@@ -68,6 +68,12 @@ class Settings(BaseSettings):
     ollama_url: str = "http://localhost:11434"
     ollama_model: str = ""  # e.g. gemma3:4b
 
+    # Background jobs (app/agents/jobs.py): how long a turn waits for slow work
+    # before replying without it; the result then enters a later turn.
+    research_wait_s: float = 3.0  # the prior-art search and novelty check
+    council_wait_s: float = 1.5  # the review panel, run on its own after research
+    opinion_wait_s: float = 12.0  # the panel when the founder asked, or before the roadmap
+
     # Mentor voice: Sarvam AI speech (app/voice). Without a key the browser's own
     # speech is used. One speaker for every language keeps the mentor's voice the same.
     # The key is SARVAM_API_KEY, shared with translation below.
