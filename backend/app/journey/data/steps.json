@@ -6,7 +6,7 @@
   "phases": ["Set up", "Tax", "Recognition", "Protect", "People", "Licences"]
  },
  "facts": {
-  "entity": {"ask": "How is the business set up: not registered yet, proprietorship, partnership, LLP, private limited company, or one-person company?", "choices": ["none", "proprietorship", "partnership", "llp", "pvt_ltd", "opc"]},
+  "entity": {"ask": "How is the business set up: no legal structure yet, proprietorship, partnership, LLP, private limited company, or one-person company?", "choices": ["none", "proprietorship", "partnership", "llp", "pvt_ltd", "opc"]},
   "registered": {"ask": "Is that entity already registered?", "kind": "bool"},
   "years_since_incorporation": {"ask": "How many years ago was it registered?", "kind": "int"},
   "turnover_lakh": {"ask": "Roughly what yearly turnover do you expect, in lakh rupees?", "kind": "int"},
@@ -25,7 +25,7 @@
   {
    "id": "choose_entity", "phase": "Set up", "title": "Choose the business structure",
    "why": "The structure decides your liability, how you can raise money, and whether you qualify for startup recognition.",
-   "applies": {"field": "entity", "op": "eq", "value": "none", "label": "the business is not registered yet"},
+   "applies": {"field": "entity", "op": "eq", "value": "none", "label": "the business has no legal structure yet"},
    "advice": [
     {"text": "A private limited company is the usual choice if you will raise investor money; investors buy shares.", "when": {"field": "raise_equity", "op": "is_true"}},
     {"text": "An LLP has lower running compliance and still qualifies for startup recognition, but investors rarely fund LLPs.", "when": null},

@@ -21,6 +21,8 @@ import Supply from "./pages/Supply";
 import Funding from "./pages/Funding";
 import Pipeline from "./pages/Pipeline";
 import Intel from "./pages/Intel";
+import Journey from "./pages/Journey";
+import Cohort from "./pages/Cohort";
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   isActive ? "navlink is-active" : "navlink";
@@ -33,6 +35,8 @@ const NAV = [
   { to: "/ideate", key: "ideate_nav" },
   { to: "/talk", label: "Talk" },
   { to: "/schemes", key: "schemes" },
+  { to: "/journey", label: "Journey" },
+  { to: "/cohort", label: "Cohort" },
   { to: "/b2b", key: "b2b" },
   { to: "/funding", key: "funding" },
 ];
@@ -107,6 +111,8 @@ export default function App() {
           <Route path="/ideate" element={<Ideate />} />
           <Route path="/talk" element={<Talk />} />
           <Route path="/schemes" element={<Schemes />} />
+          <Route path="/journey" element={<Journey />} />
+          <Route path="/cohort" element={<Cohort />} />
           <Route path="/b2b" element={<B2B />} />
           <Route path="/supply" element={<Supply />} />
           <Route path="/funding" element={<Funding />} />
