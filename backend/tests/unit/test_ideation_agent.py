@@ -363,6 +363,20 @@ def test_novelty_is_narrated_one_point_per_turn():
     assert s.narrated[2:] == ["lever:0", "lever:1"]
 
 
+def test_reask_names_the_stage_the_reply_gave():
+    """Seen live: 'we have a working prototype' to the sector question got 'didn't catch that'."""
+    s = _new()
+    first = _run(
+        agent.turn(s, "a solar powered cold box for small vegetable vendors in Salem markets")
+    )
+    assert first["action"]["slot"] == "sector"
+    second = _run(agent.turn(s, "we have a working prototype"))
+    assert second["action"]["slot"] == "sector"
+    assert second["reply"].startswith("Got it, prototype.")
+    assert "didn't catch" not in second["reply"]
+    assert s.elicitation.slots["stage"].value == "prototype"
+
+
 def test_the_panels_question_is_asked_after_any_reask():
     s = _new()
     _run(agent.turn(s, BCI))
