@@ -1,0 +1,935 @@
+{
+ "id": "bci_medication",
+ "idea": "developing a project for communication with physically challenged patients through brain waves for change in medication",
+ "recorded": "2026-10-10",
+ "coverage": [
+  {
+   "source": "papers",
+   "status": "ok"
+  },
+  {
+   "source": "projects",
+   "status": "ok"
+  },
+  {
+   "source": "patents",
+   "status": "no_key"
+  },
+  {
+   "source": "trials",
+   "status": "ok"
+  }
+ ],
+ "scan": {
+  "idea": "developing a project for communication with physically challenged patients through brain waves for change in medication",
+  "queries": {
+   "papers": "EEG brain-computer interface medication management motor disability paralysis communication patients",
+   "trials": "EEG brain-computer interface motor disability",
+   "projects": "EEG brain-computer interface",
+   "patents": "EEG brain-computer interface medication management motor disability paralysis communication patients",
+   "local": "communication patients motor disability paralysis assistive technology EEG brain-computer interface medication management"
+  },
+  "associated_domains": {
+   "basis": "papers",
+   "domains": [
+    {
+     "name": "Life Sciences",
+     "share_pct": 79
+    },
+    {
+     "name": "Physical Sciences",
+     "share_pct": 10
+    },
+    {
+     "name": "Health Sciences",
+     "share_pct": 8
+    },
+    {
+     "name": "Social Sciences",
+     "share_pct": 3
+    }
+   ],
+   "fields": [
+    {
+     "name": "Neuroscience",
+     "share_pct": 79
+    },
+    {
+     "name": "Computer Science",
+     "share_pct": 10
+    },
+    {
+     "name": "Medicine",
+     "share_pct": 8
+    },
+    {
+     "name": "Psychology",
+     "share_pct": 3
+    },
+    {
+     "name": "Health Professions",
+     "share_pct": 0
+    }
+   ],
+   "subfields": [
+    {
+     "name": "Cognitive Neuroscience",
+     "share_pct": 69
+    },
+    {
+     "name": "Human-Computer Interaction",
+     "share_pct": 9
+    },
+    {
+     "name": "Cellular and Molecular Neuroscience",
+     "share_pct": 7
+    },
+    {
+     "name": "Epidemiology",
+     "share_pct": 6
+    },
+    {
+     "name": "Neurology",
+     "share_pct": 3
+    },
+    {
+     "name": "Experimental and Cognitive Psychology",
+     "share_pct": 3
+    },
+    {
+     "name": "Rehabilitation",
+     "share_pct": 2
+    },
+    {
+     "name": "Information Systems",
+     "share_pct": 1
+    }
+   ],
+   "topics": [
+    {
+     "name": "EEG and Brain-Computer Interfaces",
+     "share_pct": 69
+    },
+    {
+     "name": "Gaze Tracking and Assistive Technology",
+     "share_pct": 9
+    },
+    {
+     "name": "Neuroscience and Neural Engineering",
+     "share_pct": 7
+    },
+    {
+     "name": "Traumatic Brain Injury Research",
+     "share_pct": 6
+    },
+    {
+     "name": "Emotion and Mood Recognition",
+     "share_pct": 3
+    },
+    {
+     "name": "Neurology and Historical Studies",
+     "share_pct": 3
+    },
+    {
+     "name": "Stroke Rehabilitation and Recovery",
+     "share_pct": 2
+    },
+    {
+     "name": "Library Science and Information",
+     "share_pct": 1
+    }
+   ]
+  },
+  "vanigam_categories": [
+   "ai_ml",
+   "health_bio"
+  ],
+  "papers": {
+   "total": 219,
+   "by_year": {
+    "2024": 30,
+    "2025": 28,
+    "2022": 24,
+    "2023": 20,
+    "2026": 17,
+    "2018": 14,
+    "2017": 13,
+    "2019": 11,
+    "2021": 8,
+    "2012": 7,
+    "2015": 6,
+    "2016": 6,
+    "2020": 6,
+    "2013": 5,
+    "2006": 4,
+    "2014": 4,
+    "2009": 3,
+    "2010": 3,
+    "1996": 2,
+    "2011": 2,
+    "1976": 1,
+    "1997": 1,
+    "2000": 1,
+    "2001": 1,
+    "2005": 1,
+    "2007": 1
+   },
+   "most_relevant": [
+    {
+     "title": "A systematic review of research on augmentative and alternative communication brain-computer interface systems for individuals with disabilities",
+     "year": 2022,
+     "cited_by": 38,
+     "venue": "Frontiers in Human Neuroscience",
+     "url": "https://doi.org/10.3389/fnhum.2022.952380",
+     "topics": [
+      {
+       "topic": "EEG and Brain-Computer Interfaces",
+       "subfield": "Cognitive Neuroscience",
+       "field": "Neuroscience",
+       "domain": "Life Sciences",
+       "score": 0.9355000257492065
+      },
+      {
+       "topic": "Assistive Technology in Communication and Mobility",
+       "subfield": "Occupational Therapy",
+       "field": "Health Professions",
+       "domain": "Health Sciences",
+       "score": 0.039900001138448715
+      },
+      {
+       "topic": "Gaze Tracking and Assistive Technology",
+       "subfield": "Human-Computer Interaction",
+       "field": "Computer Science",
+       "domain": "Physical Sciences",
+       "score": 0.016200000420212746
+      }
+     ]
+    },
+    {
+     "title": "Brain-Computer Interface: Advancement and Challenges",
+     "year": 2021,
+     "cited_by": 264,
+     "venue": "Sensors",
+     "url": "https://doi.org/10.3390/s21175746",
+     "topics": [
+      {
+       "topic": "EEG and Brain-Computer Interfaces",
+       "subfield": "Cognitive Neuroscience",
+       "field": "Neuroscience",
+       "domain": "Life Sciences",
+       "score": 1.0
+      },
+      {
+       "topic": "Gaze Tracking and Assistive Technology",
+       "subfield": "Human-Computer Interaction",
+       "field": "Computer Science",
+       "domain": "Physical Sciences",
+       "score": 0.0
+      },
+      {
+       "topic": "Emotion and Mood Recognition",
+       "subfield": "Experimental and Cognitive Psychology",
+       "field": "Psychology",
+       "domain": "Social Sciences",
+       "score": 0.0
+      }
+     ]
+    },
+    {
+     "title": "On the feasibility of using motor imagery EEG-based brain–computer interface in chronic tetraplegics for assistive robotic arm control: a clinical test and long-term post-trial follow-up",
+     "year": 2012,
+     "cited_by": 168,
+     "venue": "Spinal Cord",
+     "url": "https://doi.org/10.1038/sc.2012.14",
+     "topics": [
+      {
+       "topic": "EEG and Brain-Computer Interfaces",
+       "subfield": "Cognitive Neuroscience",
+       "field": "Neuroscience",
+       "domain": "Life Sciences",
+       "score": 0.9994999766349792
+      },
+      {
+       "topic": "Stroke Rehabilitation and Recovery",
+       "subfield": "Rehabilitation",
+       "field": "Medicine",
+       "domain": "Health Sciences",
+       "score": 0.0003000000142492354
+      },
+      {
+       "topic": "Spinal Cord Injury Research",
+       "subfield": "Pathology and Forensic Medicine",
+       "field": "Medicine",
+       "domain": "Health Sciences",
+       "score": 9.999999747378752e-05
+      }
+     ]
+    },
+    {
+     "title": "Evaluating the clinical benefit of brain-computer interfaces for control of a personal computer",
+     "year": 2022,
+     "cited_by": 25,
+     "venue": "Journal of Neural Engineering",
+     "url": "https://doi.org/10.1088/1741-2552/ac60ca",
+     "topics": [
+      {
+       "topic": "EEG and Brain-Computer Interfaces",
+       "subfield": "Cognitive Neuroscience",
+       "field": "Neuroscience",
+       "domain": "Life Sciences",
+       "score": 0.9984999895095825
+      },
+      {
+       "topic": "Stroke Rehabilitation and Recovery",
+       "subfield": "Rehabilitation",
+       "field": "Medicine",
+       "domain": "Health Sciences",
+       "score": 0.0003000000142492354
+      },
+      {
+       "topic": "Gaze Tracking and Assistive Technology",
+       "subfield": "Human-Computer Interaction",
+       "field": "Computer Science",
+       "domain": "Physical Sciences",
+       "score": 0.00019999999494757503
+      }
+     ]
+    },
+    {
+     "title": "Brain–computer interfaces: the innovative key to unlocking neurological conditions",
+     "year": 2024,
+     "cited_by": 169,
+     "venue": "International Journal of Surgery",
+     "url": "https://doi.org/10.1097/js9.0000000000002022",
+     "topics": [
+      {
+       "topic": "EEG and Brain-Computer Interfaces",
+       "subfield": "Cognitive Neuroscience",
+       "field": "Neuroscience",
+       "domain": "Life Sciences",
+       "score": 1.0
+      },
+      {
+       "topic": "Neuroscience and Neural Engineering",
+       "subfield": "Cellular and Molecular Neuroscience",
+       "field": "Neuroscience",
+       "domain": "Life Sciences",
+       "score": 0.0
+      },
+      {
+       "topic": "Neurology and Historical Studies",
+       "subfield": "Neurology",
+       "field": "Neuroscience",
+       "domain": "Life Sciences",
+       "score": 0.0
+      }
+     ]
+    },
+    {
+     "title": "The influence of psychological state and motivation on brain-computer interface performance in patients with amyotrophic lateral sclerosis - a longitudinal study",
+     "year": 2010,
+     "cited_by": 320,
+     "venue": "Frontiers in Neuroscience",
+     "url": "https://doi.org/10.3389/fnins.2010.00055",
+     "topics": [
+      {
+       "topic": "EEG and Brain-Computer Interfaces",
+       "subfield": "Cognitive Neuroscience",
+       "field": "Neuroscience",
+       "domain": "Life Sciences",
+       "score": 0.9980000257492065
+      },
+      {
+       "topic": "Gaze Tracking and Assistive Technology",
+       "subfield": "Human-Computer Interaction",
+       "field": "Computer Science",
+       "domain": "Physical Sciences",
+       "score": 0.00039999998989515007
+      },
+      {
+       "topic": "Stroke Rehabilitation and Recovery",
+       "subfield": "Rehabilitation",
+       "field": "Medicine",
+       "domain": "Health Sciences",
+       "score": 0.00019999999494757503
+      }
+     ]
+    },
+    {
+     "title": "Evaluating a Novel Brain-Computer Interface and EEG Biomarkers For Cognitive Assessment in Children With Cerebral Palsy",
+     "year": 2017,
+     "cited_by": 1,
+     "venue": "Deep Blue (University of Michigan)",
+     "url": "https://openalex.org/W2750094128",
+     "topics": [
+      {
+       "topic": "EEG and Brain-Computer Interfaces",
+       "subfield": "Cognitive Neuroscience",
+       "field": "Neuroscience",
+       "domain": "Life Sciences",
+       "score": 0.9951000213623047
+      },
+      {
+       "topic": "Cerebral Palsy and Movement Disorders",
+       "subfield": "Psychiatry and Mental health",
+       "field": "Medicine",
+       "domain": "Health Sciences",
+       "score": 0.0008999999845400453
+      },
+      {
+       "topic": "Gaze Tracking and Assistive Technology",
+       "subfield": "Human-Computer Interaction",
+       "field": "Computer Science",
+       "domain": "Physical Sciences",
+       "score": 0.0007999999797903001
+      }
+     ]
+    },
+    {
+     "title": "Challenges in clinical applications of brain computer interfaces in individuals with spinal cord injury",
+     "year": 2014,
+     "cited_by": 93,
+     "venue": "Frontiers in Neuroengineering",
+     "url": "https://doi.org/10.3389/fneng.2014.00038",
+     "topics": [
+      {
+       "topic": "EEG and Brain-Computer Interfaces",
+       "subfield": "Cognitive Neuroscience",
+       "field": "Neuroscience",
+       "domain": "Life Sciences",
+       "score": 0.9994999766349792
+      },
+      {
+       "topic": "Spinal Cord Injury Research",
+       "subfield": "Pathology and Forensic Medicine",
+       "field": "Medicine",
+       "domain": "Health Sciences",
+       "score": 9.999999747378752e-05
+      },
+      {
+       "topic": "Gaze Tracking and Assistive Technology",
+       "subfield": "Human-Computer Interaction",
+       "field": "Computer Science",
+       "domain": "Physical Sciences",
+       "score": 9.999999747378752e-05
+      }
+     ]
+    }
+   ],
+   "most_cited": [
+    {
+     "title": "Functional neurological disorder: new subtypes and shared mechanisms",
+     "year": 2022,
+     "cited_by": 535,
+     "venue": "The Lancet Neurology",
+     "url": "https://doi.org/10.1016/s1474-4422(21)00422-1",
+     "topics": [
+      {
+       "topic": "Psychosomatic Disorders and Their Treatments",
+       "subfield": "Psychiatry and Mental health",
+       "field": "Medicine",
+       "domain": "Health Sciences",
+       "score": 0.9994999766349792
+      },
+      {
+       "topic": "Cardiovascular Syncope and Autonomic Disorders",
+       "subfield": "Surgery",
+       "field": "Medicine",
+       "domain": "Health Sciences",
+       "score": 9.999999747378752e-05
+      },
+      {
+       "topic": "Long-Term Effects of COVID-19",
+       "subfield": "Neurology",
+       "field": "Medicine",
+       "domain": "Health Sciences",
+       "score": 9.999999747378752e-05
+      }
+     ]
+    },
+    {
+     "title": "Methodological Note: Neurofeedback: A Comprehensive Review on System Design, Methodology and Clinical Applications",
+     "year": 2016,
+     "cited_by": 480,
+     "venue": "Basic and Clinical Neuroscience Journal",
+     "url": "https://doi.org/10.15412/j.bcn.03070208",
+     "topics": [
+      {
+       "topic": "EEG and Brain-Computer Interfaces",
+       "subfield": "Cognitive Neuroscience",
+       "field": "Neuroscience",
+       "domain": "Life Sciences",
+       "score": 0.9990000128746033
+      },
+      {
+       "topic": "Neural dynamics and brain function",
+       "subfield": "Cognitive Neuroscience",
+       "field": "Neuroscience",
+       "domain": "Life Sciences",
+       "score": 0.00039999998989515007
+      },
+      {
+       "topic": "Attention Deficit Hyperactivity Disorder",
+       "subfield": "Psychiatry and Mental health",
+       "field": "Medicine",
+       "domain": "Health Sciences",
+       "score": 9.999999747378752e-05
+      }
+     ]
+    },
+    {
+     "title": "BCI for stroke rehabilitation: motor and beyond",
+     "year": 2020,
+     "cited_by": 468,
+     "venue": "Journal of Neural Engineering",
+     "url": "https://doi.org/10.1088/1741-2552/aba162",
+     "topics": [
+      {
+       "topic": "Stroke Rehabilitation and Recovery",
+       "subfield": "Rehabilitation",
+       "field": "Medicine",
+       "domain": "Health Sciences",
+       "score": 0.8202999830245972
+      },
+      {
+       "topic": "EEG and Brain-Computer Interfaces",
+       "subfield": "Cognitive Neuroscience",
+       "field": "Neuroscience",
+       "domain": "Life Sciences",
+       "score": 0.17790000140666962
+      },
+      {
+       "topic": "Transcranial Magnetic Stimulation Studies",
+       "subfield": "Neurology",
+       "field": "Neuroscience",
+       "domain": "Life Sciences",
+       "score": 0.0003000000142492354
+      }
+     ]
+    },
+    {
+     "title": "A Survey of Robots in Healthcare",
+     "year": 2021,
+     "cited_by": 384,
+     "venue": "Technologies",
+     "url": "https://doi.org/10.3390/technologies9010008",
+     "topics": [
+      {
+       "topic": "Prosthetics and Rehabilitation Robotics",
+       "subfield": "Biomedical Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.7148000001907349
+      },
+      {
+       "topic": "Robotics and Automated Systems",
+       "subfield": "Control and Systems Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.15729999542236328
+      },
+      {
+       "topic": "Social Robot Interaction and HRI",
+       "subfield": "Social Psychology",
+       "field": "Psychology",
+       "domain": "Social Sciences",
+       "score": 0.0860000029206276
+      }
+     ]
+    },
+    {
+     "title": "The influence of psychological state and motivation on brain-computer interface performance in patients with amyotrophic lateral sclerosis - a longitudinal study",
+     "year": 2010,
+     "cited_by": 320,
+     "venue": "Frontiers in Neuroscience",
+     "url": "https://doi.org/10.3389/fnins.2010.00055",
+     "topics": [
+      {
+       "topic": "EEG and Brain-Computer Interfaces",
+       "subfield": "Cognitive Neuroscience",
+       "field": "Neuroscience",
+       "domain": "Life Sciences",
+       "score": 0.9980000257492065
+      },
+      {
+       "topic": "Gaze Tracking and Assistive Technology",
+       "subfield": "Human-Computer Interaction",
+       "field": "Computer Science",
+       "domain": "Physical Sciences",
+       "score": 0.00039999998989515007
+      },
+      {
+       "topic": "Stroke Rehabilitation and Recovery",
+       "subfield": "Rehabilitation",
+       "field": "Medicine",
+       "domain": "Health Sciences",
+       "score": 0.00019999999494757503
+      }
+     ]
+    }
+   ]
+  },
+  "trials": {
+   "total": 24,
+   "items": [
+    {
+     "id": "NCT00718458",
+     "title": "EEG-Based Brain-Computer Interface Project for Individuals With Amyotrophic Lateral Sclerosis (ALS)",
+     "status": "COMPLETED",
+     "phases": null,
+     "sponsor": "Drexel University College of Medicine",
+     "start": "2007-08",
+     "url": "https://clinicaltrials.gov/study/NCT00718458"
+    },
+    {
+     "id": "NCT04612426",
+     "title": "the Effectiveness of Brain-computer Interface-pedaling Training System on the Rehabilitation of Stroke",
+     "status": "COMPLETED",
+     "phases": [
+      "NA"
+     ],
+     "sponsor": "First Affiliated Hospital Xi'an Jiaotong University",
+     "start": "2020-11-01",
+     "url": "https://clinicaltrials.gov/study/NCT04612426"
+    },
+    {
+     "id": "NCT03827187",
+     "title": "Awareness Detection and Communication in Disorders of Consciousness",
+     "status": "RECRUITING",
+     "phases": [
+      "NA"
+     ],
+     "sponsor": "University of Ulster",
+     "start": "2022-02-08",
+     "url": "https://clinicaltrials.gov/study/NCT03827187"
+    },
+    {
+     "id": "NCT06179745",
+     "title": "BCI Driving FES and Hand Orthosis for Upper Limb Rehabilitation in Chronic Stroke",
+     "status": "UNKNOWN",
+     "phases": [
+      "NA"
+     ],
+     "sponsor": "University of Essex",
+     "start": "2022-03-14",
+     "url": "https://clinicaltrials.gov/study/NCT06179745"
+    },
+    {
+     "id": "NCT04380649",
+     "title": "Development and Test of a Headset for BCI Until Obtaining an Efficient and Comfortable System That Can be Used in Daily Practice by ALS People",
+     "status": "ACTIVE_NOT_RECRUITING",
+     "phases": [
+      "NA"
+     ],
+     "sponsor": "Centre Hospitalier Universitaire de Nice",
+     "start": "2023-02-13",
+     "url": "https://clinicaltrials.gov/study/NCT04380649"
+    },
+    {
+     "id": "NCT06538506",
+     "title": "ANIMATOR - RehUP BCI Controlled Robotic Therapy vs. an Attention-based Control",
+     "status": "NOT_YET_RECRUITING",
+     "phases": [
+      "PHASE2"
+     ],
+     "sponsor": "University of Calgary",
+     "start": "2024-08",
+     "url": "https://clinicaltrials.gov/study/NCT06538506"
+    },
+    {
+     "id": "NCT02567201",
+     "title": "Electrophysiological Evaluation of Voluntary Attention",
+     "status": "COMPLETED",
+     "phases": [
+      "NA"
+     ],
+     "sponsor": "Hospices Civils de Lyon",
+     "start": "2015-10-16",
+     "url": "https://clinicaltrials.gov/study/NCT02567201"
+    },
+    {
+     "id": "NCT06240299",
+     "title": "Neurofeedback for Nociplastic Pain in Rheumatoid Arthritis (NECTAR)",
+     "status": "RECRUITING",
+     "phases": [
+      "NA"
+     ],
+     "sponsor": "NHS Greater Glasgow and Clyde",
+     "start": "2024-06-24",
+     "url": "https://clinicaltrials.gov/study/NCT06240299"
+    },
+    {
+     "id": "NCT01897025",
+     "title": "Combined Transcranial Direct Current Stimulation and Motor Imagery-based Robotic Arm Training for Stroke Rehabilitation",
+     "status": "COMPLETED",
+     "phases": [
+      "PHASE2"
+     ],
+     "sponsor": "National University Hospital, Singapore",
+     "start": "2011-01",
+     "url": "https://clinicaltrials.gov/study/NCT01897025"
+    },
+    {
+     "id": "NCT07784920",
+     "title": "Lifescapes System in Post-stroke Hand Recovery",
+     "status": "NOT_YET_RECRUITING",
+     "phases": [
+      "NA"
+     ],
+     "sponsor": "National University Hospital, Singapore",
+     "start": "2026-10-01",
+     "url": "https://clinicaltrials.gov/study/NCT07784920"
+    }
+   ]
+  },
+  "projects": {
+   "total": 704,
+   "items": [
+    {
+     "name": "pieeg-club/ironbci",
+     "description": "Wearable (BLE) Brain-Computer Interface, ADS1299 and STM32 with SDK for mobile application ",
+     "stars": 633,
+     "updated": "2026-09-23T10:11:29Z",
+     "license": null,
+     "url": "https://github.com/pieeg-club/ironbci"
+    },
+    {
+     "name": "aliasvishnu/EEGNet",
+     "description": "[Old version] PyTorch implementation of EEGNet: A Compact Convolutional Network for EEG-based Brain-Computer Interfaces - https://arxiv.org/pdf/1611.08024.pdf",
+     "stars": 385,
+     "updated": "2019-07-10T22:35:35Z",
+     "license": "MIT",
+     "url": "https://github.com/aliasvishnu/EEGNet"
+    },
+    {
+     "name": "xiangzhang1015/Deep-Learning-for-BCI",
+     "description": "Resources for Book: Deep Learning for EEG-based Brain-Computer Interface: Representations, Algorithms and Applications",
+     "stars": 300,
+     "updated": "2026-08-14T15:32:17Z",
+     "license": "NOASSERTION",
+     "url": "https://github.com/xiangzhang1015/Deep-Learning-for-BCI"
+    },
+    {
+     "name": "RonanB96/Low-Cost-EEG-Based-BCI",
+     "description": "Low Cost Electroencephalogram Based Brain-Computer-Interface",
+     "stars": 169,
+     "updated": "2026-10-04T21:33:05Z",
+     "license": "Apache-2.0",
+     "url": "https://github.com/RonanB96/Low-Cost-EEG-Based-BCI"
+    },
+    {
+     "name": "Cerelog-ESP-EEG/ESP-EEG",
+     "description": "Cerelog ESP-EEG High-precision 8-channel biosensing board designed for EEG, EMG, ECG, and Brain Computer Interface (BCI) research applications.",
+     "stars": 168,
+     "updated": "2026-09-11T16:56:34Z",
+     "license": "NOASSERTION",
+     "url": "https://github.com/Cerelog-ESP-EEG/ESP-EEG"
+    },
+    {
+     "name": "CAMBI-tech/BciPy",
+     "description": "Python Brain-Computer Interface Software",
+     "stars": 157,
+     "updated": "2026-07-30T15:47:34Z",
+     "license": "BSD-3-Clause",
+     "url": "https://github.com/CAMBI-tech/BciPy"
+    },
+    {
+     "name": "yi-ding-cs/EEG-Deformer",
+     "description": "[IEEE J-BHI-2024] A Convolutional Transformer to decode mental states from Electroencephalography (EEG) for Brain-Computer Interfaces (BCI)",
+     "stars": 126,
+     "updated": "2025-06-23T02:40:46Z",
+     "license": null,
+     "url": "https://github.com/yi-ding-cs/EEG-Deformer"
+    },
+    {
+     "name": "NeuroSkill-com/skill",
+     "description": "NeuroSkill™ — State of Mind Brain-Computer Interface system",
+     "stars": 103,
+     "updated": "2026-10-05T06:12:46Z",
+     "license": "GPL-3.0",
+     "url": "https://github.com/NeuroSkill-com/skill"
+    },
+    {
+     "name": "rameerez/brain-computer-interfacing",
+     "description": "🧠 Brain-Computer Interfacing bootcamp course + projects @ Saturdays.AI (BCI + AI)",
+     "stars": 84,
+     "updated": "2020-05-03T08:16:33Z",
+     "license": "GPL-3.0",
+     "url": "https://github.com/rameerez/brain-computer-interfacing"
+    },
+    {
+     "name": "amrzhd/EEG-MSCNN",
+     "description": "This project explores the impact of Multi-Scale CNNs on the classification of EEG signals in Brain-Computer Interface (BCI) systems. By comparing the performance of two models, EEGNet and MSTANN, the study demonstrates how richer temporal feature extractions can enhance CNN models in classifying EEG signals",
+     "stars": 79,
+     "updated": "2025-08-11T07:42:27Z",
+     "license": "MIT",
+     "url": "https://github.com/amrzhd/EEG-MSCNN"
+    }
+   ]
+  },
+  "patents": {
+   "total": 0,
+   "items": []
+  },
+  "local": {
+   "startups": [],
+   "registry_domains": []
+  },
+  "elements": [],
+  "discuss": [
+   {
+    "field": "Neuroscience",
+    "questions": [
+     "Which signal do you rely on (EEG, EMG, eye movement), and how reliable is it at the bedside?",
+     "How long does a patient need to train or calibrate, and who supervises it?"
+    ]
+   },
+   {
+    "field": "Computer Science",
+    "questions": [
+     "What data trains the model, who owns it, and what accuracy is good enough to act on?",
+     "Does it run on the device or in the cloud, and what happens offline?"
+    ]
+   },
+   {
+    "field": "Medicine",
+    "questions": [
+     "Which patients exactly, and which hospital or clinician will run a validation study?",
+     "What medical device class would this be under CDSCO, and what testing does that need?",
+     "Who pays: hospital, insurer, government scheme or family?"
+    ]
+   },
+   {
+    "field": "Psychology",
+    "questions": [
+     "How do you measure that users can and will use it day to day?"
+    ]
+   },
+   {
+    "field": "Health Professions",
+    "questions": [
+     "How does it fit the nurse's or caregiver's routine without adding work?"
+    ]
+   },
+   {
+    "field": "Any idea",
+    "questions": [
+     "Who is the first buyer, and what do they use today instead?",
+     "What exactly is new compared with the closest prior art found?",
+     "Which part could be protected (patent, design, trademark), and which is already public?"
+    ]
+   }
+  ],
+  "coverage": [
+   {
+    "source": "papers",
+    "status": "ok",
+    "found": 219,
+    "note": ""
+   },
+   {
+    "source": "projects",
+    "status": "ok",
+    "found": 704,
+    "note": ""
+   },
+   {
+    "source": "patents",
+    "status": "no_key",
+    "found": 0,
+    "note": "Patents not searched: add a free PatentsView key (PATENTSVIEW_API_KEY)"
+   },
+   {
+    "source": "trials",
+    "status": "ok",
+    "found": 24,
+    "note": ""
+   }
+  ],
+  "caveat": "Counts come from the sources listed in coverage. 'Nothing found' means nothing in those sources, not that the idea is new; have a patent attorney search before filing."
+ },
+ "novelty": {
+  "elements": [
+   {
+    "element": "physically challenged",
+    "query": "(\"motor disability\" OR paralysis OR \"assistive technology\")",
+    "papers": 746306,
+    "label": "crowded"
+   },
+   {
+    "element": "brain waves",
+    "query": "(EEG OR \"brain-computer interface\")",
+    "papers": 760623,
+    "label": "crowded"
+   },
+   {
+    "element": "medication",
+    "query": "\"medication management\"",
+    "papers": 73947,
+    "label": "crowded"
+   }
+  ],
+  "pairs": [
+   {
+    "a": "brain waves",
+    "b": "medication",
+    "a_papers": 760623,
+    "b_papers": 73947,
+    "papers": 1118,
+    "share_pct": 1.51,
+    "gap": false
+   },
+   {
+    "a": "physically challenged",
+    "b": "medication",
+    "a_papers": 746306,
+    "b_papers": 73947,
+    "papers": 2404,
+    "share_pct": 3.25,
+    "gap": false
+   },
+   {
+    "a": "physically challenged",
+    "b": "brain waves",
+    "a_papers": 746306,
+    "b_papers": 760623,
+    "papers": 35047,
+    "share_pct": 4.7,
+    "gap": false
+   }
+  ],
+  "context": {
+   "query": "(EEG OR \"brain-computer interface\") (\"motor disability\" OR paralysis OR \"assistive technology\")",
+   "searched": true,
+   "world_papers": 35047,
+   "india_papers": 1667,
+   "india_share_pct": 4.8,
+   "tn_startups": 0,
+   "gap": true
+  },
+  "statement": {
+   "type": "context",
+   "text": "Work on this is active worldwide (35,047 papers), but only 1,667 come from Indian institutions, and I found no Tamil Nadu startup doing it."
+  },
+  "levers": [
+   {
+    "kind": "localise",
+    "text": "Make it fit Tamil Nadu, with the Tamil language, local hospital or market routines, and a local price.",
+    "because": "1,667 of 35,047 papers are from India, and no Tamil Nadu startup was found"
+   },
+   {
+    "kind": "regulatory route",
+    "text": "Check whether a first version can avoid medical-device claims, for example as a communication aid, and add clinical claims after a validation study.",
+    "because": "the idea sits in medicine, with 24 clinical trials found"
+   }
+  ],
+  "thresholds": {
+   "active_papers": 300,
+   "crowded_papers": 5000,
+   "rare_pair_share_pct": 2.0,
+   "rare_pair_papers": 30,
+   "india_low_share_pct": 5.0
+  },
+  "caveat": "Not found in these sources is not proof of novelty; have a patent attorney search before filing."
+ }
+}

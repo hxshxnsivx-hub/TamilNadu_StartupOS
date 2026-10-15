@@ -1,0 +1,789 @@
+{
+ "id": "yarn_marketplace",
+ "idea": "a yarn price marketplace app where small knitting units in Tiruppur buy from spinning mills on credit",
+ "recorded": "2026-10-10",
+ "coverage": [
+  {
+   "source": "papers",
+   "status": "ok"
+  },
+  {
+   "source": "projects",
+   "status": "ok"
+  },
+  {
+   "source": "patents",
+   "status": "no_key"
+  },
+  {
+   "source": "trials",
+   "status": "skipped"
+  }
+ ],
+ "scan": {
+  "idea": "a yarn price marketplace app where small knitting units in Tiruppur buy from spinning mills on credit",
+  "queries": {
+   "papers": "yarn spinning yarn price marketplace",
+   "trials": "yarn spinning",
+   "projects": "yarn spinning yarn price",
+   "patents": "yarn spinning yarn price marketplace",
+   "local": "price marketplace where small knitting units credit yarn spinning yarn"
+  },
+  "associated_domains": {
+   "basis": "papers",
+   "domains": [
+    {
+     "name": "Social Sciences",
+     "share_pct": 77
+    },
+    {
+     "name": "Physical Sciences",
+     "share_pct": 19
+    },
+    {
+     "name": "Life Sciences",
+     "share_pct": 4
+    }
+   ],
+   "fields": [
+    {
+     "name": "Business, Management and Accounting",
+     "share_pct": 23
+    },
+    {
+     "name": "Economics, Econometrics and Finance",
+     "share_pct": 21
+    },
+    {
+     "name": "Social Sciences",
+     "share_pct": 19
+    },
+    {
+     "name": "Materials Science",
+     "share_pct": 15
+    },
+    {
+     "name": "Arts and Humanities",
+     "share_pct": 11
+    },
+    {
+     "name": "Agricultural and Biological Sciences",
+     "share_pct": 4
+    },
+    {
+     "name": "Decision Sciences",
+     "share_pct": 3
+    },
+    {
+     "name": "Environmental Science",
+     "share_pct": 2
+    }
+   ],
+   "subfields": [
+    {
+     "name": "Polymers and Plastics",
+     "share_pct": 15
+    },
+    {
+     "name": "Strategy and Management",
+     "share_pct": 15
+    },
+    {
+     "name": "Economics and Econometrics",
+     "share_pct": 13
+    },
+    {
+     "name": "Museology",
+     "share_pct": 10
+    },
+    {
+     "name": "Marketing",
+     "share_pct": 7
+    },
+    {
+     "name": "Development",
+     "share_pct": 5
+    },
+    {
+     "name": "General Economics, Econometrics and Finance",
+     "share_pct": 4
+    },
+    {
+     "name": "Demography",
+     "share_pct": 4
+    }
+   ],
+   "topics": [
+    {
+     "name": "Textile materials and evaluations",
+     "share_pct": 13
+    },
+    {
+     "name": "Crafts, Textile, and Design",
+     "share_pct": 10
+    },
+    {
+     "name": "Global Trade and Competitiveness",
+     "share_pct": 10
+    },
+    {
+     "name": "Historical Economic and Social Studies",
+     "share_pct": 8
+    },
+    {
+     "name": "Software Engineering and Design Patterns",
+     "share_pct": 5
+    },
+    {
+     "name": "Global trade and economics",
+     "share_pct": 4
+    },
+    {
+     "name": "SMEs Development and Digital Marketing",
+     "share_pct": 4
+    },
+    {
+     "name": "Financial Risk and Volatility Modeling",
+     "share_pct": 4
+    }
+   ]
+  },
+  "vanigam_categories": [
+   "agriculture",
+   "climate",
+   "electrical",
+   "fintech",
+   "saas"
+  ],
+  "papers": {
+   "total": 763,
+   "by_year": {
+    "2023": 56,
+    "2025": 47,
+    "2014": 43,
+    "2019": 41,
+    "2024": 36,
+    "2020": 35,
+    "2021": 35,
+    "2022": 35,
+    "2013": 34,
+    "2016": 34,
+    "2018": 31,
+    "2026": 31,
+    "2008": 29,
+    "2015": 28,
+    "2010": 27,
+    "2012": 27,
+    "2017": 26,
+    "2011": 22,
+    "2009": 19,
+    "2007": 13,
+    "2006": 12,
+    "2004": 11,
+    "2005": 10,
+    "2001": 9,
+    "2003": 9,
+    "1996": 8,
+    "1990": 5,
+    "2000": 5,
+    "1993": 4,
+    "1998": 4,
+    "2002": 4,
+    "1983": 3,
+    "1984": 3,
+    "1989": 3,
+    "1997": 3,
+    "1981": 2,
+    "1982": 2,
+    "1988": 2,
+    "1992": 2,
+    "1994": 2,
+    "1995": 2,
+    "1999": 2,
+    "1893": 1,
+    "1972": 1,
+    "1974": 1,
+    "1976": 1,
+    "1977": 1,
+    "1985": 1
+   },
+   "most_relevant": [
+    {
+     "title": "Spinners and the Law: Regulating Yarn Standards in the English Worsted Industries, 1550–1800",
+     "year": 2013,
+     "cited_by": 23,
+     "venue": "Textile History",
+     "url": "https://doi.org/10.1179/0040496913z.00000000026",
+     "topics": [
+      {
+       "topic": "Historical Economic and Social Studies",
+       "subfield": "Economics and Econometrics",
+       "field": "Economics, Econometrics and Finance",
+       "domain": "Social Sciences",
+       "score": 0.9883000254631042
+      },
+      {
+       "topic": "Medieval and Early Modern Justice",
+       "subfield": "Political Science and International Relations",
+       "field": "Social Sciences",
+       "domain": "Social Sciences",
+       "score": 0.007300000172108412
+      },
+      {
+       "topic": "Historical Legal Studies and Society",
+       "subfield": "Political Science and International Relations",
+       "field": "Social Sciences",
+       "domain": "Social Sciences",
+       "score": 0.0017999999690800905
+      }
+     ]
+    },
+    {
+     "title": "A Study on the Effect of Material Price Fluctuations on the Profitability of Yarn Industry in India (with Special Reference to Precot Meridian Ltd)",
+     "year": 2014,
+     "cited_by": 2,
+     "venue": "Journals & Books Hosting (International Knowledge Sharing Platform)",
+     "url": "https://openalex.org/W2903988022",
+     "topics": [
+      {
+       "topic": "Software Engineering and Design Patterns",
+       "subfield": "Development",
+       "field": "Social Sciences",
+       "domain": "Social Sciences",
+       "score": 0.4058000147342682
+      },
+      {
+       "topic": "Market Dynamics and Volatility",
+       "subfield": "Economics and Econometrics",
+       "field": "Economics, Econometrics and Finance",
+       "domain": "Social Sciences",
+       "score": 0.1273999959230423
+      },
+      {
+       "topic": "Risk Management in Financial Firms",
+       "subfield": "Accounting",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.10719999670982361
+      }
+     ]
+    },
+    {
+     "title": "Permeability properties of woven fabrics containing two-ply fancy yarns",
+     "year": 2021,
+     "cited_by": 1,
+     "venue": "Industria Textila",
+     "url": "https://doi.org/10.35530/it.072.02.1712",
+     "topics": [
+      {
+       "topic": "Textile materials and evaluations",
+       "subfield": "Polymers and Plastics",
+       "field": "Materials Science",
+       "domain": "Physical Sciences",
+       "score": 0.9990000128746033
+      },
+      {
+       "topic": "Crafts, Textile, and Design",
+       "subfield": "Museology",
+       "field": "Arts and Humanities",
+       "domain": "Social Sciences",
+       "score": 0.00019999999494757503
+      },
+      {
+       "topic": "Dyeing and Modifying Textile Fibers",
+       "subfield": "Building and Construction",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 9.999999747378752e-05
+      }
+     ]
+    },
+    {
+     "title": "The Integration of Technology and Management in the Competitiveness of the United States Short Staple Yarn Manufacturing Industry",
+     "year": 2014,
+     "cited_by": 2,
+     "venue": "Journal of Textiles",
+     "url": "https://doi.org/10.1155/2014/179387",
+     "topics": [
+      {
+       "topic": "Global Trade and Competitiveness",
+       "subfield": "Strategy and Management",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.9355000257492065
+      },
+      {
+       "topic": "Quality and Supply Management",
+       "subfield": "Management Information Systems",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.019500000402331352
+      },
+      {
+       "topic": "Management and Organizational Practices",
+       "subfield": "Strategy and Management",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.010300000198185444
+      }
+     ]
+    },
+    {
+     "title": "Increasing the Cost Competitiveness of the US Textile Manufacturer through the Attenuation of Slasher and Sized Yarn Waste",
+     "year": 2007,
+     "cited_by": 2,
+     "venue": "NCSU Libraries Repository (North Carolina State University Libraries)",
+     "url": "https://openalex.org/W2517282071",
+     "topics": [
+      {
+       "topic": "Management and Optimization Techniques",
+       "subfield": "Strategy and Management",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.5199999809265137
+      },
+      {
+       "topic": "Textile materials and evaluations",
+       "subfield": "Polymers and Plastics",
+       "field": "Materials Science",
+       "domain": "Physical Sciences",
+       "score": 0.2020999938249588
+      },
+      {
+       "topic": "Energy Efficiency and Management",
+       "subfield": "Renewable Energy, Sustainability and the Environment",
+       "field": "Energy",
+       "domain": "Physical Sciences",
+       "score": 0.10320000350475311
+      }
+     ]
+    },
+    {
+     "title": "Disruptive Threads and Renegade Yarns: Domestic Textile Making in Selected Women's Writing 1811-1925",
+     "year": 2016,
+     "cited_by": 0,
+     "venue": null,
+     "url": "https://openalex.org/W2603082685",
+     "topics": [
+      {
+       "topic": "Crafts, Textile, and Design",
+       "subfield": "Museology",
+       "field": "Arts and Humanities",
+       "domain": "Social Sciences",
+       "score": 0.4948999881744385
+      },
+      {
+       "topic": "Literature: history, themes, analysis",
+       "subfield": "Literature and Literary Theory",
+       "field": "Arts and Humanities",
+       "domain": "Social Sciences",
+       "score": 0.10520000010728836
+      },
+      {
+       "topic": "American and British Literature Analysis",
+       "subfield": "Literature and Literary Theory",
+       "field": "Arts and Humanities",
+       "domain": "Social Sciences",
+       "score": 0.06469999998807907
+      }
+     ]
+    },
+    {
+     "title": "Entering the Digital Marketplace: E-Commerce and Jurisdiction in Ghana",
+     "year": 2002,
+     "cited_by": 2,
+     "venue": "Scholarly Commons (University of the Pacific)",
+     "url": "https://openalex.org/W3109907378",
+     "topics": [
+      {
+       "topic": "Conflict of Laws and Jurisdiction",
+       "subfield": "Political Science and International Relations",
+       "field": "Social Sciences",
+       "domain": "Social Sciences",
+       "score": 0.8213000297546387
+      },
+      {
+       "topic": "Digitalization, Law, and Regulation",
+       "subfield": "Law",
+       "field": "Social Sciences",
+       "domain": "Social Sciences",
+       "score": 0.043299999088048935
+      },
+      {
+       "topic": "E-commerce and Technology Innovations",
+       "subfield": "Business and International Management",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.030700000002980232
+      }
+     ]
+    },
+    {
+     "title": "Price-quality incentives in U.S. cotton",
+     "year": 2007,
+     "cited_by": 0,
+     "venue": "ThinkTech (Texas Tech University)",
+     "url": "https://openalex.org/W2289515912",
+     "topics": [
+      {
+       "topic": "Economics of Agriculture and Food Markets",
+       "subfield": "Economics and Econometrics",
+       "field": "Economics, Econometrics and Finance",
+       "domain": "Social Sciences",
+       "score": 0.951200008392334
+      },
+      {
+       "topic": "Agricultural economics and policies",
+       "subfield": "Safety Research",
+       "field": "Social Sciences",
+       "domain": "Social Sciences",
+       "score": 0.03229999914765358
+      },
+      {
+       "topic": "Agriculture and Agroindustry Studies",
+       "subfield": "General Agricultural and Biological Sciences",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.005200000014156103
+      }
+     ]
+    }
+   ],
+   "most_cited": [
+    {
+     "title": "COMPETITIVE GROUPS AS COGNITIVE COMMUNITIES: THE CASE OF SCOTTISH KNITWEAR MANUFACTURERS*",
+     "year": 1989,
+     "cited_by": 1386,
+     "venue": "Journal of Management Studies",
+     "url": "https://doi.org/10.1111/j.1467-6486.1989.tb00736.x",
+     "topics": [
+      {
+       "topic": "Management and Organizational Studies",
+       "subfield": "Organizational Behavior and Human Resource Management",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.9003999829292297
+      },
+      {
+       "topic": "Business Strategy and Innovation",
+       "subfield": "Strategy and Management",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.048900000751018524
+      },
+      {
+       "topic": "Innovation and Knowledge Management",
+       "subfield": "Strategy and Management",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.025800000876188278
+      }
+     ]
+    },
+    {
+     "title": "Environmental impact of textile reuse and recycling – A review",
+     "year": 2018,
+     "cited_by": 1088,
+     "venue": "Journal of Cleaner Production",
+     "url": "https://doi.org/10.1016/j.jclepro.2018.02.266",
+     "topics": [
+      {
+       "topic": "Environmental Impact and Sustainability",
+       "subfield": "Environmental Engineering",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 0.8115000128746033
+      },
+      {
+       "topic": "Waste Management and Recycling",
+       "subfield": "Waste Management and Disposal",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 0.04399999976158142
+      },
+      {
+       "topic": "Sustainable Supply Chain Management",
+       "subfield": "Strategy and Management",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.0421999990940094
+      }
+     ]
+    },
+    {
+     "title": "Semiconductor Gas Sensors: Materials, Technology, Design, and Application",
+     "year": 2020,
+     "cited_by": 591,
+     "venue": "Sensors",
+     "url": "https://doi.org/10.3390/s20226694",
+     "topics": [
+      {
+       "topic": "Gas Sensing Nanomaterials and Sensors",
+       "subfield": "Electrical and Electronic Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 1.0
+      },
+      {
+       "topic": "Air Quality Monitoring and Forecasting",
+       "subfield": "Environmental Engineering",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 0.0
+      },
+      {
+       "topic": "Nanowire Synthesis and Applications",
+       "subfield": "Biomedical Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.0
+      }
+     ]
+    },
+    {
+     "title": "Industrial Hemp in North America: Production, Politics and Potential",
+     "year": 2016,
+     "cited_by": 328,
+     "venue": "Agronomy",
+     "url": "https://doi.org/10.3390/agronomy6040058",
+     "topics": [
+      {
+       "topic": "Cannabis and Cannabinoid Research",
+       "subfield": "Pharmacology",
+       "field": "Medicine",
+       "domain": "Health Sciences",
+       "score": 0.8866999745368958
+      },
+      {
+       "topic": "Agriculture and Agroindustry Studies",
+       "subfield": "General Agricultural and Biological Sciences",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.027699999511241913
+      },
+      {
+       "topic": "Bioenergy crop production and management",
+       "subfield": "Agronomy and Crop Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.00930000003427267
+      }
+     ]
+    },
+    {
+     "title": "Why do servitized firms fail? A risk-based explanation",
+     "year": 2015,
+     "cited_by": 274,
+     "venue": "International Journal of Operations & Production Management",
+     "url": "https://doi.org/10.1108/ijopm-02-2014-0052",
+     "topics": [
+      {
+       "topic": "Service and Product Innovation",
+       "subfield": "Marketing",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.9740999937057495
+      },
+      {
+       "topic": "Outsourcing and Supply Chain Management",
+       "subfield": "Management Information Systems",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.006099999882280827
+      },
+      {
+       "topic": "Sustainable Supply Chain Management",
+       "subfield": "Strategy and Management",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.005799999926239252
+      }
+     ]
+    }
+   ]
+  },
+  "trials": {
+   "total": 0,
+   "items": []
+  },
+  "projects": {
+   "total": 0,
+   "items": []
+  },
+  "patents": {
+   "total": 0,
+   "items": []
+  },
+  "local": {
+   "startups": [
+    {
+     "name": "BankBazaar.com",
+     "district": "chennai",
+     "description": "BankBazaar is a fintech marketplace offering credit scores, personalized financial-product recommendations, and lending and investment solutions such as home loans, personal loans and mutual funds.",
+     "url": "https://www.bankbazaar.com"
+    },
+    {
+     "name": "Kaleidofin Private Limited",
+     "district": "chennai",
+     "description": "Kaleidofin builds financial-inclusion products, including tailored investment and credit tools, for underserved individuals and small enterprises across India.",
+     "url": "https://www.kaleidofin.com"
+    },
+    {
+     "name": "Yubi (CredAvenue Private Limited)",
+     "district": "chennai",
+     "description": "Yubi (formerly CredAvenue) operates a debt marketplace and credit-infrastructure platform connecting borrowers, lenders and investors across securitisation, co-lending and bond issuance.",
+     "url": "https://www.go-yubi.com"
+    }
+   ],
+   "registry_domains": [
+    {
+     "id": "fodder_feed",
+     "label": "Fodder and cattle feed"
+    },
+    {
+     "id": "msme_last_mile",
+     "label": "Shared logistics for MSME clusters"
+    },
+    {
+     "id": "msme_energy_monitors",
+     "label": "Energy monitors for MSMEs"
+    },
+    {
+     "id": "msme_alt_credit",
+     "label": "Credit scoring for small businesses from their records"
+    },
+    {
+     "id": "yarn_b2b_marketplace",
+     "label": "Yarn buying platform for knitters"
+    },
+    {
+     "id": "truck_repair_marketplace",
+     "label": "Truck repair and maintenance marketplace"
+    },
+    {
+     "id": "solar_microgrids",
+     "label": "Solar microgrids for remote hamlets"
+    },
+    {
+     "id": "upi_merchant_credit",
+     "label": "Credit lines for UPI merchants"
+    },
+    {
+     "id": "mandi_price_forecasting",
+     "label": "Crop price forecasts for farmers"
+    }
+   ]
+  },
+  "elements": [],
+  "discuss": [
+   {
+    "field": "Economics, Econometrics and Finance",
+    "questions": [
+     "Which regulated entity (bank, NBFC, insurer) do you partner with?"
+    ]
+   },
+   {
+    "field": "Agricultural and Biological Sciences",
+    "questions": [
+     "Which crop or animal, which season, and which FPO or farmers will pilot it?"
+    ]
+   },
+   {
+    "field": "Environmental Science",
+    "questions": [
+     "What is measured, by whom, and who pays for the improvement?"
+    ]
+   },
+   {
+    "field": "Any idea",
+    "questions": [
+     "Who is the first buyer, and what do they use today instead?",
+     "What exactly is new compared with the closest prior art found?",
+     "Which part could be protected (patent, design, trademark), and which is already public?"
+    ]
+   }
+  ],
+  "coverage": [
+   {
+    "source": "papers",
+    "status": "ok",
+    "found": 763,
+    "note": ""
+   },
+   {
+    "source": "projects",
+    "status": "ok",
+    "found": 0,
+    "note": ""
+   },
+   {
+    "source": "patents",
+    "status": "no_key",
+    "found": 0,
+    "note": "Patents not searched: add a free PatentsView key (PATENTSVIEW_API_KEY)"
+   },
+   {
+    "source": "trials",
+    "status": "skipped",
+    "found": 0,
+    "note": "Not a health idea, so clinical trials were not searched"
+   }
+  ],
+  "caveat": "Counts come from the sources listed in coverage. 'Nothing found' means nothing in those sources, not that the idea is new; have a patent attorney search before filing."
+ },
+ "novelty": {
+  "elements": [
+   {
+    "element": "spinning mills",
+    "query": "\"yarn spinning\"",
+    "papers": 3454,
+    "label": "active"
+   },
+   {
+    "element": "yarn",
+    "query": "yarn",
+    "papers": 165867,
+    "label": "crowded"
+   }
+  ],
+  "pairs": [
+   {
+    "a": "spinning mills",
+    "b": "yarn",
+    "a_papers": 3454,
+    "b_papers": 165867,
+    "papers": 2882,
+    "share_pct": 83.44,
+    "gap": false
+   }
+  ],
+  "context": {
+   "query": "yarn \"yarn spinning\"",
+   "searched": true,
+   "world_papers": 2882,
+   "india_papers": 107,
+   "india_share_pct": 3.7,
+   "tn_startups": 3,
+   "gap": false
+  },
+  "statement": {
+   "type": "crowded",
+   "text": "Each part is well studied, and so are their combinations. The edge has to come from who you serve, the cost, or how you deliver it."
+  },
+  "levers": [
+   {
+    "kind": "business model",
+    "text": "Compete on how it is delivered, as a service, a rental, or a scheme-backed rollout rather than a product sale.",
+    "because": "every part and combination is crowded"
+   }
+  ],
+  "thresholds": {
+   "active_papers": 300,
+   "crowded_papers": 5000,
+   "rare_pair_share_pct": 2.0,
+   "rare_pair_papers": 30,
+   "india_low_share_pct": 5.0
+  },
+  "caveat": "Not found in these sources is not proof of novelty; have a patent attorney search before filing."
+ }
+}

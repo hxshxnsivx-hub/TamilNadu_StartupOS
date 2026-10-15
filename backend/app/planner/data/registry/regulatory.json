@@ -1,0 +1,221 @@
+{
+ "_meta": {
+  "confidence": {
+   "official": "read on the regulator's own site",
+   "secondary": "well established; confirm details on the source",
+   "to_verify": "likely applies; confirm with the regulator before relying on it"
+  }
+ },
+ "items": {
+  "fssai": {
+   "title": "FSSAI registration or licence",
+   "text": "Every food business needs FSSAI basic registration (up to ₹12 lakh turnover), a State licence, or a Central licence (above ₹20 crore). Apply on FoSCoS.",
+   "confidence": "secondary",
+   "source": "https://foscos.fssai.gov.in/"
+  },
+  "legal_metrology": {
+   "title": "Legal Metrology declarations",
+   "text": "Pre-packed goods must carry name and address, net quantity, MRP, date and customer-care details; packers may need registration.",
+   "confidence": "secondary",
+   "source": "https://consumeraffairs.nic.in/"
+  },
+  "tnpcb": {
+   "title": "TNPCB consent to establish and operate",
+   "text": "Units with emissions or effluent need Consent to Establish and Consent to Operate from the Tamil Nadu Pollution Control Board, by the category of the industry.",
+   "confidence": "secondary",
+   "source": "https://tnpcb.gov.in/"
+  },
+  "zld": {
+   "title": "Zero liquid discharge for dyeing and bleaching",
+   "text": "Textile dyeing and bleaching units in Tamil Nadu operate under zero-liquid-discharge conditions set by the pollution board.",
+   "confidence": "to_verify",
+   "source": "https://tnpcb.gov.in/"
+  },
+  "cdsco_md": {
+   "title": "Medical Devices Rules registration",
+   "text": "Medical devices are regulated by risk class (A–D) under the Medical Devices Rules, 2017: manufacturing licence from the state or CDSCO, and testing.",
+   "confidence": "secondary",
+   "source": "https://cdsco.gov.in/"
+  },
+  "ayush": {
+   "title": "AYUSH manufacturing licence",
+   "text": "Ayurveda, Siddha and Unani products need a manufacturing licence from the state AYUSH licensing authority and GMP compliance.",
+   "confidence": "to_verify",
+   "source": "https://ayush.gov.in/"
+  },
+  "fco_cib": {
+   "title": "Biofertiliser and biopesticide registration",
+   "text": "Biofertilisers fall under the Fertiliser Control Order; biopesticides need registration with the Central Insecticides Board.",
+   "confidence": "to_verify",
+   "source": "https://ppqs.gov.in/"
+  },
+  "bis": {
+   "title": "BIS certification for notified products",
+   "text": "Many electrical and electronic products are under compulsory BIS registration or ISI marking; check whether your product is notified.",
+   "confidence": "to_verify",
+   "source": "https://www.bis.gov.in/"
+  },
+  "cmvr": {
+   "title": "Type approval for vehicle conversions",
+   "text": "EV retrofit kits and vehicle modifications need type approval from a testing agency (such as ARAI or ICAT) under the Central Motor Vehicles Rules.",
+   "confidence": "secondary",
+   "source": "https://morth.nic.in/"
+  },
+  "rbi_lending": {
+   "title": "Lending only through RBI-regulated entities",
+   "text": "Lending needs an RBI-regulated lender (bank or NBFC); a platform must follow RBI's digital lending directions and cannot lend from its own book without a licence.",
+   "confidence": "secondary",
+   "source": "https://www.rbi.org.in/"
+  },
+  "dpdp": {
+   "title": "Digital Personal Data Protection Act",
+   "text": "Collecting personal data needs consent, purpose limits and security safeguards under the DPDP Act, 2023.",
+   "confidence": "secondary",
+   "source": "https://www.meity.gov.in/"
+  },
+  "health_data": {
+   "title": "Health records and telemedicine rules",
+   "text": "Telemedicine follows the Telemedicine Practice Guidelines; health data handling should align with ABDM standards.",
+   "confidence": "to_verify",
+   "source": "https://abdm.gov.in/"
+  },
+  "gi_user": {
+   "title": "GI authorised user registration",
+   "text": "Selling under a geographical indication (such as Madurai Malli or Madurai Sungudi) needs registration as an authorised user with the GI Registry.",
+   "confidence": "secondary",
+   "source": "https://ipindia.gov.in/"
+  },
+  "apeda": {
+   "title": "APEDA registration for agri exports",
+   "text": "Exporters of scheduled agricultural and processed food products need APEDA registration-cum-membership.",
+   "confidence": "secondary",
+   "source": "https://apeda.gov.in/"
+  },
+  "tea_board": {
+   "title": "Tea Board registration",
+   "text": "Businesses that buy, blend or pack tea may need Tea Board registration; confirm whether your activity is covered.",
+   "confidence": "to_verify",
+   "source": "https://www.teaboard.gov.in/"
+  },
+  "solar_almm": {
+   "title": "Approved solar modules for subsidised schemes",
+   "text": "Government-subsidised solar projects generally require modules from MNRE's approved list (ALMM).",
+   "confidence": "to_verify",
+   "source": "https://mnre.gov.in/"
+  },
+  "electrical_safety": {
+   "title": "Electrical installation approval",
+   "text": "Electrical installations above set voltages need approval from the Electrical Inspectorate.",
+   "confidence": "to_verify",
+   "source": "https://www.tnei.tn.gov.in/"
+  },
+  "plastic_ban": {
+   "title": "Tamil Nadu ban on single-use plastics",
+   "text": "Tamil Nadu bans specified single-use plastic items; alternatives must not contain plastic lining to qualify.",
+   "confidence": "secondary",
+   "source": "https://tnpcb.gov.in/"
+  },
+  "cea_metering": {
+   "title": "Metering standards",
+   "text": "Meters connected to the grid must meet CEA metering regulations and utility approval.",
+   "confidence": "to_verify",
+   "source": "https://cea.nic.in/"
+  },
+  "dgca_drone": {
+   "title": "Drone rules",
+   "text": "Drones need type certification and registration on Digital Sky under the Drone Rules, 2021.",
+   "confidence": "secondary",
+   "source": "https://digitalsky.dgca.gov.in/"
+  },
+  "bmw": {
+   "title": "Biomedical waste rules",
+   "text": "Handling, transport and treatment of biomedical waste follows the Bio-Medical Waste Management Rules, 2016, with authorisation from the pollution control board.",
+   "confidence": "secondary",
+   "source": "https://tnpcb.gov.in/"
+  },
+  "tn_clinical": {
+   "title": "Clinical establishment registration",
+   "text": "Clinics, labs and collection centres in Tamil Nadu register under the state's Clinical Establishments (Regulation) Act and rules.",
+   "confidence": "to_verify",
+   "source": "https://www.tnhealth.tn.gov.in/"
+  },
+  "cosmetics": {
+   "title": "Cosmetics manufacturing licence",
+   "text": "Making cosmetics needs a manufacturing licence under the Cosmetics Rules, 2020, from the state licensing authority.",
+   "confidence": "secondary",
+   "source": "https://cdsco.gov.in/"
+  },
+  "ewaste": {
+   "title": "E-waste producer responsibility",
+   "text": "Producers and refurbishers of listed electrical and electronic equipment register on the CPCB portal under the E-Waste (Management) Rules, 2022.",
+   "confidence": "secondary",
+   "source": "https://cpcb.nic.in/"
+  },
+  "plastic_epr": {
+   "title": "Plastic packaging producer responsibility",
+   "text": "Producers, importers, brand owners and recyclers of plastic packaging register for extended producer responsibility under the Plastic Waste Management Rules.",
+   "confidence": "secondary",
+   "source": "https://cpcb.nic.in/"
+  },
+  "swm": {
+   "title": "Solid waste management rules",
+   "text": "Collection and processing of municipal solid waste follows the Solid Waste Management Rules, 2016, usually under contract with the local body.",
+   "confidence": "secondary",
+   "source": "https://cpcb.nic.in/"
+  },
+  "chit_funds": {
+   "title": "Chit fund registration",
+   "text": "Chit businesses register with the state Registrar of Chits under the Chit Funds Act, 1982; a technology platform must partner with a registered chit company.",
+   "confidence": "secondary",
+   "source": "https://www.tnreginet.gov.in/"
+  },
+  "irdai": {
+   "title": "Insurance distribution licence",
+   "text": "Selling insurance needs an IRDAI licence or registration (broker, corporate agent, or point-of-sales persons under an insurer or intermediary).",
+   "confidence": "secondary",
+   "source": "https://irdai.gov.in/"
+  },
+  "transport_permit": {
+   "title": "Vehicle permits",
+   "text": "Commercial passenger and goods vehicles need permits and registration from the Transport Department; electric vehicles have specific permit relaxations — confirm current rules.",
+   "confidence": "to_verify",
+   "source": "https://tnsta.gov.in/"
+  },
+  "edu_board": {
+   "title": "School board and education rules",
+   "text": "Content and tools used inside schools are adopted through school managements or the education department; children's data needs verifiable parental consent under the DPDP Act.",
+   "confidence": "secondary",
+   "source": "https://www.meity.gov.in/"
+  },
+  "drug_licence": {
+   "title": "Drug licence for selling medicines",
+   "text": "Retail and wholesale sale of medicines needs a drug licence from the Tamil Nadu Drugs Control Department under the Drugs and Cosmetics Rules, with a registered pharmacist on site.",
+   "confidence": "secondary",
+   "source": "https://cdsco.gov.in/"
+  },
+  "nabl": {
+   "title": "NABL accreditation for testing labs",
+   "text": "Accreditation is voluntary but most buyers, exporters and regulators accept only results from NABL-accredited labs.",
+   "confidence": "secondary",
+   "source": "https://nabl-india.org/"
+  },
+  "iec_export": {
+   "title": "Import Export Code (IEC)",
+   "text": "Anyone importing or exporting needs an Import Export Code from DGFT; product export councils add registration (RCMC) for export benefits.",
+   "confidence": "secondary",
+   "source": "https://www.dgft.gov.in/"
+  },
+  "bis_hallmark": {
+   "title": "BIS hallmarking for gold jewellery",
+   "text": "Gold jewellery sold in notified districts must carry a BIS hallmark with a unique ID, and jewellers must register with BIS.",
+   "confidence": "secondary",
+   "source": "https://www.bis.gov.in/"
+  },
+  "rera": {
+   "title": "TNRERA registration for projects and agents",
+   "text": "Real-estate projects above the set size, and the agents who sell them, register with the Tamil Nadu Real Estate Regulatory Authority.",
+   "confidence": "secondary",
+   "source": "https://www.rera.tn.gov.in/"
+  }
+ }
+}

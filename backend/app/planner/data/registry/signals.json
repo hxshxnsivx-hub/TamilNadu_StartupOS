@@ -1,0 +1,676 @@
+{
+ "checked": "2026-10-04",
+ "source": "OpenAlex works by publication year",
+ "measures": "research and technology momentum, not market demand",
+ "years": [
+  2021,
+  2025
+ ],
+ "baseline": {
+  "counts": {
+   "2021": 10884498,
+   "2022": 10449568,
+   "2023": 11154016,
+   "2024": 11134955,
+   "2025": 15038616
+  },
+  "growth_pct": 8.4
+ },
+ "not_connected": [
+  "commodity prices (Agmarknet, needs a data.gov.in key)",
+  "trade data",
+  "search interest"
+ ],
+ "domains": {
+  "banana_value_added": {
+   "query": "banana flour processing value added",
+   "counts": {
+    "2021": 1668,
+    "2022": 1922,
+    "2023": 2509,
+    "2024": 2427,
+    "2025": 2658
+   },
+   "growth_pct": 12.4,
+   "vs_all_research_pp": 4.0,
+   "label": "rising"
+  },
+  "jasmine_postharvest": {
+   "query": "jasmine flower postharvest shelf life",
+   "counts": {
+    "2021": 11,
+    "2022": 19,
+    "2023": 37,
+    "2024": 46,
+    "2025": 44
+   },
+   "growth_pct": 41.4,
+   "vs_all_research_pp": 33.0,
+   "label": "rising"
+  },
+  "coconut_products": {
+   "query": "virgin coconut oil processing",
+   "counts": {
+    "2021": 1045,
+    "2022": 1280,
+    "2023": 1709,
+    "2024": 1614,
+    "2025": 1808
+   },
+   "growth_pct": 14.7,
+   "vs_all_research_pp": 6.3,
+   "label": "rising"
+  },
+  "millet_foods": {
+   "query": "millet based food products",
+   "counts": {
+    "2021": 6272,
+    "2022": 7478,
+    "2023": 9752,
+    "2024": 9289,
+    "2025": 10041
+   },
+   "growth_pct": 12.5,
+   "vs_all_research_pp": 4.1,
+   "label": "rising"
+  },
+  "precision_irrigation": {
+   "query": "precision irrigation soil moisture controller",
+   "counts": {
+    "2021": 386,
+    "2022": 472,
+    "2023": 658,
+    "2024": 757,
+    "2025": 1131
+   },
+   "growth_pct": 30.8,
+   "vs_all_research_pp": 22.4,
+   "label": "rising"
+  },
+  "fodder_feed": {
+   "query": "hydroponic fodder dairy",
+   "counts": {
+    "2021": 65,
+    "2022": 74,
+    "2023": 96,
+    "2024": 99,
+    "2025": 136
+   },
+   "growth_pct": 20.3,
+   "vs_all_research_pp": 11.9,
+   "label": "rising"
+  },
+  "dairy_quality": {
+   "query": "milk adulteration detection sensor",
+   "counts": {
+    "2021": 357,
+    "2022": 485,
+    "2023": 559,
+    "2024": 565,
+    "2025": 713
+   },
+   "growth_pct": 18.9,
+   "vs_all_research_pp": 10.5,
+   "label": "rising"
+  },
+  "poultry_health": {
+   "query": "poultry farm monitoring disease detection",
+   "counts": {
+    "2021": 2666,
+    "2022": 2819,
+    "2023": 3588,
+    "2024": 4115,
+    "2025": 4491
+   },
+   "growth_pct": 13.9,
+   "vs_all_research_pp": 5.5,
+   "label": "rising"
+  },
+  "tea_infusions": {
+   "query": "herbal infusion tea blend",
+   "counts": {
+    "2021": 214,
+    "2022": 307,
+    "2023": 388,
+    "2024": 487,
+    "2025": 562
+   },
+   "growth_pct": 27.3,
+   "vs_all_research_pp": 18.9,
+   "label": "rising"
+  },
+  "knitwear_small_batch": {
+   "query": "on demand apparel manufacturing small batch",
+   "counts": {
+    "2021": 200,
+    "2022": 247,
+    "2023": 292,
+    "2024": 326,
+    "2025": 505
+   },
+   "growth_pct": 26.1,
+   "vs_all_research_pp": 17.7,
+   "label": "rising"
+  },
+  "textile_effluent": {
+   "query": "textile effluent zero liquid discharge",
+   "counts": {
+    "2021": 626,
+    "2022": 777,
+    "2023": 914,
+    "2024": 836,
+    "2025": 941
+   },
+   "growth_pct": 10.7,
+   "vs_all_research_pp": 2.3,
+   "label": "flat"
+  },
+  "medical_nonwovens": {
+   "query": "medical nonwoven textile",
+   "counts": {
+    "2021": 619,
+    "2022": 680,
+    "2023": 858,
+    "2024": 800,
+    "2025": 733
+   },
+   "growth_pct": 4.3,
+   "vs_all_research_pp": -4.1,
+   "label": "cooling"
+  },
+  "garment_recycling": {
+   "query": "textile waste recycled fibre",
+   "counts": {
+    "2021": 1881,
+    "2022": 2342,
+    "2023": 3139,
+    "2024": 3189,
+    "2025": 3513
+   },
+   "growth_pct": 16.9,
+   "vs_all_research_pp": 8.5,
+   "label": "rising"
+  },
+  "sungudi_handloom_d2c": {
+   "query": "handloom ecommerce weavers",
+   "counts": {
+    "2021": 7,
+    "2022": 5,
+    "2023": 13,
+    "2024": 11,
+    "2025": 23
+   },
+   "growth_pct": 34.6,
+   "vs_all_research_pp": 26.2,
+   "label": "rising"
+  },
+  "textile_compliance_software": {
+   "query": "textile supply chain traceability compliance",
+   "counts": {
+    "2021": 548,
+    "2022": 671,
+    "2023": 899,
+    "2024": 1394,
+    "2025": 2508
+   },
+   "growth_pct": 46.3,
+   "vs_all_research_pp": 37.9,
+   "label": "rising"
+  },
+  "phc_diagnostics": {
+   "query": "point of care diagnostic device low cost",
+   "counts": {
+    "2021": 13043,
+    "2022": 13802,
+    "2023": 18710,
+    "2024": 21176,
+    "2025": 22255
+   },
+   "growth_pct": 14.3,
+   "vs_all_research_pp": 5.9,
+   "label": "rising"
+  },
+  "meddevice_contract_mfg": {
+   "query": "medical device contract manufacturing",
+   "counts": {
+    "2021": 5035,
+    "2022": 5393,
+    "2023": 6798,
+    "2024": 8423,
+    "2025": 6480
+   },
+   "growth_pct": 6.5,
+   "vs_all_research_pp": -1.9,
+   "label": "flat"
+  },
+  "siddha_nutraceuticals": {
+   "query": "siddha medicine standardization",
+   "counts": {
+    "2021": 364,
+    "2022": 420,
+    "2023": 503,
+    "2024": 545,
+    "2025": 996
+   },
+   "growth_pct": 28.6,
+   "vs_all_research_pp": 20.2,
+   "label": "rising"
+  },
+  "tier2_telehealth": {
+   "query": "telemedicine rural clinics India",
+   "counts": {
+    "2021": 731,
+    "2022": 860,
+    "2023": 1142,
+    "2024": 1309,
+    "2025": 1722
+   },
+   "growth_pct": 23.9,
+   "vs_all_research_pp": 15.5,
+   "label": "rising"
+  },
+  "bio_inputs": {
+   "query": "biofertilizer microbial inoculant",
+   "counts": {
+    "2021": 1185,
+    "2022": 1371,
+    "2023": 1872,
+    "2024": 1952,
+    "2025": 2584
+   },
+   "growth_pct": 21.5,
+   "vs_all_research_pp": 13.1,
+   "label": "rising"
+  },
+  "perishables_cold_chain": {
+   "query": "cold chain perishables India",
+   "counts": {
+    "2021": 530,
+    "2022": 650,
+    "2023": 741,
+    "2024": 809,
+    "2025": 1090
+   },
+   "growth_pct": 19.8,
+   "vs_all_research_pp": 11.4,
+   "label": "rising"
+  },
+  "ev_retrofit": {
+   "query": "electric vehicle retrofit conversion kit",
+   "counts": {
+    "2021": 27,
+    "2022": 38,
+    "2023": 42,
+    "2024": 31,
+    "2025": 57
+   },
+   "growth_pct": 20.5,
+   "vs_all_research_pp": 12.1,
+   "label": "rising"
+  },
+  "msme_last_mile": {
+   "query": "MSME logistics aggregation",
+   "counts": {
+    "2021": 40,
+    "2022": 60,
+    "2023": 71,
+    "2024": 99,
+    "2025": 159
+   },
+   "growth_pct": 41.2,
+   "vs_all_research_pp": 32.8,
+   "label": "rising"
+  },
+  "truck_telematics": {
+   "query": "fleet telematics fuel monitoring trucks",
+   "counts": {
+    "2021": 114,
+    "2022": 91,
+    "2023": 115,
+    "2024": 134,
+    "2025": 189
+   },
+   "growth_pct": 13.5,
+   "vs_all_research_pp": 5.1,
+   "label": "rising"
+  },
+  "pump_motor_controllers": {
+   "query": "smart pump controller remote monitoring",
+   "counts": {
+    "2021": 1188,
+    "2022": 1404,
+    "2023": 1699,
+    "2024": 1830,
+    "2025": 2191
+   },
+   "growth_pct": 16.5,
+   "vs_all_research_pp": 8.1,
+   "label": "rising"
+  },
+  "battery_bms": {
+   "query": "battery management system lithium pack",
+   "counts": {
+    "2021": 2118,
+    "2022": 2462,
+    "2023": 3150,
+    "2024": 3244,
+    "2025": 3848
+   },
+   "growth_pct": 16.1,
+   "vs_all_research_pp": 7.7,
+   "label": "rising"
+  },
+  "pcb_ems": {
+   "query": "printed circuit board assembly SME",
+   "counts": {
+    "2021": 67,
+    "2022": 80,
+    "2023": 114,
+    "2024": 111,
+    "2025": 105
+   },
+   "growth_pct": 11.9,
+   "vs_all_research_pp": 3.5,
+   "label": "rising"
+  },
+  "msme_energy_monitors": {
+   "query": "industrial energy monitoring SME",
+   "counts": {
+    "2021": 4939,
+    "2022": 6093,
+    "2023": 8259,
+    "2024": 9579,
+    "2025": 12491
+   },
+   "growth_pct": 26.1,
+   "vs_all_research_pp": 17.7,
+   "label": "rising"
+  },
+  "kitchen_appliances": {
+   "query": "kitchen appliance energy efficient grinder",
+   "counts": {
+    "2021": 13,
+    "2022": 15,
+    "2023": 16,
+    "2024": 15,
+    "2025": 18
+   },
+   "growth_pct": 8.5,
+   "vs_all_research_pp": 0.1,
+   "label": "flat"
+  },
+  "solar_pumps_dryers": {
+   "query": "solar dryer agricultural produce",
+   "counts": {
+    "2021": 1101,
+    "2022": 1292,
+    "2023": 1548,
+    "2024": 1518,
+    "2025": 1626
+   },
+   "growth_pct": 10.2,
+   "vs_all_research_pp": 1.8,
+   "label": "flat"
+  },
+  "rooftop_solar_msme": {
+   "query": "rooftop solar MSME financing",
+   "counts": {
+    "2021": 13,
+    "2022": 21,
+    "2023": 34,
+    "2024": 31,
+    "2025": 60
+   },
+   "growth_pct": 46.6,
+   "vs_all_research_pp": 38.2,
+   "label": "rising"
+  },
+  "biogas": {
+   "query": "biogas food waste digester",
+   "counts": {
+    "2021": 2827,
+    "2022": 2976,
+    "2023": 3445,
+    "2024": 3183,
+    "2025": 3411
+   },
+   "growth_pct": 4.8,
+   "vs_all_research_pp": -3.6,
+   "label": "cooling"
+  },
+  "wind_om": {
+   "query": "wind turbine maintenance predictive",
+   "counts": {
+    "2021": 4224,
+    "2022": 4549,
+    "2023": 5977,
+    "2024": 6676,
+    "2025": 7815
+   },
+   "growth_pct": 16.6,
+   "vs_all_research_pp": 8.2,
+   "label": "rising"
+  },
+  "leaf_plates": {
+   "query": "areca leaf plates biodegradable",
+   "counts": {
+    "2021": 25,
+    "2022": 40,
+    "2023": 75,
+    "2024": 50,
+    "2025": 61
+   },
+   "growth_pct": 25.0,
+   "vs_all_research_pp": 16.6,
+   "label": "rising"
+  },
+  "groundwater_recharge": {
+   "query": "groundwater recharge rainwater harvesting",
+   "counts": {
+    "2021": 800,
+    "2022": 815,
+    "2023": 986,
+    "2024": 1034,
+    "2025": 1398
+   },
+   "growth_pct": 15.0,
+   "vs_all_research_pp": 6.6,
+   "label": "rising"
+  },
+  "exporter_esg": {
+   "query": "supplier carbon footprint reporting SME",
+   "counts": {
+    "2021": 596,
+    "2022": 796,
+    "2023": 1297,
+    "2024": 1759,
+    "2025": 2612
+   },
+   "growth_pct": 44.7,
+   "vs_all_research_pp": 36.3,
+   "label": "rising"
+  },
+  "flood_heat_warning": {
+   "query": "urban flood early warning system",
+   "counts": {
+    "2021": 4827,
+    "2022": 4955,
+    "2023": 6556,
+    "2024": 6868,
+    "2025": 10280
+   },
+   "growth_pct": 20.8,
+   "vs_all_research_pp": 12.4,
+   "label": "rising"
+  },
+  "msme_invoice_finance": {
+   "query": "invoice financing MSME TReDS",
+   "counts": {
+    "2021": 6,
+    "2022": 2,
+    "2023": 5,
+    "2024": 4,
+    "2025": 9
+   },
+   "growth_pct": 10.7,
+   "vs_all_research_pp": 2.3,
+   "label": "flat"
+  },
+  "fpo_credit": {
+   "query": "agricultural credit farmer producer organisations",
+   "counts": {
+    "2021": 1697,
+    "2022": 1657,
+    "2023": 2217,
+    "2024": 2053,
+    "2025": 2534
+   },
+   "growth_pct": 10.5,
+   "vs_all_research_pp": 2.1,
+   "label": "flat"
+  },
+  "trader_books": {
+   "query": "small business bookkeeping app vernacular",
+   "counts": {
+    "2021": 3,
+    "2022": 3,
+    "2023": 4,
+    "2024": 6,
+    "2025": 7
+   },
+   "growth_pct": 23.6,
+   "vs_all_research_pp": 15.2,
+   "label": "rising"
+  },
+  "shg_savings": {
+   "query": "self help group digital bookkeeping",
+   "counts": {
+    "2021": 406,
+    "2022": 440,
+    "2023": 586,
+    "2024": 611,
+    "2025": 896
+   },
+   "growth_pct": 21.9,
+   "vs_all_research_pp": 13.5,
+   "label": "rising"
+  },
+  "tamil_localisation": {
+   "query": "Tamil natural language processing",
+   "counts": {
+    "2021": 1894,
+    "2022": 2337,
+    "2023": 3018,
+    "2024": 3153,
+    "2025": 3956
+   },
+   "growth_pct": 20.2,
+   "vs_all_research_pp": 11.8,
+   "label": "rising"
+  },
+  "local_govtech": {
+   "query": "e-governance municipal services",
+   "counts": {
+    "2021": 13239,
+    "2022": 14554,
+    "2023": 18102,
+    "2024": 18757,
+    "2025": 25367
+   },
+   "growth_pct": 17.7,
+   "vs_all_research_pp": 9.3,
+   "label": "rising"
+  },
+  "cold_room_monitoring": {
+   "query": "cold storage temperature monitoring IoT",
+   "counts": {
+    "2021": 1043,
+    "2022": 1446,
+    "2023": 1694,
+    "2024": 1954,
+    "2025": 3248
+   },
+   "growth_pct": 32.8,
+   "vs_all_research_pp": 24.4,
+   "label": "rising"
+  },
+  "machine_monitoring": {
+   "query": "machine monitoring retrofit SME industry 4.0",
+   "counts": {
+    "2021": 54,
+    "2022": 61,
+    "2023": 66,
+    "2024": 87,
+    "2025": 144
+   },
+   "growth_pct": 27.8,
+   "vs_all_research_pp": 19.4,
+   "label": "rising"
+  },
+  "water_level_sensors": {
+   "query": "water tank level sensor IoT",
+   "counts": {
+    "2021": 983,
+    "2022": 1180,
+    "2023": 1648,
+    "2024": 1857,
+    "2025": 2375
+   },
+   "growth_pct": 24.7,
+   "vs_all_research_pp": 16.3,
+   "label": "rising"
+  },
+  "crop_disease_ai": {
+   "query": "plant disease detection deep learning",
+   "counts": {
+    "2021": 7693,
+    "2022": 9923,
+    "2023": 15813,
+    "2024": 19234,
+    "2025": 22874
+   },
+   "growth_pct": 31.3,
+   "vs_all_research_pp": 22.9,
+   "label": "rising"
+  },
+  "fabric_defect_ai": {
+   "query": "fabric defect detection computer vision",
+   "counts": {
+    "2021": 430,
+    "2022": 593,
+    "2023": 839,
+    "2024": 1006,
+    "2025": 1103
+   },
+   "growth_pct": 26.6,
+   "vs_all_research_pp": 18.2,
+   "label": "rising"
+  },
+  "jobshop_erp": {
+   "query": "SME manufacturing ERP scheduling",
+   "counts": {
+    "2021": 424,
+    "2022": 566,
+    "2023": 670,
+    "2024": 691,
+    "2025": 1318
+   },
+   "growth_pct": 32.8,
+   "vs_all_research_pp": 24.4,
+   "label": "rising"
+  },
+  "clinic_pharmacy_saas": {
+   "query": "clinic management software small clinics",
+   "counts": {
+    "2021": 25106,
+    "2022": 27643,
+    "2023": 35478,
+    "2024": 38609,
+    "2025": 37871
+   },
+   "growth_pct": 10.8,
+   "vs_all_research_pp": 2.4,
+   "label": "flat"
+  }
+ }
+}

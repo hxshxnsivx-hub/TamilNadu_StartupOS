@@ -1,0 +1,308 @@
+{
+ "id": "common",
+ "label": "Any startup (common spine)",
+ "about": "Milestones every founder in Tamil Nadu goes through, whatever the product. Domain packs add to these and can replace them by id.",
+ "cues": [],
+ "templates": [
+  {
+   "id": "c_define",
+   "phase": "Ideation",
+   "title": "Define the product and who pays for it",
+   "deliverables": [
+    "One-paragraph product definition",
+    "Named first buyer segment",
+    "What the buyer uses today instead"
+   ],
+   "effort_weeks": 2,
+   "min_months": 1,
+   "core": true,
+   "relevance": 100,
+   "done_from_stage": "prototype",
+   "why": "Every roadmap starts by pinning the product and the buyer."
+  },
+  {
+   "id": "c_discovery",
+   "phase": "Validation",
+   "title": "Talk to 20 potential buyers",
+   "deliverables": [
+    "20 buyer conversations",
+    "Top 3 pains, ranked",
+    "Price they would pay"
+   ],
+   "effort_weeks": 4,
+   "min_months": 1,
+   "relevance": 90,
+   "depends_on": [
+    "c_define"
+   ],
+   "done_from_stage": "mvp",
+   "why": "Validates demand before money is spent."
+  },
+  {
+   "id": "c_name",
+   "phase": "Ideation",
+   "title": "Check the brand name and file a trademark",
+   "deliverables": [
+    "Trademark search on IP India",
+    "Domain and social handles",
+    "Trademark application in the right class"
+   ],
+   "effort_weeks": 2,
+   "min_months": 1,
+   "relevance": 70,
+   "depends_on": [
+    "c_define"
+   ],
+   "applies": {
+    "field": "product_form",
+    "op": "in",
+    "value": [
+     "physical",
+     "hybrid",
+     "software"
+    ],
+    "label": "you sell under a brand"
+   },
+   "why": "A name you cannot protect is a name you may lose after building it.",
+   "calendar": true
+  },
+  {
+   "id": "c_entity",
+   "phase": "MVP",
+   "title": "Choose the business entity and register it",
+   "deliverables": [
+    "Entity choice: proprietorship, LLP or private limited",
+    "Incorporation through MCA (SPICe+) for LLP or company",
+    "PAN, TAN and a current account"
+   ],
+   "effort_weeks": 3,
+   "min_months": 1,
+   "core": true,
+   "relevance": 95,
+   "depends_on": [
+    "c_define"
+   ],
+   "done_from_stage": "revenue",
+   "why": "Licences, bank loans and DPIIT recognition all need a legal entity; DPIIT recognition needs a private limited company, LLP or registered partnership.",
+   "calendar": true
+  },
+  {
+   "id": "c_registrations",
+   "phase": "MVP",
+   "title": "Business registrations",
+   "deliverables": [
+    "Udyam (MSME) certificate — free, online",
+    {
+     "text": "GST registration",
+     "applies": {
+      "any": [
+       {
+        "field": "sells_online",
+        "op": "is_true",
+        "label": "you sell through marketplaces"
+       },
+       {
+        "field": "geo_scope",
+        "op": "in",
+        "value": [
+         "national",
+         "export"
+        ],
+        "label": "you sell across states"
+       },
+       {
+        "field": "projected_turnover_lakh",
+        "op": "gt",
+        "value": 40,
+        "label": "turnover may cross ₹40 lakh"
+       }
+      ]
+     }
+    },
+    {
+     "text": "DPIIT startup recognition (needs a private limited company, LLP or registered partnership)",
+     "applies": {
+      "field": "funding_route",
+      "op": "in",
+      "value": [
+       "grant",
+       "equity",
+       "mixed"
+      ],
+      "label": "you plan grants or equity"
+     }
+    },
+    {
+     "text": "StartupTN registration",
+     "applies": {
+      "field": "in_tamil_nadu",
+      "op": "is_true",
+      "label": "you are in Tamil Nadu"
+     }
+    }
+   ],
+   "effort_weeks": 3,
+   "min_months": 1,
+   "calendar": true,
+   "core": true,
+   "relevance": 90,
+   "depends_on": [
+    "c_entity"
+   ],
+   "done_from_stage": "revenue",
+   "why": "Udyam unlocks MSME schemes and collateral-free loans; GST, DPIIT and StartupTN are added only when your answers need them (GST threshold for goods in Tamil Nadu: ₹40 lakh — verify)."
+  },
+  {
+   "id": "c_compliance",
+   "phase": "MVP",
+   "title": "Licences and approvals for your product",
+   "deliverables": [
+    "{regulatory_items}"
+   ],
+   "effort_weeks": 6,
+   "min_months": 2,
+   "calendar": true,
+   "relevance": 95,
+   "depends_on": [
+    "c_entity"
+   ],
+   "applies": {
+    "field": "has_regulatory",
+    "op": "is_true",
+    "label": "your product is regulated"
+   },
+   "why": "The approvals your product's domain needs, each with its source and how sure we are."
+  },
+  {
+   "id": "c_pilot",
+   "phase": "Launch",
+   "title": "Pilot with real buyers",
+   "deliverables": [
+    "Pilot with 5–10 buyers",
+    "Repeat-purchase or usage data"
+   ],
+   "effort_weeks": 6,
+   "min_months": 1,
+   "core": true,
+   "relevance": 90,
+   "depends_on": [
+    "c_entity"
+   ],
+   "done_from_stage": "revenue",
+   "why": "Turns interest into evidence before scaling spend."
+  },
+  {
+   "id": "c_grant",
+   "phase": "Growth",
+   "title": "Apply for seed grants",
+   "deliverables": [
+    "TANSEED or incubator seed application",
+    "Milestone plan for the grant"
+   ],
+   "effort_weeks": 8,
+   "min_months": 2,
+   "relevance": 70,
+   "depends_on": [
+    "c_pilot"
+   ],
+   "applies": {
+    "field": "funding_route",
+    "op": "in",
+    "value": [
+     "grant",
+     "mixed"
+    ],
+    "label": "you chose grants"
+   },
+   "why": "Your funding route is grants; Vanigam's catalogue shows which are open now."
+  },
+  {
+   "id": "c_loan",
+   "phase": "Growth",
+   "title": "Raise a scheme-linked bank loan",
+   "deliverables": [
+    "Subsidy check (NEEDS, UYEGP, PMEGP)",
+    "Loan application at the matched branch",
+    "Credit guarantee (CGTMSE) where needed"
+   ],
+   "effort_weeks": 8,
+   "min_months": 2,
+   "relevance": 75,
+   "depends_on": [
+    "c_registrations"
+   ],
+   "applies": {
+    "field": "funding_route",
+    "op": "in",
+    "value": [
+     "debt",
+     "mixed"
+    ],
+    "label": "you chose a loan"
+   },
+   "why": "Your funding route is debt; the bank-routing engine picks the scheme and branch."
+  },
+  {
+   "id": "c_equity",
+   "phase": "Growth",
+   "title": "Raise from angels",
+   "deliverables": [
+    "Pitch deck with pilot data",
+    "Shortlist from Vanigam's investor match",
+    "Term sheet"
+   ],
+   "effort_weeks": 12,
+   "min_months": 3,
+   "relevance": 70,
+   "depends_on": [
+    "c_pilot",
+    "c_registrations"
+   ],
+   "applies": {
+    "field": "funding_route",
+    "op": "in",
+    "value": [
+     "equity",
+     "mixed"
+    ],
+    "label": "you chose equity"
+   },
+   "why": "Your funding route is equity; raise after pilot evidence exists."
+  },
+  {
+   "id": "c_customers",
+   "phase": "Growth",
+   "title": "First 100 paying customers",
+   "deliverables": [
+    "100 paying customers",
+    "Unit economics from real sales"
+   ],
+   "effort_weeks": 12,
+   "min_months": 2,
+   "core": true,
+   "relevance": 85,
+   "depends_on": [
+    "c_pilot"
+   ],
+   "why": "The proof every later step depends on."
+  },
+  {
+   "id": "c_scale",
+   "phase": "Scale",
+   "title": "Scale what works",
+   "deliverables": [
+    "Hiring plan",
+    "Second channel or region",
+    "Monthly operating review"
+   ],
+   "effort_weeks": 16,
+   "min_months": 3,
+   "core": true,
+   "relevance": 80,
+   "depends_on": [
+    "c_customers"
+   ],
+   "why": "Growth after the unit economics are known."
+  }
+ ]
+}

@@ -1,0 +1,871 @@
+{
+ "id": "medical_emi",
+ "idea": "instalment plans for medical treatment offered at hospital billing desks in Chennai",
+ "recorded": "2026-10-10",
+ "coverage": [
+  {
+   "source": "papers",
+   "status": "ok"
+  },
+  {
+   "source": "projects",
+   "status": "ok"
+  },
+  {
+   "source": "patents",
+   "status": "no_key"
+  },
+  {
+   "source": "trials",
+   "status": "ok"
+  }
+ ],
+ "scan": {
+  "idea": "instalment plans for medical treatment offered at hospital billing desks in Chennai",
+  "queries": {
+   "papers": "instalment plans",
+   "trials": "instalment plans medical",
+   "projects": "instalment plans medical",
+   "patents": "instalment plans",
+   "local": "instalment plans medical treatment offered hospital billing"
+  },
+  "associated_domains": {
+   "basis": "papers",
+   "domains": [
+    {
+     "name": "Social Sciences",
+     "share_pct": 79
+    },
+    {
+     "name": "Physical Sciences",
+     "share_pct": 14
+    },
+    {
+     "name": "Health Sciences",
+     "share_pct": 4
+    },
+    {
+     "name": "Life Sciences",
+     "share_pct": 3
+    }
+   ],
+   "fields": [
+    {
+     "name": "Social Sciences",
+     "share_pct": 30
+    },
+    {
+     "name": "Business, Management and Accounting",
+     "share_pct": 18
+    },
+    {
+     "name": "Economics, Econometrics and Finance",
+     "share_pct": 13
+    },
+    {
+     "name": "Arts and Humanities",
+     "share_pct": 11
+    },
+    {
+     "name": "Engineering",
+     "share_pct": 8
+    },
+    {
+     "name": "Mathematics",
+     "share_pct": 5
+    },
+    {
+     "name": "Health Professions",
+     "share_pct": 4
+    },
+    {
+     "name": "Psychology",
+     "share_pct": 3
+    }
+   ],
+   "subfields": [
+    {
+     "name": "Accounting",
+     "share_pct": 18
+    },
+    {
+     "name": "Law",
+     "share_pct": 10
+    },
+    {
+     "name": "Economics and Econometrics",
+     "share_pct": 9
+    },
+    {
+     "name": "Political Science and International Relations",
+     "share_pct": 9
+    },
+    {
+     "name": "Civil and Structural Engineering",
+     "share_pct": 6
+    },
+    {
+     "name": "History and Philosophy of Science",
+     "share_pct": 5
+    },
+    {
+     "name": "Numerical Analysis",
+     "share_pct": 5
+    },
+    {
+     "name": "Sociology and Political Science",
+     "share_pct": 5
+    }
+   ],
+   "topics": [
+    {
+     "name": "Historical Economic and Legal Thought",
+     "share_pct": 9
+    },
+    {
+     "name": "Financial Literacy, Pension, Retirement Analysis",
+     "share_pct": 7
+    },
+    {
+     "name": "Legal principles and applications",
+     "share_pct": 6
+    },
+    {
+     "name": "Iterative Methods for Nonlinear Equations",
+     "share_pct": 5
+    },
+    {
+     "name": "Aviation History and Innovations",
+     "share_pct": 5
+    },
+    {
+     "name": "Criminal Justice and Penology",
+     "share_pct": 5
+    },
+    {
+     "name": "Working Capital and Financial Performance",
+     "share_pct": 4
+    },
+    {
+     "name": "Political Economy and Marxism",
+     "share_pct": 4
+    }
+   ]
+  },
+  "vanigam_categories": [
+   "electrical",
+   "fintech",
+   "health_bio",
+   "saas"
+  ],
+  "papers": {
+   "total": 28543,
+   "by_year": {
+    "2023": 1989,
+    "2021": 1720,
+    "2020": 1685,
+    "2022": 1676,
+    "2024": 1654,
+    "2018": 1636,
+    "2025": 1605,
+    "2019": 1507,
+    "2026": 1272,
+    "2017": 1206,
+    "2016": 1142,
+    "2014": 912,
+    "2015": 874,
+    "2013": 780,
+    "2011": 689,
+    "2012": 630,
+    "2010": 583,
+    "2009": 498,
+    "2007": 370,
+    "2008": 357,
+    "2006": 293,
+    "2005": 251,
+    "2004": 240,
+    "2003": 213,
+    "2002": 191,
+    "2001": 163,
+    "2000": 148,
+    "1997": 140,
+    "1999": 128,
+    "1998": 116,
+    "1995": 107,
+    "1996": 105,
+    "1994": 97,
+    "1992": 90,
+    "1993": 81,
+    "1983": 76,
+    "1990": 73,
+    "1980": 72,
+    "1982": 72,
+    "1991": 72,
+    "1969": 67,
+    "1977": 67,
+    "1979": 66,
+    "1988": 66,
+    "1981": 64,
+    "1984": 64,
+    "1974": 61,
+    "1970": 60,
+    "1978": 58,
+    "1987": 58,
+    "1975": 54,
+    "1968": 52,
+    "1985": 52,
+    "1989": 52,
+    "1967": 51,
+    "1973": 49,
+    "1986": 48,
+    "1976": 47,
+    "1972": 46,
+    "1971": 43,
+    "1966": 41,
+    "1960": 39,
+    "1965": 38,
+    "1912": 31,
+    "1904": 30,
+    "1911": 30,
+    "1913": 30,
+    "1915": 30,
+    "1957": 29,
+    "1903": 28,
+    "1941": 28,
+    "1961": 28,
+    "1906": 27,
+    "1935": 27,
+    "1962": 27,
+    "1963": 27,
+    "1934": 25,
+    "1956": 25,
+    "1958": 25,
+    "1907": 24,
+    "1964": 24,
+    "1902": 23,
+    "1918": 23,
+    "1920": 23,
+    "1950": 22,
+    "1914": 21,
+    "1928": 21,
+    "1940": 21,
+    "1955": 21,
+    "1938": 20,
+    "1945": 20,
+    "1947": 20,
+    "1952": 20,
+    "1959": 20,
+    "1917": 19,
+    "1919": 19,
+    "1916": 18,
+    "1927": 18,
+    "1936": 18,
+    "1888": 17,
+    "1923": 17,
+    "1924": 17,
+    "1926": 17,
+    "1939": 17,
+    "1942": 17,
+    "1954": 17,
+    "1884": 16,
+    "1889": 16,
+    "1905": 16,
+    "1908": 16,
+    "1910": 16,
+    "1931": 16,
+    "1932": 16,
+    "1933": 16,
+    "1948": 16,
+    "1949": 16,
+    "1953": 16,
+    "1880": 15,
+    "1886": 15,
+    "1887": 15,
+    "1909": 15,
+    "1921": 15,
+    "1929": 15,
+    "1937": 15,
+    "1946": 15,
+    "1881": 14,
+    "1885": 13,
+    "1893": 13,
+    "1895": 13,
+    "1896": 13,
+    "1925": 13,
+    "1930": 13,
+    "1943": 13,
+    "1944": 13,
+    "1900": 12,
+    "1922": 12,
+    "1870": 11,
+    "1899": 11,
+    "1901": 11,
+    "1951": 11,
+    "1882": 10,
+    "1883": 10,
+    "1890": 10,
+    "1894": 10,
+    "1898": 10,
+    "1875": 9,
+    "1877": 9,
+    "1879": 9,
+    "1892": 9,
+    "1859": 7,
+    "1891": 7,
+    "1873": 6,
+    "1897": 6,
+    "1856": 5,
+    "1861": 5,
+    "1867": 5,
+    "1871": 5,
+    "1872": 5,
+    "1878": 5,
+    "1851": 4,
+    "1858": 4,
+    "1874": 4,
+    "1834": 3,
+    "1840": 3,
+    "1847": 3,
+    "1852": 3,
+    "1854": 3,
+    "1855": 3,
+    "1864": 3,
+    "1865": 3,
+    "1827": 2,
+    "1830": 2,
+    "1832": 2,
+    "1850": 2,
+    "1857": 2,
+    "1862": 2,
+    "1869": 2,
+    "1805": 1,
+    "1810": 1,
+    "1816": 1,
+    "1823": 1,
+    "1824": 1,
+    "1826": 1,
+    "1842": 1,
+    "1848": 1,
+    "1853": 1,
+    "1863": 1,
+    "1866": 1,
+    "1868": 1
+   },
+   "most_relevant": [
+    {
+     "title": "Intentionality on the Instalment Plan",
+     "year": 1998,
+     "cited_by": 24,
+     "venue": "Philosophy",
+     "url": "https://doi.org/10.1017/s0031819197000089",
+     "topics": [
+      {
+       "topic": "Philosophy and Theoretical Science",
+       "subfield": "Experimental and Cognitive Psychology",
+       "field": "Psychology",
+       "domain": "Social Sciences",
+       "score": 0.676800012588501
+      },
+      {
+       "topic": "Syntax, Semantics, Linguistic Variation",
+       "subfield": "Language and Linguistics",
+       "field": "Arts and Humanities",
+       "domain": "Social Sciences",
+       "score": 0.1859000027179718
+      },
+      {
+       "topic": "Philosophy, Science, and History",
+       "subfield": "History and Philosophy of Science",
+       "field": "Arts and Humanities",
+       "domain": "Social Sciences",
+       "score": 0.04399999976158142
+      }
+     ]
+    },
+    {
+     "title": "Paradise on the Instalment Plan",
+     "year": 2025,
+     "cited_by": 2,
+     "venue": "BRILL eBooks",
+     "url": "https://doi.org/10.1163/9789004756731",
+     "topics": [
+      {
+       "topic": "Australian History and Society",
+       "subfield": "Sociology and Political Science",
+       "field": "Social Sciences",
+       "domain": "Social Sciences",
+       "score": 0.10679999738931656
+      },
+      {
+       "topic": "Housing, Finance, and Neoliberalism",
+       "subfield": "Finance",
+       "field": "Economics, Econometrics and Finance",
+       "domain": "Social Sciences",
+       "score": 0.06989999860525131
+      },
+      {
+       "topic": "Housing Market and Economics",
+       "subfield": "Economics and Econometrics",
+       "field": "Economics, Econometrics and Finance",
+       "domain": "Social Sciences",
+       "score": 0.0608999989926815
+      }
+     ]
+    },
+    {
+     "title": "Are Instalment Plans Usurious",
+     "year": 1952,
+     "cited_by": 0,
+     "venue": "Minnesota law review",
+     "url": "https://doi.org/10.24926/265535.3600",
+     "topics": [
+      {
+       "topic": "Historical Economic and Legal Thought",
+       "subfield": "Political Science and International Relations",
+       "field": "Social Sciences",
+       "domain": "Social Sciences",
+       "score": 0.8086000084877014
+      },
+      {
+       "topic": "Legal principles and applications",
+       "subfield": "Law",
+       "field": "Social Sciences",
+       "domain": "Social Sciences",
+       "score": 0.15060000121593475
+      },
+      {
+       "topic": "Legal and Constitutional Studies",
+       "subfield": "Economics and Econometrics",
+       "field": "Economics, Econometrics and Finance",
+       "domain": "Social Sciences",
+       "score": 0.012299999594688416
+      }
+     ]
+    },
+    {
+     "title": "Investments on the Instalment Plan",
+     "year": 1912,
+     "cited_by": 0,
+     "venue": "Proceedings of the Academy of Political Science in the City of New York",
+     "url": "https://doi.org/10.2307/1171940",
+     "topics": [
+      {
+       "topic": "Financial Literacy, Pension, Retirement Analysis",
+       "subfield": "Accounting",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.25609999895095825
+      },
+      {
+       "topic": "Economic and Fiscal Studies",
+       "subfield": "Economics and Econometrics",
+       "field": "Economics, Econometrics and Finance",
+       "domain": "Social Sciences",
+       "score": 0.09359999746084213
+      },
+      {
+       "topic": "Corporate Finance and Governance",
+       "subfield": "Accounting",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.0803999975323677
+      }
+     ]
+    },
+    {
+     "title": "Death on the Instalment Plan",
+     "year": 1966,
+     "cited_by": 1,
+     "venue": "Medical Entomology and Zoology",
+     "url": "https://openalex.org/W584489190",
+     "topics": [
+      {
+       "topic": "Death, Funerary Practices, and Mourning",
+       "subfield": "Anthropology",
+       "field": "Social Sciences",
+       "domain": "Social Sciences",
+       "score": 0.29739999771118164
+      },
+      {
+       "topic": "Forensic Entomology and Diptera Studies",
+       "subfield": "Insect Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.23360000550746918
+      },
+      {
+       "topic": "Insects and Parasite Interactions",
+       "subfield": "Health, Toxicology and Mutagenesis",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 0.08219999819993973
+      }
+     ]
+    },
+    {
+     "title": "Are Instalment Plans Usurious",
+     "year": 1952,
+     "cited_by": 0,
+     "venue": null,
+     "url": "https://openalex.org/W3200211420",
+     "topics": [
+      {
+       "topic": "Historical Economic and Legal Thought",
+       "subfield": "Political Science and International Relations",
+       "field": "Social Sciences",
+       "domain": "Social Sciences",
+       "score": 0.9980000257492065
+      },
+      {
+       "topic": "Islamic Finance and Banking Studies",
+       "subfield": "Accounting",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.00039999998989515007
+      },
+      {
+       "topic": "Financial Literacy, Pension, Retirement Analysis",
+       "subfield": "Accounting",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.00019999999494757503
+      }
+     ]
+    },
+    {
+     "title": "Planes on the Instalment Plan, Curtiss-Caproni, and more",
+     "year": 1929,
+     "cited_by": 0,
+     "venue": "Scientific American",
+     "url": "https://doi.org/10.1038/scientificamerican0429-356",
+     "topics": [
+      {
+       "topic": "Aviation History and Innovations",
+       "subfield": "History and Philosophy of Science",
+       "field": "Arts and Humanities",
+       "domain": "Social Sciences",
+       "score": 0.9937000274658203
+      },
+      {
+       "topic": "Advanced Aircraft Design and Technologies",
+       "subfield": "Global and Planetary Change",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 0.00139999995008111
+      },
+      {
+       "topic": "Military Technology and Strategies",
+       "subfield": "Aerospace Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.0005000000237487257
+      }
+     ]
+    },
+    {
+     "title": "Social and Economic Consequences of Buying on the Instalment Plan",
+     "year": 1927,
+     "cited_by": 3,
+     "venue": "The Annals of the American Academy of Political and Social Science",
+     "url": "https://doi.org/10.1177/0002716227129001s03",
+     "topics": [
+      {
+       "topic": "Financial Literacy, Pension, Retirement Analysis",
+       "subfield": "Accounting",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.7470999956130981
+      },
+      {
+       "topic": "Consumer Market Behavior and Pricing",
+       "subfield": "Marketing",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.03290000185370445
+      },
+      {
+       "topic": "Economic Theory and Policy",
+       "subfield": "General Economics, Econometrics and Finance",
+       "field": "Economics, Econometrics and Finance",
+       "domain": "Social Sciences",
+       "score": 0.024900000542402267
+      }
+     ]
+    }
+   ],
+   "most_cited": [
+    {
+     "title": "Artificial Intelligence (AI): Multidisciplinary perspectives on emerging challenges, opportunities, and agenda for research, practice and policy",
+     "year": 2019,
+     "cited_by": 4537,
+     "venue": "International Journal of Information Management",
+     "url": "https://doi.org/10.1016/j.ijinfomgt.2019.08.002",
+     "topics": [
+      {
+       "topic": "Artificial Intelligence Applications",
+       "subfield": "Artificial Intelligence",
+       "field": "Computer Science",
+       "domain": "Physical Sciences",
+       "score": 0.9628999829292297
+      },
+      {
+       "topic": "Impact of AI and Big Data on Business and Society",
+       "subfield": "Management Science and Operations Research",
+       "field": "Decision Sciences",
+       "domain": "Social Sciences",
+       "score": 0.035100001841783524
+      },
+      {
+       "topic": "Ethics and Social Impacts of AI",
+       "subfield": "Safety Research",
+       "field": "Social Sciences",
+       "domain": "Social Sciences",
+       "score": 0.00139999995008111
+      }
+     ]
+    },
+    {
+     "title": "Gaia Data Release 3",
+     "year": 2022,
+     "cited_by": 4179,
+     "venue": "Astronomy and Astrophysics",
+     "url": "https://doi.org/10.1051/0004-6361/202243940",
+     "topics": [
+      {
+       "topic": "Stellar, planetary, and galactic studies",
+       "subfield": "Astronomy and Astrophysics",
+       "field": "Physics and Astronomy",
+       "domain": "Physical Sciences",
+       "score": 0.9965999722480774
+      },
+      {
+       "topic": "Astronomy and Astrophysical Research",
+       "subfield": "Instrumentation",
+       "field": "Physics and Astronomy",
+       "domain": "Physical Sciences",
+       "score": 0.003000000026077032
+      },
+      {
+       "topic": "Galaxies: Formation, Evolution, Phenomena",
+       "subfield": "Astronomy and Astrophysics",
+       "field": "Physics and Astronomy",
+       "domain": "Physical Sciences",
+       "score": 9.999999747378752e-05
+      }
+     ]
+    },
+    {
+     "title": "Parkinson's disease",
+     "year": 2021,
+     "cited_by": 3854,
+     "venue": "The Lancet",
+     "url": "https://doi.org/10.1016/s0140-6736(21)00218-x",
+     "topics": [
+      {
+       "topic": "Parkinson's Disease Mechanisms and Treatments",
+       "subfield": "Neurology",
+       "field": "Medicine",
+       "domain": "Health Sciences",
+       "score": 0.9994999766349792
+      },
+      {
+       "topic": "Neurological disorders and treatments",
+       "subfield": "Neurology",
+       "field": "Medicine",
+       "domain": "Health Sciences",
+       "score": 0.00019999999494757503
+      },
+      {
+       "topic": "Nuclear Receptors and Signaling",
+       "subfield": "Cellular and Molecular Neuroscience",
+       "field": "Neuroscience",
+       "domain": "Life Sciences",
+       "score": 0.0
+      }
+     ]
+    },
+    {
+     "title": "Crime and Punishment: An Economic Approach",
+     "year": 1968,
+     "cited_by": 1891,
+     "venue": "Palgrave Macmillan UK eBooks",
+     "url": "https://doi.org/10.1002/9780470752135.ch25",
+     "topics": [
+      {
+       "topic": "Law, Economics, and Judicial Systems",
+       "subfield": "Economics and Econometrics",
+       "field": "Economics, Econometrics and Finance",
+       "domain": "Social Sciences",
+       "score": 0.986299991607666
+      },
+      {
+       "topic": "Legal and Constitutional Studies",
+       "subfield": "Economics and Econometrics",
+       "field": "Economics, Econometrics and Finance",
+       "domain": "Social Sciences",
+       "score": 0.008500000461935997
+      },
+      {
+       "topic": "Criminal Justice and Penology",
+       "subfield": "Law",
+       "field": "Social Sciences",
+       "domain": "Social Sciences",
+       "score": 0.003000000026077032
+      }
+     ]
+    },
+    {
+     "title": "Identity and Language Learning",
+     "year": 2013,
+     "cited_by": 1755,
+     "venue": "Multilingual Matters eBooks",
+     "url": "https://doi.org/10.21832/9781783090563",
+     "topics": [
+      {
+       "topic": "EFL/ESL Teaching and Learning",
+       "subfield": "Language and Linguistics",
+       "field": "Arts and Humanities",
+       "domain": "Social Sciences",
+       "score": 0.975600004196167
+      },
+      {
+       "topic": "Multilingual Education and Policy",
+       "subfield": "Linguistics and Language",
+       "field": "Social Sciences",
+       "domain": "Social Sciences",
+       "score": 0.013899999670684338
+      },
+      {
+       "topic": "Second Language Learning and Teaching",
+       "subfield": "Literature and Literary Theory",
+       "field": "Arts and Humanities",
+       "domain": "Social Sciences",
+       "score": 0.0020000000949949026
+      }
+     ]
+    }
+   ]
+  },
+  "trials": {
+   "total": 0,
+   "items": []
+  },
+  "projects": {
+   "total": 0,
+   "items": []
+  },
+  "patents": {
+   "total": 0,
+   "items": []
+  },
+  "local": {
+   "startups": [
+    {
+     "name": "Dr. Agarwal's Health Care Limited",
+     "district": "chennai",
+     "description": "Dr. Agarwal's Health Care is a listed eye-hospital chain with its registered office in Chennai, running eye hospitals across India and Africa.",
+     "url": "https://www.dragarwal.com"
+    },
+    {
+     "name": "Dr. Prem's Foot Care Hospital Private Limited",
+     "district": "chennai",
+     "description": "Dr. Prem’s Footcare Hospital Pvt. Ltd. is an advanced healthcare startup transforming diabetic foot care, varicose vein treatment, and limb-saving services through modern technology and patient-centric innovation. With seed funding, we aim to expand integrated podiatry, vascular, and rehab care across India through enhanced infrastructure and digital health solutions",
+     "url": "https://www.chennaidiabeticfootcare.com"
+    },
+    {
+     "name": "VA Tech Wabag Limited",
+     "district": "chennai",
+     "description": "VA Tech Wabag is a listed water-technology company headquartered in Chennai, building and operating water and wastewater treatment plants worldwide.",
+     "url": "https://www.wabag.com"
+    }
+   ],
+   "registry_domains": [
+    {
+     "id": "medical_tourism_facilitation",
+     "label": "Medical travel facilitation"
+    },
+    {
+     "id": "medical_emi",
+     "label": "Instalment plans for medical treatment"
+    }
+   ]
+  },
+  "elements": [],
+  "discuss": [
+   {
+    "field": "Economics, Econometrics and Finance",
+    "questions": [
+     "Which regulated entity (bank, NBFC, insurer) do you partner with?"
+    ]
+   },
+   {
+    "field": "Engineering",
+    "questions": [
+     "Which sensors and hardware, at what unit cost, and how durable in Indian conditions?",
+     "What certification does the hardware need before sale?"
+    ]
+   },
+   {
+    "field": "Health Professions",
+    "questions": [
+     "How does it fit the nurse's or caregiver's routine without adding work?"
+    ]
+   },
+   {
+    "field": "Psychology",
+    "questions": [
+     "How do you measure that users can and will use it day to day?"
+    ]
+   },
+   {
+    "field": "Any idea",
+    "questions": [
+     "Who is the first buyer, and what do they use today instead?",
+     "What exactly is new compared with the closest prior art found?",
+     "Which part could be protected (patent, design, trademark), and which is already public?"
+    ]
+   }
+  ],
+  "coverage": [
+   {
+    "source": "papers",
+    "status": "ok",
+    "found": 28543,
+    "note": ""
+   },
+   {
+    "source": "projects",
+    "status": "ok",
+    "found": 0,
+    "note": ""
+   },
+   {
+    "source": "patents",
+    "status": "no_key",
+    "found": 0,
+    "note": "Patents not searched: add a free PatentsView key (PATENTSVIEW_API_KEY)"
+   },
+   {
+    "source": "trials",
+    "status": "ok",
+    "found": 0,
+    "note": ""
+   }
+  ],
+  "caveat": "Counts come from the sources listed in coverage. 'Nothing found' means nothing in those sources, not that the idea is new; have a patent attorney search before filing."
+ },
+ "novelty": {
+  "elements": [],
+  "pairs": [],
+  "context": {
+   "searched": false
+  },
+  "statement": {
+   "type": "unclear",
+   "text": "I couldn't split the idea into searchable parts. I can't judge novelty yet."
+  },
+  "levers": [],
+  "status": "skipped",
+  "caveat": "Not found in these sources is not proof of novelty; have a patent attorney search before filing."
+ }
+}

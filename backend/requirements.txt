@@ -1,0 +1,27 @@
+# Canonical dependency list mirrors pyproject.toml [project.dependencies].
+# For development install prefer:  pip install -e ".[dev]"
+# This file is provided for environments that expect requirements.txt.
+
+fastapi>=0.111
+uvicorn[standard]>=0.30
+pydantic>=2.7
+pydantic-settings>=2.3
+sqlalchemy[asyncio]>=2.0
+asyncpg>=0.29
+alembic>=1.13
+redis>=5.0
+pgvector>=0.3
+python-jose[cryptography]>=3.3
+passlib[bcrypt]>=1.7
+python-multipart>=0.0.9
+httpx>=0.27
+tenacity>=8.4
+structlog>=24.1
+ortools>=9.10
+networkx>=3.3
+scipy>=1.13
+numpy>=1.26
+langgraph>=0.1
+langchain-core>=0.2
+anthropic>=0.30
+openai>=1.35

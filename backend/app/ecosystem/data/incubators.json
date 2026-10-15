@@ -1,0 +1,627 @@
+{
+ "_meta": {
+  "title": "Incubators for the pilot districts (Chennai region, Coimbatore, Madurai) and nearby",
+  "checked": "2026-10-04",
+  "fields": {
+   "district": "Pilot district the incubator serves; region notes when it sits just outside (e.g. Chengalpattu for Chennai metro)",
+   "pin": "Pin code of the campus, used to place it against hotspot zones",
+   "sectors": "Vanigam sector ids from the incubator's stated focus; 'general' means technology startups broadly",
+   "programmes": "Government programmes the incubator is part of, through which money reaches startups",
+   "confidence": "official = incubator or government site; secondary = reputable listing; to_verify = needs a call or site check",
+   "website": "The incubator's own site, checked by hand on 4 Oct 2026; null where none could be confirmed. Read weekly for intake by scripts/check_incubator_intake.py"
+  },
+  "programme_notes": {
+   "SISFS": "Startup India Seed Fund: up to ₹20L grant (proof of concept, prototype) and up to ₹50L convertible debt or debentures, paid by the incubator in milestones. DPIIT-recognised, incorporated within 2 years, under ₹10L prior government support.",
+   "NIDHI-PRAYAS": "DST: up to ₹10L to turn an idea into a prototype, up to 18 months, through a PRAYAS centre.",
+   "NIDHI-SSS": "DST Seed Support System: seed capital invested by the TBI in its incubatees.",
+   "NIDHI-TBI": "DST-recognised technology business incubator.",
+   "BioNEST": "BIRAC (DBT) bio-incubator: labs and equipment; incubatees prepare BIRAC BIG applications (up to ₹50L over 18 months, calls on 1 January and 1 July).",
+   "AIC": "Atal Incubation Centre under AIM, NITI Aayog.",
+   "RKVY-RAFTAAR": "Agri ministry: up to ₹5L idea/pre-seed after a two-month orientation (startup bears 10%), up to ₹25L seed for incubatees with an MVP.",
+   "TIDE 2.0": "MeitY: EiR stipend up to ₹4L (idea stage) or grant up to ₹7L (prototype) for ICT startups.",
+   "NABARD": "NABARD-promoted agri-business incubation; MABIF lists seed grants up to ₹25L."
+  }
+ },
+ "incubators": [
+  {
+   "id": "iitm_ic",
+   "name": "IIT Madras Incubation Cell",
+   "host": "IIT Madras",
+   "district": "chennai",
+   "area": "Taramani (IITM Research Park)",
+   "pin": "600113",
+   "sectors": [
+    "deeptech",
+    "manufacturing",
+    "cleantech",
+    "biotech_pharma",
+    "mobility"
+   ],
+   "stages": [
+    "pre_seed",
+    "seed"
+   ],
+   "programmes": [
+    "NIDHI-TBI",
+    "SISFS"
+   ],
+   "notes": "Umbrella incubator; ~300 deep-tech startups incubated, invests in its incubatees.",
+   "source_url": "https://www.indiascienceandtechnology.gov.in/innovations/incubators/incubation-cell-indian-institute-technology-madras-iit-madras",
+   "confidence": "official",
+   "website": "http://rtbi.in/incubationiitm/"
+  },
+  {
+   "id": "rtbi",
+   "name": "Rural Technology and Business Incubator (RTBI)",
+   "host": "IIT Madras",
+   "district": "chennai",
+   "area": "Taramani",
+   "pin": "600113",
+   "sectors": [
+    "agritech",
+    "edtech",
+    "fintech",
+    "healthtech"
+   ],
+   "stages": [
+    "pre_seed",
+    "seed"
+   ],
+   "programmes": [],
+   "notes": "Not-for-profit (2006). ICT and new technology for agriculture, education, financial inclusion, healthcare and livelihoods.",
+   "source_url": "https://www.indiascienceandtechnology.gov.in/innovations/incubators/rural-technology-and-business-incubator-rtbi-indian-institute-technology-iit-madras",
+   "confidence": "official",
+   "website": null
+  },
+  {
+   "id": "htic",
+   "name": "HTIC MedTech Incubator",
+   "host": "IIT Madras + DBT",
+   "district": "chennai",
+   "area": "IIT Madras",
+   "pin": "600036",
+   "sectors": [
+    "healthtech",
+    "biotech_pharma"
+   ],
+   "stages": [
+    "pre_seed",
+    "seed"
+   ],
+   "programmes": [
+    "BioNEST"
+   ],
+   "notes": "Medical-device innovators and early-stage medtech startups; about 50 medtech startups.",
+   "source_url": "https://www.indiascienceandtechnology.gov.in/innovations/incubators/healthcare-technology-innovation-centre-htic-indian-institute-technology-iit-madras",
+   "confidence": "official",
+   "website": "https://htic.iitm.ac.in/"
+  },
+  {
+   "id": "iitmrp_bionest",
+   "name": "BioNEST IIT Madras Research Park",
+   "host": "IITM Research Park",
+   "district": "chennai",
+   "area": "Taramani",
+   "pin": "600113",
+   "sectors": [
+    "biotech_pharma",
+    "healthtech"
+   ],
+   "stages": [
+    "pre_seed",
+    "seed"
+   ],
+   "programmes": [
+    "BioNEST"
+   ],
+   "notes": "BIRAC bio-incubation space and equipment.",
+   "source_url": "https://birac.nic.in/bionest.php",
+   "confidence": "official",
+   "website": null
+  },
+  {
+   "id": "aic_au",
+   "name": "AIC Anna University Incubation Foundation",
+   "host": "Anna University",
+   "district": "chennai",
+   "area": "Guindy",
+   "pin": "600025",
+   "sectors": [
+    "deeptech",
+    "healthtech",
+    "agritech",
+    "edtech",
+    "fintech",
+    "proptech"
+   ],
+   "stages": [
+    "pre_seed",
+    "seed"
+   ],
+   "programmes": [
+    "AIC"
+   ],
+   "notes": "Deep-tech startups in smart-city tech, health, agri, education and fintech.",
+   "source_url": "https://aim.gov.in/pdf/AIC_List_data.pdf",
+   "confidence": "official",
+   "website": null
+  },
+  {
+   "id": "ciic",
+   "name": "Crescent Innovation & Incubation Council (CIIC)",
+   "host": "B.S. Abdur Rahman Crescent Institute",
+   "district": "chennai",
+   "area": "Vandalur",
+   "pin": "600048",
+   "sectors": [
+    "biotech_pharma",
+    "healthtech",
+    "general"
+   ],
+   "stages": [
+    "pre_seed",
+    "seed"
+   ],
+   "programmes": [
+    "BioNEST",
+    "SISFS"
+   ],
+   "notes": "Section 8 company funded by BIRAC BioNEST; named among top bio-incubators (2020).",
+   "source_url": "https://birac.nic.in/bionest.php",
+   "confidence": "secondary",
+   "website": null
+  },
+  {
+   "id": "sriher_bionest",
+   "name": "Sri Ramachandra BIRAC-BioNEST Bioincubator",
+   "host": "SRIHER",
+   "district": "chennai",
+   "area": "Porur",
+   "pin": "600116",
+   "sectors": [
+    "healthtech",
+    "biotech_pharma"
+   ],
+   "stages": [
+    "pre_seed",
+    "seed"
+   ],
+   "programmes": [
+    "BioNEST"
+   ],
+   "notes": "Clinical and life-science incubation inside a medical university.",
+   "source_url": "https://birac.nic.in/bionest.php",
+   "confidence": "secondary",
+   "website": null
+  },
+  {
+   "id": "tanuvas_vif",
+   "name": "TANUVAS Veterinary Incubation Foundation",
+   "host": "Tamil Nadu Veterinary and Animal Sciences University",
+   "district": "chennai",
+   "area": "Vepery",
+   "pin": "600007",
+   "sectors": [
+    "agritech",
+    "biotech_pharma",
+    "food"
+   ],
+   "stages": [
+    "pre_seed",
+    "seed"
+   ],
+   "programmes": [
+    "BioNEST"
+   ],
+   "notes": "Animal husbandry, veterinary and dairy ventures.",
+   "source_url": "https://birac.nic.in/bionest.php",
+   "confidence": "secondary",
+   "website": null
+  },
+  {
+   "id": "gjbp_women",
+   "name": "Golden Jubilee Biotech Park for Women",
+   "host": "DBT, Govt of Tamil Nadu, MSSRF",
+   "district": "chennai",
+   "area": "Siruseri (Chengalpattu, Chennai region)",
+   "pin": "603103",
+   "sectors": [
+    "biotech_pharma",
+    "healthtech"
+   ],
+   "stages": [
+    "pre_seed",
+    "seed"
+   ],
+   "programmes": [
+    "BioNEST"
+   ],
+   "notes": "Biotech park and BioNEST for women entrepreneurs.",
+   "source_url": "https://birac.nic.in/bionest.php",
+   "confidence": "secondary",
+   "website": null
+  },
+  {
+   "id": "aic_great_lakes",
+   "name": "AIC Great Lakes Balachandran Incubator",
+   "host": "Great Lakes Institute of Management",
+   "district": "chennai",
+   "area": "Manamai, ECR (Chengalpattu, Chennai region)",
+   "pin": "603102",
+   "sectors": [
+    "fintech",
+    "agritech",
+    "healthtech",
+    "edtech",
+    "cleantech"
+   ],
+   "stages": [
+    "pre_seed",
+    "seed"
+   ],
+   "programmes": [
+    "AIC"
+   ],
+   "notes": "Fintech, agritech, healthtech, edtech and energy.",
+   "source_url": "https://aim.gov.in/pdf/AIC_List_data.pdf",
+   "confidence": "official",
+   "website": null
+  },
+  {
+   "id": "villgro",
+   "name": "Villgro Innovations Foundation",
+   "host": "Independent",
+   "district": "chennai",
+   "area": "Chennai",
+   "pin": "",
+   "sectors": [
+    "agritech",
+    "healthtech",
+    "cleantech",
+    "services"
+   ],
+   "stages": [
+    "seed",
+    "early"
+   ],
+   "programmes": [
+    "SISFS"
+   ],
+   "notes": "Social-enterprise incubator: climate-smart agriculture, healthcare, climate action, inclusive livelihoods.",
+   "source_url": "https://tracxn.com/d/investor-lists/accelerators-incubators-in-chennai-india/__rYaFId8hlNZ3sDKqwps8UfR_8qwkNyStBhTISvg62RQ",
+   "confidence": "secondary",
+   "website": "https://villgro.org/"
+  },
+  {
+   "id": "veltech_ti",
+   "name": "Vel Tech Technology Incubator",
+   "host": "Vel Tech",
+   "district": "chennai",
+   "area": "Avadi",
+   "pin": "600062",
+   "sectors": [
+    "general"
+   ],
+   "stages": [
+    "pre_seed",
+    "seed"
+   ],
+   "programmes": [
+    "SISFS"
+   ],
+   "notes": "Engineering-college incubator.",
+   "source_url": "https://seedfund.startupindia.gov.in/portfolio",
+   "confidence": "secondary",
+   "website": null
+  },
+  {
+   "id": "indigram",
+   "name": "Indigram Labs Foundation",
+   "host": "Independent",
+   "district": "chennai",
+   "area": "Chennai",
+   "pin": "",
+   "sectors": [
+    "general"
+   ],
+   "stages": [
+    "pre_seed",
+    "seed"
+   ],
+   "programmes": [
+    "SISFS"
+   ],
+   "notes": "SISFS incubator; sector focus to confirm.",
+   "source_url": "https://seedfund.startupindia.gov.in/portfolio",
+   "confidence": "to_verify",
+   "website": null
+  },
+  {
+   "id": "psg_step",
+   "name": "PSG-STEP",
+   "host": "PSG College of Technology",
+   "district": "coimbatore",
+   "area": "Peelamedu",
+   "pin": "641004",
+   "sectors": [
+    "saas",
+    "manufacturing",
+    "cleantech",
+    "biotech_pharma"
+   ],
+   "stages": [
+    "pre_seed",
+    "seed"
+   ],
+   "programmes": [
+    "SISFS",
+    "BioNEST",
+    "NIDHI-PRAYAS",
+    "TIDE 2.0"
+   ],
+   "notes": "One of the oldest Indian science parks; software, engineering and green technology, plus a BioNEST. Its site also lists NIDHI-EIR, a NIDHI Centre of Excellence, BIRAC SPARSH and iDEX partnership.",
+   "source_url": "https://birac.nic.in/bionest.php",
+   "confidence": "secondary",
+   "website": "https://www.psgstep.org/"
+  },
+  {
+   "id": "tnau_abis",
+   "name": "TNAU Agribusiness Incubation Society (ABIS-TBI)",
+   "host": "Tamil Nadu Agricultural University",
+   "district": "coimbatore",
+   "area": "Lawley Road",
+   "pin": "641003",
+   "sectors": [
+    "agritech",
+    "food"
+   ],
+   "stages": [
+    "pre_seed",
+    "seed"
+   ],
+   "programmes": [
+    "NIDHI-TBI"
+   ],
+   "notes": "Registered 2011; agriculture and allied, food processing, hi-tech agriculture.",
+   "source_url": "https://sites.google.com/a/tnau.ac.in/tbi/",
+   "confidence": "official",
+   "website": null
+  },
+  {
+   "id": "forge",
+   "name": "Forge (Coimbatore Innovation & Business Incubator)",
+   "host": "Kumaraguru College of Technology",
+   "district": "coimbatore",
+   "area": "Saravanampatti",
+   "pin": "641049",
+   "sectors": [
+    "electronics",
+    "deeptech",
+    "manufacturing",
+    "healthtech",
+    "agritech",
+    "biotech_pharma"
+   ],
+   "stages": [
+    "pre_seed",
+    "seed",
+    "early"
+   ],
+   "programmes": [
+    "SISFS"
+   ],
+   "notes": "20,000 sq ft hardware incubator with a full prototyping lab (IoT, electronics, 3D printing, drones, robotics); CIBI also lists water, healthcare, agriculture and biotech.",
+   "source_url": "https://www.indiascienceandtechnology.gov.in/innovations/incubators/coimbatore-innovation-and-business-incubator-cibi-kumaraguru-college-technology-coimbatore",
+   "confidence": "official",
+   "website": "https://www.forge-iv.co/"
+  },
+  {
+   "id": "amrita_tbi",
+   "name": "Amrita TBI",
+   "host": "Amrita Vishwa Vidyapeetham",
+   "district": "coimbatore",
+   "area": "Ettimadai",
+   "pin": "641112",
+   "sectors": [
+    "general"
+   ],
+   "stages": [
+    "pre_seed",
+    "seed"
+   ],
+   "programmes": [
+    "AIC"
+   ],
+   "notes": "Government-supported non-profit TBI; an AIC at the same university is listed.",
+   "source_url": "https://www.amrita.edu/center/amritatbi/",
+   "confidence": "official",
+   "website": "https://www.amritatbi.com/"
+  },
+  {
+   "id": "cdiic",
+   "name": "CODISSIA Defence Innovation and Atal Incubation Centre",
+   "host": "CODISSIA",
+   "district": "coimbatore",
+   "area": "Peelamedu",
+   "pin": "641014",
+   "sectors": [
+    "aerospace_defence",
+    "manufacturing",
+    "electronics"
+   ],
+   "stages": [
+    "pre_seed",
+    "seed"
+   ],
+   "programmes": [
+    "AIC"
+   ],
+   "notes": "Since 2019, with AIM and the Ministry of Defence: technology with defence and commercial uses. Pairs with iDEX challenges.",
+   "source_url": "http://cdiic.in/",
+   "confidence": "official",
+   "website": "http://cdiic.in/"
+  },
+  {
+   "id": "aic_raise",
+   "name": "AIC RAISE",
+   "host": "Rathinam group",
+   "district": "coimbatore",
+   "area": "Eachanari",
+   "pin": "",
+   "sectors": [
+    "cleantech",
+    "agritech",
+    "services"
+   ],
+   "stages": [
+    "pre_seed",
+    "seed"
+   ],
+   "programmes": [
+    "AIC"
+   ],
+   "notes": "Sustainable and social-impact startups.",
+   "source_url": "https://aicraise.com/top-10-startup-incubators-in-tamil-nadu-2025/",
+   "confidence": "secondary",
+   "website": "https://aicraise.com/"
+  },
+  {
+   "id": "ciet_tbi",
+   "name": "CIET Technology Business Incubator",
+   "host": "Coimbatore Institute of Engineering and Technology",
+   "district": "coimbatore",
+   "area": "Coimbatore",
+   "pin": "",
+   "sectors": [
+    "general"
+   ],
+   "stages": [
+    "pre_seed",
+    "seed"
+   ],
+   "programmes": [
+    "SISFS"
+   ],
+   "notes": "SISFS incubator; sector focus to confirm.",
+   "source_url": "https://seedfund.startupindia.gov.in/portfolio",
+   "confidence": "to_verify",
+   "website": null
+  },
+  {
+   "id": "sns_ihub",
+   "name": "SNS iHub",
+   "host": "SNS Institutions",
+   "district": "coimbatore",
+   "area": "Saravanampatti",
+   "pin": "641035",
+   "sectors": [
+    "deeptech",
+    "saas"
+   ],
+   "stages": [
+    "pre_seed"
+   ],
+   "programmes": [],
+   "notes": "College incubator aiming at AI startups.",
+   "source_url": "https://snsct.org/innovation-startup-policy/",
+   "confidence": "secondary",
+   "website": null
+  },
+  {
+   "id": "tce_tbi",
+   "name": "TCE Technology Business Incubator",
+   "host": "Thiagarajar College of Engineering",
+   "district": "madurai",
+   "area": "Thiruparankundram",
+   "pin": "625015",
+   "sectors": [
+    "deeptech",
+    "manufacturing",
+    "electronics",
+    "cleantech",
+    "saas",
+    "aerospace_defence"
+   ],
+   "stages": [
+    "pre_seed",
+    "seed"
+   ],
+   "programmes": [
+    "NIDHI-TBI",
+    "NIDHI-SSS"
+   ],
+   "notes": "Wireless, manufacturing, materials, automation, ML and data science, environment, IT services, defence.",
+   "source_url": "https://www.indiascienceandtechnology.gov.in/technologyincubators/tce-technology-business-incubator",
+   "confidence": "official",
+   "website": "https://tce-tbi.org/"
+  },
+  {
+   "id": "mabif",
+   "name": "Madurai Agribusiness Incubation Forum (MABIF)",
+   "host": "NABARD + TNAU",
+   "district": "madurai",
+   "area": "Agricultural College & Research Institute",
+   "pin": "625104",
+   "sectors": [
+    "agritech",
+    "food"
+   ],
+   "stages": [
+    "pre_seed",
+    "seed"
+   ],
+   "programmes": [
+    "NABARD"
+   ],
+   "notes": "Section 8 (2018). Agriculture, horticulture, dairy, fisheries, food processing; seed grants and loans, listed up to ₹25L; 535+ startups and 554 FPOs supported.",
+   "source_url": "https://tnau.ac.in/agri-business-incubation-forums/",
+   "confidence": "secondary",
+   "website": "https://agribusinessincuba.wixsite.com/mysite"
+  },
+  {
+   "id": "aic_nift_tea",
+   "name": "AIC-NIFT TEA Incubation Centre for Textiles and Apparels",
+   "host": "NIFT-TEA",
+   "district": "tiruppur",
+   "area": "Tiruppur (near Coimbatore)",
+   "pin": "641606",
+   "sectors": [
+    "textiles",
+    "consumer"
+   ],
+   "stages": [
+    "pre_seed",
+    "seed"
+   ],
+   "programmes": [
+    "AIC"
+   ],
+   "notes": "The one textile-specific incubator; serves Coimbatore's textile founders too.",
+   "source_url": "https://aim.gov.in/pdf/AIC_List_data.pdf",
+   "confidence": "official",
+   "website": null
+  },
+  {
+   "id": "acic_kalasalingam",
+   "name": "ACIC-Kalasalingam Innovation Foundation",
+   "host": "Kalasalingam Academy",
+   "district": "virudhunagar",
+   "area": "Krishnankoil (near Madurai)",
+   "pin": "626126",
+   "sectors": [
+    "general"
+   ],
+   "stages": [
+    "pre_seed",
+    "seed"
+   ],
+   "programmes": [
+    "SISFS"
+   ],
+   "notes": "Atal Community Innovation Centre; reachable for Madurai founders.",
+   "source_url": "https://seedfund.startupindia.gov.in/portfolio",
+   "confidence": "secondary",
+   "website": null
+  }
+ ]
+}

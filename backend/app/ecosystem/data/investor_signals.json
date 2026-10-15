@@ -1,0 +1,180 @@
+{
+ "a99-vc": {
+  "checked": "2026-10-04",
+  "website": "https://a99.vc",
+  "status": "ok",
+  "pitch_url": null,
+  "open_call": false,
+  "evidence": []
+ },
+ "anicut-capital": {
+  "checked": "2026-10-04",
+  "website": "https://anicutcapital.com",
+  "status": "ok",
+  "pitch_url": null,
+  "open_call": false,
+  "evidence": []
+ },
+ "betterinvest-private-credit": {
+  "checked": "2026-10-04",
+  "website": null,
+  "status": "no_website"
+ },
+ "fulcrum-venture-india-growth-equity": {
+  "checked": "2026-10-04",
+  "website": null,
+  "status": "no_website"
+ },
+ "ghl-india-ventures": {
+  "checked": "2026-10-04",
+  "website": "https://ghlindiaventures.com/funds",
+  "status": "unreachable"
+ },
+ "ifmr-investment-managers-private-credit": {
+  "checked": "2026-10-04",
+  "website": null,
+  "status": "no_website"
+ },
+ "iitm-incubation-cell": {
+  "checked": "2026-10-04",
+  "website": "https://rtbi.in/incubationiitm/portfolio.html",
+  "status": "ok",
+  "pitch_url": "https://rtbi.in/incubationiitm/incubation/apply.html",
+  "open_call": false,
+  "evidence": []
+ },
+ "incofin-private-credit": {
+  "checked": "2026-10-04",
+  "website": null,
+  "status": "no_website"
+ },
+ "keiretsu-forum-chennai": {
+  "checked": "2026-10-04",
+  "website": "https://keiretsuchennai.com/",
+  "status": "robots_disallow"
+ },
+ "native-angels-network": {
+  "checked": "2026-10-04",
+  "website": "https://www.nativelead.org/",
+  "status": "ok",
+  "pitch_url": null,
+  "open_call": true,
+  "evidence": [
+   {
+    "url": "https://www.nativelead.org/",
+    "text": "es Previous Activities Recent Activities Newsletter Contact Apply Now Apply Now What is Nativelead Nativeleads is a one of a kind"
+   },
+   {
+    "url": "https://www.nativelead.org/",
+    "text": "s Activities Recent Activities Newsletter Contact Apply Now Apply Now What is Nativelead Nativeleads is a one of a kind platform"
+   }
+  ]
+ },
+ "northern-arc-private-credit": {
+  "checked": "2026-10-04",
+  "website": null,
+  "status": "no_website"
+ },
+ "peaceful-progress": {
+  "checked": "2026-10-04",
+  "website": "https://peacefulprogress.in",
+  "status": "robots_disallow"
+ },
+ "phi-capital-growth-equity": {
+  "checked": "2026-10-04",
+  "website": null,
+  "status": "no_website"
+ },
+ "pontaq": {
+  "checked": "2026-10-04",
+  "website": "https://pontaq.vc/",
+  "status": "ok",
+  "pitch_url": null,
+  "open_call": false,
+  "evidence": []
+ },
+ "refex-capital": {
+  "checked": "2026-10-04",
+  "website": "https://refexcapital.com",
+  "status": "unreachable"
+ },
+ "speciale-invest": {
+  "checked": "2026-10-04",
+  "website": "https://specialeinvest.com",
+  "status": "ok",
+  "pitch_url": "https://form.typeform.com/to/yYgnIq1Z?typeform-source=www.specialeinvest.com",
+  "open_call": true,
+  "evidence": [
+   {
+    "url": "https://specialeinvest.com",
+    "text": "ontent top of page Menu Close Home About Portfolio Reach Us Pitch to Us Home About Portfolio Our Community Unlocking Future Technol"
+   },
+   {
+    "url": "https://specialeinvest.com",
+    "text": "content has been submitted Have the next breakthrough idea? Pitch to Us #TheDeepTechVC © 2026 by VMM Collective Investor Relations"
+   }
+  ]
+ },
+ "stakeboat-capital-growth-equity": {
+  "checked": "2026-10-04",
+  "website": null,
+  "status": "no_website"
+ },
+ "tagalong-ventures": {
+  "checked": "2026-10-04",
+  "website": "https://tagalong.vc/",
+  "status": "unreachable"
+ },
+ "the-chennai-angels": {
+  "checked": "2026-10-04",
+  "website": "https://www.thechennaiangels.com",
+  "status": "ok",
+  "pitch_url": "https://thechennaiangels.com/funding/",
+  "open_call": false,
+  "evidence": []
+ },
+ "tie-chennai": {
+  "checked": "2026-10-04",
+  "website": "https://chennai.tie.org/",
+  "status": "robots_disallow"
+ },
+ "tnessf": {
+  "checked": "2026-10-04",
+  "website": "https://tnifmc.com/our-funds/",
+  "status": "ok",
+  "pitch_url": null,
+  "open_call": false,
+  "evidence": []
+ },
+ "tnifmc-tamil-nadu-green-climate-fund-climate": {
+  "checked": "2026-10-04",
+  "website": null,
+  "status": "no_website"
+ },
+ "tvs-capital-growth-equity": {
+  "checked": "2026-10-04",
+  "website": null,
+  "status": "no_website"
+ },
+ "veltis-capital": {
+  "checked": "2026-10-04",
+  "website": "https://veltiscapital.com",
+  "status": "ok",
+  "pitch_url": null,
+  "open_call": false,
+  "evidence": []
+ },
+ "ventureast": {
+  "checked": "2026-10-04",
+  "website": "https://www.ventureast.net/",
+  "status": "ok",
+  "pitch_url": "https://www.ventureast.net/contact-us",
+  "open_call": false,
+  "evidence": []
+ },
+ "vivriti-capital-private-credit": {
+  "checked": "2026-10-04",
+  "website": null,
+  "status": "no_website"
+ }
+}

@@ -1,0 +1,578 @@
+{
+ "id": "tea_infusions",
+ "label": "Flavoured tea and herbal infusions",
+ "sector": "food",
+ "about": "Blended teas and caffeine-free herbal infusions sold as loose leaf, tea bags or iced blends. Tamil Nadu has the Nilgiris tea belt and the Coonoor auction close at hand.",
+ "cues": [
+  "tea",
+  "chai",
+  "infusion",
+  "tisane",
+  "herbal brew",
+  "green tea",
+  "black tea",
+  "hibiscus",
+  "mint tea",
+  "iced tea"
+ ],
+ "questions": [
+  {
+   "slot": "variants",
+   "ask": "Which flavours do you want to start with?",
+   "kind": "multi",
+   "examples": [
+    "mint",
+    "mint lemon",
+    "mint strawberry",
+    "lemon raspberry",
+    "mint hibiscus"
+   ]
+  },
+  {
+   "slot": "format",
+   "ask": "Loose leaf pouches, tea bags, or iced blends?",
+   "kind": "enum",
+   "choices": [
+    "loose_leaf",
+    "tea_bags",
+    "iced"
+   ]
+  },
+  {
+   "slot": "production_mode",
+   "ask": "Will you blend and pack yourself, or use a co-packer at first?",
+   "kind": "enum",
+   "choices": [
+    "own_unit",
+    "co_packer"
+   ]
+  },
+  {
+   "slot": "channels",
+   "ask": "Where will you sell first?",
+   "kind": "multi",
+   "choices": [
+    "online",
+    "retail",
+    "horeca"
+   ]
+  },
+  {
+   "slot": "monthly_packs",
+   "ask": "How many packs a month do you expect to sell in the first year?",
+   "kind": "int",
+   "examples": [
+    "500",
+    "2,000"
+   ]
+  }
+ ],
+ "ingredients": {
+  "black_tea": {
+   "label": "Black tea (Nilgiris CTC or orthodox)",
+   "role": "base",
+   "caffeine": true,
+   "is_tea": true,
+   "example_price_per_kg": 250,
+   "sourcing": "Coonoor tea auction via a registered buyer, or direct from a Nilgiris estate or bought-leaf factory"
+  },
+  "green_tea": {
+   "label": "Green tea",
+   "role": "base",
+   "caffeine": true,
+   "is_tea": true,
+   "example_price_per_kg": 450,
+   "sourcing": "Nilgiris estates making green tea; ask for a certificate of analysis"
+  },
+  "mint": {
+   "label": "Dried peppermint or spearmint leaf",
+   "role": "botanical",
+   "caffeine": false,
+   "is_tea": false,
+   "example_price_per_kg": 350,
+   "sourcing": "Herb dryers and spice traders; check moisture and pesticide residue"
+  },
+  "lemongrass": {
+   "label": "Dried lemongrass",
+   "role": "botanical",
+   "caffeine": false,
+   "is_tea": false,
+   "example_price_per_kg": 220,
+   "sourcing": "Herb dryers; Kerala and Tamil Nadu growers"
+  },
+  "lemon_peel": {
+   "label": "Dried lemon peel",
+   "role": "botanical",
+   "caffeine": false,
+   "is_tea": false,
+   "example_price_per_kg": 400,
+   "sourcing": "Dehydrated-fruit suppliers"
+  },
+  "hibiscus": {
+   "label": "Dried hibiscus (roselle) calyces",
+   "role": "botanical",
+   "caffeine": false,
+   "is_tea": false,
+   "example_price_per_kg": 300,
+   "sourcing": "Herb traders; check colour and microbial counts"
+  },
+  "strawberry_pieces": {
+   "label": "Freeze-dried strawberry pieces",
+   "role": "fruit",
+   "caffeine": false,
+   "is_tea": false,
+   "example_price_per_kg": 3200,
+   "sourcing": "Freeze-dried fruit makers; often the costliest input"
+  },
+  "raspberry_pieces": {
+   "label": "Freeze-dried raspberry pieces",
+   "role": "fruit",
+   "caffeine": false,
+   "is_tea": false,
+   "example_price_per_kg": 3800,
+   "sourcing": "Usually imported; check landed cost"
+  },
+  "natural_flavour": {
+   "label": "Natural fruit flavour (food grade)",
+   "role": "flavour",
+   "caffeine": false,
+   "is_tea": false,
+   "example_price_per_kg": 4500,
+   "sourcing": "Flavour houses; ask for FSSAI-compliant declarations"
+  }
+ },
+ "recipes": {
+  "mint": {
+   "label": "Mint tea",
+   "grams_per_100": {
+    "green_tea": 70,
+    "mint": 30
+   }
+  },
+  "mint_lemon": {
+   "label": "Mint lemon tea",
+   "grams_per_100": {
+    "green_tea": 60,
+    "mint": 25,
+    "lemongrass": 15
+   }
+  },
+  "mint_strawberry": {
+   "label": "Mint strawberry tea",
+   "grams_per_100": {
+    "black_tea": 62,
+    "mint": 20,
+    "strawberry_pieces": 15,
+    "natural_flavour": 3
+   },
+   "cheaper_option": {
+    "grams_per_100": {
+     "black_tea": 70,
+     "mint": 22,
+     "strawberry_pieces": 6,
+     "natural_flavour": 2
+    },
+    "note": "fewer fruit pieces, a little more flavour",
+    "trade_off": "test in the taste panel; fruit pieces are also what buyers see"
+   }
+  },
+  "lemon_raspberry": {
+   "label": "Lemon raspberry tea",
+   "grams_per_100": {
+    "black_tea": 65,
+    "lemon_peel": 15,
+    "raspberry_pieces": 15,
+    "natural_flavour": 5
+   },
+   "cheaper_option": {
+    "grams_per_100": {
+     "black_tea": 72,
+     "lemon_peel": 18,
+     "raspberry_pieces": 6,
+     "natural_flavour": 4
+    },
+    "note": "fewer fruit pieces, a little more flavour",
+    "trade_off": "test in the taste panel; fruit pieces are also what buyers see"
+   }
+  },
+  "mint_hibiscus": {
+   "label": "Mint hibiscus infusion",
+   "grams_per_100": {
+    "hibiscus": 60,
+    "mint": 40
+   }
+  },
+  "lemongrass_mint": {
+   "label": "Lemongrass mint infusion",
+   "grams_per_100": {
+    "lemongrass": 55,
+    "mint": 45
+   }
+  },
+  "hibiscus_lemon": {
+   "label": "Hibiscus lemon infusion",
+   "grams_per_100": {
+    "hibiscus": 65,
+    "lemon_peel": 20,
+    "lemongrass": 15
+   }
+  }
+ },
+ "recipe_note": "Starting ratios for bench trials, not tested formulations. Adjust by taste panel.",
+ "costing_defaults": {
+  "unit_label": "pack",
+  "unit_grams": 100,
+  "contract_label": "co-packer",
+  "packaging_per_unit": {
+   "loose_leaf": 9,
+   "tea_bags": 22,
+   "iced": 14
+  },
+  "contract_fee_per_unit": 12,
+  "own_fixed_per_month": 60000,
+  "own_variable_per_unit": 4,
+  "wastage_pct": 4,
+  "overhead_pct": 10,
+  "gross_margin_pct": 40,
+  "distributor_margin_pct": 10,
+  "retailer_margin_pct": 25,
+  "format_lever": "Lead with loose-leaf pouches; add tea bags once a flavour sells",
+  "label": "Example figures for a first estimate. Replace with your own quotes; nothing here is a market price."
+ },
+ "regulatory": [
+  {
+   "id": "fssai_tier",
+   "title": "FSSAI registration or licence by turnover",
+   "text": "Basic registration up to ₹12 lakh annual turnover; State licence above that (up to ₹20 crore); Central licence above ₹20 crore. Apply on FoSCoS.",
+   "confidence": "secondary",
+   "source": "https://foscos.fssai.gov.in/"
+  },
+  {
+   "id": "tea_name",
+   "title": "'Tea' only for products with tea leaves",
+   "text": "Blends with no Camellia sinensis leaf (e.g. mint hibiscus) should be labelled as an herbal or flower infusion, not as tea. FSSAI has issued an advisory on this — confirm the current wording before printing labels.",
+   "confidence": "to_verify",
+   "source": "https://www.fssai.gov.in/"
+  },
+  {
+   "id": "tea_board",
+   "title": "Tea Board registration for tea blending or packing",
+   "text": "Businesses that buy, blend or pack tea may need registration with the Tea Board of India. Confirm whether your activity is covered.",
+   "confidence": "to_verify",
+   "source": "https://www.teaboard.gov.in/"
+  },
+  {
+   "id": "legal_metrology",
+   "title": "Legal Metrology declarations on packs",
+   "text": "Pre-packed goods carry mandatory declarations (name and address, net quantity, MRP, date, customer care); packers may need registration under the Packaged Commodities Rules.",
+   "confidence": "secondary",
+   "source": "https://consumeraffairs.nic.in/"
+  },
+  {
+   "id": "trademark_class",
+   "title": "Trademark class 30",
+   "text": "Tea and tea-based beverages fall in Nice class 30; herbal infusions are commonly filed there too.",
+   "confidence": "secondary",
+   "source": "https://ipindia.gov.in/"
+  }
+ ],
+ "templates": [
+  {
+   "id": "c_define",
+   "phase": "Ideation",
+   "title": "Choose the starting flavour line and its buyer",
+   "deliverables": [
+    "{n_variants} flavours chosen",
+    "Which are teas and which are herbal infusions",
+    "One shared base where possible",
+    "Who buys: home, gifting, cafés"
+   ],
+   "effort_weeks": 1,
+   "min_months": 1,
+   "core": true,
+   "relevance": 100,
+   "done_from_stage": "prototype",
+   "why": "The line decides your ingredients, labels and costs."
+  },
+  {
+   "id": "t_recipe",
+   "phase": "Validation",
+   "title": "Bench-blend the recipes",
+   "deliverables": [
+    "Ratio sheet per flavour",
+    "3 trial batches each",
+    "Brewing instructions"
+   ],
+   "effort_weeks": 4,
+   "min_months": 1,
+   "core": true,
+   "relevance": 95,
+   "depends_on": [
+    "c_define"
+   ],
+   "done_from_stage": "mvp",
+   "why": "Starting ratios are only a guess until brewed and tasted."
+  },
+  {
+   "id": "c_discovery",
+   "phase": "Validation",
+   "title": "Taste panels with target buyers",
+   "deliverables": [
+    "30+ tasters per flavour",
+    "Keep, change or drop for each",
+    "Price they would pay"
+   ],
+   "effort_weeks": 3,
+   "min_months": 1,
+   "relevance": 90,
+   "depends_on": [
+    "t_recipe"
+   ],
+   "done_from_stage": "mvp",
+   "why": "Drops weak flavours before you buy stock for them."
+  },
+  {
+   "id": "t_sourcing",
+   "phase": "Validation",
+   "title": "Source tea and botanicals",
+   "deliverables": [
+    "3 quotes per ingredient",
+    "Certificates of analysis",
+    "Minimum order quantities and lead times"
+   ],
+   "effort_weeks": 4,
+   "min_months": 1,
+   "core": true,
+   "relevance": 95,
+   "depends_on": [
+    "c_define"
+   ],
+   "why": "Ingredients are most of your cost; quotes replace the example prices."
+  },
+  {
+   "id": "t_costing",
+   "phase": "Validation",
+   "title": "Cost every pack and set the price ladder",
+   "deliverables": [
+    "Cost sheet per flavour",
+    "Ex-factory, distributor and retail prices",
+    "Cost-cutting levers chosen"
+   ],
+   "effort_weeks": 2,
+   "min_months": 1,
+   "core": true,
+   "relevance": 95,
+   "depends_on": [
+    "t_sourcing",
+    "t_recipe"
+   ],
+   "why": "Shows which flavours make money before you commit to stock."
+  },
+  {
+   "id": "t_compliance",
+   "phase": "MVP",
+   "title": "FSSAI {fssai_tier}, lab tests and label rules",
+   "deliverables": [
+    "FSSAI application on FoSCoS; number for labels",
+    "Tests at an NABL-accredited food lab and a shelf-life study for the best-before date",
+    "Legal Metrology declarations: name, address, net quantity, MRP, date, customer care",
+    {
+     "text": "Name herbal blends as infusions, not tea (FSSAI advisory — confirm current wording)",
+     "applies": {
+      "field": "lacks_is_tea",
+      "op": "is_true",
+      "label": "one of your blends has no tea leaves"
+     }
+    },
+    {
+     "text": "Ask the Tea Board whether your blending or packing needs registration",
+     "applies": {
+      "field": "has_is_tea",
+      "op": "is_true",
+      "label": "your blends contain tea leaves"
+     }
+    }
+   ],
+   "effort_weeks": 8,
+   "min_months": 2,
+   "calendar": true,
+   "core": true,
+   "relevance": 100,
+   "depends_on": [
+    "c_entity",
+    "t_recipe"
+   ],
+   "why": "No food can be sold without FSSAI; the tier follows your projected turnover, and the label rules follow your flavours."
+  },
+  {
+   "id": "t_pack",
+   "phase": "MVP",
+   "title": "Packaging and labels",
+   "deliverables": [
+    "{format_label} chosen",
+    "Artwork with FSSAI and Legal Metrology declarations",
+    "Barcode",
+    "First print run at minimum order quantity"
+   ],
+   "effort_weeks": 4,
+   "min_months": 1,
+   "relevance": 90,
+   "depends_on": [
+    "t_compliance",
+    "c_name"
+   ],
+   "why": "Packaging is the second-largest cost and carries the legal declarations."
+  },
+  {
+   "id": "t_copacker",
+   "phase": "MVP",
+   "title": "Contract a co-packer and run a pilot batch",
+   "deliverables": [
+    "Co-packer agreement",
+    "Pilot batch of each flavour",
+    "Quality checks"
+   ],
+   "effort_weeks": 4,
+   "min_months": 1,
+   "relevance": 90,
+   "depends_on": [
+    "t_costing",
+    "t_pack"
+   ],
+   "applies": {
+    "field": "production_mode",
+    "op": "eq",
+    "value": "co_packer",
+    "label": "you start with a co-packer"
+   },
+   "why": "Low fixed cost while volumes are small."
+  },
+  {
+   "id": "t_unit",
+   "phase": "MVP",
+   "title": "Set up a small blending and packing unit",
+   "deliverables": [
+    "Premises meeting FSSAI hygiene rules",
+    "Blender, sealer, weighing",
+    "First production batch"
+   ],
+   "effort_weeks": 12,
+   "min_months": 3,
+   "relevance": 90,
+   "depends_on": [
+    "t_costing",
+    "t_compliance"
+   ],
+   "applies": {
+    "field": "production_mode",
+    "op": "eq",
+    "value": "own_unit",
+    "label": "you produce in your own unit"
+   },
+   "why": "Higher fixed cost; pays off above the break-even volume in your cost sheet.",
+   "calendar": false
+  },
+  {
+   "id": "c_pilot",
+   "phase": "Launch",
+   "title": "Launch in your first channels",
+   "deliverables": [
+    {
+     "text": "Own store page and marketplace listings",
+     "applies": {
+      "field": "sells_online",
+      "op": "is_true",
+      "label": "you sell online"
+     }
+    },
+    {
+     "text": "A distributor in your district and listings in 20 shops",
+     "applies": {
+      "field": "sells_retail",
+      "op": "is_true",
+      "label": "you sell in shops"
+     }
+    },
+    {
+     "text": "Bulk pack and 5 café or hotel accounts",
+     "applies": {
+      "field": "sells_horeca",
+      "op": "is_true",
+      "label": "you sell to cafés and hotels"
+     }
+    },
+    "Repeat-purchase tracking by flavour"
+   ],
+   "effort_weeks": 6,
+   "min_months": 1,
+   "core": true,
+   "relevance": 95,
+   "depends_on": [
+    "t_copacker",
+    "t_unit",
+    "c_registrations"
+   ],
+   "done_from_stage": "revenue",
+   "why": "Real sales by flavour and channel replace guesses."
+  },
+  {
+   "id": "c_customers",
+   "phase": "Growth",
+   "title": "First 100 repeat buyers; keep the flavours that sell",
+   "deliverables": [
+    "100 repeat buyers",
+    "Sales by flavour",
+    "Line cut or extended (see free extensions)"
+   ],
+   "effort_weeks": 12,
+   "min_months": 2,
+   "core": true,
+   "relevance": 90,
+   "depends_on": [
+    "c_pilot"
+   ],
+   "why": "Each extra flavour adds stock, labels and minimum orders; keep what sells."
+  },
+  {
+   "id": "t_export",
+   "phase": "Scale",
+   "title": "Export readiness",
+   "deliverables": [
+    "Import Export Code",
+    "Buyer-country food rules",
+    "Export registration with the commodity board"
+   ],
+   "effort_weeks": 12,
+   "min_months": 3,
+   "relevance": 70,
+   "depends_on": [
+    "c_customers"
+   ],
+   "applies": {
+    "field": "geo_scope",
+    "op": "eq",
+    "value": "export",
+    "label": "you plan to export"
+   },
+   "why": "Export adds registrations and destination-country rules."
+  }
+ ],
+ "kinds": {
+  "default": "herbal infusion",
+  "rules": [
+   {
+    "if_any": "is_tea",
+    "label": "tea"
+   }
+  ]
+ },
+ "name_noise": [
+  "tea",
+  "infusion"
+ ],
+ "formats": {
+  "loose_leaf": "Loose-leaf pouches",
+  "tea_bags": "Tea bags",
+  "iced": "Iced blend packs"
+ }
+}

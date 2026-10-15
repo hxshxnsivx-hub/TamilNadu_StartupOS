@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#14110F" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!--
+      Four families, and every one of them is now actually used.
+
+      Previously this loaded Archivo Black and JetBrains Mono and then used
+      NEITHER: --display pointed at a Palatino/Georgia system stack and --mono
+      at ui-monospace. Every heading in the product rendered in Georgia while
+      two downloaded families sat unused — paying the bytes, getting stock type.
+
+      · Fraunces  — display. An old-style with real character at huge sizes
+                    (soft/wonk axes), which suits an earth-pigment palette far
+                    better than a cold Didone whose hairlines go fragile.
+                    Weight range trimmed to 500..900: the display face is never
+                    set below 500 anywhere in the system.
+      · Inter     — body. Weights trimmed 400..700; 800 and 900 were requested
+                    and never used, which is pure payload on a 2G budget.
+      · JetBrains Mono — labels, indices, tabular figures.
+      · Noto Sans Tamil — Tamil, first-class rather than a fallback.
+    -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500..900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+Tamil:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <title>Vanigam — Tamil Nadu StartupOS</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

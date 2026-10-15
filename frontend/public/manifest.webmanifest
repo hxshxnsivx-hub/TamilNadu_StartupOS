@@ -1,0 +1,11 @@
+{
+  "name": "Vanigam — Tamil Nadu StartupOS",
+  "short_name": "Vanigam",
+  "description": "From idea to enterprise — in your language.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#EDDCB0",
+  "theme_color": "#9B3322",
+  "lang": "ta",
+  "icons": []
+}

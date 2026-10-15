@@ -1,0 +1,361 @@
+/* ============================================================
+   THEME — the token bridge and the craft layer.
+
+   Loaded AFTER nocturne.css so utilities win same-specificity ties.
+   nocturne.css keeps the reset, the type scale and the hand-written
+   components; this file adds:
+
+     1. shadcn-convention HSL tokens, so Radix/CVA components theme
+        off variables rather than hardcoded colour
+     2. the "craft" utilities — grain, hairlines, elevation, engraved
+        gold — which are what make a dark UI read as a material rather
+        than as an absence of light
+
+   Ported from Bharath-tax-mitra and retuned from warm ivory to
+   near-black. The palette logic is inverted; the discipline is not:
+   ONE accent (champagne gold), hairlines instead of grey borders,
+   real texture instead of flat fill.
+   ============================================================ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ---- the near-black ladder, as HSL triplets so Tailwind can use it.
+         Mirrors nocturne's --void/--pit/--floor/--riser exactly. ---- */
+    --void-h: 0 0% 2%; /* #050505 */
+    --pit-h: 0 0% 4%; /* #0a0a0a */
+    --floor-h: 0 0% 6%; /* #0f0f0f */
+    --riser-h: 0 0% 8%; /* #151515 */
+
+    /* ---- shadcn semantic tokens, dark ground ---- */
+    --background: 0 0% 2%;
+    --foreground: 0 0% 100%;
+
+    --card: 0 0% 6%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 0 0% 4%;
+    --popover-foreground: 0 0% 100%;
+
+    /* Gold IS the primary. There is no second accent competing with it —
+       that restraint is most of why the reference reads as expensive. */
+    --primary: 41 55% 55%;
+    --primary-foreground: 0 0% 4%;
+
+    --secondary: 0 0% 8%;
+    --secondary-foreground: 0 0% 90%;
+
+    --muted: 0 0% 8%;
+    /* 55% white on 2% black ≈ 5.5:1 — passes AA for body text. Do not
+       darken this to "soften" it; it is at the floor already. */
+    --muted-foreground: 0 0% 55%;
+
+    --accent: 41 55% 55%;
+    --accent-foreground: 0 0% 4%;
+
+    --destructive: 3 60% 57%; /* nocturne --dead #d4574e */
+    --destructive-foreground: 0 0% 100%;
+
+    /* Solid equivalents of nocturne's rgba hairlines — Tailwind's
+       hsl(var(--x)) form cannot carry alpha, and at these values the
+       rendered result is indistinguishable on a near-black ground. */
+    --border: 0 0% 14%;
+    --input: 0 0% 14%;
+    --ring: 41 55% 55%; /* focus ring is gold, always */
+
+    --radius: 0.75rem;
+
+    /* ---- the accent pair ---- */
+    --gold: 41 55% 55%; /* champagne #c9a961 */
+    --gold-deep: 40 48% 42%; /* engraved */
+
+    /* ---- ambient story layer (AmbientBackground reads these).
+         --ambient-1 is the wayfinding hue, retuned per route so moving
+         through the app reads as chapters; --ambient-2 is the constant. ---- */
+    --ambient-1: 41 55% 55%; /* gold (home default) */
+    --ambient-2: 152 45% 45%; /* jade — the cool counterpoint */
+  }
+}
+
+@layer utilities {
+  /* ── Texture ────────────────────────────────────────────────────────
+     The single highest-leverage line in the whole port. An inline SVG
+     turbulence filter, ~600 bytes, no network request, laid over the
+     page at very low opacity. It is the difference between "near-black"
+     and "unlit film" — flat #050505 reads as a switched-off screen. */
+  .texture-grain {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 240px 240px;
+  }
+
+  /* ── Hairlines — the only structure in the design ───────────────────── */
+  .hairline {
+    border: 1px solid hsl(0 0% 100% / 0.09);
+  }
+  .hairline-b {
+    border-bottom: 1px solid hsl(0 0% 100% / 0.09);
+  }
+  .hairline-lit {
+    border: 1px solid hsl(0 0% 100% / 0.16);
+  }
+  .hairline-gold {
+    border: 1px solid hsl(var(--gold) / 0.42);
+  }
+
+  /* ── Elevation ──────────────────────────────────────────────────────
+     Dark inverts the problem: a black drop-shadow on a near-black ground
+     is invisible, so depth has to come from a lit TOP edge (light falls
+     from above) plus a deep occlusion below. That inset highlight is the
+     part people read as "raised". */
+  .shadow-elevated {
+    box-shadow:
+      inset 0 1px 0 hsl(0 0% 100% / 0.07),
+      0 2px 6px hsl(0 0% 0% / 0.6),
+      0 18px 44px -14px hsl(0 0% 0% / 0.85);
+  }
+  .shadow-float {
+    box-shadow:
+      inset 0 1px 0 hsl(0 0% 100% / 0.1),
+      0 4px 12px hsl(0 0% 0% / 0.65),
+      0 26px 60px -18px hsl(0 0% 0% / 0.9),
+      0 0 0 1px hsl(var(--gold) / 0.14);
+  }
+
+  /* ── Surfaces ───────────────────────────────────────────────────────── */
+
+  /* Deep ground with a faint gold sheen raking in from the top-right —
+     the "lit from off-camera" effect the reference uses on hero panels. */
+  .bg-deep {
+    background:
+      radial-gradient(60rem 20rem at 85% -20%, hsl(var(--gold) / 0.1), transparent 55%),
+      linear-gradient(135deg, hsl(var(--pit-h)) 0%, hsl(var(--riser-h)) 100%);
+  }
+
+  /* Animated brand mesh — gold and jade drifting over near-black. */
+  .bg-mesh {
+    background:
+      radial-gradient(38rem 24rem at 12% 18%, hsl(var(--gold) / 0.16), transparent 60%),
+      radial-gradient(30rem 22rem at 88% 12%, hsl(var(--ambient-2) / 0.1), transparent 62%),
+      radial-gradient(34rem 26rem at 78% 88%, hsl(var(--gold) / 0.08), transparent 60%),
+      linear-gradient(135deg, hsl(var(--void-h)) 0%, hsl(var(--pit-h)) 55%, hsl(var(--void-h)) 100%);
+    background-size: 160% 160%;
+    animation: mesh-drift 16s ease-in-out infinite alternate;
+  }
+  @keyframes mesh-drift {
+    0% {
+      background-position: 0% 0%;
+    }
+    100% {
+      background-position: 100% 100%;
+    }
+  }
+
+  /* Frosted glass for panels floating over imagery (Overture, Plate). */
+  .glass {
+    background: hsl(0 0% 100% / 0.06);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid hsl(0 0% 100% / 0.1);
+  }
+  .glass-gold {
+    background: hsl(var(--gold) / 0.07);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid hsl(var(--gold) / 0.22);
+  }
+
+  /* ── The gold CTA ───────────────────────────────────────────────────
+     A vertical gradient plus an inset top highlight and a dark lower
+     edge: that combination is what reads as struck metal rather than as
+     a yellow rectangle. */
+  .btn-gold {
+    background: linear-gradient(180deg, #e6cd8a 0%, #c9a961 58%, #b8944d 100%);
+    color: hsl(0 0% 6%);
+    border: 1px solid hsl(var(--gold-deep) / 0.7);
+    box-shadow:
+      inset 0 1px 0 hsl(0 0% 100% / 0.45),
+      0 2px 6px hsl(0 0% 0% / 0.5),
+      0 12px 28px -12px hsl(var(--gold) / 0.5);
+  }
+  .btn-gold:hover {
+    background: linear-gradient(180deg, #efd99c 0%, #d4b56d 58%, #c09c53 100%);
+  }
+
+  /* ── Type treatments ────────────────────────────────────────────────── */
+
+  /* Serif numerals for figures. Georgia is preinstalled everywhere we
+     ship, so the high-contrast numeral costs zero bytes on the 2G path. */
+  .figure-display {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-variant-numeric: lining-nums tabular-nums;
+    letter-spacing: 0.01em;
+  }
+
+  /* Uppercase eyebrow. NOTE: Bharath sets this at 11px; ours is 12px.
+     12px is the accessibility floor for this product (multilingual and
+     low-literacy users) and it is not negotiable for a style detail. */
+  .eyebrow {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .glow-gold {
+    text-shadow: 0 0 24px hsl(var(--gold) / 0.45);
+  }
+
+  /* ── Ambient drift (transform/opacity only — GPU-composited, and
+       neutralised by nocturne's global reduced-motion kill switch) ────── */
+  .animate-ambient {
+    animation: ambient-drift 26s ease-in-out infinite alternate;
+  }
+  .animate-ambient-delayed {
+    animation: ambient-drift 34s ease-in-out 4s infinite alternate-reverse;
+  }
+  @keyframes ambient-drift {
+    0% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    100% {
+      transform: translate3d(3rem, -2rem, 0) scale(1.08);
+    }
+  }
+
+  .animate-float {
+    animation: float-y 7s ease-in-out infinite;
+  }
+  @keyframes float-y {
+    0%,
+    100% {
+      transform: translateY(0) translateZ(0);
+    }
+    50% {
+      transform: translateY(-14px) translateZ(0);
+    }
+  }
+}
+
+/* ============================================================
+   ACCENT PASS
+
+   Plain CSS, outside @layer, matching nocturne's own selectors.
+   theme.css loads second, so equal-specificity rules here win the
+   cascade honestly — no !important anywhere.
+
+   This is where the port becomes visible on pages that were never
+   touched: the primary action changes from a white pill to struck
+   gold everywhere at once.
+   ============================================================ */
+
+/* The primary CTA. Was flat white-on-black; now engraved champagne.
+   White reads as "system default"; gold reads as chosen. */
+.btn.primary {
+  background: linear-gradient(180deg, #e6cd8a 0%, #c9a961 58%, #b8944d 100%);
+  color: hsl(0 0% 6%);
+  border-color: hsl(var(--gold-deep) / 0.7);
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.45),
+    0 2px 6px hsl(0 0% 0% / 0.5),
+    0 12px 28px -12px hsl(var(--gold) / 0.5);
+  transition:
+    background var(--t1) var(--ease),
+    box-shadow var(--t1) var(--ease),
+    transform var(--t1) var(--ease);
+}
+
+.btn.primary:hover {
+  background: linear-gradient(180deg, #efd99c 0%, #d4b56d 58%, #c09c53 100%);
+  color: hsl(0 0% 6%);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.5),
+    0 3px 8px hsl(0 0% 0% / 0.55),
+    0 18px 38px -14px hsl(var(--gold) / 0.6);
+}
+
+.btn.primary:active {
+  transform: translateY(0);
+}
+
+/* Secondary/ghost buttons pick up gold on hover instead of plain white,
+   so the whole control set belongs to one accent family. */
+.btn.ghost:hover {
+  border-color: hsl(var(--gold) / 0.55);
+  color: hsl(var(--gold));
+  background: hsl(var(--gold) / 0.07);
+}
+
+/* Chapter marks — the mono braces on Plate bands and section rules.
+   Gold at low weight reads as a printer's mark rather than as a label. */
+.pl-mark {
+  color: hsl(var(--gold) / 0.72);
+}
+
+/* Panels gain the lit top edge, so they read as planes catching light
+   rather than as lighter rectangles. */
+.v-cell,
+.v-card {
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.05),
+    0 18px 44px -20px hsl(0 0% 0% / 0.8);
+}
+
+/* ---- The proof figures ----------------------------------------------
+   BUG FIX, not just a restyle. nocturne styles `.v-stat b` and
+   `.v-stat span`, but the Stat component emits <dt>/<dd> — so those rules
+   never matched anything and the figures were falling through to browser
+   defaults: 15px body text carrying dd's 40px default indent. The whole
+   proof row was rendering as a paragraph.
+
+   column-reverse restores the reading order nocturne's dead rules were
+   written for (figure first, label beneath), since the markup emits the
+   label <dt> before the value <dd>. */
+.v-stat {
+  flex-direction: column-reverse;
+  justify-content: flex-end;
+}
+
+/* The figure. A high-contrast serif numeral is what separates a *figure*
+   from a piece of body text — the one place a second typeface earns its
+   keep. Georgia ships on every target platform, so it costs 0 bytes on
+   the 2G path. */
+.v-stat dd {
+  margin-inline-start: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-variant-numeric: lining-nums tabular-nums;
+  font-size: clamp(1.9rem, 3.4vw, 3rem);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  color: hsl(var(--gold));
+  text-shadow: 0 0 28px hsl(var(--gold) / 0.28);
+}
+
+/* The suffix (%, +, ×) rides smaller and dimmer so it never competes
+   with the number it qualifies. */
+.v-stat dd i {
+  font-style: normal;
+  font-size: 0.5em;
+  color: hsl(var(--gold) / 0.6);
+  margin-left: 0.15em;
+}
+
+/* The label, in the same mono register as every other caption. */
+.v-stat dt {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--lume-3);
+}
+
+/* Focus ring goes gold across the whole product, including the
+   hand-written controls nocturne styles directly. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid hsl(var(--gold));
+  outline-offset: 2px;
+}

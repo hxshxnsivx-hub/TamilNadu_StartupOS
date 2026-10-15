@@ -1,0 +1,129 @@
+/* The orb. Scoped to .vg-orb so it adds nothing to the rest of the (unstyled) app.
+   --level (0..1) comes from the microphone while listening and from speech
+   boundaries while speaking. */
+
+.vg-orb {
+  --size: min(56vw, 240px);
+  --level: 0;
+  --core: #f4f1ff;
+  --idle: #6d6af0;
+  --listen: #12b5a8;
+  --think: #5b4bdb;
+  --speak: #f0a020;
+  --glow: var(--idle);
+  position: relative;
+  width: var(--size);
+  height: var(--size);
+  margin: 1.5rem auto;
+  border: 0;
+  padding: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  display: block;
+}
+
+.vg-orb:focus-visible {
+  outline: 3px solid var(--glow);
+  outline-offset: 8px;
+}
+
+.vg-orb__halo,
+.vg-orb__body,
+.vg-orb__swirl {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.vg-orb__halo {
+  background: radial-gradient(circle, var(--glow) 0%, transparent 68%);
+  opacity: calc(0.35 + var(--level) * 0.45);
+  transform: scale(calc(1.15 + var(--level) * 0.35));
+  filter: blur(18px);
+  transition: transform 90ms linear, opacity 90ms linear, background 400ms ease;
+}
+
+.vg-orb__body {
+  background:
+    radial-gradient(circle at 35% 30%, var(--core) 0%, transparent 42%),
+    radial-gradient(circle at 60% 70%, var(--glow) 0%, transparent 70%),
+    radial-gradient(circle, color-mix(in srgb, var(--glow) 70%, #1b1640) 0%, #1b1640 100%);
+  box-shadow:
+    inset 0 0 24px rgba(255, 255, 255, 0.25),
+    0 0 calc(20px + var(--level) * 40px) color-mix(in srgb, var(--glow) 70%, transparent);
+  transform: scale(calc(1 + var(--level) * 0.06));
+  transition: transform 90ms linear, box-shadow 120ms linear, background 400ms ease;
+}
+
+.vg-orb__swirl {
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(255, 255, 255, 0.35) 40deg,
+    transparent 110deg,
+    transparent 200deg,
+    rgba(255, 255, 255, 0.2) 250deg,
+    transparent 320deg
+  );
+  mix-blend-mode: soft-light;
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+.vg-orb[data-state="idle"] { --glow: var(--idle); }
+.vg-orb[data-state="listening"] { --glow: var(--listen); }
+.vg-orb[data-state="thinking"] { --glow: var(--think); }
+.vg-orb[data-state="speaking"] { --glow: var(--speak); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .vg-orb[data-state="idle"] .vg-orb__body {
+    animation: vg-breathe 4.5s ease-in-out infinite;
+  }
+  .vg-orb[data-state="thinking"] .vg-orb__swirl {
+    opacity: 1;
+    animation: vg-spin 2.4s linear infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vg-orb__halo,
+  .vg-orb__body {
+    transform: none;
+    transition: background 200ms ease;
+  }
+  .vg-orb[data-state="thinking"] .vg-orb__swirl {
+    opacity: 0.6;
+  }
+}
+
+@keyframes vg-breathe {
+  0%, 100% { transform: scale(0.98); }
+  50% { transform: scale(1.03); }
+}
+
+@keyframes vg-spin {
+  to { transform: rotate(1turn); }
+}
+
+.vg-orb__label {
+  text-align: center;
+  font-size: 0.95rem;
+  min-height: 1.4em;
+  margin: 0;
+}
+
+.vg-caption {
+  text-align: center;
+  font-size: 1.15rem;
+  line-height: 1.5;
+  max-width: 60ch;
+  margin: 0.5rem auto 1rem;
+  min-height: 3em;
+}
+
+.vg-caption--partial {
+  opacity: 0.6;
+  font-style: italic;
+}

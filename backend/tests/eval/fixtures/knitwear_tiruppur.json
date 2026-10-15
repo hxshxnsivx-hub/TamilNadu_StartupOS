@@ -1,0 +1,896 @@
+{
+ "id": "knitwear_tiruppur",
+ "idea": "I want to start a printed t-shirt brand made through job work units in Tiruppur and sell online",
+ "recorded": "2026-10-10",
+ "coverage": [
+  {
+   "source": "papers",
+   "status": "ok"
+  },
+  {
+   "source": "projects",
+   "status": "ok"
+  },
+  {
+   "source": "patents",
+   "status": "no_key"
+  },
+  {
+   "source": "trials",
+   "status": "skipped"
+  }
+ ],
+ "scan": {
+  "idea": "I want to start a printed t-shirt brand made through job work units in Tiruppur and sell online",
+  "queries": {
+   "papers": "knitted apparel printed work",
+   "trials": "knitted apparel",
+   "projects": "knitted apparel",
+   "patents": "knitted apparel printed work",
+   "local": "printed work units online knitted apparel"
+  },
+  "associated_domains": {
+   "basis": "papers",
+   "domains": [
+    {
+     "name": "Social Sciences",
+     "share_pct": 61
+    },
+    {
+     "name": "Physical Sciences",
+     "share_pct": 38
+    },
+    {
+     "name": "Life Sciences",
+     "share_pct": 1
+    }
+   ],
+   "fields": [
+    {
+     "name": "Arts and Humanities",
+     "share_pct": 29
+    },
+    {
+     "name": "Engineering",
+     "share_pct": 17
+    },
+    {
+     "name": "Materials Science",
+     "share_pct": 16
+    },
+    {
+     "name": "Business, Management and Accounting",
+     "share_pct": 15
+    },
+    {
+     "name": "Social Sciences",
+     "share_pct": 13
+    },
+    {
+     "name": "Environmental Science",
+     "share_pct": 4
+    },
+    {
+     "name": "Decision Sciences",
+     "share_pct": 4
+    },
+    {
+     "name": "Computer Science",
+     "share_pct": 1
+    }
+   ],
+   "subfields": [
+    {
+     "name": "Polymers and Plastics",
+     "share_pct": 16
+    },
+    {
+     "name": "Museology",
+     "share_pct": 15
+    },
+    {
+     "name": "Visual Arts and Performing Arts",
+     "share_pct": 14
+    },
+    {
+     "name": "Development",
+     "share_pct": 13
+    },
+    {
+     "name": "Mechanical Engineering",
+     "share_pct": 8
+    },
+    {
+     "name": "Marketing",
+     "share_pct": 8
+    },
+    {
+     "name": "Strategy and Management",
+     "share_pct": 5
+    },
+    {
+     "name": "Statistics, Probability and Uncertainty",
+     "share_pct": 4
+    }
+   ],
+   "topics": [
+    {
+     "name": "Textile materials and evaluations",
+     "share_pct": 16
+    },
+    {
+     "name": "Cultural and Historical Studies",
+     "share_pct": 14
+    },
+    {
+     "name": "Software Engineering and Design Patterns",
+     "share_pct": 13
+    },
+    {
+     "name": "Fashion and Cultural Textiles",
+     "share_pct": 12
+    },
+    {
+     "name": "Environmental Sustainability in Business",
+     "share_pct": 5
+    },
+    {
+     "name": "Sustainable Supply Chain Management",
+     "share_pct": 5
+    },
+    {
+     "name": "Advanced Materials and Mechanics",
+     "share_pct": 4
+    },
+    {
+     "name": "Advanced Statistical Process Monitoring",
+     "share_pct": 4
+    }
+   ]
+  },
+  "vanigam_categories": [
+   "ai_ml",
+   "climate",
+   "electrical",
+   "saas"
+  ],
+  "papers": {
+   "total": 3856,
+   "by_year": {
+    "2023": 251,
+    "2025": 227,
+    "2024": 211,
+    "2026": 191,
+    "2019": 189,
+    "2022": 179,
+    "2021": 174,
+    "2017": 167,
+    "2016": 163,
+    "2020": 161,
+    "2018": 138,
+    "2014": 137,
+    "2015": 130,
+    "2013": 120,
+    "2012": 115,
+    "2011": 109,
+    "2010": 83,
+    "2009": 77,
+    "2008": 63,
+    "2007": 54,
+    "2003": 49,
+    "2004": 41,
+    "2006": 41,
+    "2005": 36,
+    "2002": 32,
+    "1949": 25,
+    "1995": 23,
+    "2001": 22,
+    "1980": 21,
+    "1973": 19,
+    "1979": 17,
+    "1990": 17,
+    "2000": 17,
+    "1994": 16,
+    "1978": 15,
+    "1998": 15,
+    "1947": 14,
+    "1996": 14,
+    "1950": 12,
+    "1975": 12,
+    "1999": 12,
+    "1962": 11,
+    "1993": 11,
+    "1997": 11,
+    "1948": 10,
+    "1951": 10,
+    "1981": 10,
+    "1986": 10,
+    "1987": 10,
+    "1989": 10,
+    "1946": 9,
+    "1974": 9,
+    "1988": 9,
+    "1982": 8,
+    "1992": 8,
+    "1961": 7,
+    "1964": 7,
+    "1967": 7,
+    "1970": 7,
+    "1971": 7,
+    "1972": 7,
+    "1977": 7,
+    "1904": 6,
+    "1923": 6,
+    "1966": 6,
+    "1969": 6,
+    "1976": 6,
+    "1984": 6,
+    "1991": 6,
+    "1917": 5,
+    "1922": 5,
+    "1924": 5,
+    "1955": 5,
+    "1960": 5,
+    "1906": 4,
+    "1916": 4,
+    "1919": 4,
+    "1939": 4,
+    "1952": 4,
+    "1953": 4,
+    "1954": 4,
+    "1959": 4,
+    "1968": 4,
+    "1985": 4,
+    "1875": 3,
+    "1905": 3,
+    "1908": 3,
+    "1909": 3,
+    "1918": 3,
+    "1920": 3,
+    "1925": 3,
+    "1932": 3,
+    "1938": 3,
+    "1956": 3,
+    "1965": 3,
+    "1824": 2,
+    "1856": 2,
+    "1881": 2,
+    "1886": 2,
+    "1894": 2,
+    "1896": 2,
+    "1897": 2,
+    "1900": 2,
+    "1911": 2,
+    "1921": 2,
+    "1926": 2,
+    "1927": 2,
+    "1928": 2,
+    "1929": 2,
+    "1930": 2,
+    "1940": 2,
+    "1941": 2,
+    "1942": 2,
+    "1944": 2,
+    "1945": 2,
+    "1957": 2,
+    "1958": 2,
+    "1963": 2,
+    "1833": 1,
+    "1838": 1,
+    "1840": 1,
+    "1842": 1,
+    "1851": 1,
+    "1862": 1,
+    "1865": 1,
+    "1867": 1,
+    "1869": 1,
+    "1870": 1,
+    "1879": 1,
+    "1880": 1,
+    "1882": 1,
+    "1883": 1,
+    "1884": 1,
+    "1887": 1,
+    "1888": 1,
+    "1889": 1,
+    "1890": 1,
+    "1891": 1,
+    "1892": 1,
+    "1895": 1,
+    "1901": 1,
+    "1902": 1,
+    "1903": 1,
+    "1907": 1,
+    "1910": 1,
+    "1913": 1,
+    "1914": 1,
+    "1915": 1,
+    "1931": 1,
+    "1933": 1,
+    "1936": 1,
+    "1943": 1,
+    "1983": 1
+   },
+   "most_relevant": [
+    {
+     "title": "Materials and manufacturing environmental sustainability evaluation of apparel product: knitted T-shirt case study",
+     "year": 2015,
+     "cited_by": 74,
+     "venue": "Textiles and Clothing Sustainability",
+     "url": "https://doi.org/10.1186/s40689-015-0008-8",
+     "topics": [
+      {
+       "topic": "Environmental Sustainability in Business",
+       "subfield": "Marketing",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.5830000042915344
+      },
+      {
+       "topic": "Sustainable Supply Chain Management",
+       "subfield": "Strategy and Management",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.09009999781847
+      },
+      {
+       "topic": "Environmental Impact and Sustainability",
+       "subfield": "Environmental Engineering",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 0.08749999850988388
+      }
+     ]
+    },
+    {
+     "title": "Environmental Sustainability Evaluation of Apparel Product: A Case Study on Knitted T-Shirt",
+     "year": 2014,
+     "cited_by": 34,
+     "venue": "Journal of Textiles",
+     "url": "https://doi.org/10.1155/2014/643080",
+     "topics": [
+      {
+       "topic": "Environmental Sustainability in Business",
+       "subfield": "Marketing",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.5669000148773193
+      },
+      {
+       "topic": "Environmental Impact and Sustainability",
+       "subfield": "Environmental Engineering",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 0.1492999941110611
+      },
+      {
+       "topic": "Sustainable Supply Chain Management",
+       "subfield": "Strategy and Management",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.09359999746084213
+      }
+     ]
+    },
+    {
+     "title": "\"Body measurements for the sizing of boys' apparel (knit underwear, shirts, and trousers)\"",
+     "year": 1950,
+     "cited_by": 0,
+     "venue": null,
+     "url": "https://doi.org/10.6028/nbs.cs.155-50",
+     "topics": [
+      {
+       "topic": "Textile materials and evaluations",
+       "subfield": "Polymers and Plastics",
+       "field": "Materials Science",
+       "domain": "Physical Sciences",
+       "score": 0.8003000020980835
+      },
+      {
+       "topic": "Fashion and Cultural Textiles",
+       "subfield": "Museology",
+       "field": "Arts and Humanities",
+       "domain": "Social Sciences",
+       "score": 0.17820000648498535
+      },
+      {
+       "topic": "Software Engineering and Design Patterns",
+       "subfield": "Development",
+       "field": "Social Sciences",
+       "domain": "Social Sciences",
+       "score": 0.004900000058114529
+      }
+     ]
+    },
+    {
+     "title": "Urmi Garments Limited: Operational department analysis in an apparel knit manufacturing factory",
+     "year": 2026,
+     "cited_by": 0,
+     "venue": "BRAC University Institutional Repository (BRAC University)",
+     "url": "https://openalex.org/W7203656361",
+     "topics": [
+      {
+       "topic": "Software Engineering and Design Patterns",
+       "subfield": "Development",
+       "field": "Social Sciences",
+       "domain": "Social Sciences",
+       "score": 0.8446999788284302
+      },
+      {
+       "topic": "Management and Optimization Techniques",
+       "subfield": "Strategy and Management",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.11509999632835388
+      },
+      {
+       "topic": "Quality and Supply Management",
+       "subfield": "Management Information Systems",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.01269999984651804
+      }
+     ]
+    },
+    {
+     "title": "An Overview on Local and Global Branded Products for Knit Apparels in Bangladesh and their effect on consumer behavior",
+     "year": 2019,
+     "cited_by": 0,
+     "venue": "International Journal of Scientific Research and Management (IJSRM)",
+     "url": "https://doi.org/10.18535/ijsrm/v7i2.ec02",
+     "topics": [
+      {
+       "topic": "Consumer Behavior in Brand Consumption and Identification",
+       "subfield": "Marketing",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.5170999765396118
+      },
+      {
+       "topic": "Consumer Perception and Purchasing Behavior",
+       "subfield": "Marketing",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.16599999368190765
+      },
+      {
+       "topic": "Software Engineering and Design Patterns",
+       "subfield": "Development",
+       "field": "Social Sciences",
+       "domain": "Social Sciences",
+       "score": 0.15060000121593475
+      }
+     ]
+    },
+    {
+     "title": "An Integrated Printed Textile Design and Apparel Product Development Process",
+     "year": 2004,
+     "cited_by": 0,
+     "venue": "NCSU Libraries Repository (North Carolina State University Libraries)",
+     "url": "https://openalex.org/W2522016464",
+     "topics": [
+      {
+       "topic": "Product Development and Customization",
+       "subfield": "Management of Technology and Innovation",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.4950999915599823
+      },
+      {
+       "topic": "Cultural and Historical Studies",
+       "subfield": "Visual Arts and Performing Arts",
+       "field": "Arts and Humanities",
+       "domain": "Social Sciences",
+       "score": 0.3522999882698059
+      },
+      {
+       "topic": "Fashion and Cultural Textiles",
+       "subfield": "Museology",
+       "field": "Arts and Humanities",
+       "domain": "Social Sciences",
+       "score": 0.06599999964237213
+      }
+     ]
+    },
+    {
+     "title": "Effect of Applying Circular Economy Concept on The Printed Apparel Industry",
+     "year": 2023,
+     "cited_by": 1,
+     "venue": "Journal of Design Sciences and Applied Arts/Journal of Design Sciences and Applied Arts ",
+     "url": "https://doi.org/10.21608/jdsaa.2023.185934.1245",
+     "topics": [
+      {
+       "topic": "Sustainable Supply Chain Management",
+       "subfield": "Strategy and Management",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.9297000169754028
+      },
+      {
+       "topic": "Environmental Sustainability in Business",
+       "subfield": "Marketing",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.021900000050663948
+      },
+      {
+       "topic": "Cultural and Historical Studies",
+       "subfield": "Visual Arts and Performing Arts",
+       "field": "Arts and Humanities",
+       "domain": "Social Sciences",
+       "score": 0.017899999395012856
+      }
+     ]
+    },
+    {
+     "title": "Designing Coordinated Separates: Use of Inspirational Sources in Apparel Classes",
+     "year": 2016,
+     "cited_by": 0,
+     "venue": null,
+     "url": "https://doi.org/10.31274/itaa_proceedings-180814-1528",
+     "topics": [
+      {
+       "topic": "Cultural and Historical Studies",
+       "subfield": "Visual Arts and Performing Arts",
+       "field": "Arts and Humanities",
+       "domain": "Social Sciences",
+       "score": 0.9624000191688538
+      },
+      {
+       "topic": "Fashion and Cultural Textiles",
+       "subfield": "Museology",
+       "field": "Arts and Humanities",
+       "domain": "Social Sciences",
+       "score": 0.03020000085234642
+      },
+      {
+       "topic": "Design Education and Practice",
+       "subfield": "Mechanical Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.004699999932199717
+      }
+     ]
+    }
+   ],
+   "most_cited": [
+    {
+     "title": "Wearable Electronics and Smart Textiles: A Critical Review",
+     "year": 2014,
+     "cited_by": 2104,
+     "venue": "Sensors",
+     "url": "https://doi.org/10.3390/s140711957",
+     "topics": [
+      {
+       "topic": "Advanced Sensor and Energy Harvesting Materials",
+       "subfield": "Biomedical Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.95169997215271
+      },
+      {
+       "topic": "Nanomaterials and Printing Technologies",
+       "subfield": "Electrical and Electronic Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.043699998408555984
+      },
+      {
+       "topic": "Non-Invasive Vital Sign Monitoring",
+       "subfield": "Biomedical Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.0003000000142492354
+      }
+     ]
+    },
+    {
+     "title": "Geographic Concentration in U.S. Manufacturing Industries: A Dartboard Approach",
+     "year": 1994,
+     "cited_by": 1428,
+     "venue": "National Bureau of Economic Research",
+     "url": "https://doi.org/10.3386/w4840",
+     "topics": [
+      {
+       "topic": "Regional Economics and Spatial Analysis",
+       "subfield": "Economics and Econometrics",
+       "field": "Economics, Econometrics and Finance",
+       "domain": "Social Sciences",
+       "score": 1.0
+      },
+      {
+       "topic": "Regional Economic and Spatial Analysis",
+       "subfield": "Economics and Econometrics",
+       "field": "Economics, Econometrics and Finance",
+       "domain": "Social Sciences",
+       "score": 9.999999747378752e-05
+      },
+      {
+       "topic": "Firm Innovation and Growth",
+       "subfield": "Economics and Econometrics",
+       "field": "Economics, Econometrics and Finance",
+       "domain": "Social Sciences",
+       "score": 0.0
+      }
+     ]
+    },
+    {
+     "title": "Smart fabric sensors and e-textile technologies: a review",
+     "year": 2014,
+     "cited_by": 795,
+     "venue": "Smart Materials and Structures",
+     "url": "https://doi.org/10.1088/0964-1726/23/5/053001",
+     "topics": [
+      {
+       "topic": "Advanced Sensor and Energy Harvesting Materials",
+       "subfield": "Biomedical Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.9980000257492065
+      },
+      {
+       "topic": "Nanomaterials and Printing Technologies",
+       "subfield": "Electrical and Electronic Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.0013000000035390258
+      },
+      {
+       "topic": "Textile materials and evaluations",
+       "subfield": "Polymers and Plastics",
+       "field": "Materials Science",
+       "domain": "Physical Sciences",
+       "score": 9.999999747378752e-05
+      }
+     ]
+    },
+    {
+     "title": "A review of stimuli-responsive polymers for smart textile applications",
+     "year": 2012,
+     "cited_by": 638,
+     "venue": "Smart Materials and Structures",
+     "url": "https://doi.org/10.1088/0964-1726/21/5/053001",
+     "topics": [
+      {
+       "topic": "Hydrogels: synthesis, properties, applications",
+       "subfield": "Molecular Medicine",
+       "field": "Biochemistry, Genetics and Molecular Biology",
+       "domain": "Life Sciences",
+       "score": 0.6455000042915344
+      },
+      {
+       "topic": "Advanced Materials and Mechanics",
+       "subfield": "Mechanical Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.2896000146865845
+      },
+      {
+       "topic": "Dyeing and Modifying Textile Fibers",
+       "subfield": "Building and Construction",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.048500001430511475
+      }
+     ]
+    },
+    {
+     "title": "Product Market Synergies and Competition in Mergers and Acquisitions: A Text-Based Analysis",
+     "year": 2008,
+     "cited_by": 548,
+     "venue": "SSRN Electronic Journal",
+     "url": "https://doi.org/10.2139/ssrn.1181022",
+     "topics": [
+      {
+       "topic": "Corporate Finance and Governance",
+       "subfield": "Accounting",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.9711999893188477
+      },
+      {
+       "topic": "Merger and Competition Analysis",
+       "subfield": "Economics and Econometrics",
+       "field": "Economics, Econometrics and Finance",
+       "domain": "Social Sciences",
+       "score": 0.02419999986886978
+      },
+      {
+       "topic": "Financial Markets and Investment Strategies",
+       "subfield": "Finance",
+       "field": "Economics, Econometrics and Finance",
+       "domain": "Social Sciences",
+       "score": 0.0013000000035390258
+      }
+     ]
+    }
+   ]
+  },
+  "trials": {
+   "total": 0,
+   "items": []
+  },
+  "projects": {
+   "total": 9,
+   "items": [
+    {
+     "name": "unnatisilks12/madhuri",
+     "description": "Just a few years ago, a company formed by three individuals decided that it would be making skateboards and sunglasses from recycled nylon.  They were basing their efforts upon “trash” floating in the ocean, that they were determined should get cleaned up if they set the ball rolling and others joined them in the effort.   “When we researched ocean waste, we learned that there’s a constant stream of nylon fishing nets being dumped into the ocean every year, nets that are just going to sit there for generations. This stuff doesn’t break down.” Today, the company pays fishermen in Chile to collect old nylon fishing nets, which are then recycled into skateboards and sunglasses.    What is the material called Nylon?  Nylon is a type of synthetic fiber fabric like polyester, made from petroleum products. Nylon was the first fabric made entirely in a laboratory and its invention represents the dawn of the age of synthetics.  Nylon had started appearing in stores in 1939 in the form of women’s tights, but it was really the Second World War that opened up the market for Nylon. Nylon became widely available to the general public around the time of World War II. In fact during the war it extensively found of use in the making of parachutes and other military equipment.  Prior to 1945, cotton and wool dominated the market; by the end of the war, synthetic fibers particularly nylon had eaten up a significant 25% of the market share.  It is today commonly used to make clothing, backpacks and bags, stockings or tights, outdoor gear such as tents, rope, carpet, underwear and hosiery, nylon can also be found in the bristles of our toothbrushes, umbrellas, knits, and swimwear and active wear and many other items we use every day.    The advantages of Nylon as a material  First developed in the 1930s as an alternative to silk, there are lots of great qualities about the fabric. It is lightweight yet strong, and it is often touted for its quick-drying capabilities. Clothing manufacturers like it because it holds dye well. It is also less expensive to produce than silk and does not get damaged as easily.  The making of nylon for fabric use  Nylons are a family of materials called polyamides, made from reacting carbon-based chemicals found in coal and petroleum in a high-pressure, heated environment. This chemical reaction, known as condensation polymerization, forms a large polymer – in the form of a sheet of nylon.  To make nylon fabric for apparel, this nylon sheet is then broken into chips, melted and drawn through a mechanical spinneret to produce individual fibres that are woven into fabric.  This plastic is then put through an intensive chemical process, resulting in the strong, stretchy fibres that make it so useful as a fabric.    So what is the idea about recycling Nylon?  Since Nylon is made of petroleum products it will not biodegrade. Nylon doesn’t break down easily and accounts for about 10% of the debris in the ocean. According to the World Society for the Protection of Animals, more than 600,000 tons of fishing gear is dumped into oceans every year, including nylon nets. Fishermen often discard the nets because the alternative is much costlier – paying someone to dispose of them properly.  For some reason locked deep in polymer chemistry, nylon is more difficult to recycle than polyester. After years of research, development, and testing, some recycled nylon fibers that are suitable for apparel and can pass the rigorous tests of manufacturability and product quality, is what the company found out.  “Although we’ve been substituting non-recycled polyester for recycled versions for 20 years, only in the last five have we begun swapping out non-recycled nylon for its recycled replacement. Some of the recycled nylon we use comes from post-industrial waste fiber, yarn collected from a spinning factory, and waste from the weaving mills that can be processed into reusable nylon fiber. Another recycled nylon fiber we are experimenting with is re-created from discarded industrial fishing nets.  Though a lot of experiments were conducted and extensive research on how nylon could be converted to its recycled biodegradable form was carried out, it was only in 2013 onwards that it actually produced desired results.  In any case, incorporating as much recycled nylon as we can lessens our dependence on petroleum as a raw material source. It curbs discards, thereby prolonging landfill life and reducing toxic emissions from incinerators. It helps promote new recycling streams for nylon products that are no longer usable. And it causes less air, water, and soil contamination compared to using non-recycled nylon.    Recycling of Nylon – a challenge in itself  The economics of recycling nylon are not very appealing, however. An associate professor in plastic engineering at the University of Massachusetts Lowell, ran a research program on recycled fishing nets for the company.  Nylon, he says, is not an easy or cheap material to recycle. Plus polymers, or plastics, are cheap to buy new which may be why many companies choose to use polyethylene terephthalate (PET) – the most common type of plastic found in soda and water bottles – instead .  Contamination is another concern. Unlike metals and glass, which are melted at high temperatures, nylon is melted at a lower temperature, meaning some contaminants – non-recyclable materials and microbes or bacteria – can survive. This is why all nylons have to be cleaned thoroughly before the recycling process. “When you’ve dragged a fishing net through a boat, on the ocean floor, and wherever else, it’s a lot harder to clean before you can recycle it,” Johnston says.  That’s why Johnston is supportive of circular economy business models, in which businesses keep resources in use for as long as possible, extract their maximum value and then recycle and reuse products and materials. “What would change the recycling scene is if we were charged per pound for all waste. Or if companies had to take back part of what they produced.”  The company has an idea already: the company’s sunglasses come with a lifetime warranty. In fact it will fix any pair of glasses free of charge, or provide customers with new frames if their product is beyond repair. Old frames are recycled.  And another Italian manufacturer Aquafil has nylon fibers in its carpets. After nearly 40 years of producing carpet yarn, a growing awareness of the environmental harm caused by synthetic materials made it want to turn towards a more environmentally friendly business model.  In 2007, Aquafil began developing a machine that can churn through most kinds of nylons, producing new threads ready to be repurposed. Aquafil now sells these threads, called Econyl, to American brands such as Outerknown, an LA-based outerwear company started by pro surfer Kelly Slater, and swimwear giant Speedo.  LA-based Masami Shigematsu works on product development for Speedo. She says that she had been actively searching for recycled nylon for years before she found Econyl. “It has to perform well. It can’t just be a sustainable material. Our products are being used by athletes who need it to function as good as new material.” In 2014, Shigematsu met with Aquafil and started experimenting with the fabric. Last year, Speedo rolled out two products with Econyl and has since expanded to include more than 50 products made with the material.    Has corporate social responsibility become the modern gold rush?  California-based Patagonia has also been adding more recycled nylon to its lineup. Currently, the company has more than 50 products that contain recycled nylon in various percentages. The Torrent shell jackets, for instance, have an outer layer textile made with 100% chemically recycled nylon.  It took Patagonia nearly 15 years to develop the technology to recycle polyester to a point where it was as good as virgin polyester. Patagonia wants to go further than just use recycled nylon in its products.  How to they Recycle Nylon  Just about everyone has nylon around their home. It is in the backpacks our kids take to school, the pantyhose women wear to work and the cheap, reusable shopping bags everyone is handing out these days. There are very few places that accept nylon for recycling. It is unlikely that you can recycle it through your curbside program, and equally so that your local recycling center will have a handy bin that says, “Put your unwanted nylon here!” Your ability to recycle nylon depends largely on the form it takes; for example, nylon pantyhose are easier to recycle than nylon backpacks. But remember: If you cannot recycle an item made of nylon, you may be able to reuse it rather than putting it in the trash. The problem with nylon is that, like many fabrics, it is difficult to recycle, especially once it has been used. Second-hand fabrics typically need to be cleaned before they can be recycled, and it is often not cost-effective for companies to do that. However, there are a few nylon recycling options out there. How to recycle or reuse nylon bags  Nylon bags are challenging to recycle unless you purchase one from a company that offers a take back program. San Francisco-based Timbuk2 is one such company. Once your nylon messenger or camera bag is worn out, simply stick it in a box and mail it to the company at the address provided on its website. Timbuk2 will reuse or recycle as many of the materials as possible. There is no charge for the company’s recycling services (other than the cost of postage), and customers that send in products to be recycled will receive a 20% discount on a future purchase. There may also be creative ways to reuse unwanted nylon bags. If you have a backpack that is in good shape that you no longer want, consider donating it to a thrift shop or a program that helps children get school supplies. If you have a large shopping bag with a hole it in, cut it apart and use the good nylon to make a smaller storage bag.   How to recycle or reuse nylon fabric  Leftover nylon fabric from a sewing project is a great material to reuse. See if your community has an organization that provides fabric and supplies to artists and schools. Materials for the Arts in New York City and The Scrap Exchange in Durham, NC, are a few examples. If you have nylon clothing you want to recycle, and you purchased that clothing from popular outdoor gear manufacturer Patagonia, you can return it to the company for recycling. Get more information about Patagonia’s recycling program on its website.  How to recycle and reuse nylons or tights  No Nonsense, which makes nylons, tights and other types of leggings, offers a recycling program for consumers. The first step is visit their pantyhose recycling page and print a prepaid mailing label. Next, place all your unwanted nylon leggings in a box and put on the shipping label. Drop it at your nearest post office or other mailing location, and your old nylons are on their way to a recycling facility. No Nonsense sends the material to a plant that recycles it into things like playground equipment, toys and vehicle insulation. There are lots of ways to reuse old nylons as well. Put a bar of soap in the toe of a clean nylon (make sure there is no run in that section). Tie off the open end and hang the sock by the sink. When you go to wash your hands, get them plenty wet then roll the sock between your hands. This works really well in potting sheds, barns or other places where a soap dish might not be practical. Use nylons to tie up tomatoes or other plants that need support as they grow. Fill a clean nylon with potpourri or lavender. Use it as a sachet in your drawers, car or any other area you want to smell fresh.   But then what is to be Nylon’s impact on the planet?  Different kinds of nylon have different properties, but the common threads between each are strength, durability and ability to be moulded into shape. The flip side is that no form of nylon is biodegradable; so once you no longer have a need for your torn stockings or old toothbrush, it sits in a landfill for at least 30 years. Nylon is in part derived from coal and petroleum. In producing nylon there is creation of Greenhouse gases: producing nylon creates nitrous oxide, a greenhouse gas that is 300 times more potent than carbon dioxide. Water: manufacturing nylon is a very thirsty process; large amounts of water are used for cooling the fibres, which can be a source of environmental contamination and pollution. Energy: manufacturing nylon is a very energy-hungry process, which contributes to environmental degradation and global warming.   But, definitely there is the good side to it.  Nylon is a plastic that can be recycled. There are several brands and accreditations that can help consumers find more sustainable nylon products. Econyl has developed an eco-friendly nylon made from recycled plastics in a closed loop system, drastically reducing waste and emissions. Nylon may certainly not be great for the environment, but there are plenty of brands working hard to turn that around!",
+     "stars": 6,
+     "updated": "2019-08-30T10:30:56Z",
+     "license": null,
+     "url": "https://github.com/unnatisilks12/madhuri"
+    },
+    {
+     "name": "krishanpradhan/Mobile-Responsive-Apparel-Brand",
+     "description": "Mobile responsive web site for apperall brand (knitted) is support all device's like phone, tablet, laptop and desktop.",
+     "stars": 1,
+     "updated": "2022-08-02T13:57:46Z",
+     "license": "Apache-2.0",
+     "url": "https://github.com/krishanpradhan/Mobile-Responsive-Apparel-Brand"
+    },
+    {
+     "name": "cloud-itonami/cloud-itonami-isic-1430",
+     "description": "Open Business Blueprint + actor: ISIC 1430 Manufacture of knitted and crocheted apparel",
+     "stars": 0,
+     "updated": "2026-09-24T23:23:03Z",
+     "license": "AGPL-3.0",
+     "url": "https://github.com/cloud-itonami/cloud-itonami-isic-1430"
+    },
+    {
+     "name": "Xhenzouu/apparel-size-grader",
+     "description": "Python automation tool for knit beanie and apparel size grading, with config-driven measurements, material usage estimates, and clean Excel output.",
+     "stars": 0,
+     "updated": "2026-09-14T10:56:53Z",
+     "license": null,
+     "url": "https://github.com/Xhenzouu/apparel-size-grader"
+    },
+    {
+     "name": "loveseweater/yzr-sweaters",
+     "description": "YZR Sweaters — knitwear manufacturer & OEM/ODM supplier in Dongguan, China. Sweaters, cardigans, knitted dresses, polos and accessories from BSCI/SEDEX/Oeko-Tex certified factories.",
+     "stars": 0,
+     "updated": "2026-10-10T03:24:19Z",
+     "license": null,
+     "url": "https://github.com/loveseweater/yzr-sweaters"
+    },
+    {
+     "name": "drmcoder/garment-fabric-consumption",
+     "description": "Fabric consumption calculator — knit (GSM × area) and woven (marker length) methods with wastage (npm + PyPI).",
+     "stars": 0,
+     "updated": "2026-05-23T18:14:45Z",
+     "license": "NOASSERTION",
+     "url": "https://github.com/drmcoder/garment-fabric-consumption"
+    },
+    {
+     "name": "api-evangelist/rothys",
+     "description": "Rothys — independent third-party profile of a public API surface, by API Evangelist. Rothy's is a San Francisco-based direct-to-consumer footwear and accessories brand founded in 2012, known for washable shoes and bags 3D-knitted from recycled materials such as post-consumer plastic water bottles and marine plastics.",
+     "stars": 0,
+     "updated": "2026-10-09T19:01:01Z",
+     "license": null,
+     "url": "https://github.com/api-evangelist/rothys"
+    },
+    {
+     "name": "api-evangelist/bailey44",
+     "description": "Bailey44 — independent third-party profile of a public API surface, by API Evangelist. Bailey 44 (stylized Bailey/44) is a contemporary womenswear brand selling direct-to-consumer through a Shopify storefront at bailey44.com. The label offers women's apparel — dresses, tops, knits, and separates — around a brand voice of optimism and self-expressio",
+     "stars": 0,
+     "updated": "2026-10-04T17:20:27Z",
+     "license": null,
+     "url": "https://github.com/api-evangelist/bailey44"
+    },
+    {
+     "name": "warptex/New",
+     "description": "Warptex Bangladesh Limited is a leading multinational apparel buying house, manufacturer & exporter based in Dhaka, Bangladesh. Specializing in woven, denim, knit, sweater & homewear — serving 40+ global clients across the US, EU & Russia with 13+ certified factories, 1M+ pieces monthly capacity & 5,000+ successful shipments delivered.",
+     "stars": 0,
+     "updated": "2026-06-21T09:26:30Z",
+     "license": null,
+     "url": "https://github.com/warptex/New"
+    }
+   ]
+  },
+  "patents": {
+   "total": 0,
+   "items": []
+  },
+  "local": {
+   "startups": [],
+   "registry_domains": []
+  },
+  "elements": [],
+  "discuss": [
+   {
+    "field": "Engineering",
+    "questions": [
+     "Which sensors and hardware, at what unit cost, and how durable in Indian conditions?",
+     "What certification does the hardware need before sale?"
+    ]
+   },
+   {
+    "field": "Environmental Science",
+    "questions": [
+     "What is measured, by whom, and who pays for the improvement?"
+    ]
+   },
+   {
+    "field": "Computer Science",
+    "questions": [
+     "What data trains the model, who owns it, and what accuracy is good enough to act on?",
+     "Does it run on the device or in the cloud, and what happens offline?"
+    ]
+   },
+   {
+    "field": "Any idea",
+    "questions": [
+     "Who is the first buyer, and what do they use today instead?",
+     "What exactly is new compared with the closest prior art found?",
+     "Which part could be protected (patent, design, trademark), and which is already public?"
+    ]
+   }
+  ],
+  "coverage": [
+   {
+    "source": "papers",
+    "status": "ok",
+    "found": 3856,
+    "note": ""
+   },
+   {
+    "source": "projects",
+    "status": "ok",
+    "found": 9,
+    "note": ""
+   },
+   {
+    "source": "patents",
+    "status": "no_key",
+    "found": 0,
+    "note": "Patents not searched: add a free PatentsView key (PATENTSVIEW_API_KEY)"
+   },
+   {
+    "source": "trials",
+    "status": "skipped",
+    "found": 0,
+    "note": "Not a health idea, so clinical trials were not searched"
+   }
+  ],
+  "caveat": "Counts come from the sources listed in coverage. 'Nothing found' means nothing in those sources, not that the idea is new; have a patent attorney search before filing."
+ },
+ "novelty": {
+  "elements": [
+   {
+    "element": "t-shirt",
+    "query": "\"knitted apparel\"",
+    "papers": 2330,
+    "label": "active"
+   }
+  ],
+  "pairs": [],
+  "context": {
+   "query": "\"knitted apparel\"",
+   "searched": true,
+   "world_papers": 2330,
+   "india_papers": 25,
+   "india_share_pct": 1.1,
+   "tn_startups": 0,
+   "gap": true
+  },
+  "statement": {
+   "type": "context",
+   "text": "Work on this is active worldwide (2,330 papers), but only 25 come from Indian institutions, and I found no Tamil Nadu startup doing it."
+  },
+  "levers": [
+   {
+    "kind": "localise",
+    "text": "Make it fit Tamil Nadu, with the Tamil language, local hospital or market routines, and a local price.",
+    "because": "25 of 2,330 papers are from India, and no Tamil Nadu startup was found"
+   }
+  ],
+  "thresholds": {
+   "active_papers": 300,
+   "crowded_papers": 5000,
+   "rare_pair_share_pct": 2.0,
+   "rare_pair_papers": 30,
+   "india_low_share_pct": 5.0
+  },
+  "caveat": "Not found in these sources is not proof of novelty; have a patent attorney search before filing."
+ }
+}

@@ -1,0 +1,733 @@
+{
+ "id": "tea_madurai",
+ "idea": "I want to sell mint hibiscus and lemon tea infusions as a brand from Madurai",
+ "recorded": "2026-10-10",
+ "coverage": [
+  {
+   "source": "papers",
+   "status": "ok"
+  },
+  {
+   "source": "projects",
+   "status": "ok"
+  },
+  {
+   "source": "patents",
+   "status": "no_key"
+  },
+  {
+   "source": "trials",
+   "status": "skipped"
+  }
+ ],
+ "scan": {
+  "idea": "I want to sell mint hibiscus and lemon tea infusions as a brand from Madurai",
+  "queries": {
+   "papers": "herbal tea Hibiscus sabdariffa Mentha",
+   "trials": "herbal tea Hibiscus sabdariffa",
+   "projects": "herbal tea Hibiscus sabdariffa",
+   "patents": "herbal tea Hibiscus sabdariffa Mentha",
+   "local": "herbal tea Hibiscus sabdariffa Mentha"
+  },
+  "associated_domains": {
+   "basis": "papers",
+   "domains": [
+    {
+     "name": "Life Sciences",
+     "share_pct": 50
+    },
+    {
+     "name": "Health Sciences",
+     "share_pct": 25
+    },
+    {
+     "name": "Physical Sciences",
+     "share_pct": 25
+    }
+   ],
+   "fields": [
+    {
+     "name": "Agricultural and Biological Sciences",
+     "share_pct": 29
+    },
+    {
+     "name": "Pharmacology, Toxicology and Pharmaceutics",
+     "share_pct": 20
+    },
+    {
+     "name": "Medicine",
+     "share_pct": 20
+    },
+    {
+     "name": "Chemistry",
+     "share_pct": 17
+    },
+    {
+     "name": "Environmental Science",
+     "share_pct": 5
+    },
+    {
+     "name": "Health Professions",
+     "share_pct": 3
+    },
+    {
+     "name": "Engineering",
+     "share_pct": 3
+    },
+    {
+     "name": "Nursing",
+     "share_pct": 2
+    }
+   ],
+   "subfields": [
+    {
+     "name": "Pharmacology",
+     "share_pct": 23
+    },
+    {
+     "name": "Analytical Chemistry",
+     "share_pct": 17
+    },
+    {
+     "name": "Food Science",
+     "share_pct": 17
+    },
+    {
+     "name": "Plant Science",
+     "share_pct": 11
+    },
+    {
+     "name": "Biochemistry",
+     "share_pct": 8
+    },
+    {
+     "name": "Pollution",
+     "share_pct": 5
+    },
+    {
+     "name": "Complementary and Manual Therapy",
+     "share_pct": 3
+    },
+    {
+     "name": "Reproductive Medicine",
+     "share_pct": 3
+    }
+   ],
+   "topics": [
+    {
+     "name": "Hibiscus Plant Research Studies",
+     "share_pct": 20
+    },
+    {
+     "name": "Heavy Metals in Plants",
+     "share_pct": 17
+    },
+    {
+     "name": "Phytochemicals and Antioxidant Activities",
+     "share_pct": 8
+    },
+    {
+     "name": "Food and Agricultural Sciences",
+     "share_pct": 7
+    },
+    {
+     "name": "Medicinal Plant Research",
+     "share_pct": 6
+    },
+    {
+     "name": "Heavy metals in environment",
+     "share_pct": 5
+    },
+    {
+     "name": "Essential Oils and Antimicrobial Activity",
+     "share_pct": 5
+    },
+    {
+     "name": "Therapeutic Uses of Natural Elements",
+     "share_pct": 3
+    }
+   ]
+  },
+  "vanigam_categories": [
+   "agriculture",
+   "climate",
+   "electrical",
+   "health_bio"
+  ],
+  "papers": {
+   "total": 551,
+   "by_year": {
+    "2022": 85,
+    "2023": 80,
+    "2025": 79,
+    "2021": 59,
+    "2024": 56,
+    "2026": 44,
+    "2020": 39,
+    "2019": 18,
+    "2014": 16,
+    "2018": 15,
+    "2015": 12,
+    "2017": 9,
+    "2013": 8,
+    "2016": 8,
+    "2011": 5,
+    "2012": 5,
+    "2010": 3,
+    "2004": 2,
+    "2008": 2,
+    "1970": 1,
+    "1996": 1,
+    "2000": 1,
+    "2005": 1,
+    "2009": 1
+   },
+   "most_relevant": [
+    {
+     "title": "An Herbal Tea Blend of Hibiscus sabdariffa, Zingiber officinale, and Mentha spicata: A Potent Source of Antioxidant and Anti-Obesity Properties",
+     "year": 2024,
+     "cited_by": 3,
+     "venue": "European Journal of Medical and Health Research",
+     "url": "https://doi.org/10.59324/ejmhr.2024.2(1).10",
+     "topics": [
+      {
+       "topic": "Hibiscus Plant Research Studies",
+       "subfield": "Pharmacology",
+       "field": "Pharmacology, Toxicology and Pharmaceutics",
+       "domain": "Life Sciences",
+       "score": 0.9643999934196472
+      },
+      {
+       "topic": "Natural Antidiabetic Agents Studies",
+       "subfield": "Endocrinology, Diabetes and Metabolism",
+       "field": "Medicine",
+       "domain": "Health Sciences",
+       "score": 0.01119999960064888
+      },
+      {
+       "topic": "Pharmacology and Obesity Treatment",
+       "subfield": "Pharmacology",
+       "field": "Medicine",
+       "domain": "Health Sciences",
+       "score": 0.00570000009611249
+      }
+     ]
+    },
+    {
+     "title": "Antioxidant characteristics of tea-herbal compositions",
+     "year": 2021,
+     "cited_by": 2,
+     "venue": "Ukrainian Food Journal",
+     "url": "https://doi.org/10.24263/2304-974x-2021-10-4-14",
+     "topics": [
+      {
+       "topic": "Phytochemicals and Antioxidant Activities",
+       "subfield": "Biochemistry",
+       "field": "Medicine",
+       "domain": "Health Sciences",
+       "score": 0.5029000043869019
+      },
+      {
+       "topic": "Hibiscus Plant Research Studies",
+       "subfield": "Pharmacology",
+       "field": "Pharmacology, Toxicology and Pharmaceutics",
+       "domain": "Life Sciences",
+       "score": 0.1800999939441681
+      },
+      {
+       "topic": "Food Science and Nutritional Studies",
+       "subfield": "Nutrition and Dietetics",
+       "field": "Nursing",
+       "domain": "Health Sciences",
+       "score": 0.0949999988079071
+      }
+     ]
+    },
+    {
+     "title": "Levels of some microelements and essential heavy metals in herbal teas in Serbia.",
+     "year": 2014,
+     "cited_by": 40,
+     "venue": "PubMed",
+     "url": "https://openalex.org/W2297395431",
+     "topics": [
+      {
+       "topic": "Heavy Metals in Plants",
+       "subfield": "Analytical Chemistry",
+       "field": "Chemistry",
+       "domain": "Physical Sciences",
+       "score": 1.0
+      },
+      {
+       "topic": "Food and Agricultural Sciences",
+       "subfield": "Food Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.0
+      },
+      {
+       "topic": "Heavy metals in environment",
+       "subfield": "Pollution",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 0.0
+      }
+     ]
+    },
+    {
+     "title": "LEVELS OF SOME MICROELEMENTS AND ESSENTIAL HEAVY METALS IN HERBAL TEAS IN SERBIA",
+     "year": 2014,
+     "cited_by": 2,
+     "venue": null,
+     "url": "https://openalex.org/W3140329200",
+     "topics": [
+      {
+       "topic": "Heavy Metals in Plants",
+       "subfield": "Analytical Chemistry",
+       "field": "Chemistry",
+       "domain": "Physical Sciences",
+       "score": 1.0
+      },
+      {
+       "topic": "Food and Agricultural Sciences",
+       "subfield": "Food Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.0
+      },
+      {
+       "topic": "Heavy metals in environment",
+       "subfield": "Pollution",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 0.0
+      }
+     ]
+    },
+    {
+     "title": "DETERMINATION OF SOME ESSENTIAL ELEMENTS IN HERBAL TEAS FROM SERBIA USING ATOMIC SPECTROMETRY (AAS)",
+     "year": 2014,
+     "cited_by": 2,
+     "venue": "Zenodo (CERN European Organization for Nuclear Research)",
+     "url": "https://doi.org/10.5281/zenodo.6523292",
+     "topics": [
+      {
+       "topic": "Heavy Metals in Plants",
+       "subfield": "Analytical Chemistry",
+       "field": "Chemistry",
+       "domain": "Physical Sciences",
+       "score": 1.0
+      },
+      {
+       "topic": "Food and Agricultural Sciences",
+       "subfield": "Food Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 9.999999747378752e-05
+      },
+      {
+       "topic": "Therapeutic Uses of Natural Elements",
+       "subfield": "Complementary and Manual Therapy",
+       "field": "Health Professions",
+       "domain": "Health Sciences",
+       "score": 0.0
+      }
+     ]
+    },
+    {
+     "title": "ANTIOXIDATIVE ACTIVITY AND PHYTOCHEMISTRY PROFILE OF HIBISCUS SABDARIFFA HERB EXTRACTS",
+     "year": 2019,
+     "cited_by": 17,
+     "venue": "International Journal of Applied Pharmaceutics",
+     "url": "https://doi.org/10.22159/ijap.2019.v11s6.33532",
+     "topics": [
+      {
+       "topic": "Hibiscus Plant Research Studies",
+       "subfield": "Pharmacology",
+       "field": "Pharmacology, Toxicology and Pharmaceutics",
+       "domain": "Life Sciences",
+       "score": 1.0
+      },
+      {
+       "topic": "Phytochemicals and Antioxidant Activities",
+       "subfield": "Biochemistry",
+       "field": "Medicine",
+       "domain": "Health Sciences",
+       "score": 0.0
+      },
+      {
+       "topic": "Medicinal Plant Research",
+       "subfield": "Plant Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.0
+      }
+     ]
+    },
+    {
+     "title": "PHYSICAL PROPERTIES OF ROSELLE CALYCES (HIBISCUS SABDARIFFA L.)",
+     "year": 2026,
+     "cited_by": 0,
+     "venue": "PLANT ARCHIVES",
+     "url": "https://doi.org/10.51470/plantarchives.2026.v26.no.1.056",
+     "topics": [
+      {
+       "topic": "Agricultural Engineering and Mechanization",
+       "subfield": "Mechanical Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.9961000084877014
+      },
+      {
+       "topic": "Hibiscus Plant Research Studies",
+       "subfield": "Pharmacology",
+       "field": "Pharmacology, Toxicology and Pharmaceutics",
+       "domain": "Life Sciences",
+       "score": 0.0015999999595806003
+      },
+      {
+       "topic": "Food Drying and Modeling",
+       "subfield": "Food Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.0010000000474974513
+      }
+     ]
+    },
+    {
+     "title": "Influence of Herbal Additives on the Physicochemical, Microbiological, Polyphenolic, and Sensory Profile of Green Tea-Based Kombucha",
+     "year": 2025,
+     "cited_by": 8,
+     "venue": "Foods",
+     "url": "https://doi.org/10.3390/foods14203497",
+     "topics": [
+      {
+       "topic": "Probiotics and Fermented Foods",
+       "subfield": "Food Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.774399995803833
+      },
+      {
+       "topic": "Fermentation and Sensory Analysis",
+       "subfield": "Food Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.11980000138282776
+      },
+      {
+       "topic": "Food Quality and Safety Studies",
+       "subfield": "Food Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.03889999911189079
+      }
+     ]
+    }
+   ],
+   "most_cited": [
+    {
+     "title": "Therapeutic Potential of Phenolic Compounds in Medicinal Plants—Natural Health Products for Human Health",
+     "year": 2023,
+     "cited_by": 792,
+     "venue": "Molecules",
+     "url": "https://doi.org/10.3390/molecules28041845",
+     "topics": [
+      {
+       "topic": "Phytochemicals and Antioxidant Activities",
+       "subfield": "Biochemistry",
+       "field": "Medicine",
+       "domain": "Health Sciences",
+       "score": 0.9648000001907349
+      },
+      {
+       "topic": "Phytochemistry and Biological Activities",
+       "subfield": "Plant Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.01979999989271164
+      },
+      {
+       "topic": "Bioactive natural compounds",
+       "subfield": "Molecular Biology",
+       "field": "Biochemistry, Genetics and Molecular Biology",
+       "domain": "Life Sciences",
+       "score": 0.007799999788403511
+      }
+     ]
+    },
+    {
+     "title": "Phytochemicals for human disease: An update on plant-derived compounds antibacterial activity",
+     "year": 2016,
+     "cited_by": 670,
+     "venue": "Microbiological Research",
+     "url": "https://doi.org/10.1016/j.micres.2016.12.003",
+     "topics": [
+      {
+       "topic": "Essential Oils and Antimicrobial Activity",
+       "subfield": "Food Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.9970999956130981
+      },
+      {
+       "topic": "Antimicrobial agents and applications",
+       "subfield": "Organic Chemistry",
+       "field": "Chemistry",
+       "domain": "Physical Sciences",
+       "score": 0.00139999995008111
+      },
+      {
+       "topic": "Bioactive natural compounds",
+       "subfield": "Molecular Biology",
+       "field": "Biochemistry, Genetics and Molecular Biology",
+       "domain": "Life Sciences",
+       "score": 0.0003000000142492354
+      }
+     ]
+    },
+    {
+     "title": "Influence of the extraction method on the recovery of bioactive phenolic compounds from food industry by-products",
+     "year": 2021,
+     "cited_by": 634,
+     "venue": "Food Chemistry",
+     "url": "https://doi.org/10.1016/j.foodchem.2021.131918",
+     "topics": [
+      {
+       "topic": "Phytochemicals and Antioxidant Activities",
+       "subfield": "Biochemistry",
+       "field": "Medicine",
+       "domain": "Health Sciences",
+       "score": 0.9779999852180481
+      },
+      {
+       "topic": "Agricultural and Biological Research",
+       "subfield": "Food Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.019899999722838402
+      },
+      {
+       "topic": "Edible Oils Quality and Analysis",
+       "subfield": "Organic Chemistry",
+       "field": "Chemistry",
+       "domain": "Physical Sciences",
+       "score": 0.0010999999940395355
+      }
+     ]
+    },
+    {
+     "title": "Extraction of Flavonoids From Natural Sources Using Modern Techniques",
+     "year": 2020,
+     "cited_by": 629,
+     "venue": "Frontiers in Chemistry",
+     "url": "https://doi.org/10.3389/fchem.2020.507887",
+     "topics": [
+      {
+       "topic": "Phytochemicals and Antioxidant Activities",
+       "subfield": "Biochemistry",
+       "field": "Medicine",
+       "domain": "Health Sciences",
+       "score": 0.7943999767303467
+      },
+      {
+       "topic": "Agricultural and Biological Research",
+       "subfield": "Food Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.1914999932050705
+      },
+      {
+       "topic": "Chromatography in Natural Products",
+       "subfield": "Analytical Chemistry",
+       "field": "Chemistry",
+       "domain": "Physical Sciences",
+       "score": 0.0027000000700354576
+      }
+     ]
+    },
+    {
+     "title": "Recent Advances in Supercritical Fluid Extraction of Natural Bioactive Compounds from Natural Plant Materials",
+     "year": 2020,
+     "cited_by": 625,
+     "venue": "Molecules",
+     "url": "https://doi.org/10.3390/molecules25173847",
+     "topics": [
+      {
+       "topic": "Phase Equilibria and Thermodynamics",
+       "subfield": "Biomedical Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.9940999746322632
+      },
+      {
+       "topic": "Agricultural and Biological Research",
+       "subfield": "Food Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.00279999990016222
+      },
+      {
+       "topic": "Chromatography in Natural Products",
+       "subfield": "Analytical Chemistry",
+       "field": "Chemistry",
+       "domain": "Physical Sciences",
+       "score": 0.000699999975040555
+      }
+     ]
+    }
+   ]
+  },
+  "trials": {
+   "total": 0,
+   "items": []
+  },
+  "projects": {
+   "total": 0,
+   "items": []
+  },
+  "patents": {
+   "total": 0,
+   "items": []
+  },
+  "local": {
+   "startups": [],
+   "registry_domains": []
+  },
+  "elements": [],
+  "discuss": [
+   {
+    "field": "Agricultural and Biological Sciences",
+    "questions": [
+     "Which crop or animal, which season, and which FPO or farmers will pilot it?"
+    ]
+   },
+   {
+    "field": "Environmental Science",
+    "questions": [
+     "What is measured, by whom, and who pays for the improvement?"
+    ]
+   },
+   {
+    "field": "Engineering",
+    "questions": [
+     "Which sensors and hardware, at what unit cost, and how durable in Indian conditions?",
+     "What certification does the hardware need before sale?"
+    ]
+   },
+   {
+    "field": "Any idea",
+    "questions": [
+     "Who is the first buyer, and what do they use today instead?",
+     "What exactly is new compared with the closest prior art found?",
+     "Which part could be protected (patent, design, trademark), and which is already public?"
+    ]
+   }
+  ],
+  "coverage": [
+   {
+    "source": "papers",
+    "status": "ok",
+    "found": 551,
+    "note": ""
+   },
+   {
+    "source": "projects",
+    "status": "ok",
+    "found": 0,
+    "note": ""
+   },
+   {
+    "source": "patents",
+    "status": "no_key",
+    "found": 0,
+    "note": "Patents not searched: add a free PatentsView key (PATENTSVIEW_API_KEY)"
+   },
+   {
+    "source": "trials",
+    "status": "skipped",
+    "found": 0,
+    "note": "Not a health idea, so clinical trials were not searched"
+   }
+  ],
+  "caveat": "Counts come from the sources listed in coverage. 'Nothing found' means nothing in those sources, not that the idea is new; have a patent attorney search before filing."
+ },
+ "novelty": {
+  "elements": [
+   {
+    "element": "tea infusions",
+    "query": "\"herbal tea\"",
+    "papers": 33346,
+    "label": "crowded"
+   },
+   {
+    "element": "hibiscus",
+    "query": "\"Hibiscus sabdariffa\"",
+    "papers": 31295,
+    "label": "crowded"
+   },
+   {
+    "element": "mint",
+    "query": "Mentha",
+    "papers": 90096,
+    "label": "crowded"
+   }
+  ],
+  "pairs": [
+   {
+    "a": "tea infusions",
+    "b": "hibiscus",
+    "a_papers": 33346,
+    "b_papers": 31295,
+    "papers": 1228,
+    "share_pct": 3.92,
+    "gap": false
+   },
+   {
+    "a": "hibiscus",
+    "b": "mint",
+    "a_papers": 31295,
+    "b_papers": 90096,
+    "papers": 1822,
+    "share_pct": 5.82,
+    "gap": false
+   },
+   {
+    "a": "tea infusions",
+    "b": "mint",
+    "a_papers": 33346,
+    "b_papers": 90096,
+    "papers": 2840,
+    "share_pct": 8.52,
+    "gap": false
+   }
+  ],
+  "context": {
+   "query": "Mentha \"herbal tea\"",
+   "searched": true,
+   "world_papers": 2840,
+   "india_papers": 183,
+   "india_share_pct": 6.4,
+   "tn_startups": 0,
+   "gap": false
+  },
+  "statement": {
+   "type": "crowded",
+   "text": "Each part is well studied, and so are their combinations. The edge has to come from who you serve, the cost, or how you deliver it."
+  },
+  "levers": [
+   {
+    "kind": "business model",
+    "text": "Compete on how it is delivered, as a service, a rental, or a scheme-backed rollout rather than a product sale.",
+    "because": "every part and combination is crowded"
+   }
+  ],
+  "thresholds": {
+   "active_papers": 300,
+   "crowded_papers": 5000,
+   "rare_pair_share_pct": 2.0,
+   "rare_pair_papers": 30,
+   "india_low_share_pct": 5.0
+  },
+  "caveat": "Not found in these sources is not proof of novelty; have a patent attorney search before filing."
+ }
+}

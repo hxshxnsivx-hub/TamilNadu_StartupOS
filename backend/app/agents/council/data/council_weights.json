@@ -1,0 +1,14 @@
+{
+  "version": "2026-10-09.1",
+  "note": "Starting weights per idea type, set by hand (architecture dashboard). Each row sums to 100. Tune on mentor-rated sessions (build spec 8.1); bump the version with every change.",
+  "seats": ["customer", "technical", "regulatory", "cost", "prior_art", "funding", "devil"],
+  "types": {
+    "health_device": [15, 15, 25, 10, 15, 10, 10],
+    "hardware":      [15, 25, 10, 20, 10, 10, 10],
+    "software":      [25, 15,  5,  5, 20, 15, 15],
+    "food":          [25,  5, 15, 25,  5, 15, 10],
+    "agri":          [20, 10, 10, 25,  5, 20, 10],
+    "service":       [30,  5, 10, 10, 10, 15, 20]
+  },
+  "bounds": [5, 40]
+}

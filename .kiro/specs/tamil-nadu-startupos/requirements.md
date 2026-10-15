@@ -158,6 +158,25 @@ The system serves as a unified operating system for startups, providing personal
 
 ---
 
+### Requirement 1.6: Experience-Based Opportunity Discovery (No-Idea Entry Path)
+
+**User Story:** As an individual with years of work experience in a field (agriculture, IT/ITES, textiles, manufacturing, services, etc.) but NO startup idea and no knowledge of how to create a startup, I want the platform to discover suitable startup opportunities for me based on my experience, credentials, and capacity, so that I can enter entrepreneurship from experience alone.
+
+#### Acceptance Criteria
+
+1. THE Vanigam_Platform SHALL provide a dual entry mode at ideation: "I have an idea" (existing Requirement 1.2 flow) and "I have experience, find me an opportunity" (this requirement)
+2. WHEN a user selects the experience-based path, THE Roadmap_Swarm's ExperienceProfiler sub-agent SHALL collect a structured Experience Profile including: age, education, Caste_Category, location (district), sector(s) of work experience, years of experience, roles held, skills, certifications, financial capacity (investible amount, optionally evidenced by bank statement via Document_Verifier under explicit DPDP consent), owned assets (land, equipment, digital assets), preferred sectors, and risk appetite
+3. THE Vanigam_Platform SHALL maintain an Opportunity_Bank of curated problem statements and business models per sector, seeded from Tamil Nadu sector reports, StartupTN challenges and problem statements, government-issued problem statements, and incubator theses, each with capital-requirement band, required experience/skills, linked schemes, source URLs, and last-verified timestamp
+4. WHEN an Experience Profile is complete, THE OpportunityGenerator sub-agent SHALL match the profile against the Opportunity_Bank and rank 3 to 5 candidate opportunities using: experience fit via Embedding_Service similarity between profile skills/roles and opportunity requirements (35%), capital feasibility against declared financial capacity (25%), scheme availability via CPSAT_Boundary eligibility pre-check (20%), market demand signals (10%), and location fit (10%)
+5. THE OpportunityGenerator SHALL augment Opportunity_Bank matching with web research (internet, webpages, blogs, industry reports) for current market demand and competition signals, with all external findings cited by source URL
+6. THE CPSAT_Boundary SHALL pre-check each candidate opportunity against scheme eligibility for the user's profile (e.g., NEEDS and UYEGP for first-generation Tamil Nadu entrepreneurs, PMEGP for micro-manufacturing, Stand-Up India for SC/ST/women) and display available scheme support on each opportunity card
+7. EACH opportunity card SHALL present: the opportunity/problem statement, why-you-fit rationale (experience match explanation), estimated capital band vs the user's capacity, available scheme support with amounts, competition snapshot, and required next steps
+8. WHEN the user selects an opportunity, THE Roadmap_Swarm SHALL feed it into the existing idea validation and roadmap generation pipeline (Requirements 1.2 and 1.3), pre-filling concept elements from the opportunity definition and Experience Profile
+9. THE Vanigam_Platform SHALL support the full experience-based path in English, Tamil, and Hindi including voice interaction per Requirement 1.5
+10. THE Vanigam_Platform SHALL store financial-capacity data with the same protection class as Caste_Category data (explicit separate consent, encryption at rest, purpose limitation to opportunity matching and scheme eligibility)
+
+---
+
 ## CATEGORY 2: REGISTERED STARTUP JOURNEY
 
 ### Requirement 2.1: Legal Entity Validation and Registration Verification
@@ -261,6 +280,20 @@ The system serves as a unified operating system for startups, providing personal
 
 ---
 
+### Requirement 2.7: Canonical Sector Taxonomy Coverage
+
+**User Story:** As the platform, I need one canonical sector taxonomy spanning every sector present in the Tamil Nadu startup ecosystem and central/state government scheme targeting, so that schemes, opportunities, and B2B profiles are consistently classified and nothing falls outside coverage.
+
+#### Acceptance Criteria
+
+1. THE Vanigam_Platform SHALL maintain a canonical Sector_Taxonomy covering at minimum: agriculture & agritech, food processing, textiles & apparel, leather & footwear, automotive & EV, electronics & ESDM, IT/ITES & SaaS, fintech, healthtech, pharma & biotech, renewable energy & cleantech, aerospace & defense, tourism & hospitality, handicrafts & handlooms, marine & blue economy, construction & real estate tech, logistics & supply chain, education & edtech, media & gaming, retail & D2C, and waste management & circular economy
+2. EVERY Scheme record SHALL be tagged with one or more Sector_Taxonomy entries (or explicitly marked sector-agnostic)
+3. EVERY Opportunity_Bank entry and B2B_Partner profile SHALL be tagged with Sector_Taxonomy entries
+4. THE Vanigam_Platform SHALL validate at scheme-database review time that both central government and Tamil Nadu state schemes are represented for each major sector where such schemes exist, and flag uncovered sectors to the scheme curator
+5. THE Sector_Taxonomy SHALL be versioned and extendable by administrators without code changes
+
+---
+
 ## CATEGORY 3: B2B COLLABORATION HUB
 
 ### Requirement 3.1: B2B Profile Creation with Bill of Materials
@@ -349,6 +382,25 @@ The system serves as a unified operating system for startups, providing personal
 9. THE Vanigam_Platform SHALL provide a dashboard view of all active collaborations with key metrics and status indicators
 10. THE Vanigam_Platform SHALL allow startups to export collaboration data for accounting and reporting purposes
 
+
+---
+
+### Requirement 3.6: Product Decomposition and Supply Feasibility Mapping
+
+**User Story:** As a startup (or vendor/collaborator) that makes or plans to make a product, I want an AI agent to break my product down end-to-end into its required raw materials, components, and services, and map each requirement to vendors who can supply it, so that I get a complete supply feasibility picture without having to know my full Bill of Materials in advance.
+
+#### Acceptance Criteria
+
+1. WHEN a startup provides a product (as a name, description, specification document, or uploaded file), THE B2B_Swarm's ProductDecomposer sub-agent SHALL parse the input (using Document_Verifier OCR for uploaded files) and generate a candidate end-to-end breakdown: raw materials, components, sub-assemblies, services, and machinery/tooling required, with estimated quantities per unit, units of measure, and applicable quality standards
+2. THE ProductDecomposer SHALL augment decomposition with web research (internet, webpages, industry references, blogs) for standard BOM structures of comparable products, with all external findings cited by source URL
+3. THE Vanigam_Platform SHALL present the generated breakdown to the startup for confirmation and editing before any matching occurs (human-in-the-loop: generated BOMs are drafts, never auto-committed)
+4. WHEN the breakdown is confirmed, THE SupplyMapper sub-agent SHALL, for each BOM line, query Graph_Engine for on-platform supply-side matches using the standard edge-weight computation (specification similarity, price compatibility, capacity alignment, geographic proximity) and trust scores
+5. FOR BOM lines with no adequate on-platform match, THE SupplyMapper SHALL perform web research to suggest external supplier categories, known Tamil Nadu industrial clusters (e.g., Coimbatore pumps and motors, Tiruppur knitwear, Ambur-Ranipet leather, Sivakasi printing and safety matches, Hosur electronics), and sourcing directions, each with cited sources
+6. THE Vanigam_Platform SHALL render the result as a Supply_Feasibility_Map: a tree/graph visualization of product → components → matched vendors, showing per-vendor match score, price band, available capacity, distance, and trust score, with unmatched lines flagged as gaps
+7. EACH gap line SHALL offer an "invite vendor" action that records the unmet demand so future vendor onboarding can be prioritized by demand density
+8. THE Vanigam_Platform SHALL persist Product_Decomposition records linked to the startup's B2B profile, and feed confirmed BOM lines into the standard Tier-1 matching flow (Requirements 3.2 and 3.3) including CP-SAT capacity-constrained allocation
+9. THE SupplyMapper SHALL respect the Sector_Taxonomy (Requirement 2.7) when classifying components and vendors
+10. THE Vanigam_Platform SHALL support decomposition inputs and map outputs in English, Tamil, and Hindi
 
 ---
 
@@ -574,3 +626,30 @@ The system serves as a unified operating system for startups, providing personal
 9. THE Vanigam_Platform SHALL automatically update scheme status to Closed when application_deadline passes using a scheduled job
 10. THE Vanigam_Platform SHALL version scheme records to preserve historical eligibility criteria when schemes are updated
 
+
+---
+
+# ADDENDUM v2 — Hybrid-Ideology Requirements (from ideology-comparison.md / v2-integration-plan.md)
+
+Full trees, mechanisms, and acceptance detail live in `v2-integration-plan.md`. Requirement stubs:
+
+- **Req 1.7 (P-34):** Ideation SHALL offer three entry modes (idea / domain-only / intent-only) and Category 2 SHALL sub-type founders as 2A registered+product, 2B registered+no-product (routed into discovery with schemes unlocked), 2C idea-worker+no-company (fast-tracked registration path).
+- **Req 1.8 (P-41):** The platform SHALL provide consent-gated semantic peer discovery, a homepage live-demo eligibility widget (ephemeral, rules-only, no storage), and gamified completeness-tier progression.
+- **Req 1.9 (P-31):** Roadmap milestones SHALL be stateful with proof attachments; exported PDFs SHALL carry a QR to a live read-only progress page; proofs SHALL register as readiness evidence.
+- **Req 1.3-am (P-29):** Roadmap generation SHALL support terrain modes (urban_tech / rural_micro / academic_spinoff / deep_tech) with versioned template families.
+- **Req 2.5-am (P-24):** Eligible schemes SHALL additionally carry an approval-likelihood score (preference-axis match × success rate) with explanation; founders can sort by relevance or likelihood.
+- **Req 2.9 (P-30):** WHEN a scheme rule changes, affected issued roadmaps SHALL be re-versioned with a highlighted diff and the founder notified in their language.
+- **Req 2.6-am (P-40a–c):** The platform SHALL emit new-scheme alerts matched to stored profiles, a per-scheme document-readiness checklist, and a unified deadline tracker.
+- **Req 1.5/2.7-am (P-39):** Core screens SHALL function offline/2G via PWA caching, low-bandwidth variants, async voice upload, and SMS notification fallback.
+- **Req 6.1-am (P-42):** Unregistered-idea sharing SHALL require a dedicated consent purpose, encrypted storage, a legal disclaimer, and masked visibility until mutual match acceptance.
+- **Req 3.8 (P-25):** WHEN two matched startups share district/sector, THE platform SHALL check joint eligibility for cluster schemes (SFURTI/CDP/AIM consortium) and notify both with a co-application card.
+- **Req 5.7 (P-26):** A SignalEngine SHALL generate dual-signal (explicit + inferred) suggestions on platform events and deliver capped, constraint-checked weekly digests with accept/dismiss telemetry.
+- **Req 3.2-am (P-36):** B2B edge weights SHALL be per-sector configuration (versioned, admin-editable); learned adjustments require human approval.
+- **Req 3.1-am (P-43):** Tier-2 profiles SHALL support payment_mode (cash/barter/either) with a barter-compatibility hard constraint.
+- **Req 4.4-am (P-27):** Funding recommendations SHALL be portfolio-valid: mutual-exclusion constraints from a curated scheme-conflict matrix and a stage-parameterized over-raise ceiling, with explanations.
+- **Req 4.8 (P-35):** THE Funding Navigator SHALL output a dated, sequenced funding strategy (respecting conflicts, prerequisites, latencies) merged into the living roadmap, plus per-bank-scheme pathway checklists.
+- **Req 4.1-am (P-28, P-32):** Traction scoring SHALL accept typed proxy evidence (LOIs, pilots, hackathons, publications) and platform-verified B2B metrics (consent-gated, weighted above self-declared); pre-revenue founders match only pre-revenue-friendly routes.
+- **Req 4.3-am (P-46):** Web-derived investor facts SHALL come only from ToS-compliant public sources, pass curator review, store source_url + retrieved_at, render "driven from web — [source, date]", and re-verify on a 90-day SLA.
+- **Req 5.6 (P-37):** Critical documents, early funding recommendations, and solver overrides SHALL pass a human review queue; overrides require a reason and a hash-chained audit entry.
+- **Req 5.3-am (P-38):** CI SHALL replay a synthetic-founder population against rules/solvers on every rule change, attaching eligibility diffs to curation PRs and monitoring demographic-slice fairness.
+- **Req 6.4–6.7 (PHASE 6):** The Living Intelligence Layer SHALL provide: continuous cited investor crawling (6.4); a vernacular startup-news board summarized into ta/hi/en with per-card source links and an agent-status strip (6.5); a what-if simulator re-solving the founder's constraint models under scenario perturbations with fallback plans, clearly labeled hypothetical (6.6); and anonymized, cited competitor-funding insights (6.7).

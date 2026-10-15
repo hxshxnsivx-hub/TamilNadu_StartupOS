@@ -1,0 +1,5 @@
+# Local voice models (separate from the backend: parler-tts pins its own transformers)
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+soundfile
+parler-tts @ git+https://github.com/huggingface/parler-tts.git
