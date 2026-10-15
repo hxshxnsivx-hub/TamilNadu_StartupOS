@@ -118,6 +118,17 @@ _STAGE_STATE: dict[str, tuple[str, ...]] = {
     "idea": ("just an idea", "only an idea", "idea stage", "nothing built"),
 }
 
+# Founders describe what they have: "we have a working prototype", "built a
+# basic sample". Fixed phrases miss the adjective, so allow up to two words
+# between the article and the thing — but only after a have/built verb, so
+# "want to build a working prototype" stays intent.
+_STAGE_STATE_PATTERNS: dict[str, re.Pattern[str]] = {
+    "prototype": re.compile(
+        r"\b(?:have|has|had|built|made|developed|got)\s+(?:a|an|one|our|the)\s+"
+        r"(?:[a-z-]+\s+){0,2}(?:prototype|sample|trial unit|working model)\b"
+    ),
+}
+
 _STAGE_INTENT: tuple[str, ...] = (
     "want to start",
     "planning to",
@@ -197,7 +208,8 @@ def extract(text: str) -> list[Extraction]:
     # State evidence wins outright; intent only ever produces a low-confidence
     # hint that the stopping rule will turn into a confirmation question.
     for stage, needles in _STAGE_STATE.items():
-        if any(n in low for n in needles):
+        pattern = _STAGE_STATE_PATTERNS.get(stage)
+        if any(n in low for n in needles) or (pattern is not None and pattern.search(low)):
             out.append(Extraction("stage", stage, 0.85))
             break
     else:
