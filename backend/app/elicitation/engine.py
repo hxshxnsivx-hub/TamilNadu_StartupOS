@@ -233,7 +233,15 @@ def step(session: ElicitationSession) -> Action:
 def _acknowledge(session: ElicitationSession) -> str:
     """Name what the last reply did tell us, before asking again."""
     facts = [_word(session.slots[k].value) for k in session.learned if k in ("district", "sector")]
-    facts += [k.replace("_", " ") for k in session.learned if k not in ("district", "sector")]
+    # The stage itself ("prototype"), not the slot's name; a common noun, so lowercase.
+    facts += [
+        HUMAN.get(str(session.slots[k].value), str(session.slots[k].value))
+        for k in session.learned
+        if k == "stage"
+    ]
+    facts += [
+        k.replace("_", " ") for k in session.learned if k not in ("district", "sector", "stage")
+    ]
     if facts:
         return f"Got it, {', '.join(f for f in facts if f)}."
     return "Sorry, I didn't catch that."
