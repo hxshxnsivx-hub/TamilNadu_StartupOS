@@ -217,6 +217,27 @@ def test_wrong_type_answer_is_routed_and_asked_once_more():
     assert "stage" in s.skipped and engine.step(s).slot != "stage"
 
 
+def test_reask_acknowledges_a_stage_said_with_an_adjective():
+    """'we have a working prototype' to the sector question was met with 'didn't catch that'."""
+    s = engine.start("u1")
+    engine.observe(s, "a solar powered cold box for small vegetable vendors in Salem markets")
+    asked = engine.step(s)
+    assert asked.slot == "sector"
+    engine.observe(s, "we have a working prototype", answering="sector")
+    assert s.slots["stage"].value == "prototype"
+    act = engine.step(s)
+    assert act.slot == "sector"
+    assert act.question == f"Got it, prototype. {asked.question}"
+
+
+def test_wanting_a_prototype_is_not_having_one():
+    stages = [e.value for e in extract("I want to build a working prototype") if e.key == "stage"]
+    assert "prototype" not in stages
+    assert ("stage", "prototype") in [
+        (e.key, e.value) for e in extract("we built a basic working prototype last month")
+    ]
+
+
 def test_valid_direct_answers_are_typed():
     from app.elicitation.answers import validate
 
