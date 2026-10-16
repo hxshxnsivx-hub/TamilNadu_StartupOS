@@ -8,7 +8,8 @@ with no network or API key.
 Design notes:
 - query/passage asymmetry is handled *inside* the service so callers cannot get
   it wrong (BGE-M3-style models embed queries and passages differently).
-- an optional cache (Redis in production) avoids re-embedding identical text.
+- an optional cache (Redis when it runs, a week per vector) avoids re-embedding
+  identical text.
 - cosine similarity assumes L2-normalised vectors; providers must normalise.
 """
 
@@ -23,9 +24,11 @@ import numpy as np
 
 from app.core.config import get_settings
 from app.core.logging import get_logger
+from app.core.redis import RedisCache
 
 Kind = Literal["query", "passage"]
 _MAX_BATCH = 96  # keep provider batch calls bounded
+CACHE_TTL = 7 * 86400  # Task 1.6: vectors kept a week
 log = get_logger("embeddings")
 
 
@@ -110,8 +113,8 @@ class EmbeddingService:
         return self.provider.dim
 
     def _key(self, text: str, kind: Kind) -> str:
-        raw = f"{self.provider.model}:{kind}:{text}"
-        return "emb:" + hashlib.sha256(raw.encode()).hexdigest()
+        digest = hashlib.sha256(text.encode()).hexdigest()
+        return f"emb:{self.provider.model}:{self.provider.dim}:{kind}:{digest}"
 
     async def embed_one(self, text: str, kind: Kind = "passage") -> list[float]:
         return (await self.embed_batch([text], kind))[0]
@@ -162,4 +165,4 @@ def _select_provider() -> EmbeddingProvider:
 
 @lru_cache
 def get_embedding_service() -> EmbeddingService:
-    return EmbeddingService(_select_provider())
+    return EmbeddingService(_select_provider(), cache=RedisCache(CACHE_TTL))
