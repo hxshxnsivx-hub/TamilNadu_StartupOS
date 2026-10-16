@@ -19,10 +19,12 @@ from typing import Literal, Protocol
 
 from app.core.config import get_settings
 from app.core.logging import get_logger
+from app.core.redis import RedisCache
 from app.services.glossary import GLOSSARY
 
 Lang = Literal["en", "ta", "hi"]
 log = get_logger("translation")
+CACHE_TTL = 7 * 86400  # Task 1.5: translations kept a week
 
 # Sentinel unlikely to be altered by a translator: private-use bracket + index.
 _SENT = "{}"
@@ -111,8 +113,8 @@ class TranslationService:
         self.cache = cache
 
     def _key(self, text: str, src: Lang, tgt: Lang) -> str:
-        raw = f"{self.provider.name}:{src}:{tgt}:{text}"
-        return "tr:" + hashlib.sha256(raw.encode()).hexdigest()
+        digest = hashlib.sha256(text.encode()).hexdigest()
+        return f"tr:{self.provider.name}:{src}:{tgt}:{digest}"
 
     async def translate(self, text: str, src: Lang, tgt: Lang) -> str:
         if src == tgt or not text.strip():
@@ -148,4 +150,4 @@ def _select_provider() -> TranslationProvider:
 
 @lru_cache
 def get_translation_service() -> TranslationService:
-    return TranslationService(_select_provider())
+    return TranslationService(_select_provider(), cache=RedisCache(CACHE_TTL))
