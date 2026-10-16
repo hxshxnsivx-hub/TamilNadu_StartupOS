@@ -21,19 +21,19 @@ This document provides a comprehensive, phase-by-phase breakdown of implementati
 **Description**: Set up project structure, dependencies, and development environment
 
 **Subtasks**:
-- [ ] 1.1.1: Initialize Python project with Poetry/pip requirements
+- [x] 1.1.1: Initialize Python project with Poetry/pip requirements — done: backend/pyproject.toml (FastAPI, LangGraph, OR-Tools, NetworkX, asyncpg, redis; torch/transformers left out on purpose, see its comment)
   - FastAPI, LangGraph, OR-Tools, NetworkX, Transformers (IndicBERT), PostgreSQL drivers, Redis client
   - Effort: S, Priority: P0
-- [ ] 1.1.2: Set up PostgreSQL database with pgvector extension
+- [ ] 1.1.2: Set up PostgreSQL database with pgvector extension — open: compose + pgvector init script exist (backend/docker-compose.yml, docker/init-db.sql) but no dev database is reachable (integration tests skip: password auth failed; docs/BACKLOG.md)
   - Install PostgreSQL 15+, enable pgvector, create development database
   - Effort: S, Priority: P0
-- [ ] 1.1.3: Set up Redis for caching
+- [x] 1.1.3: Set up Redis for caching — done: backend/app/core/redis.py (optional client; compose runs Redis with appendonly); tests/unit/test_redis_layer.py
   - Install Redis, configure persistence, set up connection pooling
   - Effort: XS, Priority: P0
-- [ ] 1.1.4: Configure S3-compatible storage (MinIO/AWS S3) for documents
+- [ ] 1.1.4: Configure S3-compatible storage (MinIO/AWS S3) for documents — open: only S3 settings and a MinIO compose service; no client library, bucket setup, policies or upload/download test
   - Set up buckets, configure access policies, test upload/download
   - Effort: S, Priority: P0
-- [ ] 1.1.5: Set up logging and monitoring infrastructure
+- [ ] 1.1.5: Set up logging and monitoring infrastructure — open: JSON logs to stdout work (app/core/logging.py); no file output or log aggregation
   - Configure structured logging (JSON), set up log aggregation
   - Effort: M, Priority: P1
 
@@ -53,23 +53,23 @@ This document provides a comprehensive, phase-by-phase breakdown of implementati
 **Description**: Implement founder profile database schema with completeness scoring
 
 **Subtasks**:
-- [ ] 1.2.1: Create founders table with all fields
+- [ ] 1.2.1: Create founders table with all fields — open: defined in app/models/founder.py + migration 0001, but no code reads or writes it and it has never been created on a live DB
   - Schema from design.md, include soft delete, constraints
   - Effort: S, Priority: P0
 
-- [ ] 1.2.2: Create startups table with foreign key to founders
+- [ ] 1.2.2: Create startups table with foreign key to founders — open: defined in app/models/startup.py + migration 0001 (FK to founders), but unused by any code and never created on a live DB
   - Schema from design.md, include verification status fields
   - Effort: S, Priority: P0
-- [ ] 1.2.3: Create documents table for file uploads and verification
+- [ ] 1.2.3: Create documents table for file uploads and verification — open: defined in app/models/document.py (document_type is a string, not an enum), unused by any code and never created on a live DB
   - document_type enum, extracted_data JSONB, verification_status
   - Effort: S, Priority: P0
-- [ ] 1.2.4: Create profile_completeness tracking table
+- [ ] 1.2.4: Create profile_completeness tracking table — open: defined in app/models/profile.py, but the completeness scorer never persists to it and it has never been created on a live DB
   - Track missing_fields, verified_fields, completeness_score
   - Effort: XS, Priority: P0
-- [ ] 1.2.5: Write database migration scripts
+- [ ] 1.2.5: Write database migration scripts — open: Alembic migrations 0001-0004 written, never run up/down against a live DB (docs/BACKLOG.md: 0004 not applied)
   - Use Alembic for versioned migrations, create initial migration
   - Effort: S, Priority: P0
-- [ ] 1.2.6: Create database indexes for performance
+- [ ] 1.2.6: Create database indexes for performance — open: indexes on email, phone, location, domain, stage declared in the ORM models, but never created on a live DB
   - Index email, phone, location, domain, stage fields
   - Effort: XS, Priority: P1
 
@@ -89,19 +89,19 @@ This document provides a comprehensive, phase-by-phase breakdown of implementati
 **Description**: Implement Profile Swarm (Swarm 1) for founder profile management
 
 **Subtasks**:
-- [ ] 1.3.1: Implement FounderProfile and StartupProfile data models (Pydantic)
+- [ ] 1.3.1: Implement FounderProfile and StartupProfile data models (Pydantic) — open: FounderCreate/StartupCreate exist in app/models/schemas.py but nothing uses or tests them
   - Include all fields from design.md, validation rules
   - Effort: M, Priority: P0
-- [ ] 1.3.2: Implement CompletenessScorer agent
+- [x] 1.3.2: Implement CompletenessScorer agent — done: backend/app/services/completeness.py (served by POST /api/v1/profiles/completeness)
   - Calculate 40/60/80/100% score based on field presence and verification
   - Effort: M, Priority: P0
-- [ ] 1.3.3: Implement DataCollector agent
+- [ ] 1.3.3: Implement DataCollector agent — open: nothing asks the founder for missing profile fields; the elicitation engine asks only ideation slots
   - Prompt for missing fields, handle multilingual input
   - Effort: M, Priority: P0
-- [ ] 1.3.4: Implement ProfileSupervisor agent (LangGraph)
+- [ ] 1.3.4: Implement ProfileSupervisor agent (LangGraph) — open: no Profile Swarm supervisor; nothing coordinates collection, verification and scoring
   - Coordinate data collection, verification, scoring
   - Effort: L, Priority: P0
-- [ ] 1.3.5: Write unit tests for completeness scoring logic
+- [x] 1.3.5: Write unit tests for completeness scoring logic — done: backend/tests/unit/test_completeness.py (0/40/60/80/100 tiers)
   - Test all score thresholds (40, 60, 80, 100)
   - Effort: S, Priority: P0
 
@@ -121,22 +121,22 @@ This document provides a comprehensive, phase-by-phase breakdown of implementati
 **Description**: Implement document upload, OCR extraction, and verification
 
 **Subtasks**:
-- [ ] 1.4.1: Implement S3 upload/download service
+- [ ] 1.4.1: Implement S3 upload/download service — open: no storage upload/download/signed-URL/delete service
   - Upload documents, generate signed URLs, delete files
   - Effort: M, Priority: P0
-- [ ] 1.4.2: Integrate OCR service (Tesseract or cloud OCR)
+- [ ] 1.4.2: Integrate OCR service (Tesseract or cloud OCR) — open: no OCR integration (Tesseract would be free and offline)
   - Extract text from PDF/JPG/PNG, return confidence scores
   - Effort: L, Priority: P0
-- [ ] 1.4.3: Implement DocumentProcessor agent
+- [ ] 1.4.3: Implement DocumentProcessor agent — open: no DocumentProcessor; nothing parses document text or identifies document type
   - Parse extracted text, identify document type, extract key fields
   - Effort: L, Priority: P0
-- [ ] 1.4.4: Implement document validation logic
+- [ ] 1.4.4: Implement document validation logic — open: identifier checksums + vendor gateway exist (app/verification, stub provider offline); no signature or QR checks on documents
   - Check digital signatures, QR codes, cross-reference with APIs where available
   - Effort: M, Priority: P1
-- [ ] 1.4.5: Implement fallback for low-confidence OCR
+- [ ] 1.4.5: Implement fallback for low-confidence OCR — open: no low-confidence OCR fallback or manual-review flag
   - Flag for manual review, use alternative OCR service
   - Effort: M, Priority: P1
-- [ ] 1.4.6: Write integration tests for document processing
+- [ ] 1.4.6: Write integration tests for document processing — open: no document-processing tests (Aadhaar OCR is ruled out by constraint-solutions.md §A.2, but PAN and mark sheets remain)
   - Test with sample Aadhaar, PAN, mark sheets
   - Effort: M, Priority: P1
 
@@ -157,22 +157,22 @@ This document provides a comprehensive, phase-by-phase breakdown of implementati
 **Description**: Implement multilingual translation service for Tamil and Hindi
 
 **Subtasks**:
-- [ ] 1.5.1: Download and load IndicTrans2 model
+- [~] 1.5.1: Download and load IndicTrans2 model — superseded: no local MT model; torch/transformers excluded (backend/pyproject.toml), fixed sentences pre-translated in app/voice/data/translations.json and free models reply in the founder's language (docs/decisions/0009, docs/BACKLOG.md)
   - Set up model loading, configure device (CPU/GPU)
   - Effort: M, Priority: P0
-- [ ] 1.5.2: Implement TranslationService class
+- [ ] 1.5.2: Implement TranslationService class — open: TranslationService (app/services/translation.py) is unit-tested but nothing in the app calls it, and its only real provider is paid Sarvam
   - translate() method for en<->ta, en<->hi, ta<->hi
   - Effort: M, Priority: P0
-- [ ] 1.5.3: Create domain glossary for startup terminology
+- [x] 1.5.3: Create domain glossary for startup terminology — done: backend/app/services/glossary.py (14 terms, en/ta/hi); exercised by tests/unit/test_translation.py
   - Define mappings for funding, scheme, roadmap, B2B, etc.
   - Effort: S, Priority: P0
-- [ ] 1.5.4: Implement glossary-aware translation
+- [ ] 1.5.4: Implement glossary-aware translation — open: mask/translate/restore built and unit-tested (tests/unit/test_translation.py) but only runs in tests, since TranslationService has no app caller
   - Replace terms with placeholders, translate, restore
   - Effort: M, Priority: P0
-- [ ] 1.5.5: Implement translation caching in Redis
+- [ ] 1.5.5: Implement translation caching in Redis — open: cache is a protocol only; no Redis-backed cache or 7-day TTL wired
   - Cache by (text_hash, source_lang, target_lang)
   - Effort: S, Priority: P1
-- [ ] 1.5.6: Write unit tests for translation accuracy
+- [~] 1.5.6: Write unit tests for translation accuracy — superseded: no MT model to score (see 1.5.1); BLEU replaced by chrF++/COMET in constraint-solutions.md §E.2, and the Tamil/Hindi sentences go to native-speaker review (docs/BACKLOG.md)
   - Test BLEU scores, glossary preservation
   - Effort: M, Priority: P1
 
@@ -192,22 +192,22 @@ This document provides a comprehensive, phase-by-phase breakdown of implementati
 **Description**: Implement semantic embedding service using IndicBERT
 
 **Subtasks**:
-- [ ] 1.6.1: Download and load IndicBERT model
+- [~] 1.6.1: Download and load IndicBERT model — superseded: IndicBERT dropped from retrieval for a BGE-M3-class model behind EmbeddingService (constraint-solutions.md §E.1); torch/transformers excluded (backend/pyproject.toml)
   - ai4bharat/indic-bert, configure tokenizer
   - Effort: M, Priority: P0
-- [ ] 1.6.2: Implement EmbeddingService class
+- [x] 1.6.2: Implement EmbeddingService class — done: backend/app/services/embeddings.py (embed_one/embed_batch, used by app/b2b/matching.py); offline provider is a non-semantic hash, Cohere is paid
   - embed() for single text, embed_batch() for multiple
   - Effort: M, Priority: P0
-- [ ] 1.6.3: Implement cosine similarity calculation
+- [x] 1.6.3: Implement cosine similarity calculation — done: EmbeddingService.cosine_similarity in backend/app/services/embeddings.py; tests/unit/test_embeddings.py
   - Numpy-based dot product and normalization
   - Effort: XS, Priority: P0
-- [ ] 1.6.4: Implement embedding caching in Redis
+- [ ] 1.6.4: Implement embedding caching in Redis — open: cache is a protocol only; no Redis-backed cache or 7-day TTL wired
   - Cache by (text_hash, language) for 7 days
   - Effort: S, Priority: P1
-- [ ] 1.6.5: Create scheme_embeddings and startup_domain_embeddings tables
+- [ ] 1.6.5: Create scheme_embeddings and startup_domain_embeddings tables — open: one generic namespaced vector(1024) table with HNSW (migration 0003, app/models/embeddings.py), but nothing writes to it and it has never been created on a live DB
   - Tables with vector(768) columns, pgvector indexes
   - Effort: S, Priority: P0
-- [ ] 1.6.6: Write unit tests for embedding generation and similarity
+- [x] 1.6.6: Write unit tests for embedding generation and similarity — done: backend/tests/unit/test_embeddings.py (shape, norm, cosine bounds, cache)
   - Test embedding dimensions, similarity ranges
   - Effort: S, Priority: P1
 
@@ -228,25 +228,25 @@ This document provides a comprehensive, phase-by-phase breakdown of implementati
 **Description**: Implement Roadmap Swarm (Swarm 4) for startup idea processing
 
 **Subtasks**:
-- [ ] 1.7.1: Implement IdeaExtractor agent
+- [x] 1.7.1: Implement IdeaExtractor agent — done: backend/app/elicitation/extract.py + engine.py extract problem, solution, sector, stage, district and ask for the rest; tests/unit/test_elicitation.py
   - Extract problem, solution, market, value proposition from natural language
   - Effort: L, Priority: P0
-- [ ] 1.7.2: Implement FeasibilityAnalyzer agent
+- [x] 1.7.2: Implement FeasibilityAnalyzer agent — done: review panel seats (customer, technical, regulatory, cost, prior art) in backend/app/agents/council + 0-100 score in app/swarms/roadmap/feasibility.py; tests/unit/test_council.py, test_roadmap.py
   - Assess market size, competition, technical complexity, regulatory barriers
   - Effort: L, Priority: P0
-- [ ] 1.7.3: Implement MilestoneGenerator agent
+- [x] 1.7.3: Implement MilestoneGenerator agent — done: backend/app/planner/roadmap.py (CP-SAT picks 5-15 milestones across all phases); tests/unit/test_planner.py
   - Generate 5-15 milestones across phases (Ideation, Validation, MVP, Launch, Growth, Scale)
   - Effort: L, Priority: P0
-- [ ] 1.7.4: Implement milestone dependency resolution
+- [x] 1.7.4: Implement milestone dependency resolution — done: topological_order/critical_path in backend/app/swarms/roadmap/milestones.py; tests/unit/test_roadmap.py
   - Topological sort of milestones, identify critical path
   - Effort: M, Priority: P0
-- [ ] 1.7.5: Implement RoadmapSupervisor agent (LangGraph)
+- [x] 1.7.5: Implement RoadmapSupervisor agent (LangGraph) — done: backend/app/swarms/roadmap/swarm.py (plain class, no LangGraph) behind POST /ideation/roadmap; tests/api/test_ideation_api.py
   - Orchestrate idea extraction → feasibility → milestone generation
   - Effort: L, Priority: P0
-- [ ] 1.7.6: Create roadmaps and milestones database tables
+- [~] 1.7.6: Create roadmaps and milestones database tables — superseded: the roadmap is saved inside the conversation's JSON document in agent_sessions; normalised tables were rejected (docs/decisions/0003-sessions-as-json-document.md)
   - Store roadmap with milestones, dependencies, timelines
   - Effort: M, Priority: P0
-- [ ] 1.7.7: Write unit tests for roadmap generation
+- [x] 1.7.7: Write unit tests for roadmap generation — done: backend/tests/unit/test_roadmap.py, tests/unit/test_planner.py
   - Test milestone sequencing, dependency resolution
   - Effort: M, Priority: P1
 
@@ -268,25 +268,25 @@ This document provides a comprehensive, phase-by-phase breakdown of implementati
 **Description**: Implement Central Orchestrator for conversation management
 
 **Subtasks**:
-- [ ] 1.8.1: Define ConversationState TypedDict
+- [x] 1.8.1: Define ConversationState TypedDict — done: backend/app/orchestrator/state.py (dataclass with the listed fields); tests/unit/test_orchestrator.py
   - user_id, session_id, messages, current_intent, extracted_entities, active_swarm
   - Effort: S, Priority: P0
-- [ ] 1.8.2: Implement intent classification node
+- [x] 1.8.2: Implement intent classification node — done: backend/app/orchestrator/intent.py (keyword classifier, 8 intents, clarify threshold); tests/unit/test_orchestrator.py
   - Classify into: Profile Update, Idea Input, Roadmap Request, Scheme Query, B2B Search, Funding Query
   - Effort: M, Priority: P0
-- [ ] 1.8.3: Implement LangGraph state machine with nodes
+- [ ] 1.8.3: Implement LangGraph state machine with nodes — open: no state machine across greeting/profile/idea/clarification/error; the only one is the ideation-only elicitation engine (app/elicitation/engine.py)
   - greeting, intent_recognition, profile_collection, idea_discussion, clarification, error_handling
   - Effort: L, Priority: P0
-- [ ] 1.8.4: Implement conditional edges for intent routing
+- [ ] 1.8.4: Implement conditional edges for intent routing — open: Orchestrator returns a swarm name but nothing dispatches to it; /orchestrator/route is a preview
   - Route to appropriate swarm based on classified intent
   - Effort: M, Priority: P0
-- [ ] 1.8.5: Implement conversation context stack
+- [ ] 1.8.5: Implement conversation context stack — open: push/pop context built and unit-tested, but no endpoint keeps ConversationState between turns, so no founder can pause and resume
   - Support context switching, pause/resume tasks
   - Effort: M, Priority: P1
-- [ ] 1.8.6: Implement timeout handling
+- [~] 1.8.6: Implement timeout handling — superseded: the session is saved after every turn and expires after 6 idle hours (backend/app/agents/store.py, docs/decisions/0003-sessions-as-json-document.md)
   - Save context after 30 minutes of inactivity
   - Effort: S, Priority: P1
-- [ ] 1.8.7: Write integration tests for conversation flow
+- [ ] 1.8.7: Write integration tests for conversation flow — open: multi-turn ideation sessions are tested (tests/api/test_ideation_api.py); no test switches context through the API
   - Test multi-turn conversations, context switching
   - Effort: M, Priority: P1
 
@@ -307,28 +307,28 @@ This document provides a comprehensive, phase-by-phase breakdown of implementati
 **Description**: Implement REST API endpoints for Profile and Ideation categories
 
 **Subtasks**:
-- [ ] 1.9.1: Implement /auth endpoints (register, login, refresh)
+- [ ] 1.9.1: Implement /auth endpoints (register, login, refresh) — open: register/login/refresh with JWT + bcrypt built (app/routers/auth.py; tests/unit/test_security.py), but the endpoint test has never run (no reachable DB)
   - JWT authentication with refresh tokens, password hashing (bcrypt)
   - Effort: M, Priority: P0
-- [ ] 1.9.2: Implement /profiles endpoints
+- [ ] 1.9.2: Implement /profiles endpoints — open: only the stateless POST /profiles/completeness; no GET/PUT /profiles/{id} or document upload
   - GET /profiles/{id}, PUT /profiles/{id}, POST /profiles/{id}/documents
   - Effort: M, Priority: P0
-- [ ] 1.9.3: Implement /startups endpoints
+- [ ] 1.9.3: Implement /startups endpoints — open: no /startups endpoints
   - POST /startups, GET /startups/{id}, PUT /startups/{id}
   - Effort: M, Priority: P0
-- [ ] 1.9.4: Implement /ideation endpoints
+- [x] 1.9.4: Implement /ideation endpoints — done: /ideation/agent/sessions (create, GET by id, turns that build the roadmap) and POST /ideation/roadmap in backend/app/routers/ideation.py; tests/api/test_ideation_api.py
   - POST /ideation/ideas, GET /ideation/ideas/{id}, POST /ideation/ideas/{id}/roadmap
   - Effort: M, Priority: P0
-- [ ] 1.9.5: Implement request validation with Pydantic models
+- [x] 1.9.5: Implement request validation with Pydantic models — done: Pydantic request models with 422 envelope (app/core/errors.py); tests/api/test_ideation_api.py::test_roadmap_validation_error
   - Validate all inputs, return 422 for validation failures
   - Effort: M, Priority: P0
-- [ ] 1.9.6: Implement error handling middleware
+- [x] 1.9.6: Implement error handling middleware — done: backend/app/core/errors.py (ErrorResponse handlers); tests/unit/test_smoke.py::test_unknown_route_uses_error_envelope
   - Standardized ErrorResponse format from design.md
   - Effort: M, Priority: P0
-- [ ] 1.9.7: Implement rate limiting middleware
+- [ ] 1.9.7: Implement rate limiting middleware — open: in-process limiter wired (app/core/middleware.py) but untested, keyed by IP since request.state.user_id is never set, and not shared across workers
   - 100 requests/minute per user, 1000/minute globally
   - Effort: S, Priority: P1
-- [ ] 1.9.8: Write API integration tests
+- [ ] 1.9.8: Write API integration tests — open: ideation and other API tests exist (tests/api); auth test always skips and profiles/startups have no endpoints to test
   - Test all endpoints with various inputs, edge cases
   - Effort: L, Priority: P1
 
