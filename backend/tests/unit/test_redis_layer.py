@@ -1,4 +1,5 @@
-"""The optional Redis layer: research cache, source pauses, daily caps, live sessions.
+"""The optional Redis layer: research cache, source pauses, daily caps, live sessions,
+translation and embedding caches.
 
 A small in-memory stand-in implements the few Redis commands used, so these
 tests run without a server. Every feature must also work with Redis absent or
@@ -15,8 +16,10 @@ import pytest
 from app.agents.ideation import new_session
 from app.agents.store import CachedStore, MemoryStore, VersionConflict
 from app.core.config import get_settings
-from app.core.redis import set_redis
+from app.core.redis import RedisCache, set_redis
 from app.research import sources
+from app.services.embeddings import EmbeddingService, HashEmbeddingProvider
+from app.services.translation import PassthroughTranslationProvider, TranslationService
 
 
 class FakeRedis:
@@ -174,3 +177,90 @@ def test_cached_store_survives_a_broken_redis():
     asyncio.run(store.create(s))
     asyncio.run(store.save(asyncio.run(store.get(s.id))))
     assert asyncio.run(store.delete(s.id))
+
+
+# ---- translation and embedding caches (Tasks 1.5.5, 1.6.4) -------------------------
+
+WEEK = 7 * 86400
+
+
+class _CountingTranslator(PassthroughTranslationProvider):
+    def __init__(self):
+        self.calls = 0
+
+    async def translate(self, text, src, tgt):
+        self.calls += 1
+        return f"[{tgt}] {text}"
+
+
+class _CountingEmbedder(HashEmbeddingProvider):
+    def __init__(self):
+        super().__init__(dim=16)
+        self.calls = 0
+
+    async def embed(self, texts, kind):
+        self.calls += 1
+        return await super().embed(texts, kind)
+
+
+def _translate(provider, text="hello world", src="en", tgt="ta"):
+    svc = TranslationService(provider, cache=RedisCache(WEEK))
+    return asyncio.run(svc.translate(text, src, tgt))
+
+
+def _embed(provider, text="cold storage for Salem mangoes"):
+    svc = EmbeddingService(provider, cache=RedisCache(WEEK))
+    return asyncio.run(svc.embed_one(text))
+
+
+def test_translation_is_cached_in_redis_for_a_week():
+    r = FakeRedis()
+    set_redis(r)
+    p = _CountingTranslator()
+    first = _translate(p)
+    (key,) = r.data
+    assert key.startswith("tr:passthrough:en:ta:") and r.ttl[key] == WEEK
+    assert _translate(p) == first and p.calls == 1  # a fresh service, same Redis
+    _translate(p, tgt="hi")
+    _translate(p, text="hello there")
+    assert p.calls == 3 and len(r.data) == 3  # pair and text are both in the key
+
+
+def test_embedding_is_cached_in_redis_for_a_week():
+    r = FakeRedis()
+    set_redis(r)
+    p = _CountingEmbedder()
+    first = _embed(p)
+    (key,) = r.data
+    assert key.startswith("emb:hash-dev:16:passage:") and r.ttl[key] == WEEK
+    assert _embed(p) == first and p.calls == 1  # the vector round-trips exactly
+    _embed(p, text="something else")
+    assert p.calls == 2
+
+
+def test_embedding_sizes_never_share_a_cache_entry():
+    set_redis(FakeRedis())
+    small, large = _CountingEmbedder(), _CountingEmbedder()
+    large.dim = 32  # same model name, other EMBEDDING_DIM
+    assert len(_embed(small)) == 16
+    assert len(_embed(large)) == 32 and large.calls == 1
+
+
+def test_caches_work_without_redis():
+    tp, ep = _CountingTranslator(), _CountingEmbedder()
+    assert _translate(tp) == _translate(tp) and tp.calls == 2  # no cache, no failure
+    assert _embed(ep) == _embed(ep) and ep.calls == 2
+
+
+def test_broken_redis_never_breaks_translation_or_embedding():
+    set_redis(FakeRedis(broken=True))
+    assert _translate(_CountingTranslator()) == "[ta] hello world"
+    assert len(_embed(_CountingEmbedder())) == 16
+
+
+def test_default_services_use_the_redis_cache():
+    from app.services.embeddings import get_embedding_service
+    from app.services.translation import get_translation_service
+
+    for svc in (get_translation_service(), get_embedding_service()):
+        assert isinstance(svc.cache, RedisCache) and svc.cache.ttl == WEEK
