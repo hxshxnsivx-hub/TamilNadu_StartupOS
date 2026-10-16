@@ -7,7 +7,8 @@ description: Take the next open subtask from .kiro/specs/tamil-nadu-startupos/ta
 
 One subtask per run. The worker builds; the reviewer, a separate agent with no write tools,
 decides whether it is up to the mark. Nothing reaches `Main`, and nothing is merged: the user
-merges the PR.
+merges the PR. Run every step through without asking the user to confirm. To work through a
+whole phase without stopping between tasks, use `/run-phase <n>` instead.
 
 ## 1. Pick the subtask
 
