@@ -11,6 +11,8 @@ request.
 
 from __future__ import annotations
 
+import contextlib
+import json
 from typing import Any
 
 from app.core.config import get_settings
@@ -56,3 +58,32 @@ def reset_redis() -> None:
     """Check again on next use (after Redis was started or stopped)."""
     global _client
     _client = _UNSET
+
+
+class RedisCache:
+    """JSON values in Redis under the caller's key, each kept `ttl` seconds.
+
+    Fits the services' cache protocols (translation, embeddings). With Redis off,
+    unreachable or failing, `get` misses and `set` does nothing, so the service
+    just computes the value again.
+    """
+
+    def __init__(self, ttl: int) -> None:
+        self.ttl = ttl
+
+    async def get(self, key: str) -> Any | None:
+        r = await get_redis()
+        if r is None:
+            return None
+        try:
+            doc = await r.get(key)
+            return None if doc is None else json.loads(doc)
+        except Exception:  # Redis trouble is a miss, never an error
+            return None
+
+    async def set(self, key: str, value: Any) -> None:
+        r = await get_redis()
+        if r is None:
+            return
+        with contextlib.suppress(Exception):  # the value still reaches the caller
+            await r.set(key, json.dumps(value), ex=self.ttl)
