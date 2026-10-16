@@ -169,7 +169,7 @@ This document provides a comprehensive, phase-by-phase breakdown of implementati
 - [ ] 1.5.4: Implement glossary-aware translation — open: mask/translate/restore built and unit-tested (tests/unit/test_translation.py) but only runs in tests, since TranslationService has no app caller
   - Replace terms with placeholders, translate, restore
   - Effort: M, Priority: P0
-- [ ] 1.5.5: Implement translation caching in Redis — open: cache is a protocol only; no Redis-backed cache or 7-day TTL wired
+- [x] 1.5.5: Implement translation caching in Redis — done: backend/app/core/redis.py (RedisCache, 7-day TTL, no-op without Redis) wired in backend/app/services/translation.py, key tr:<provider>:<src>:<tgt>:<sha256(text)>; tests/unit/test_redis_layer.py
   - Cache by (text_hash, source_lang, target_lang)
   - Effort: S, Priority: P1
 - [~] 1.5.6: Write unit tests for translation accuracy — superseded: no MT model to score (see 1.5.1); BLEU replaced by chrF++/COMET in constraint-solutions.md §E.2, and the Tamil/Hindi sentences go to native-speaker review (docs/BACKLOG.md)
@@ -201,7 +201,7 @@ This document provides a comprehensive, phase-by-phase breakdown of implementati
 - [x] 1.6.3: Implement cosine similarity calculation — done: EmbeddingService.cosine_similarity in backend/app/services/embeddings.py; tests/unit/test_embeddings.py
   - Numpy-based dot product and normalization
   - Effort: XS, Priority: P0
-- [ ] 1.6.4: Implement embedding caching in Redis — open: cache is a protocol only; no Redis-backed cache or 7-day TTL wired
+- [x] 1.6.4: Implement embedding caching in Redis — done: backend/app/core/redis.py (RedisCache, 7-day TTL, no-op without Redis) wired in backend/app/services/embeddings.py, key emb:<model>:<dim>:<kind>:<sha256(text)> (one multilingual model, so no language part); tests/unit/test_redis_layer.py
   - Cache by (text_hash, language) for 7 days
   - Effort: S, Priority: P1
 - [ ] 1.6.5: Create scheme_embeddings and startup_domain_embeddings tables — open: one generic namespaced vector(1024) table with HNSW (migration 0003, app/models/embeddings.py), but nothing writes to it and it has never been created on a live DB
