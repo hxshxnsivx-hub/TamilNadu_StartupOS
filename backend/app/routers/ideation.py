@@ -1,14 +1,14 @@
-"""Ideation, orchestrator-routing and completeness-preview endpoints (Task 1.9).
+"""Ideation, orchestrator and completeness-preview endpoints (Tasks 1.8, 1.9).
 
-These are stateless (no database), so "describe an idea → get a roadmap" works
-without any external service. Persistence (linking roadmaps to founders) is added
-when the profile/startup DB endpoints land.
+Most are stateless; the agent and orchestrator conversations are saved per session
+(app/agents/store.py: the database when present, else memory).
 """
 
 from __future__ import annotations
 
 import asyncio
 import json
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, HTTPException, Path, Query
 from fastapi.responses import Response, StreamingResponse
@@ -36,6 +36,8 @@ from app.models.ideation_schemas import (
     SchemeTagOut,
     TimelineOut,
 )
+from app.orchestrator.graph import GREETING, ConversationGraph, TurnResult
+from app.orchestrator.handlers import HANDLERS
 from app.orchestrator.orchestrator import Orchestrator
 from app.orchestrator.state import ConversationState
 from app.planner import registry
@@ -51,6 +53,7 @@ from app.swarms.roadmap.models import Roadmap
 router = APIRouter(prefix="/api/v1", tags=["ideation"])
 
 _orchestrator = Orchestrator()
+_graph = ConversationGraph(HANDLERS)
 _roadmap = RoadmapSwarm()
 
 
@@ -392,6 +395,91 @@ async def agent_notices(
             board.unsubscribe(session_id, q)
 
     return StreamingResponse(events(), media_type="text/event-stream")
+
+
+class ConversationStartIn(BaseModel):
+    name: str | None = Field(default=None, max_length=80)
+    # what the founder's profile already holds; every task reads it, none asks again
+    founder: dict | None = None
+    startup: dict | None = None
+    private: bool = False
+
+
+def _conversation_state(s: agent.AgentSession) -> ConversationState:
+    if s.orchestrator:
+        return ConversationState.from_dict(s.orchestrator)
+    # an ideation conversation joining the orchestrator: its idea becomes the task in hand
+    st = ConversationState(user_id=s.user_id, session_id=s.id)
+    if s.idea:
+        st.active_swarm, st.node, st.current_intent = "roadmap", "idea_discussion", "idea_input"
+    return st
+
+
+def _turn_out(s: agent.AgentSession, r: TurnResult) -> dict:
+    resumed = r.resumed and {k: r.resumed.get(k) for k in ("swarm", "intent", "node")}
+    return {
+        "session_id": s.id,
+        "reply": r.reply,
+        "node": r.node,
+        "action": r.action,
+        "intent": r.intent,
+        "swarm": r.swarm,
+        "confidence": r.confidence,
+        "matched": list(r.matched),
+        "resumed": resumed,
+        "paused": r.paused,
+        "data": r.data,
+    }
+
+
+@router.post("/orchestrator/sessions")
+async def conversation_start(body: ConversationStartIn) -> dict:
+    """Open a conversation with the central orchestrator; the reply is the greeting."""
+    founder, startup = body.founder or {}, body.startup or {}
+    s, _ = agent.new_session(body.name, {**startup, **founder}, private=body.private)
+    st = ConversationState(user_id=s.user_id, session_id=s.id)
+    st.entities["profile"] = {"founder": founder, "startup": startup}
+    greeting = GREETING.replace("Vanakkam!", f"Vanakkam {s.name}!", 1)
+    st.add_message("assistant", greeting)
+    s.orchestrator = st.to_dict()
+    store = await get_store()
+    await store.create(s)
+    providers.warm_up()  # idea turns may use the local backup model
+    return {
+        "session_id": s.id,
+        "reply": greeting,
+        "node": st.node,
+        "saved": store.name == "database",
+    }
+
+
+@router.get("/orchestrator/sessions/{session_id}")
+async def conversation_resume(session_id: str = _SESSION_ID) -> dict:
+    """Where the conversation stands: the task in hand, the paused ones, the transcript."""
+    s = await _load(session_id)
+    st = _conversation_state(s)
+    return {
+        "session_id": s.id,
+        "node": st.node,
+        "active_swarm": st.active_swarm,
+        "current_intent": st.current_intent,
+        "paused": [c["swarm"] for c in st.context_stack],
+        "last_question": st.last_question,
+        "transcript": [{"role": t.role, "text": t.content} for t in st.messages],
+    }
+
+
+@router.post("/orchestrator/sessions/{session_id}/turns")
+async def conversation_turn(body: AgentTurnIn, session_id: str = _SESSION_ID) -> dict:
+    """One founder turn: classified, sent to the task it belongs to, and saved."""
+    async with _turn_locks.setdefault(session_id, asyncio.Lock()):
+        s = await _load(session_id)
+        st = _conversation_state(s)
+        r = await _graph.step(st, body.text, session=s, language=body.language)
+        s.orchestrator = st.to_dict()
+        s.updated_at = datetime.now(UTC)  # every turn counts as activity, not only idea turns
+        await _save(s)
+        return _turn_out(s, r)
 
 
 def _sse(event: str, data: object) -> str:

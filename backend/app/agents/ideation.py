@@ -130,6 +130,8 @@ class AgentSession:
     cohort_consent: bool = False
     pending_slot: str | None = None
     private: bool = False  # search nothing outside Vanigam
+    # the central orchestrator's state when this conversation is driven through it
+    orchestrator: dict | None = None
     version: int = 0  # bumped on every save; guards against lost updates
     updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
@@ -159,6 +161,7 @@ class AgentSession:
             "cohort_consent": self.cohort_consent,
             "pending_slot": self.pending_slot,
             "private": self.private,
+            "orchestrator": self.orchestrator,
             "version": self.version,
             "updated_at": self.updated_at.isoformat(),
         }
@@ -188,6 +191,7 @@ class AgentSession:
             cohort_consent=d.get("cohort_consent", False),
             pending_slot=d.get("pending_slot"),
             private=d.get("private", False),
+            orchestrator=d.get("orchestrator"),
             version=d.get("version", 0),
             updated_at=datetime.fromisoformat(d["updated_at"]),
         )

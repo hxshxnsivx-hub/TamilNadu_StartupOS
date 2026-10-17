@@ -274,19 +274,19 @@ This document provides a comprehensive, phase-by-phase breakdown of implementati
 - [x] 1.8.2: Implement intent classification node — done: backend/app/orchestrator/intent.py (keyword classifier, 8 intents, clarify threshold); tests/unit/test_orchestrator.py
   - Classify into: Profile Update, Idea Input, Roadmap Request, Scheme Query, B2B Search, Funding Query
   - Effort: M, Priority: P0
-- [ ] 1.8.3: Implement LangGraph state machine with nodes — open: no state machine across greeting/profile/idea/clarification/error; the only one is the ideation-only elicitation engine (app/elicitation/engine.py)
+- [x] 1.8.3: Implement LangGraph state machine with nodes — done: backend/app/orchestrator/graph.py (plain deterministic machine: greeting, intent_recognition, five task nodes, clarification, error_handling; state saved in the session document; mid-task, an answer to the task's own question stays with it); tests/unit/test_conversation_graph.py
   - greeting, intent_recognition, profile_collection, idea_discussion, clarification, error_handling
   - Effort: L, Priority: P0
-- [ ] 1.8.4: Implement conditional edges for intent routing — open: Orchestrator returns a swarm name but nothing dispatches to it; /orchestrator/route is a preview
+- [x] 1.8.4: Implement conditional edges for intent routing — done: backend/app/orchestrator/graph.py + handlers.py (each turn dispatched to the ideation agent/roadmap, profile completeness, scheme swarm, B2B BOM or funding readiness; POST /api/v1/orchestrator/sessions/{id}/turns in backend/app/routers/ideation.py; mid-task a keyword only switches on a clear request — a question, an ask or two topic keywords — and never on a word from the task's own question); tests/unit/test_conversation_graph.py (test_an_answer_to_the_tasks_own_question_is_not_a_switch, test_a_clear_request_still_switches_mid_task)
   - Route to appropriate swarm based on classified intent
   - Effort: M, Priority: P0
-- [ ] 1.8.5: Implement conversation context stack — open: push/pop context built and unit-tested, but no endpoint keeps ConversationState between turns, so no founder can pause and resume
+- [x] 1.8.5: Implement conversation context stack — done: backend/app/orchestrator/graph.py (switch pauses the task, a finished detour or "go back" resumes it and repeats its question; kept between turns in AgentSession.orchestrator; answers like "a grant" to the agent's funding question push nothing); tests/unit/test_conversation_graph.py
   - Support context switching, pause/resume tasks
   - Effort: M, Priority: P1
 - [~] 1.8.6: Implement timeout handling — superseded: the session is saved after every turn and expires after 6 idle hours (backend/app/agents/store.py, docs/decisions/0003-sessions-as-json-document.md)
   - Save context after 30 minutes of inactivity
   - Effort: S, Priority: P1
-- [ ] 1.8.7: Write integration tests for conversation flow — open: multi-turn ideation sessions are tested (tests/api/test_ideation_api.py); no test switches context through the API
+- [x] 1.8.7: Write integration tests for conversation flow — done: backend/tests/api/test_conversation_api.py (multi-turn idea → "a grant" answering the funding question stays with the idea and is saved → scheme detour → resume through the API, MemoryStore)
   - Test multi-turn conversations, context switching
   - Effort: M, Priority: P1
 
