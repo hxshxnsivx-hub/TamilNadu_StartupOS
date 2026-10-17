@@ -202,6 +202,15 @@ licences and risks (S8), streamed fact-checked replies, private sessions, the jo
 - `1.1.7.3` `[ ]` [R114](arena/details-p2.md#r114) (weight 72) Redis copy is written without a version guard: a deleted session can come back. Fix: Lua compare-and-set put plus a tombstone.
 - `1.1.7.4` `[ ]` [R173](arena/details-p1.md#r173) (weight 61) Results outlive their conversation; a running turn re-creates them after delete. Fix: Delete takes the session's turn lock, plus a 'forgotten' tombstone that board.start and results.put refuse.
 
+#### 1.1.8 `[ ]` One stage vocabulary and whole-word cues
+- **Why:** stage words differ between modules (revenue founders score zero) and keyword cues match inside words ('app' in Tiruchirappalli).
+- **Where:** `elicitation/extract.py`, `elicitation/slots.py`, `funding/`, `ecosystem/`.
+- **How:** one Stage enum with explicit mappings and a coverage test; cues compiled as word-boundary patterns. Sector cues follow D5 later.
+- **When:** now; the sector list itself waits on D5 (4.1.2).
+- **What for:** facts read correctly from what founders say.
+- `1.1.8.1` `[ ]` [R008](arena/details-p4.md#r008) (weight 94) Stage words differ across modules: revenue founders score 0 and match no investor. Fix: Canonical Stage enum with explicit mappings and a coverage test.
+- `1.1.8.2` `[ ]` [R027](arena/details-p4.md#r027) (weight 84) Sector/extractor keyword cues match bare substrings inside words. Fix: Word-boundary regex cues compiled from the canonical module.
+
 ### 1.2 Evidence and novelty
 
 #### 1.2.1 `[ ]` Fix the relevance faults the quality set shows
@@ -338,11 +347,7 @@ licences and risks (S8), streamed fact-checked replies, private sessions, the jo
 - `1.4.1.1` Scheme annotation on planner milestones.
 - `1.4.1.2` Ideate screen reads the planner roadmap.
 - `1.4.1.3` Retire `/ideation/roadmap`'s placeholder path and its tests.
-- `1.4.1.4` `[ ]` [R004](arena/details-p1.md#r004) (weight 100) After the roadmap, the offline conversation repeats one line forever and never revises. Fix: Deterministic roadmap walk-through state.
-- `1.4.1.5` `[ ]` [R046](arena/details-p1.md#r046) (weight 84) Planner puts 'Apply for seed grants' after pilot and customers; prototype grants come too late. Fix: Split c_grant into stage-specific funding milestones (c_seed_grant before prototype, c_growth_funding after pilot) and annotate schemes onto them by target stage.
-- `1.4.1.6` `[ ]` [R049](arena/details-p1.md#r049) (weight 84) Scheme annotation ignores live status; it places closed SISFS on milestones. Fix: Annotate from registry.schemes_for routes with catalogue status: closed excluded, between_calls shown as 'next call expected', revamping labelled.
-- `1.4.1.7` `[ ]` [R055](arena/details-p1.md#r055) (weight 80) 'I'll widen the estimates' is never true: roadmap confidence is fixed at 0.8. Fix: Confidence from slot coverage.
-- `1.4.1.8` `[ ]` [R085](arena/details-p1.md#r085) (weight 74) A text-only planner call silently drops slot-gated milestones; Ideate and Talk still differ. Fix: Ideate shows the session's stored planner roadmap (by session ID), and the planner marks milestones whose condition is unknown.
+- `1.4.1.4` `[ ]` [R085](arena/details-p1.md#r085) (weight 74) A text-only planner call silently drops slot-gated milestones; Ideate and Talk still differ. Fix: Ideate shows the session's stored planner roadmap (by session ID), and the planner marks milestones whose condition is unknown.
 
 #### 1.4.2 `[ ]` Milestone tracker on the planner roadmap
 - **Why:** the tracker works only on the old roadmap, in the browser.
@@ -365,6 +370,17 @@ licences and risks (S8), streamed fact-checked replies, private sessions, the jo
 - `1.4.3.2` Test.
 - `1.4.3.3` `[ ]` [R026](arena/details-p1.md#r026) (weight 84) No single typed scheme profile: seed rule paths and catalogue inputs disagree. Fix: Pydantic SchemeProfile with Literal enums and validators (state normalised, stage enum).
 - `1.4.3.4` `[ ]` [R031](arena/details-p1.md#r031) (weight 84) /talk's support_for picks schemes from the domain card, never the founder's facts. Fix: Registry routes as a relevance shortlist, then the engine (three-valued) decides eligibility on projected FounderFacts.
+
+#### 1.4.4 `[ ]` Planner fixes that do not wait on D3
+- **Why:** the planner roadmap has faults whichever screen shows it: grants come after customers, closed schemes appear, confidence is fixed, and the conversation stalls after the roadmap.
+- **Where:** `planner/`, `schemes/annotate.py`, `agents/ideation.py`.
+- **How:** stage-specific funding milestones, live scheme status, confidence from slot coverage, and a roadmap walk-through state.
+- **When:** now; 1.4.1 (one roadmap path) still waits on D3.
+- **What for:** a roadmap that is right and that the founder can talk through.
+- `1.4.4.1` `[ ]` [R004](arena/details-p1.md#r004) (weight 100) After the roadmap, the offline conversation repeats one line forever and never revises. Fix: Deterministic roadmap walk-through state.
+- `1.4.4.2` `[ ]` [R046](arena/details-p1.md#r046) (weight 84) Planner puts 'Apply for seed grants' after pilot and customers; prototype grants come too late. Fix: Split c_grant into stage-specific funding milestones (c_seed_grant before prototype, c_growth_funding after pilot) and annotate schemes onto them by target stage.
+- `1.4.4.3` `[ ]` [R049](arena/details-p1.md#r049) (weight 84) Scheme annotation ignores live status; it places closed SISFS on milestones. Fix: Annotate from registry.schemes_for routes with catalogue status: closed excluded, between_calls shown as 'next call expected', revamping labelled.
+- `1.4.4.4` `[ ]` [R055](arena/details-p1.md#r055) (weight 80) 'I'll widen the estimates' is never true: roadmap confidence is fixed at 0.8. Fix: Confidence from slot coverage.
 
 ### 1.5 Voice and language
 
@@ -390,7 +406,6 @@ licences and risks (S8), streamed fact-checked replies, private sessions, the jo
 - `1.5.3.1` Live check.
 - `1.5.3.2` Choose the Gemini voices.
 - `1.5.3.3` `[ ]` Gemini transcription behind `/voice/transcribe` (today Sarvam only, else the browser).
-- `1.5.3.4` `[ ]` [R134](arena/details-p1.md#r134) (weight 68) Gemini TTS is called before the free recordings, and grouped text can never match them. Fix: Phrasebook first, per sentence, then Gemini for the rest.
 
 #### 1.5.4 `[ ]` Tell founders that Google's free tier may use their text
 - **Why:** decision 0009 requires this notice before any pilot; none exists.
@@ -408,6 +423,15 @@ licences and risks (S8), streamed fact-checked replies, private sessions, the jo
 - **Why:** voice-first, plain-language use is the product's differentiator for low-literacy founders (feasibility survey U; August task 2.7.5).
 - **How:** large controls, icons with spoken labels, no text-only steps, on the Talk page.
 - `1.5.5.1` Low-literacy pass on the Talk page.
+
+#### 1.5.6 `[ ]` Free voice first, and no personal audio kept
+- **Why:** Gemini voice is tried before the free recordings, and the voice cache keeps audio of every reply, including the founder's idea, forever.
+- **Where:** `routers/voice.py`, `voice/`, `frontend/src/voice/mentorVoice.ts`.
+- **How:** phrasebook first per sentence, then Gemini; cache only fixed sentences, never model-written replies.
+- **When:** now (no key needed to reorder or to stop caching).
+- **What for:** free voice by default and no personal data left on disk.
+- `1.5.6.1` `[ ]` [R134](arena/details-p1.md#r134) (weight 68) Gemini TTS is called before the free recordings, and grouped text can never match them. Fix: Phrasebook first, per sentence, then Gemini for the rest.
+- `1.5.6.2` `[ ]` [R017](arena/details-p1.md#r017) (weight 84) Voice/TTS audio cache keeps spoken replies forever, outside retention and erasure. Fix: Cache only fixed sentences (phrasebook and templates); never cache model-written replies.
 
 ### 1.6 Working memory
 
@@ -450,9 +474,7 @@ model and source outages (§9).
 - **Waiting on:** correct local PostgreSQL credentials in `backend/.env` (or Docker Desktop running `docker compose up -d db`).
 - `2.1.1.1` Apply migration 0004.
 - `2.1.1.2` The database integration test passes (IDEATION "done when" 4).
-- `2.1.1.3` `[ ]` [R006](arena/details-p2.md#r006) (weight 94) Migration 0003 needs pgvector (dropped feature), blocking later migrations. Fix: Make 0003 conditional: create the vector extension and table only if pg_available_extensions lists vector.
-- `2.1.1.4` `[ ]` [R071](arena/details-p2.md#r071) (weight 78) The 2.1.1 integration test skips on any setup error and bypasses migrations. Fix: conftest fixture: dedicated test DB, alembic upgrade head, skip only on connection refused.
-- `2.1.1.5` `[ ]` [R075](arena/details-p2.md#r075) (weight 77) Database outage after startup gives 500s instead of an in-memory fallback. Fix: FallbackStore wrapper with a small hand-rolled circuit breaker.
+- `2.1.1.3` `[ ]` [R071](arena/details-p2.md#r071) (weight 78) The 2.1.1 integration test skips on any setup error and bypasses migrations. Fix: conftest fixture: dedicated test DB, alembic upgrade head, skip only on connection refused.
 
 #### 2.1.2 `[ ]` Fix the "saved" flag when Redis is on
 - **Why:** `routers/ideation.py` reports `saved: false` whenever Redis fronts the database, because the store names itself `database+redis`; the Talk page then wrongly says the conversation is not being saved.
@@ -472,10 +494,7 @@ model and source outages (§9).
 - **What for:** founders can return to a conversation.
 - `2.1.3.1` Apply the decided rule in the store.
 - `2.1.3.2` `[w]` "Save this idea" (waits on 3.1.1 and D4): a saved flag on the session, a control on the Talk page, and a retention rule that skips saved sessions (SYSTEM-DESIGN §5.4).
-- `2.1.3.3` `[ ]` [R029](arena/details-p2.md#r029) (weight 84) Talk page forgets the saved session ID on any resume error, not only 404. Fix: Error class carrying the HTTP status; forget only on 404.
-- `2.1.3.4` `[ ]` [R058](arena/details-p2.md#r058) (weight 78) Programme cohort aggregates use store.get and drop sessions idle over 6 hours. Fix: Separate store method list_for_analytics(ids or since) without idle expiry.
-- `2.1.3.5` `[ ]` [R073](arena/details-p2.md#r073) (weight 78) Under D4, CachedStore re-hides a session it just loaded: resume works, next turn 404s. Fix: Expiry only by Redis TTL in CachedStore; database rule separate.
-- `2.1.3.6` `[ ]` [R179](arena/details-p1.md#r179) (weight 58) In-memory session store and per-session turn locks grow forever. Fix: Lazy sweep on create, plus lock cleanup on release and on delete.
+- `2.1.3.3` `[ ]` [R073](arena/details-p2.md#r073) (weight 78) Under D4, CachedStore re-hides a session it just loaded: resume works, next turn 404s. Fix: Expiry only by Redis TTL in CachedStore; database rule separate.
 
 #### 2.1.4 `[ ]` Session format version
 - **Why:** old session documents must stay readable as the format changes.
@@ -488,6 +507,25 @@ model and source outages (§9).
 - `2.1.4.3` `[ ]` [R161](arena/details-p2.md#r161) (weight 62) Older code silently drops newer fields on load-then-save (rollback, Redis copy). Fix: Format guard: refuse to load or save a newer format than the code knows.
 - `2.1.4.4` `[ ]` [R165](arena/details-p2.md#r165) (weight 61) Enum renames (D5 sector list) leave dead strings in old sessions and shift idea_version. Fix: Versioned upgrade step using the 4.1.2 mapping, re-keying results.
 - `2.1.4.5` `[ ]` [R193](arena/details-p2.md#r193) (weight 55) Upgrade-on-read leaves mixed formats in PostgreSQL; the 5.5.5 split has no backfill. Fix: Format column plus an idempotent upgrade-all script before the split.
+
+#### 2.1.5 `[ ]` Store and migrations that survive a missing database feature or an outage
+- **Why:** migration 0003 needs pgvector, which the local PostgreSQL 18 lacks, so later migrations never apply; a database outage after start gives errors instead of the in-memory fallback.
+- **Where:** `db/migrations/versions/0003_*.py`, `agents/store.py`.
+- **How:** make 0003 conditional on the vector extension being available; wrap the store in a fallback with a small breaker.
+- **When:** now; verified with `alembic upgrade --sql` and the fake store, then live once 2.1.1 unblocks.
+- **What for:** the database can be brought up on this machine, and conversations survive an outage.
+- `2.1.5.1` `[ ]` [R006](arena/details-p2.md#r006) (weight 94) Migration 0003 needs pgvector (dropped feature), blocking later migrations. Fix: Make 0003 conditional: create the vector extension and table only if pg_available_extensions lists vector.
+- `2.1.5.2` `[ ]` [R075](arena/details-p2.md#r075) (weight 77) Database outage after startup gives 500s instead of an in-memory fallback. Fix: FallbackStore wrapper with a small hand-rolled circuit breaker.
+
+#### 2.1.6 `[ ]` Session handling fixes that do not wait on D4
+- **Why:** the Talk page forgets a session on any error, the programme cohort drops sessions idle over 6 hours, and in-memory sessions and locks grow forever.
+- **Where:** `frontend/src/pages/Talk.tsx`, `agents/store.py`, `cohort/programme.py`.
+- **How:** forget only on 404; a separate analytics read without idle expiry; a lazy sweep of expired sessions and locks.
+- **When:** now.
+- **What for:** conversations are not lost by accident and memory stays bounded.
+- `2.1.6.1` `[ ]` [R029](arena/details-p2.md#r029) (weight 84) Talk page forgets the saved session ID on any resume error, not only 404. Fix: Error class carrying the HTTP status; forget only on 404.
+- `2.1.6.2` `[ ]` [R058](arena/details-p2.md#r058) (weight 78) Programme cohort aggregates use store.get and drop sessions idle over 6 hours. Fix: Separate store method list_for_analytics(ids or since) without idle expiry.
+- `2.1.6.3` `[ ]` [R179](arena/details-p1.md#r179) (weight 58) In-memory session store and per-session turn locks grow forever. Fix: Lazy sweep on create, plus lock cleanup on release and on delete.
 
 ### 2.2 Caching rules
 
@@ -546,9 +584,16 @@ model and source outages (§9).
 - **When:** after 2.2.1 and the key.
 - **What for:** instant evidence for known domains (SYSTEM-DESIGN §4.3).
 - `2.2.6.1` Warming script under the budget cap.
-- `2.2.6.2` `[ ]` [R122](arena/details-p2.md#r122) (weight 68) OpenAlex API key is part of the cache key; adding/rotating it empties the cache. Fix: Strip credential params before building the key.
-- `2.2.6.3` `[ ]` [R148](arena/details-p2.md#r148) (weight 68) Warmed keys won't match founder searches: cache keys are exact query strings. Fix: Refresh-ahead of keys founders actually requested.
-- `2.2.6.4` `[ ]` [R178](arena/details-p2.md#r178) (weight 61) Warming has no founder reserve in the shared daily cap and refetches a 7-day cache. Fix: Warming share of the cap plus warm-only-if-expiring.
+- `2.2.6.2` `[ ]` [R148](arena/details-p2.md#r148) (weight 68) Warmed keys won't match founder searches: cache keys are exact query strings. Fix: Refresh-ahead of keys founders actually requested.
+- `2.2.6.3` `[ ]` [R178](arena/details-p2.md#r178) (weight 61) Warming has no founder reserve in the shared daily cap and refetches a 7-day cache. Fix: Warming share of the cap plus warm-only-if-expiring.
+
+#### 2.2.7 `[ ]` Research cache keys without credentials
+- **Why:** the OpenAlex key is part of the cache key, so adding or rotating it empties the cache.
+- **Where:** `research/sources.py`.
+- **How:** strip credential parameters before building the key.
+- **When:** now.
+- **What for:** the free research budget is not wasted after a key change.
+- `2.2.7.1` `[ ]` [R122](arena/details-p2.md#r122) (weight 68) OpenAlex API key is part of the cache key; adding/rotating it empties the cache. Fix: Strip credential params before building the key.
 
 ### 2.3 Background jobs
 
@@ -558,9 +603,16 @@ model and source outages (§9).
 - **How:** a results table keyed by session, idea version and kind; a Redis queue (decision 0010).
 - `2.3.1.1` Results table and migration.
 - `2.3.1.2` Redis queue.
-- `2.3.1.3` `[ ]` [R032](arena/details-p2.md#r032) (weight 84) A failed job is narrated as 'still searching', never reported, and re-run on every turn. Fix: Board.wait returns the state; failure notice; retry after a backoff.
-- `2.3.1.4` `[ ]` [R078](arena/details-p1.md#r078) (weight 74) Job board and background results are never pruned or expired. Fix: In-process periodic sweep tied to the store's expiry.
-- `2.3.1.5` `[ ]` [R153](arena/details-p2.md#r153) (weight 67) No global limit on concurrent jobs: panel bursts of 7 model calls per session hit free-tier limits. Fix: asyncio.Semaphore per job kind plus a token-bucket limiter per provider.
+
+#### 2.3.2 `[ ]` Job board correctness in one process
+- **Why:** a failed job is narrated as 'still searching' and re-run every turn, jobs are never pruned, and panel bursts can exceed free-tier limits.
+- **Where:** `agents/jobs.py`, `agents/results.py`, `agents/ideation.py`.
+- **How:** return the job state from waits and say once that it failed, with a backoff; a periodic sweep; a semaphore per job kind.
+- **When:** now; the durable queue (2.3.1) still waits on the database.
+- **What for:** honest progress messages and stable memory and model use.
+- `2.3.2.1` `[ ]` [R032](arena/details-p2.md#r032) (weight 84) A failed job is narrated as 'still searching', never reported, and re-run on every turn. Fix: Board.wait returns the state; failure notice; retry after a backoff.
+- `2.3.2.2` `[ ]` [R078](arena/details-p1.md#r078) (weight 74) Job board and background results are never pruned or expired. Fix: In-process periodic sweep tied to the store's expiry.
+- `2.3.2.3` `[ ]` [R153](arena/details-p2.md#r153) (weight 67) No global limit on concurrent jobs: panel bursts of 7 model calls per session hit free-tier limits. Fix: asyncio.Semaphore per job kind plus a token-bucket limiter per provider.
 
 ### 2.4 Database layout and logs
 
@@ -616,13 +668,11 @@ records start when conversations link to signed-in founders (SYSTEM-DESIGN §11,
 - **What for:** low-friction start (rnd-elicitation §5.3).
 - `3.1.1.1` Claim on sign-up.
 - `3.1.1.2` `[ ]` [R001](arena/details-p3.md#r001) (weight 100) Session ID is a bearer credential: no ownership check on resume/turn/delete, handed to programmes. Fix: Optional-user FastAPI dependency plus an owner check in _load.
-- `3.1.1.3` `[ ]` [R002](arena/details-p3.md#r002) (weight 100) JWT secret defaults to 'change-me' with no startup guard. Fix: pydantic model_validator refusing the default or a short key when app_env != development.
-- `3.1.1.4` `[ ]` [R061](arena/details-p2.md#r061) (weight 78) SqlStore.save never updates user_id; claimed session stays 'anon'. Fix: Dedicated store.claim(session_id, user_id) with a conditional UPDATE.
-- `3.1.1.5` `[ ]` [R059](arena/details-p2.md#r059) (weight 78) agent_sessions.user_id is a free string with no FK to users; no user-to-sessions link. Fix: Explicit erasure service with a table map and a guard on 'anon'.
-- `3.1.1.6` `[ ]` [R096](arena/details-p3.md#r096) (weight 74) No 'my conversations' list: a founder cannot find past sessions on another device. Fix: GET /ideation/agent/sessions returning id, title, idea_version, last_active for the current user.
-- `3.1.1.7` `[ ]` [R117](arena/details-p3.md#r117) (weight 71) Claim rule unspecified: a shared phone hands founder A's session to founder B. Fix: Explicit claim endpoint: only user_id='anon' sessions, founder confirms in the UI.
-- `3.1.1.8` `[ ]` [R129](arena/details-p3.md#r129) (weight 68) Browser keeps only the latest session id, so sign-up can claim one conversation at most. Fix: Recent-sessions list in localStorage, claimed in one call at sign-in.
-- `3.1.1.9` `[ ]` [R204](arena/details-p3.md#r204) (weight 51) Account enumeration: register returns 409 and login skips bcrypt for unknown emails. Fix: Verify against a fixed dummy bcrypt hash when the user is missing; generic register response.
+- `3.1.1.3` `[ ]` [R061](arena/details-p2.md#r061) (weight 78) SqlStore.save never updates user_id; claimed session stays 'anon'. Fix: Dedicated store.claim(session_id, user_id) with a conditional UPDATE.
+- `3.1.1.4` `[ ]` [R059](arena/details-p2.md#r059) (weight 78) agent_sessions.user_id is a free string with no FK to users; no user-to-sessions link. Fix: Explicit erasure service with a table map and a guard on 'anon'.
+- `3.1.1.5` `[ ]` [R096](arena/details-p3.md#r096) (weight 74) No 'my conversations' list: a founder cannot find past sessions on another device. Fix: GET /ideation/agent/sessions returning id, title, idea_version, last_active for the current user.
+- `3.1.1.6` `[ ]` [R117](arena/details-p3.md#r117) (weight 71) Claim rule unspecified: a shared phone hands founder A's session to founder B. Fix: Explicit claim endpoint: only user_id='anon' sessions, founder confirms in the UI.
+- `3.1.1.7` `[ ]` [R129](arena/details-p3.md#r129) (weight 68) Browser keeps only the latest session id, so sign-up can claim one conversation at most. Fix: Recent-sessions list in localStorage, claimed in one call at sign-in.
 
 #### 3.1.2 `[w]` Profile and startup records on the server
 - **Waiting on:** 2.1.1.
@@ -635,11 +685,9 @@ records start when conversations link to signed-in founders (SYSTEM-DESIGN §11,
 - `3.1.2.3` Re-run eligibility on completeness change.
 - `3.1.2.4` Write-back of corrected facts on agreement.
 - `3.1.2.5` `[ ]` [R024](arena/details-p3.md#r024) (weight 84) Founder table forces full basic tier NOT NULL; partial profiles can't sync. Fix: Nullable profile columns; completeness enforced by the scorer, not by NOT NULL.
-- `3.1.2.6` `[ ]` [R060](arena/details-p3.md#r060) (weight 78) Sign-out leaves founder's browser data (profile, consent, journey, session) for next user. Fix: Namespace keys by user ID, clear the anonymous namespace on logout, and confirm before claiming it.
-- `3.1.2.7` `[ ]` [R069](arena/details-p3.md#r069) (weight 78) Self-typed fields and a 'demo' checkbox would be stored as verified, tier 100. Fix: Server ignores client verification flags; verified_fields empty until a real check exists; tiers renamed (basic, standard, complete).
-- `3.1.2.8` `[ ]` [R081](arena/details-p1.md#r081) (weight 74) Browser profile keys/vocabularies don't map to backend slots. Fix: Explicit allowlisted projection in the client (founder.district to district, startup.stage to stage, startup.domain to sector) plus a typed AgentStartIn.profile with only those keys.
-- `3.1.2.9` `[ ]` [R102](arena/details-p3.md#r102) (weight 74) Refresh token is never used or revocable: 30-min logouts and no server-side sign-out. Fix: refresh_tokens table in PostgreSQL (hashed jti, revoked_at).
-- `3.1.2.10` `[ ]` [R167](arena/details-p3.md#r167) (weight 61) Founder and Startup carry soft delete plus unique email/phone/GSTIN, against D12 erasure. Fix: Drop SoftDeleteMixin; hard delete with FK cascades (and an audit row without personal data).
+- `3.1.2.6` `[ ]` [R069](arena/details-p3.md#r069) (weight 78) Self-typed fields and a 'demo' checkbox would be stored as verified, tier 100. Fix: Server ignores client verification flags; verified_fields empty until a real check exists; tiers renamed (basic, standard, complete).
+- `3.1.2.7` `[ ]` [R102](arena/details-p3.md#r102) (weight 74) Refresh token is never used or revocable: 30-min logouts and no server-side sign-out. Fix: refresh_tokens table in PostgreSQL (hashed jti, revoked_at).
+- `3.1.2.8` `[ ]` [R167](arena/details-p3.md#r167) (weight 61) Founder and Startup carry soft delete plus unique email/phone/GSTIN, against D12 erasure. Fix: Drop SoftDeleteMixin; hard delete with FK cascades (and an audit row without personal data).
 
 #### 3.1.3 `[w]` Move the other browser-only state to the server
 - **Waiting on:** 3.1.2.
@@ -648,9 +696,26 @@ records start when conversations link to signed-in founders (SYSTEM-DESIGN §11,
 - `3.1.3.1` Journey and milestone status.
 - `3.1.3.2` Funding pipeline.
 - `3.1.3.3` Supplier quotes.
-- `3.1.3.4` `[ ]` [R018](arena/details-p1.md#r018) (weight 84) Journey.tsx and journeyStore.ts share the 'vanigam_journey' key with different shapes. Fix: Fold Journey facts and done into journeyStore (a 'registration' field; version bumped to 2 with a migration that keeps consent and milestones).
-- `3.1.3.5` `[ ]` [R169](arena/details-p3.md#r169) (weight 61) No merge or conflict rule for moving browser state to the server (two devices, first sync). Fix: Per-record version and updated_at with 409 on conflict, and a union-by-UUID merge at first sync.
-- `3.1.3.6` `[ ]` [R186](arena/details-p4.md#r186) (weight 58) Pipeline metrics wrong: lost deals count as reaching every stage; first-stage time is lost. Fix: Parse with datetime.fromisoformat (Python 3.11 accepts 'Z') then take .date(); terminal entries without history count only their terminal stage; label weighted value 'rule of thumb' or drop it.
+- `3.1.3.4` `[ ]` [R169](arena/details-p3.md#r169) (weight 61) No merge or conflict rule for moving browser state to the server (two devices, first sync). Fix: Per-record version and updated_at with 409 on conflict, and a union-by-UUID merge at first sync.
+
+#### 3.1.4 `[ ]` Auth hardening that needs no database
+- **Why:** the JWT secret defaults to 'change-me' with no guard, and the login and register routes reveal which emails have accounts.
+- **Where:** `core/config.py`, `routers/auth.py`.
+- **How:** refuse the default or a short secret outside development; constant-time login with a dummy hash and a generic register reply.
+- **When:** now (unit-tested without a database).
+- **What for:** tokens cannot be forged and accounts cannot be listed.
+- `3.1.4.1` `[ ]` [R002](arena/details-p3.md#r002) (weight 100) JWT secret defaults to 'change-me' with no startup guard. Fix: pydantic model_validator refusing the default or a short key when app_env != development.
+- `3.1.4.2` `[ ]` [R204](arena/details-p3.md#r204) (weight 51) Account enumeration: register returns 409 and login skips bcrypt for unknown emails. Fix: Verify against a fixed dummy bcrypt hash when the user is missing; generic register response.
+
+#### 3.1.5 `[ ]` Browser state that is safe and consistent
+- **Why:** sign-out leaves the founder's data for the next person, two modules write different shapes to one storage key, and the browser profile does not map onto the backend's facts.
+- **Where:** `frontend/src/profileStore.ts`, `journeyStore.ts`, `pages/Journey.tsx`, `voice/agentClient.ts`.
+- **How:** namespace browser keys and clear on sign-out; one journey store; an explicit profile-to-slot projection (used by 1.1.1).
+- **When:** now.
+- **What for:** shared phones are safe and the profile reaches the conversation correctly.
+- `3.1.5.1` `[ ]` [R060](arena/details-p3.md#r060) (weight 78) Sign-out leaves founder's browser data (profile, consent, journey, session) for next user. Fix: Namespace keys by user ID, clear the anonymous namespace on logout, and confirm before claiming it.
+- `3.1.5.2` `[ ]` [R018](arena/details-p1.md#r018) (weight 84) Journey.tsx and journeyStore.ts share the 'vanigam_journey' key with different shapes. Fix: Fold Journey facts and done into journeyStore (a 'registration' field; version bumped to 2 with a migration that keeps consent and milestones).
+- `3.1.5.3` `[ ]` [R081](arena/details-p1.md#r081) (weight 74) Browser profile keys/vocabularies don't map to backend slots. Fix: Explicit allowlisted projection in the client (founder.district to district, startup.stage to stage, startup.domain to sector) plus a typed AgentStartIn.profile with only those keys.
 
 ### 3.2 Consent and protection
 
@@ -662,10 +727,6 @@ records start when conversations link to signed-in founders (SYSTEM-DESIGN §11,
 - **What for:** lawful use (SYSTEM-DESIGN §5.4; constraint solutions §A.3).
 - `3.2.1.1` Table and migration.
 - `3.2.1.2` `Consent.tsx` writes to it.
-- `3.2.1.3` `[ ]` [R021](arena/details-p3.md#r021) (weight 84) Caste collected, sent by default and used in ranking without a consent gate. Fix: Server-side purpose gate: strip protected fields unless consent for that purpose is present.
-- `3.2.1.4` `[ ]` [R079](arena/details-p3.md#r079) (weight 74) Consent page purposes don't match the design list and promise dropped features. Fix: One purpose registry as a Python Enum, published through OpenAPI and used by the generated TS types.
-- `3.2.1.5` `[ ]` [R120](arena/details-p3.md#r120) (weight 68) In-session consents (cohort, private) set once at start; cannot be seen or withdrawn. Fix: Return the consent state and programme name in the snapshot; show it as a toggle on the Talk page that calls the consent-event route.
-- `3.2.1.6` `[ ]` [R131](arena/details-p3.md#r131) (weight 68) Consent given in anonymous sessions has no record, no withdrawal, no claim path. Fix: Consent events inside the session JSON (purpose, granted/withdrawn, time, notice version), plus a PATCH route; copied into core.consents on claim.
 
 #### 3.2.2 `[w]` Field encryption for sensitive columns
 - **Waiting on:** 3.1.2, and before any real founder data.
@@ -686,9 +747,8 @@ records start when conversations link to signed-in founders (SYSTEM-DESIGN §11,
 - **How:** delete by user across tables; a nightly job deletes sessions past retention, consents as long as the data they cover plus one year (SYSTEM-DESIGN §5.4), logs after 30 days.
 - `3.2.4.1` Delete-all-for-user.
 - `3.2.4.2` Nightly retention job.
-- `3.2.4.3` `[ ]` [R017](arena/details-p1.md#r017) (weight 84) Voice/TTS audio cache keeps spoken replies forever, outside retention and erasure. Fix: Cache only fixed sentences (phrasebook and templates); never cache model-written replies.
-- `3.2.4.4` `[ ]` [R062](arena/details-p3.md#r062) (weight 78) Erasure outside the app leaves the Redis session copy readable. Fix: Run erasure and retention inside the app (admin endpoint or in-process task).
-- `3.2.4.5` `[ ]` [R132](arena/details-p3.md#r132) (weight 68) Erasure deletes consents, but retention keeps consents a year after the data. Fix: Tombstone consent record after erasure.
+- `3.2.4.3` `[ ]` [R062](arena/details-p3.md#r062) (weight 78) Erasure outside the app leaves the Redis session copy readable. Fix: Run erasure and retention inside the app (admin endpoint or in-process task).
+- `3.2.4.4` `[ ]` [R132](arena/details-p3.md#r132) (weight 68) Erasure deletes consents, but retention keeps consents a year after the data. Fix: Tombstone consent record after erasure.
 
 #### 3.2.5 `[ ]` Protect the programme cohort endpoint
 - **Why:** `/api/v1/cohort/programme` has no auth; anyone with session IDs can call it.
@@ -704,6 +764,17 @@ records start when conversations link to signed-in founders (SYSTEM-DESIGN §11,
 
 #### 3.2.6 `[w]` Legal review before a pilot
 - **Waiting on:** owner. A one-time DPDP review and a named grievance officer (constraint solutions §A.3; feasibility survey P).
+
+#### 3.2.7 `[ ]` Consent recorded in the session until the consent table exists
+- **Why:** caste is collected and used in ranking with no consent gate, the consent screen's purposes differ from the design, and in-session consents can be neither seen nor withdrawn.
+- **Where:** `agents/ideation.py`, `schemes/`, `pages/Consent.tsx`, `pages/Talk.tsx`.
+- **How:** one purpose list as an enum; consent events kept in the session document; protected fields stripped unless their purpose is granted; consent shown and withdrawable in the snapshot.
+- **When:** now; moves into the consent table with 3.2.1 later.
+- **What for:** lawful use of protected data from today.
+- `3.2.7.1` `[ ]` [R021](arena/details-p3.md#r021) (weight 84) Caste collected, sent by default and used in ranking without a consent gate. Fix: Server-side purpose gate: strip protected fields unless consent for that purpose is present.
+- `3.2.7.2` `[ ]` [R079](arena/details-p3.md#r079) (weight 74) Consent page purposes don't match the design list and promise dropped features. Fix: One purpose registry as a Python Enum, published through OpenAPI and used by the generated TS types.
+- `3.2.7.3` `[ ]` [R120](arena/details-p3.md#r120) (weight 68) In-session consents (cohort, private) set once at start; cannot be seen or withdrawn. Fix: Return the consent state and programme name in the snapshot; show it as a toggle on the Talk page that calls the consent-event route.
+- `3.2.7.4` `[ ]` [R131](arena/details-p3.md#r131) (weight 68) Consent given in anonymous sessions has no record, no withdrawal, no claim path. Fix: Consent events inside the session JSON (purpose, granted/withdrawn, time, notice version), plus a PATCH route; copied into core.consents on claim.
 
 ---
 
@@ -741,11 +812,9 @@ free format and checksum pre-filters (`verification/`; paid lookups stay dormant
 - **What for:** one meaning of "sector" (August Req 2.7; rnd-elicitation §6.5).
 - `4.1.2.1` Canonical module and mappings.
 - `4.1.2.2` Generated cues and coverage test.
-- `4.1.2.3` `[ ]` [R008](arena/details-p4.md#r008) (weight 94) Stage words differ across modules: revenue founders score 0 and match no investor. Fix: Canonical Stage enum with explicit mappings and a coverage test.
-- `4.1.2.4` `[ ]` [R027](arena/details-p4.md#r027) (weight 84) Sector/extractor keyword cues match bare substrings inside words. Fix: Word-boundary regex cues compiled from the canonical module.
-- `4.1.2.5` `[ ]` [R047](arena/details-p4.md#r047) (weight 84) Planner sector fact mixes vocabularies; K_DOMAIN misses registry ids like healthtech. Fix: Canonical str Enum, consumers compare against members, plus a test banning sector string literals.
-- `4.1.2.6` `[ ]` [R036](arena/details-p1.md#r036) (weight 84) D5's canonical list (12 registry categories) has no food, education, retail or manufacturing. Fix: Two-level canonical taxonomy: StartupTN category as the public top level, ecosystem sector ids (20) as the required second level, with each elicitation value mapped to a sector.
-- `4.1.2.7` `[ ]` [R168](arena/details-p4.md#r168) (weight 61) Founder sector is single-valued while matchers are multi-sector; no rule for mixed ideas. Fix: Primary sector slot plus a derived secondary list from all cue hits.
+- `4.1.2.3` `[ ]` [R047](arena/details-p4.md#r047) (weight 84) Planner sector fact mixes vocabularies; K_DOMAIN misses registry ids like healthtech. Fix: Canonical str Enum, consumers compare against members, plus a test banning sector string literals.
+- `4.1.2.4` `[ ]` [R036](arena/details-p1.md#r036) (weight 84) D5's canonical list (12 registry categories) has no food, education, retail or manufacturing. Fix: Two-level canonical taxonomy: StartupTN category as the public top level, ecosystem sector ids (20) as the required second level, with each elicitation value mapped to a sector.
+- `4.1.2.5` `[ ]` [R168](arena/details-p4.md#r168) (weight 61) Founder sector is single-valued while matchers are multi-sector; no rule for mixed ideas. Fix: Primary sector slot plus a derived secondary list from all cue hits.
 
 #### 4.1.3 `[ ]` Pre-revenue flags
 - **Why:** pre-revenue founders are routed to schemes and investors that will not take them.
@@ -765,7 +834,14 @@ free format and checksum pre-filters (`verification/`; paid lookups stay dormant
 - **Waiting on:** the owner's decision on the uncommitted frontend theme removal.
 - `4.1.5.1` Filter by type and amount on the Schemes screen.
 - `4.1.5.2` Four-field eligibility check on the home page using `/schemes/recommend` (nothing stored; August P-41.3).
-- `4.1.5.3` `[ ]` [R091](arena/details-p4.md#r091) (weight 74) Funding fit compares the founder's need with mixed amounts (benefit cap, loan size, project). Fix: Separate project range and benefit fields; fit against the project range, show the benefit.
+
+#### 4.1.6 `[ ]` Funding fit compares like with like
+- **Why:** funding fit compares the founder's need with benefit caps, loan sizes and project costs as if they were the same amount.
+- **Where:** `schemes/`, `funding_catalogue.json` fields.
+- **How:** separate project range and benefit fields; fit against the project range.
+- **When:** now.
+- **What for:** fit scores that mean something.
+- `4.1.6.1` `[ ]` [R091](arena/details-p4.md#r091) (weight 74) Funding fit compares the founder's need with mixed amounts (benefit cap, loan size, project). Fix: Separate project range and benefit fields; fit against the project range, show the benefit.
 
 ### 4.2 Suppliers
 
@@ -777,7 +853,6 @@ CP-SAT order splitting, supplier scoring and pairing (`b2b/`).
 - **Why:** `/b2b` still ranks the example suppliers in `b2b/seed.py`.
 - **How:** use the directory and the founder's quotes, as `/suppliers` does.
 - `4.2.1.1` Switch the screen and remove the seed from founder paths.
-- `4.2.1.2` `[ ]` [R020](arena/details-p4.md#r020) (weight 84) /supply matches and gaps come from invented seed suppliers. Fix: Directory-only supply map: nearby_makers become the matches, gap = directory total 0.
 
 #### 4.2.2 `[ ]` Cited clusters for unmatched lines
 - **Why:** a bill-of-materials line with no matching company gets no guidance.
@@ -800,6 +875,7 @@ CP-SAT order splitting, supplier scoring and pairing (`b2b/`).
 - `4.2.3.2` `[ ]` [R090](arena/details-p4.md#r090) (weight 74) Flat Rs 2 'far' penalty ignores price scale and picks a 2.5x dearer supplier. Fix: Founder-entered landed cost (price including delivery) on each quote.
 - `4.2.3.3` `[ ]` [R149](arena/details-p4.md#r149) (weight 68) When a supplier's minimum order is above the need, the line is just 'unmet'. Fix: Post-solve suggestion only: for unmet lines, list the cheapest MOQ purchase.
 - `4.2.3.4` `[ ]` [R197](arena/details-p4.md#r197) (weight 52) Allocate/pair inputs unvalidated: duplicate IDs drop units, categories case-sensitive. Fix: Pydantic model validators: unique ids, category Literal from CATEGORY_NIC keys, lowercased.
+- `4.2.3.5` `[ ]` [R020](arena/details-p4.md#r020) (weight 84) /supply matches and gaps come from invented seed suppliers. Fix: Directory-only supply map: nearby_makers become the matches, gap = directory total 0.
 
 ### 4.3 Funding
 
@@ -820,7 +896,6 @@ investors, the pipeline stage machine.
 #### 4.3.2 `[w]` Track progress on recommendations
 - **Waiting on:** 3.1.2.
 - `4.3.2.1` Mark a recommendation in progress or done, per founder.
-- `4.3.2.2` `[ ]` [R092](arena/details-p4.md#r092) (weight 74) Gap plan ignores what the founder already has; its impact points disagree with the rubric. Fix: Counterfactual re-score: each action names the input it changes; impact = score_readiness(after) - score_readiness(before).
 
 #### 4.3.3 `[ ]` Investor matching treats unpublished facts as unknown
 - **Why:** an investor whose stage or sector is not published is treated as a 'no', and the fit score is mostly constants.
@@ -829,6 +904,15 @@ investors, the pipeline stage machine.
 - **When:** now.
 - **What for:** founders are not steered away from investors on missing data.
 - `4.3.3.1` `[ ]` [R112](arena/details-p4.md#r112) (weight 74) Unpublished investor stage or sector means 'no'; fit score is built mostly from constants. Fix: Three-valued constraints with a 'check with the investor' group, and fit only from varying terms (sector specialist, stage-list position, traction margin, thesis keyword overlap).
+
+#### 4.3.4 `[ ]` Funding calculations that are correct
+- **Why:** the gap plan ignores what the founder already has, and pipeline metrics count lost deals as reaching every stage.
+- **Where:** `funding/gaps.py`, `funding/pipeline.py`.
+- **How:** counterfactual re-scoring per action; stage counts from actual transitions with proper timestamps.
+- **When:** now.
+- **What for:** next steps and pipeline numbers a founder can trust.
+- `4.3.4.1` `[ ]` [R092](arena/details-p4.md#r092) (weight 74) Gap plan ignores what the founder already has; its impact points disagree with the rubric. Fix: Counterfactual re-score: each action names the input it changes; impact = score_readiness(after) - score_readiness(before).
+- `4.3.4.2` `[ ]` [R186](arena/details-p4.md#r186) (weight 58) Pipeline metrics wrong: lost deals count as reaching every stage; first-stage time is lost. Fix: Parse with datetime.fromisoformat (Python 3.11 accepts 'Z') then take .date(); terminal entries without history count only their terminal stage; label weighted value 'rule of thumb' or drop it.
 
 ### 4.4 News
 
@@ -842,10 +926,7 @@ investors, the pipeline stage machine.
 - **What for:** founders never mistake demo items for real news.
 - `4.4.1.1` Apply D9.
 - `4.4.1.2` `[w]` Verify each allowlisted source's robots rules (owner).
-- `4.4.1.3` `[ ]` [R097](arena/details-p4.md#r097) (weight 74) No date normalisation at the fetch boundary: RSS dates get recency 0. Fix: feedparser in the live fetcher, normalising published_parsed to ISO in _clamp.
-- `4.4.1.4` `[ ]` [R094](arena/details-p4.md#r094) (weight 74) Intel calls the synthetic corpus 'cached'; personalisation and language are never used. Fix: Label 'demo' when provider is fixture; send profile fields; boost items in the founder's language.
-- `4.4.1.5` `[ ]` [R152](arena/details-p4.md#r152) (weight 67) News board fetches on every request; no stored corpus or refresh schedule. Fix: Scheduled refresh (every few hours) writing the ranked-input corpus to Redis with a file fallback, with ETag/Last-Modified kept per source.
-- `4.4.1.6` `[ ]` [R200](arena/details-p4.md#r200) (weight 52) Redirect guard accepts any listed domain, even ones whose robots rules are unchecked. Fix: Guard against fetchable sources and https only, plus urllib.robotparser checked at fetch time (cached daily).
+- `4.4.1.3` `[ ]` [R094](arena/details-p4.md#r094) (weight 74) Intel calls the synthetic corpus 'cached'; personalisation and language are never used. Fix: Label 'demo' when provider is fixture; send profile fields; boost items in the founder's language.
 
 #### 4.4.2 `[ ]` A news board that does not break or mislead
 - **Why:** one malformed article crashes the board, and 'something to act on' fires on old deadlines and funding-round news.
@@ -855,6 +936,9 @@ investors, the pipeline stage machine.
 - **What for:** a board founders can rely on.
 - `4.4.2.1` `[ ]` [R100](arena/details-p4.md#r100) (weight 74) One article from an unknown source crashes the whole board (KeyError in dedupe). Fix: Drop unattributable articles before dedupe.
 - `4.4.2.2` `[ ]` [R084](arena/details-p4.md#r084) (weight 74) 'Something to act on' fires on funding-round news and on deadlines that have passed. Fix: Phrase patterns with negation and date check: 'apply by / last date / applications open', demoted by 'closed / ended / extended till <past date>', with dates read by dateparser.
+- `4.4.2.3` `[ ]` [R097](arena/details-p4.md#r097) (weight 74) No date normalisation at the fetch boundary: RSS dates get recency 0. Fix: feedparser in the live fetcher, normalising published_parsed to ISO in _clamp.
+- `4.4.2.4` `[ ]` [R200](arena/details-p4.md#r200) (weight 52) Redirect guard accepts any listed domain, even ones whose robots rules are unchecked. Fix: Guard against fetchable sources and https only, plus urllib.robotparser checked at fetch time (cached daily).
+- `4.4.2.5` `[ ]` [R152](arena/details-p4.md#r152) (weight 67) News board fetches on every request; no stored corpus or refresh schedule. Fix: Scheduled refresh (every few hours) writing the ranked-input corpus to Redis with a file fallback, with ETag/Last-Modified kept per source.
 
 ---
 
@@ -928,6 +1012,14 @@ dropped-sentence counts (0005).
 - `5.1.6.3` `[ ]` [R133](arena/details-p5.md#r133) (weight 68) Founder-supplied name and profile are placed in the system prompt (prompt injection). Fix: Move founder data out of system into a delimited data block + name charset rule.
 - `5.1.6.4` `[ ]` [R163](arena/details-p2.md#r163) (weight 61) Rate limiter is per process, keyed by IP not user, and never evicts keys. Fix: Redis window per session id with route cost.
 
+#### 5.1.7 `[ ]` Dead-code checks and frontend CI
+- **Why:** nothing in CI catches dead code or type errors, and the frontend has no CI at all.
+- **Where:** `.github/workflows/ci.yml`.
+- **How:** a frontend job (type check and unused-code check) and a backend dead-code check.
+- **When:** now.
+- **What for:** regressions caught before merge.
+- `5.1.7.1` `[ ]` [R184](arena/details-p5.md#r184) (weight 58) No dead-code or type check in CI, and the frontend has no CI at all. Fix: Frontend CI job: tsc --noEmit + knip; backend: vulture with a whitelist.
+
 ### 5.2 Data checks in CI
 
 #### 5.2.1 `[ ]` JSON schema for every reference data file
@@ -985,6 +1077,7 @@ dropped-sentence counts (0005).
 - `5.3.1.2` CI entry and link checks.
 - `5.3.1.3` `[ ]` [R130](arena/details-p5.md#r130) (weight 68) Code cites 'build spec' sections that live only in private claude.ai artifacts. Fix: Export the build spec and dashboard to Markdown in docs/specs/.
 - `5.3.1.4` `[ ]` [R194](arena/details-p5.md#r194) (weight 52) .env.example lacks 8 settings and nothing checks it against config.py. Fix: Generate .env.example from Settings with field descriptions.
+- `5.3.1.5` `[ ]` [R202](arena/details-p5.md#r202) (weight 52) Stale root docs outside 5.3.3, and the link check would miss code-path references. Fix: Extend the link check to backticked repo paths.
 
 #### 5.3.2 `[ ]` Runbooks brought up to date
 - **Why:** model-down covers only Anthropic; rotate-key misses the Gemini, EPO and Sarvam keys; the README says Redis is unused.
@@ -1009,7 +1102,6 @@ dropped-sentence counts (0005).
 - `5.3.3.3` Design document statuses use draft, accepted or superseded.
 - `5.3.3.4` BACKLOG: remove browser-voice fix 1 and the stale text (superseded by 0009); free fix 3 is done; the "Pushing `feature/bank-loan-routing`" row is done (pushed; `origin/feature/bank-loan-routing` exists).
 - `5.3.3.5` `docs/decisions/README.md` lists 0007 as superseded in part by 0010.
-- `5.3.3.6` `[ ]` [R202](arena/details-p5.md#r202) (weight 52) Stale root docs outside 5.3.3, and the link check would miss code-path references. Fix: Extend the link check to backticked repo paths.
 
 #### 5.3.4 `[ ]` API reference exported on each release
 - **Why:** the API reference exists only at the running server's `/docs`.
@@ -1127,20 +1219,27 @@ at least 5, bands not rankings (IDEATION §4). Partly built: see 5.5.3.
 
 #### 5.6.1 `[w]` Review the 190 draft registry cards
 - **Waiting on:** a reviewer who knows the districts.
-- `5.6.1.1` `[ ]` [R022](arena/details-p1.md#r022) (weight 84) Code ignores the 'reviewed' flag; unreviewed draft cards reach founders. Fix: Carry review state to the agent and say 'from a draft card, not yet checked' for draft facts.
-- `5.6.1.2` `[ ]` [R185](arena/details-p5.md#r185) (weight 58) No review provenance on cards: 'approved' can be set with no reviewer, date or checklist. Fix: reviewed_by, reviewed_on and checklist results on each approved card, required by test/schema.
 
 #### 5.6.2 `[w]` Research signals for batches 2 and 3
 - **Waiting on:** the weekly job within OpenAlex's free budget, or a free OpenAlex key.
-- `5.6.2.1` `[ ]` [R189](arena/details-p5.md#r189) (weight 58) Weekly signals job re-fetches five complete past years for every domain each week. Fix: Incremental: fetch only domains missing or older than N months, oldest first, within a per-run cap.
 
 #### 5.6.3 `[w]` Registry batches 4 to 6
 - **Waiting on:** 5.6.1.
-- `5.6.3.1` `[ ]` [R087](arena/details-p5.md#r087) (weight 74) Elicitation accepts 38 districts but reference data covers 5, with no plan to grow it. Fix: 'Not covered yet' state for districts outside the data, plus a 5.6 task to add districts by founder demand.
 
 #### 5.6.4 `[w]` Weekly jobs open pull requests
 - **Waiting on:** the owner enabling "Allow GitHub Actions to create and approve pull requests".
-- `5.6.4.1` `[ ]` [R211](arena/details-p5.md#r211) (weight 45) Weekly job opens a new dated PR each week; unmerged ones pile up and a rerun fails. Fix: peter-evans/create-pull-request with a fixed branch.
+
+#### 5.6.5 `[ ]` Reference data that says what it is, and lighter weekly jobs
+- **Why:** draft registry cards reach founders unlabelled, 'approved' needs no reviewer, districts outside the data are not flagged, the weekly signals job refetches complete years, and weekly pull requests pile up.
+- **Where:** `planner/registry.py`, `agents/ideation.py`, registry data, `scripts/`, `.github/workflows/weekly-checks.yml`.
+- **How:** carry review state to the conversation and say 'draft' aloud; record reviewer, date and checklist; a 'not covered yet' state for districts; incremental fetches; one fixed branch for weekly pull requests.
+- **When:** now; the reviews themselves wait on a reviewer (5.6.1).
+- **What for:** founders know what is checked, and the jobs stay within free limits.
+- `5.6.5.1` `[ ]` [R022](arena/details-p1.md#r022) (weight 84) Code ignores the 'reviewed' flag; unreviewed draft cards reach founders. Fix: Carry review state to the agent and say 'from a draft card, not yet checked' for draft facts.
+- `5.6.5.2` `[ ]` [R185](arena/details-p5.md#r185) (weight 58) No review provenance on cards: 'approved' can be set with no reviewer, date or checklist. Fix: reviewed_by, reviewed_on and checklist results on each approved card, required by test/schema.
+- `5.6.5.3` `[ ]` [R087](arena/details-p5.md#r087) (weight 74) Elicitation accepts 38 districts but reference data covers 5, with no plan to grow it. Fix: 'Not covered yet' state for districts outside the data, plus a 5.6 task to add districts by founder demand.
+- `5.6.5.4` `[ ]` [R189](arena/details-p5.md#r189) (weight 58) Weekly signals job re-fetches five complete past years for every domain each week. Fix: Incremental: fetch only domains missing or older than N months, oldest first, within a per-run cap.
+- `5.6.5.5` `[ ]` [R211](arena/details-p5.md#r211) (weight 45) Weekly job opens a new dated PR each week; unmerged ones pile up and a rerun fails. Fix: peter-evans/create-pull-request with a fixed branch.
 
 ### 5.7 Code cleanup
 
@@ -1157,9 +1256,8 @@ at least 5, bands not rankings (IDEATION §4). Partly built: see 5.5.3.
 - `5.7.1.5` Frontend `classifyTerrain` (never sent), with the terrain confirmation step in `Start.tsx` and the `terrain` fields in `journeyStore.ts`; do it with 1.1.5.2, which edits the same screen.
 - `5.7.1.6` The unused `minio` service in `backend/docker-compose.yml` and its settings (object storage only if files are ever kept; D11).
 - `5.7.1.7` `[ ]` [R182](arena/details-p5.md#r182) (weight 58) Five ORM tables nobody reads or writes, one needing pgvector, are missing from 5.7.1. Fix: Drop embeddings and documents (migration + models), delete models/schemas.py and Terrain, keep founders/startups for 3.1.2 reshaped.
-- `5.7.1.8` `[ ]` [R184](arena/details-p5.md#r184) (weight 58) No dead-code or type check in CI, and the frontend has no CI at all. Fix: Frontend CI job: tsc --noEmit + knip; backend: vulture with a whitelist.
-- `5.7.1.9` `[ ]` [R213](arena/details-p5.md#r213) (weight 42) Removing services/llm.py leaves orphan settings that still advertise OpenAI. Fix: Delete the three settings and their .env.example lines in the 5.7.1.2 change.
-- `5.7.1.10` `[ ]` [R212](arena/details-p5.md#r212) (weight 42) After 1.4.1 the planner still imports from app/swarms, a package the design dropped. Fix: Move the graph functions into planner/graph.py with 1.4.1.3, delete app/swarms.
+- `5.7.1.8` `[ ]` [R213](arena/details-p5.md#r213) (weight 42) Removing services/llm.py leaves orphan settings that still advertise OpenAI. Fix: Delete the three settings and their .env.example lines in the 5.7.1.2 change.
+- `5.7.1.9` `[ ]` [R212](arena/details-p5.md#r212) (weight 42) After 1.4.1 the planner still imports from app/swarms, a package the design dropped. Fix: Move the graph functions into planner/graph.py with 1.4.1.3, delete app/swarms.
 
 ---
 
