@@ -11,11 +11,11 @@ import {
   Reasons,
   Uncover,
 } from "../design/atelier";
+import { STAGES as STAGE } from "../lib/stages";
 
 const GENDER = ["male", "female", "non_binary", "prefer_not_to_say"];
 const CASTE = ["general", "obc", "sc", "st", "ews"];
 const ENTITY = ["private_limited", "llp", "opc", "partnership", "sole_proprietor"];
-const STAGE = ["idea", "poc", "prototype", "mvp", "revenue", "growth", "scale"];
 
 /* The fields each band is scored on — mirrors completeness.ts, so the
    per-band meters move in step with the dial rather than approximating it. */
@@ -110,7 +110,7 @@ export default function Profile() {
   function sel(
     label: string,
     k: string,
-    opts: string[],
+    opts: readonly string[],
     on: (k: string, v: string) => void,
     val?: string,
   ) {
