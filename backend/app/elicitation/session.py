@@ -57,6 +57,11 @@ class Source(str, Enum):
     DEFAULT = "default"
 
 
+# Founder-given values (R025): an inference never replaces one, however
+# confident it is. Rank before confidence, so no future cue constant can undo it.
+FOUNDER_GIVEN = frozenset({Source.PROFILE, Source.ANSWER})
+
+
 class SlotValue(BaseModel):
     """One filled slot, with provenance.
 
@@ -105,6 +110,19 @@ class ElicitationSession(BaseModel):
     # (build spec 3.2): {key: "dyn:…", question, source, asked, answer}.
     dynamic: list[dict] = Field(default_factory=list)
 
+    # Slots the founder corrected at confirmation (task 1.1.2): only another
+    # correction changes them.
+    locked: set[str] = Field(default_factory=set)
+    # A value that disagreed with a founder-given or locked one and lost; kept,
+    # not silently dropped, so a later check can ask about the disagreement.
+    rivals: dict[str, SlotValue] = Field(default_factory=dict)
+    # Turns that do not count against the question budget: replies to the
+    # restatement, and one question given back per correction.
+    refunds: int = 0
+    # The founder said the restatement is wrong and was asked what to change,
+    # so the next reply is a correction however it is phrased.
+    awaiting_correction: bool = False
+
     objective: str | None = None  # the restatement shown at CONFIRMING
     roadmap_id: uuid.UUID | None = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
@@ -150,24 +168,56 @@ class ElicitationSession(BaseModel):
 
     # ---------------------------------------------------------------- writes
 
-    def put(self, key: str, value: Any, confidence: float, source: Source) -> None:
+    def put(
+        self,
+        key: str,
+        value: Any,
+        confidence: float,
+        source: Source,
+        *,
+        correction: bool = False,
+    ) -> None:
         """Merge a slot value.
 
-        Precedence rule: a new value only wins if it is at least as confident
-        as what is already there, EXCEPT that a direct user answer always wins
-        over an extraction. The user correcting us must never lose to our own
-        guess.
+        Precedence, rank before confidence (R025):
+
+        * a locked slot changes only by another `correction`;
+        * a founder-given value (profile or answer) is never replaced by an
+          inference (extraction, document, model note), however confident;
+        * a direct answer always wins over anything that is not one: the user
+          correcting us must never lose to our own guess;
+        * otherwise the new value wins when it is at least as confident.
+
+        A value that loses to a founder-given or locked one and disagrees with
+        it is kept in `rivals`.
         """
         if key not in BY_KEY:
             return
         existing = self.slots.get(key)
-        if existing is not None:
+        if existing is not None and not correction:
+            protected = key in self.locked or (
+                existing.source in FOUNDER_GIVEN and source not in FOUNDER_GIVEN
+            )
+            if protected:
+                if value != existing.value:
+                    self.rivals[key] = SlotValue(
+                        key=key,
+                        value=value,
+                        confidence=confidence,
+                        source=source,
+                        turn=self.turn_no,
+                    )
+                return
             user_correcting = source is Source.ANSWER and existing.source is not Source.ANSWER
             if not user_correcting and confidence < existing.confidence:
                 return
         self.slots[key] = SlotValue(
             key=key, value=value, confidence=confidence, source=source, turn=self.turn_no
         )
+        self.rivals.pop(key, None)
+        if correction:
+            self.locked.add(key)
+            self.skipped.discard(key)
         self.touch()
 
     def skip(self, key: str) -> None:
