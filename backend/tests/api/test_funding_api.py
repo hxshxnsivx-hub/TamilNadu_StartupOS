@@ -85,7 +85,7 @@ async def test_pipeline_board_endpoint(client: AsyncClient):
 async def test_investor_match_uses_real_investors_with_sources(client):
     r = await client.post(
         "/api/v1/funding/investors/match",
-        json={"startup": {"sector": "cleantech", "stage": "seed"}, "funding_need": 5000000,
+        json={"startup": {"sector": "cleantech", "stage": "mvp"}, "funding_need": 5000000,
               "readiness_overall": 65},
     )  # fmt: skip
     body = r.json()
