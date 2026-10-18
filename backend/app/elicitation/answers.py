@@ -15,20 +15,24 @@ import re
 from enum import Enum
 from typing import Any
 
+from app.core.stages import Stage
+from app.elicitation.cues import compile_cues, matches
 from app.elicitation.extract import extract
 from app.elicitation.places import find_district
 from app.elicitation.slots import BY_KEY
 
 # Stage words as a founder answers the stage question directly. Broader than
 # the extractor's cues, which must catch stage in passing and so need phrases.
-_STAGE_WORDS: dict[str, tuple[str, ...]] = {
-    "revenue": ("selling", "sales", "revenue", "customers", "orders", "earning"),
-    "growth": ("growing", "scaling", "expanding"),
-    "mvp": ("mvp", "pilot", "beta", "first version", "launched"),
-    "prototype": ("prototype", "sample", "working model", "demo"),
-    "poc": ("proof of concept", "poc", "tested", "validated"),
-    "idea": ("idea", "nothing built", "not started", "planning", "concept"),
+# Whole words (app/elicitation/cues.py): "ideally" is not "idea".
+_STAGE_WORDS: dict[Stage, tuple[str, ...]] = {
+    Stage.REVENUE: ("selling", "sales", "revenue", "customers", "orders", "earning"),
+    Stage.GROWTH: ("growing", "scaling", "expanding"),
+    Stage.MVP: ("mvp", "pilot", "beta", "first version", "launched"),
+    Stage.PROTOTYPE: ("prototyp*", "sample", "working model", "demo"),
+    Stage.POC: ("proof of concept", "poc", "tested", "validated"),
+    Stage.IDEA: ("idea", "nothing built", "not started", "planning", "concept"),
 }
+_STAGE_PATTERNS = {stage: compile_cues(words) for stage, words in _STAGE_WORDS.items()}
 
 _NUMBER_WORDS = {
     w: i
@@ -48,9 +52,9 @@ SKIP = re.compile(
 
 def _stage(text: str) -> str | None:
     low = text.lower()
-    for stage, words in _STAGE_WORDS.items():
-        if any(re.search(rf"\b{re.escape(w)}", low) for w in words):
-            return stage
+    for stage, patterns in _STAGE_PATTERNS.items():
+        if matches(low, patterns):
+            return stage.value
     return None
 
 
