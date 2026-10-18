@@ -53,7 +53,8 @@ WEIGHTS = {
 }
 INTAKE_SCORE = {"open": 1.0, "rolling": 0.8, "apply_page": 0.7, "closed": 0.2}
 NEAR_MINUTES = 90.0  # incubation means regular visits; an hour and a half away scores zero
-# Founder stage -> the incubator stage that takes it. None: past incubation.
+# Founder round (app.core.stages.ROUND_FITS keys) -> the incubator stage that takes it.
+# None: past incubation.
 STAGE_TO_INCUBATOR = {
     "idea": "pre_seed",
     "pre_seed": "pre_seed",
