@@ -33,7 +33,7 @@ background while the conversation continues.
 | S4 | Novelty check | Which parts exist, which are rare, which combinations are rare | code | slow | `research/novelty` (new) |
 | S5 | Add novelty | Two or three concrete ways to stand out, each tied to a gap | code proposes, council ranks | slow | `research/novelty`, council |
 | S6 | Council | Seven advocates judge; one disagreement comes back as a question | model judges, code votes | slow | `agents/council` (Phase 2) |
-| S7 | Confirm | The objective is restated in plain words; yes, no or correct | code | fast | `elicitation/engine` |
+| S7 | Confirm | The objective is restated in plain words, each fact labelled with where it came from and each gap with what will be assumed; the reply is read for corrections first (locked as founder-given, one question refunded), then for yes or no | code | fast | `elicitation/engine` |
 | S8 | Roadmap | Milestones, costs, licences, risks for the chosen variant | code | slow | `planner` |
 | S9 | Cohort | How the idea sits among similar startups, and among founders in the same programme | code | offline | `cohort` (Phase 5) |
 
