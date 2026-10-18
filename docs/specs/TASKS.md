@@ -202,14 +202,14 @@ licences and risks (S8), streamed fact-checked replies, private sessions, the jo
 - `1.1.7.3` `[ ]` [R114](arena/details-p2.md#r114) (weight 72) Redis copy is written without a version guard: a deleted session can come back. Fix: Lua compare-and-set put plus a tombstone.
 - `1.1.7.4` `[ ]` [R173](arena/details-p1.md#r173) (weight 61) Results outlive their conversation; a running turn re-creates them after delete. Fix: Delete takes the session's turn lock, plus a 'forgotten' tombstone that board.start and results.put refuse.
 
-#### 1.1.8 `[ ]` One stage vocabulary and whole-word cues
+#### 1.1.8 `[x]` One stage vocabulary and whole-word cues
 - **Why:** stage words differ between modules (revenue founders score zero) and keyword cues match inside words ('app' in Tiruchirappalli).
 - **Where:** `elicitation/extract.py`, `elicitation/slots.py`, `funding/`, `ecosystem/`.
 - **How:** one Stage enum with explicit mappings and a coverage test; cues compiled as word-boundary patterns. Sector cues follow D5 later.
 - **When:** now; the sector list itself waits on D5 (4.1.2).
 - **What for:** facts read correctly from what founders say.
-- `1.1.8.1` `[ ]` [R008](arena/details-p4.md#r008) (weight 94) Stage words differ across modules: revenue founders score 0 and match no investor. Fix: Canonical Stage enum with explicit mappings and a coverage test.
-- `1.1.8.2` `[ ]` [R027](arena/details-p4.md#r027) (weight 84) Sector/extractor keyword cues match bare substrings inside words. Fix: Word-boundary regex cues compiled from the canonical module.
+- `1.1.8.1` `[x]` [R008](arena/details-p4.md#r008) (weight 94) Stage words differ across modules: revenue founders score 0 and match no investor. Fix: Canonical Stage enum with explicit mappings and a coverage test.
+- `1.1.8.2` `[x]` [R027](arena/details-p4.md#r027) (weight 84) Sector/extractor keyword cues match bare substrings inside words. Fix: Word-boundary regex cues compiled from the canonical module.
 
 ### 1.2 Evidence and novelty
 
