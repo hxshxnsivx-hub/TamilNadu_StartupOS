@@ -113,20 +113,20 @@ licences and risks (S8), streamed fact-checked replies, private sessions, the jo
 - `1.1.1.2` `[x]` API test: a profile field is never asked.
 - `1.1.1.3` `[x]` [R019](arena/details-p1.md#r019) (weight 84) Session-start profile values enter unvalidated at 0.95 confidence. Fix: Typed Pydantic ProfileIn + answers.validate per slot.
 
-#### 1.1.2 `[ ]` Confirmation that shows where each fact came from, and corrections that stick
+#### 1.1.2 `[x]` Confirmation that shows where each fact came from, and corrections that stick
 - **Why:** at S7 the founder cannot see what was assumed, and saying "no" only re-opens questioning.
 - **Where:** `elicitation/engine.py` (`restate`, `confirm`), `elicitation/session.py`.
 - **How:** label each restated fact ("you said", "from your profile", "I assumed"); restate the problem in short form, not the founder's whole sentence; a corrected fact is locked as founder-given and the question budget is refunded by one.
 - **When:** now; at confirmation.
 - **What for:** no roadmap built on a wrong assumption (rnd-elicitation §4.3, §6.4; eval transcripts repeat the whole sentence as "the problem").
-- `1.1.2.1` Source label per slot in the restatement.
-- `1.1.2.2` Short restatement of the problem.
-- `1.1.2.3` Rejection locks the corrected slot and refunds one question.
-- `1.1.2.4` Tests.
-- `1.1.2.5` `[ ]` [R005](arena/details-p1.md#r005) (weight 94) Confirmation step ignores negation: 'not right'/'Salem not Madurai' read as confirm/value. Fix: Always observe the reply, then confirm only if nothing changed.
-- `1.1.2.6` `[ ]` [R025](arena/details-p1.md#r025) (weight 84) Later extraction overwrites founder's direct answer or chosen lever (no provenance). Fix: Source rank before confidence: ANSWER and PROFILE are never replaced by EXTRACTED or model notes; a disagreeing extraction is kept as a rival.
-- `1.1.2.7` `[ ]` [R051](arena/details-p1.md#r051) (weight 84) Skipped and dropped required slots vanish from the 'I still don't know' sentence. Fix: Two sentences: 'you skipped X; I will assume Y'.
-- `1.1.2.8` `[ ]` [R154](arena/details-p1.md#r154) (weight 67) Restatement omits facts the roadmap uses (team size, experience, horizon). Fix: Restate every non-text slot whose consumers include 'roadmap' or 'scheme' and whose source is not ANSWER, in one 'I assumed:' sentence.
+- `1.1.2.1` `[x]` Source label per slot in the restatement.
+- `1.1.2.2` `[x]` Short restatement of the problem.
+- `1.1.2.3` `[x]` Rejection locks the corrected slot and refunds one question.
+- `1.1.2.4` `[x]` Tests.
+- `1.1.2.5` `[x]` [R005](arena/details-p1.md#r005) (weight 94) Confirmation step ignores negation: 'not right'/'Salem not Madurai' read as confirm/value. Fix: Always observe the reply, then confirm only if nothing changed.
+- `1.1.2.6` `[x]` [R025](arena/details-p1.md#r025) (weight 84) Later extraction overwrites founder's direct answer or chosen lever (no provenance). Fix: Source rank before confidence: ANSWER and PROFILE are never replaced by EXTRACTED or model notes; a disagreeing extraction is kept as a rival.
+- `1.1.2.7` `[x]` [R051](arena/details-p1.md#r051) (weight 84) Skipped and dropped required slots vanish from the 'I still don't know' sentence. Fix: Two sentences: 'you skipped X; I will assume Y'.
+- `1.1.2.8` `[x]` [R154](arena/details-p1.md#r154) (weight 67) Restatement omits facts the roadmap uses (team size, experience, horizon). Fix: Restate every non-text slot whose consumers include 'roadmap' or 'scheme' and whose source is not ANSWER, in one 'I assumed:' sentence.
 
 #### 1.1.3 `[ ]` Question order and fact safety
 - **Why:** capital can be asked before the idea is known; a model can record a fact the founder never said.
