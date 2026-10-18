@@ -11,6 +11,7 @@ import Orb, { type OrbState } from "../voice/Orb";
 import {
   getSession,
   listenNotices,
+  profileForConversation,
   startSession,
   streamTurn,
   voiceStatus,
@@ -23,6 +24,7 @@ import {
 } from "../voice/agentClient";
 import { Listener, canListen, isBargeIn, micLevel } from "../voice/speech";
 import { AudioSpeaker, RecordingListener } from "../voice/mentorVoice";
+import { loadProfile } from "../profileStore";
 
 const LANGS: Lang[] = ["ta-IN", "en-IN", "hi-IN"];
 
@@ -327,7 +329,8 @@ export default function Talk() {
   async function begin() {
     setError("");
     try {
-      const r = await startSession(name.trim(), isPrivate);
+      // what the profile already says is never asked again (task 1.1.1)
+      const r = await startSession(name.trim(), isPrivate, profileForConversation(loadProfile()));
       setSessionId(r.session_id);
       setSaved(r.saved);
       save(r.session_id);
