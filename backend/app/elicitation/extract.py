@@ -29,6 +29,8 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from app.core.stages import Stage
+from app.elicitation.cues import compile_cues, matches
 from app.elicitation.places import find_district
 from app.elicitation.slots import (
     CapitalBand,
@@ -46,41 +48,156 @@ class Extraction:
 
 
 # ---------------------------------------------------------------- lexicons
+#
+# Cues match whole words (app/elicitation/cues.py): "shop" never fires inside
+# "workshop". A trailing * marks a stem; a compiled pattern carries context.
+# Compounds and longer forms the substring matcher used to reach are listed
+# explicitly ("automotive", "application", "seafood"), never as a bare stem
+# that would bring the traps back ("auto*" -> automation, "app*" -> apparel).
 
-_SECTOR_CUES: dict[Sector, tuple[str, ...]] = {
-    Sector.AGRI: ("agri", "farm", "crop", "irrigation", "soil", "dairy", "poultry"),
+# 'course' and 'credit' are common in phrases that are not about the sector.
+_COURSE = re.compile(r"(?<!of )\bcourses?\b")
+_CREDIT = re.compile(r"(?<!carbon )\bcredits?\b")
+
+_SECTOR_CUES: dict[Sector, tuple[str | re.Pattern[str], ...]] = {
+    Sector.AGRI: ("agri*", "farm", "farmland", "crop", "irrigation", "soil", "dairy", "poultry"),
     Sector.TEXTILE: (
         "textile",
         "handloom",
-        "weav",
+        "weav*",
         "garment",
         "apparel",
         "saree",
         "yarn",
         "dyeing",
     ),
-    Sector.FOOD: ("food", "restaurant", "kitchen", "snack", "beverage", "bakery", "catering"),
-    Sector.MANUFACTURING: ("manufactur", "factory", "fabricat", "machining", "foundry", "moulding"),
-    Sector.AUTO: ("auto", "vehicle", "spare part", "automobile", "ev ", "two wheeler"),
+    Sector.FOOD: (
+        "food",
+        "foodtech",
+        "foodgrain",
+        "seafood",
+        "restaurant",
+        "kitchen",
+        "snack",
+        "beverage",
+        "bakery",
+        "catering",
+    ),
+    Sector.MANUFACTURING: (
+        "manufactur*",
+        "factory",
+        "fabricat*",
+        "machining",
+        "foundry",
+        "moulding",
+    ),
+    Sector.AUTO: (
+        "auto",
+        "automotive",
+        "autopart",
+        "autorickshaw",
+        "vehicle",
+        "spare part",
+        "automobile",
+        "ev",
+        "two wheeler",
+    ),
     Sector.ELECTRONICS: ("electronic", "pcb", "sensor", "iot", "hardware", "semiconductor"),
-    Sector.IT_SERVICES: ("software", "saas", "app", "website", "it service", "platform", "portal"),
-    Sector.HEALTH: ("health", "medical", "clinic", "patient", "hospital", "diagnos", "pharma"),
-    Sector.EDUCATION: ("education", "edtech", "learning", "student", "course", "tuition", "school"),
-    Sector.FINANCE: ("fintech", "payment", "lending", "loan", "credit", "insurance", "banking"),
-    Sector.RETAIL: ("retail", "ecommerce", "marketplace", "shop", "store", "d2c", "wholesale"),
+    Sector.IT_SERVICES: (
+        "software",
+        "saas",
+        "app",
+        "application",
+        "webapp",
+        "website",
+        "it service",
+        "platform",
+        "portal",
+    ),
+    Sector.HEALTH: (
+        "health*",
+        "telehealth",
+        "medical",
+        "biomedical",
+        "clinic",
+        "clinical",
+        "patient",
+        "hospital",
+        "diagnos*",
+        "pharma*",
+    ),
+    Sector.EDUCATION: (
+        "education",
+        "educational",
+        "educator",
+        "edtech",
+        "learning",
+        "student",
+        _COURSE,
+        "tuition",
+        "school",
+        "preschool",
+    ),
+    Sector.FINANCE: (
+        "fintech",
+        "insurtech",
+        "payment",
+        "lending",
+        "loan",
+        _CREDIT,
+        "insurance",
+        "banking",
+    ),
+    Sector.RETAIL: (
+        "retail",
+        "ecommerce",
+        "marketplace",
+        "shop",
+        "shopping",
+        "shopkeeper",
+        "store",
+        "storefront",
+        "d2c",
+        "wholesale",
+    ),
 }
 
-_FORM_CUES: dict[ProductForm, tuple[str, ...]] = {
-    ProductForm.SOFTWARE: ("app", "software", "platform", "portal", "website", "saas"),
-    ProductForm.PHYSICAL: ("manufactur", "product", "machine", "device", "unit", "factory"),
-    ProductForm.SERVICE: ("service", "consult", "training", "repair", "delivery", "agency"),
+_FORM_CUES: dict[ProductForm, tuple[str | re.Pattern[str], ...]] = {
+    ProductForm.SOFTWARE: (
+        "app",
+        "application",
+        "software",
+        "platform",
+        "portal",
+        "website",
+        "saas",
+    ),
+    ProductForm.PHYSICAL: (
+        "manufactur*",
+        "product",
+        "production",
+        "machine",
+        "machinery",
+        "device",
+        "unit",
+        "factory",
+    ),
+    ProductForm.SERVICE: (
+        "service",
+        "servicing",
+        "consult*",
+        "training",
+        "repair",
+        "delivery",
+        "agency",
+    ),
 }
 
-_ROUTE_CUES: dict[FundingRoute, tuple[str, ...]] = {
-    FundingRoute.SELF: ("own money", "self fund", "savings", "bootstrap", "own funds"),
-    FundingRoute.DEBT: ("loan", "bank finance", "credit", "mudra", "borrow"),
+_ROUTE_CUES: dict[FundingRoute, tuple[str | re.Pattern[str], ...]] = {
+    FundingRoute.SELF: ("own money", "self fund*", "savings", "bootstrap*", "own funds"),
+    FundingRoute.DEBT: ("loan", "bank finance", _CREDIT, "mudra", "borrow*"),
     FundingRoute.EQUITY: ("investor", "equity", "vc", "angel", "funding round"),
-    FundingRoute.GRANT: ("grant", "subsidy", "scheme money", "seed fund"),
+    FundingRoute.GRANT: ("grant", "subsidy", "scheme money", "seed fund", "seed funded"),
 }
 
 # Stage evidence is split by KIND, because the two are not equally reliable.
@@ -96,8 +213,8 @@ _ROUTE_CUES: dict[FundingRoute, tuple[str, ...]] = {
 #
 # Intent therefore scores 0.55 — deliberately BELOW TAU_FILL (0.60) — so it
 # becomes a confirmation question instead of a silent assumption.
-_STAGE_STATE: dict[str, tuple[str, ...]] = {
-    "revenue": (
+_STAGE_STATE: dict[Stage, tuple[str, ...]] = {
+    Stage.REVENUE: (
         "already selling",
         "have customers",
         "making sales",
@@ -105,25 +222,25 @@ _STAGE_STATE: dict[str, tuple[str, ...]] = {
         "orders coming",
         "we sell",
     ),
-    "growth": ("growing", "scaling up", "expanding", "second unit"),
-    "mvp": ("mvp", "pilot running", "first version", "in beta", "beta version"),
-    "prototype": (
+    Stage.GROWTH: ("growing", "scaling up", "expanding", "second unit"),
+    Stage.MVP: ("mvp", "pilot running", "first version", "in beta", "beta version"),
+    Stage.PROTOTYPE: (
         "have a prototype",
         "built a prototype",
         "prototype is",
         "sample ready",
         "trial unit",
     ),
-    "poc": ("proof of concept", "tested the idea", "validated the idea"),
-    "idea": ("just an idea", "only an idea", "idea stage", "nothing built"),
+    Stage.POC: ("proof of concept", "tested the idea", "validated the idea"),
+    Stage.IDEA: ("just an idea", "only an idea", "idea stage", "nothing built"),
 }
 
 # Founders describe what they have: "we have a working prototype", "built a
 # basic sample". Fixed phrases miss the adjective, so allow up to two words
 # between the article and the thing — but only after a have/built verb, so
 # "want to build a working prototype" stays intent.
-_STAGE_STATE_PATTERNS: dict[str, re.Pattern[str]] = {
-    "prototype": re.compile(
+_STAGE_STATE_PATTERNS: dict[Stage, re.Pattern[str]] = {
+    Stage.PROTOTYPE: re.compile(
         r"\b(?:have|has|had|built|made|developed|got)\s+(?:a|an|one|our|the)\s+"
         r"(?:[a-z-]+\s+){0,2}(?:prototype|sample|trial unit|working model)\b"
     ),
@@ -138,6 +255,21 @@ _STAGE_INTENT: tuple[str, ...] = (
     "plan to start",
     "going to start",
 )
+
+
+def _compiled(cues: dict) -> dict:
+    return {value: compile_cues(needles) for value, needles in cues.items()}
+
+
+_SECTOR_PATTERNS = _compiled(_SECTOR_CUES)
+_FORM_PATTERNS = _compiled(_FORM_CUES)
+_ROUTE_PATTERNS = _compiled(_ROUTE_CUES)
+_STAGE_STATE_COMPILED = {
+    stage: compile_cues(needles)
+    + ((_STAGE_STATE_PATTERNS[stage],) if stage in _STAGE_STATE_PATTERNS else ())
+    for stage, needles in _STAGE_STATE.items()
+}
+_STAGE_INTENT_PATTERNS = compile_cues(_STAGE_INTENT)
 
 # "5 lakh", "₹2,00,000", "10L", "1.5 crore"
 _MONEY = re.compile(
@@ -185,9 +317,9 @@ def _band(rupees: float) -> CapitalBand:
     return CapitalBand.ABOVE_2_5CR
 
 
-def _first_cue(low: str, cues: dict) -> object | None:
-    for value, needles in cues.items():
-        if any(n in low for n in needles):
+def _first_cue(low: str, patterns: dict) -> object | None:
+    for value, compiled in patterns.items():
+        if matches(low, compiled):
             return value
     return None
 
@@ -199,22 +331,21 @@ def extract(text: str) -> list[Extraction]:
     low = f" {text.lower()} "
     out: list[Extraction] = []
 
-    if (sec := _first_cue(low, _SECTOR_CUES)) is not None:
+    if (sec := _first_cue(low, _SECTOR_PATTERNS)) is not None:
         out.append(Extraction("sector", sec, 0.90))
-    if (form := _first_cue(low, _FORM_CUES)) is not None:
+    if (form := _first_cue(low, _FORM_PATTERNS)) is not None:
         out.append(Extraction("product_form", form, 0.70))
-    if (route := _first_cue(low, _ROUTE_CUES)) is not None:
+    if (route := _first_cue(low, _ROUTE_PATTERNS)) is not None:
         out.append(Extraction("funding_route", route, 0.85))
     # State evidence wins outright; intent only ever produces a low-confidence
     # hint that the stopping rule will turn into a confirmation question.
-    for stage, needles in _STAGE_STATE.items():
-        pattern = _STAGE_STATE_PATTERNS.get(stage)
-        if any(n in low for n in needles) or (pattern is not None and pattern.search(low)):
-            out.append(Extraction("stage", stage, 0.85))
+    for stage, compiled in _STAGE_STATE_COMPILED.items():
+        if matches(low, compiled):
+            out.append(Extraction("stage", stage.value, 0.85))
             break
     else:
-        if any(n in low for n in _STAGE_INTENT):
-            out.append(Extraction("stage", "idea", 0.55))
+        if matches(low, _STAGE_INTENT_PATTERNS):
+            out.append(Extraction("stage", Stage.IDEA.value, 0.55))
 
     # Capital: only trust a figure that actually carries a unit, otherwise
     # "I have 3 employees" becomes a ₹3 budget.
