@@ -194,3 +194,85 @@ async def test_agent_session_lifecycle(client: AsyncClient, monkeypatch):
         assert bad.status_code == 422
     finally:
         store.set_store(None)
+
+
+# What agentClient.profileForConversation sends for a real browser profile draft
+# (frontend/src/completeness.ts): founder.district, startup.stage and
+# startup.domain, nothing else. The draft also holds caste category, phone and
+# date of birth; those stay in the browser.
+_DRAFT = {
+    "founder": {
+        "name": "Kavya",
+        "district": "Erode",
+        "phone": "9000000000",
+        "date_of_birth": "1998-04-02",
+        "caste_category": "BC",
+    },
+    "startup": {"startup_name": "Nool", "domain": "Textiles", "stage": "prototype"},
+    "docsVerified": False,
+}
+_PROJECTED = {
+    "district": _DRAFT["founder"]["district"],
+    "stage": _DRAFT["startup"]["stage"],
+    "sector": _DRAFT["startup"]["domain"],
+}
+
+
+async def test_agent_profile_field_is_never_asked(client: AsyncClient, monkeypatch):
+    """1.1.1.2: a fact the profile holds is filled at start and never asked."""
+    from app.agents import store
+    from app.core.config import get_settings
+    from app.research import novelty
+    from app.research import scan as research
+
+    real_scan, real_novelty = research.scan, novelty.check
+
+    async def private_scan(text, *, elements=None, queries=None, client=None, private=False):
+        return await real_scan(text, client=client, private=True)
+
+    async def private_novelty(idea, **kw):
+        return await real_novelty(idea, **{**kw, "private": True})
+
+    monkeypatch.setattr(get_settings(), "anthropic_api_key", "")
+    monkeypatch.setattr(research, "scan", private_scan)
+    monkeypatch.setattr(novelty, "check", private_novelty)
+    store.set_store(store.MemoryStore())
+    try:
+        r = await client.post(
+            "/api/v1/ideation/agent/sessions", json={"name": "Kavya", "profile": _PROJECTED}
+        )
+        assert r.status_code == 200
+        base = f"/api/v1/ideation/agent/sessions/{r.json()['session_id']}"
+        known = (await client.get(base)).json()["known"]
+        assert known["district"] == "erode"
+        assert known["stage"] == "prototype"
+        assert known["sector"] == "textile"
+
+        asked: list[str] = []
+        text = "I want to make naturally dyed cotton sarees for buyers in other states"
+        for _ in range(8):
+            act = (await client.post(f"{base}/turns", json={"text": text})).json()["action"]
+            if act["kind"] != "ask":
+                break
+            asked.append(act["slot"])
+            text = "yes"
+        assert asked, "the conversation asked nothing, so the test proved nothing"
+        assert not {"district", "stage", "sector"} & set(asked)
+    finally:
+        store.set_store(None)
+
+
+async def test_agent_profile_rejects_unprojected_or_oversized_values(client: AsyncClient):
+    """R019/R081: only allowlisted, bounded keys enter; the raw draft is refused."""
+    url = "/api/v1/ideation/agent/sessions"
+    bad = [
+        _DRAFT,  # the nested draft itself: the client forgot to project it
+        {**_PROJECTED, "caste_category": "BC"},  # a protected field
+        {"stage": "prototype phase two"},  # not a Stage
+        {"founder_years": -999},  # outside the slot's bounds
+        {"founder_skills": ["x" * 200_000]},  # oversized
+        {"district": {"$ne": 1}},  # not text
+    ]
+    for profile in bad:
+        r = await client.post(url, json={"profile": profile})
+        assert r.status_code == 422, profile
