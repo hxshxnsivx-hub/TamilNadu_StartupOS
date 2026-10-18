@@ -10,6 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from app.core.stages import Stage, parse_stage
+
 WEIGHTS = {
     "team": 0.20,
     "product": 0.20,
@@ -19,7 +21,16 @@ WEIGHTS = {
     "legal": 0.10,
 }
 
-_STAGE_SCORE = {"idea": 10, "poc": 20, "prototype": 25, "mvp": 35, "launched": 45, "scaling": 50}
+# Every Stage has a score (tests/unit/test_stages.py); a word that is not a stage scores 0.
+STAGE_SCORE: dict[Stage, int] = {
+    Stage.IDEA: 10,
+    Stage.POC: 20,
+    Stage.PROTOTYPE: 25,
+    Stage.MVP: 35,
+    Stage.REVENUE: 45,
+    Stage.GROWTH: 50,
+    Stage.SCALE: 50,
+}
 
 
 def _clamp(v: float) -> int:
@@ -47,11 +58,14 @@ def _team(p: dict) -> int:
     )
 
 
+def _stage_score(p: dict) -> int:
+    stage = parse_stage(p.get("stage"))
+    return STAGE_SCORE[stage] if stage else 0
+
+
 def _product(p: dict) -> int:
     return _clamp(
-        _STAGE_SCORE.get(str(p.get("stage", "")), 0)
-        + _num(p, "feature_completeness") * 0.25
-        + (25 if _flag(p, "has_ip") else 0)
+        _stage_score(p) + _num(p, "feature_completeness") * 0.25 + (25 if _flag(p, "has_ip") else 0)
     )
 
 
