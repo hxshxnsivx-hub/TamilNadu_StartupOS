@@ -11,14 +11,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from app.core.stages import Stage, parse_stage
 from app.funding.investors import ALL_SECTORS, Investor, real_investors
 
-_LATE_STAGES = {"series_a", "series_b", "series_c", "growth", "scale"}
+_LATE_STAGES = {Stage.GROWTH, Stage.SCALE}
 FIT_WEIGHTS = {"sector": 0.30, "stage": 0.25, "traction": 0.20, "geo": 0.15, "track": 0.10}
 
 
 def readiness_gate(stage: str) -> int:
-    return 70 if stage in _LATE_STAGES else 60
+    return 70 if parse_stage(stage) in _LATE_STAGES else 60
 
 
 @dataclass
@@ -42,7 +43,8 @@ class InvestorMatchResult:
 
 def _violations(inv: Investor, s: dict, funding_need: int, readiness: int) -> list[str]:
     sector = s.get("sector")
-    stage = s.get("stage")
+    found = parse_stage(s.get("stage"))
+    stage = found.value if found else s.get("stage")
     users = float(s.get("users", 0) or 0)
     revenue = float(s.get("monthly_revenue", 0) or 0)
     # geography is a soft ranking factor (see _fit), not a hard constraint
