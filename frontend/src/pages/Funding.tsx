@@ -21,8 +21,8 @@ import {
   Waiting,
   bandOf,
 } from "../design/atelier";
+import { STAGES as STAGE } from "../lib/stages";
 
-const STAGE = ["idea", "poc", "prototype", "mvp", "revenue", "growth", "scale"];
 
 const TONE: Record<string, string> = {
   high: "var(--oxide-green)",
