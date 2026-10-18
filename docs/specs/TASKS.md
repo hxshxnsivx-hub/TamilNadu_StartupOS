@@ -103,15 +103,15 @@ licences and risks (S8), streamed fact-checked replies, private sessions, the jo
 
 ### 1.1 Turn loop and questions
 
-#### 1.1.1 `[ ]` Send the founder's profile into the conversation
+#### 1.1.1 `[x]` Send the founder's profile into the conversation
 - **Why:** the Talk page asks for facts the profile already holds, wasting the 7-question budget.
 - **Where:** `frontend/src/voice/agentClient.ts` (`startSession`), `Talk.tsx`; backend already accepts `profile`.
 - **How:** pass the profile store's fields as `profile` when the session starts.
 - **When:** now; at session start.
 - **What for:** "never ask twice" (SYSTEM-DESIGN §3.2; IDEATION S0).
-- `1.1.1.1` Send `profile` from `startSession`.
-- `1.1.1.2` API test: a profile field is never asked.
-- `1.1.1.3` `[ ]` [R019](arena/details-p1.md#r019) (weight 84) Session-start profile values enter unvalidated at 0.95 confidence. Fix: Typed Pydantic ProfileIn + answers.validate per slot.
+- `1.1.1.1` `[x]` Send `profile` from `startSession` (an allowlisted projection: founder.district, startup.stage, startup.domain as sector; R081's minimal form, ahead of 3.1.5).
+- `1.1.1.2` `[x]` API test: a profile field is never asked.
+- `1.1.1.3` `[x]` [R019](arena/details-p1.md#r019) (weight 84) Session-start profile values enter unvalidated at 0.95 confidence. Fix: Typed Pydantic ProfileIn + answers.validate per slot.
 
 #### 1.1.2 `[ ]` Confirmation that shows where each fact came from, and corrections that stick
 - **Why:** at S7 the founder cannot see what was assumed, and saying "no" only re-opens questioning.
