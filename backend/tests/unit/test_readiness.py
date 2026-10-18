@@ -8,7 +8,7 @@ STRONG = {
     "team_size": 4,
     "has_domain_expertise": True,
     "advisors_count": 3,
-    "stage": "launched",
+    "stage": "revenue",
     "feature_completeness": 90,
     "has_ip": True,
     "users": 2000,
