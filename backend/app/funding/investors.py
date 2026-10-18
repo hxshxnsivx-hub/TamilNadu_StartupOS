@@ -15,6 +15,8 @@ import json
 from dataclasses import dataclass, field
 from functools import lru_cache
 
+from app.core.stages import stages_funded_by
+
 
 @dataclass
 class Investor:
@@ -23,7 +25,7 @@ class Investor:
     type: str  # angel | micro_vc | vc | corporate
     min_ticket: int  # ₹
     max_ticket: int  # ₹
-    stages: list[str]
+    stages: list[str]  # founder stages (app.core.stages.Stage values) it funds
     sectors: list[str]
     geographies: list[str]
     min_users: int = 0
@@ -46,7 +48,7 @@ SEED_INVESTORS: list[Investor] = [
         "angel",
         500_000,
         3_000_000,
-        ["idea", "poc", "prototype", "mvp", "seed"],
+        ["idea", "poc", "prototype", "mvp"],
         ["agritech", "foodtech"],
         ["Tamil Nadu"],
         availability="actively_investing",
@@ -59,7 +61,7 @@ SEED_INVESTORS: list[Investor] = [
         "micro_vc",
         2_000_000,
         15_000_000,
-        ["mvp", "seed"],
+        ["mvp", "revenue"],
         ["agritech", "cleantech", "healthtech"],
         ["Tamil Nadu", "Karnataka"],
         min_users=500,
@@ -74,7 +76,7 @@ SEED_INVESTORS: list[Investor] = [
         "vc",
         20_000_000,
         100_000_000,
-        ["series_a", "growth"],
+        ["growth", "scale"],
         ["fintech", "saas"],
         ["India"],
         min_users=10_000,
@@ -102,7 +104,7 @@ SEED_INVESTORS: list[Investor] = [
         "corporate",
         5_000_000,
         40_000_000,
-        ["mvp", "seed", "series_a"],
+        ["mvp", "revenue", "growth"],
         ["agritech"],
         ["India"],
         min_users=1_000,
@@ -117,7 +119,7 @@ SEED_INVESTORS: list[Investor] = [
         "vc",
         1_000_000,
         20_000_000,
-        ["mvp", "seed"],
+        ["mvp", "revenue"],
         ["agritech", "saas"],
         ["India"],
         availability="not_investing",
@@ -127,14 +129,6 @@ SEED_INVESTORS: list[Investor] = [
 ]
 
 
-# The source's stage words -> the funding module's stages.
-_STAGES = {
-    "pre_seed": ["idea", "poc", "prototype"],
-    "seed": ["prototype", "mvp", "seed"],
-    "pre_series_a": ["seed"],
-    "early": ["seed", "series_a"],
-    "growth": ["series_a", "series_b", "series_c", "growth", "scale"],
-}
 _TYPE = {"venture": "vc", "angel": "angel", "growth": "vc", "private_credit": "lender"}
 ALL_SECTORS = "__all__"
 
@@ -148,7 +142,8 @@ def real_investors() -> tuple[Investor, ...]:
     rows = json.loads(DATA.read_text(encoding="utf8")).get("investors", [])
     out = []
     for r in rows:
-        stages = sorted({s for st in r.get("stages") or [] for s in _STAGES.get(st, [])})
+        # the source publishes rounds; the matcher compares founder stages
+        stages = stages_funded_by(r.get("stages") or [])
         ticket = r.get("ticket_lakh")
         lo, hi = (int(ticket[0] * 100_000), int(ticket[1] * 100_000)) if ticket else (0, 0)
         reason = ""
