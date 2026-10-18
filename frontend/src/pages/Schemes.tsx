@@ -19,10 +19,10 @@ import {
   Waiting,
   bandOf,
 } from "../design/atelier";
+import { STAGES as STAGE } from "../lib/stages";
 
 const GENDER = ["", "male", "female", "non_binary"];
 const CASTE = ["", "general", "obc", "sc", "st", "ews"];
-const STAGE = ["idea", "poc", "prototype", "mvp", "revenue", "growth", "scale"];
 const ENTITY = ["private_limited", "llp", "opc", "partnership", "sole_proprietor"];
 
 /* Which pigment carries each tier of government. Two chromatics on any one
