@@ -25,6 +25,7 @@ import hashlib
 from dataclasses import dataclass
 from typing import Any, Literal
 
+from app.core.stages import parse_stage
 from app.elicitation.answers import validate
 from app.elicitation.extract import extract
 from app.elicitation.selector import Q_MAX, is_objective_clear, next_question
@@ -55,8 +56,17 @@ class Action:
 # Slots we will happily accept from a founder profile at high confidence, so
 # the selector never asks for something the user already told us. Re-asking a
 # founder for their district after they filled in a profile is the single most
-# corrosive thing this feature could do.
-PROFILE_SLOTS = ("district", "founder_years", "founder_skills", "owned_assets", "sector")
+# corrosive thing this feature could do. Because they are never asked again,
+# each value passes the same slot rules as a spoken answer first (R019); one
+# that fits no slot is left for the conversation to ask.
+PROFILE_SLOTS = (
+    "district",
+    "founder_years",
+    "founder_skills",
+    "owned_assets",
+    "sector",
+    "stage",
+)
 
 # Readable labels for enum values. Internal codes like "10L_50L" and
 # "it_services" are storage identifiers, not something to show a founder — and
@@ -116,10 +126,23 @@ def start(
     """Open a session, pre-filling anything the profile already knows."""
     s = ElicitationSession(user_id=user_id, mode=mode)
     for key in PROFILE_SLOTS:
-        if profile and profile.get(key) not in (None, "", [], {}):
-            s.put(key, profile[key], 0.95, Source.PROFILE)
+        value = _from_profile(key, (profile or {}).get(key))
+        if value is not None:
+            s.put(key, value, 0.95, Source.PROFILE)
     s.state = SessionState.ELICITING
     return s
+
+
+def _from_profile(key: str, raw: Any) -> Any | None:
+    """The typed slot value for a profile field, or None when it fits no slot."""
+    if key == "stage":  # the profile picks from the shared list (app/core/stages.py)
+        stage = parse_stage(raw)
+        return stage.value if stage else None
+    if isinstance(raw, list) and all(isinstance(x, str) for x in raw):
+        raw = ", ".join(raw)
+    if isinstance(raw, bool) or not isinstance(raw, (str, int)):
+        return None
+    return validate(key, str(raw))
 
 
 def observe(session: ElicitationSession, text: str, *, answering: str | None = None) -> None:
