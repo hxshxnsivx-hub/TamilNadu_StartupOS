@@ -22,12 +22,13 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
+from app.core.stages import ORDER
 from app.planner.packs import Template
 from app.schemes.rules import Combinator, Rule, RuleGroup, evaluate
 from app.swarms.roadmap.milestones import critical_path, topological_order
 from app.swarms.roadmap.models import Milestone, Phase, Timeline
 
-STAGES = ["idea", "poc", "prototype", "mvp", "revenue", "growth", "scale"]
+STAGES = [s.value for s in ORDER]
 PHASES = [p.value for p in Phase]
 MIN_MILESTONES, MAX_MILESTONES = 5, 15
 K_DOMAIN = {"food": 1.10, "health": 1.25, "electronics": 1.20, "manufacturing": 1.15}
