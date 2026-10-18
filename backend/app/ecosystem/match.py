@@ -30,6 +30,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from app.banking.branches import haversine_km
+from app.core.stages import ROUND_FITS
 from app.ecosystem.incubators import match_incubators
 from app.ecosystem.index import Ecosystem
 from app.ecosystem.taxonomy import SECTORS
@@ -39,15 +40,8 @@ SIGNALS = Path(__file__).parent / "data" / "investor_signals.json"
 CATALOGUE = Path(__file__).parents[1] / "schemes" / "data" / "funding_catalogue.json"
 
 WEIGHTS = {"sector": 0.35, "stage": 0.25, "ticket": 0.15, "reachable": 0.15, "nearness": 0.10}
-# Investor stages that can fund a founder at each stage.
-STAGE_OK = {
-    "idea": {"pre_seed", "seed"},
-    "pre_seed": {"pre_seed", "seed"},
-    "seed": {"pre_seed", "seed", "early"},
-    "pre_series_a": {"seed", "pre_series_a", "early"},
-    "series_a": {"series_a", "early"},
-    "growth": {"growth"},
-}
+# Investor stages that can fund a founder raising each round (one shared table).
+STAGE_OK = ROUND_FITS
 TICKET_STRETCH = 1.5  # an ask up to 1.5× the stated cheque range still counts, at half weight
 CITY = {"chennai": "chennai", "coimbatore": "coimbatore", "madurai": "madurai"}
 STAGE_LABEL = {
