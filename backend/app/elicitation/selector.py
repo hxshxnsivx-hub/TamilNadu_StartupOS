@@ -186,6 +186,12 @@ def select_next(
 # ---------------------------------------------------------------- stopping
 
 
+def question_budget(session: ElicitationSession) -> int:
+    """Turns allowed before the restatement: Q_MAX plus the turns given back
+    (replies to the restatement, and one question per correction)."""
+    return Q_MAX + session.refunds
+
+
 def is_objective_clear(session: ElicitationSession) -> StopDecision:
     """Is the objective specified well enough to generate a roadmap?
 
@@ -196,7 +202,7 @@ def is_objective_clear(session: ElicitationSession) -> StopDecision:
     fingers_ok = session.fingers >= _fingers_with_required(session)
 
     if unfilled or not fingers_ok:
-        if session.turn_no >= Q_MAX:
+        if session.turn_no >= question_budget(session):
             # Do NOT pretend this is clear. Proceed to confirmation with the
             # gaps named, and let the roadmap widen its pessimistic estimates.
             # Failing loudly-but-usefully beats silently guessing for a user
@@ -206,7 +212,7 @@ def is_objective_clear(session: ElicitationSession) -> StopDecision:
 
     plan = select_next(session)
     best = question_value(plan.head, session) if plan.head else 0
-    if best >= TAU_GAIN and session.turn_no < Q_MAX:
+    if best >= TAU_GAIN and session.turn_no < question_budget(session):
         return StopDecision(False, "enrichment_available")
     return StopDecision(True, "clear")
 
@@ -240,6 +246,7 @@ __all__ = [
     "candidates",
     "is_objective_clear",
     "next_question",
+    "question_budget",
     "question_value",
     "select_next",
 ]
