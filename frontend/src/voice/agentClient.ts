@@ -5,6 +5,9 @@
  * events are meant for speech; each has already passed the fact check.
  */
 
+import type { ProfileDraft } from "../completeness";
+import { STAGES, type Stage } from "../lib/stages";
+
 const BASE = "/api/v1/ideation/agent/sessions";
 
 export interface Action {
@@ -96,11 +99,38 @@ async function json<T>(res: Response): Promise<T> {
   return body as T;
 }
 
-export function startSession(name: string, isPrivate: boolean): Promise<StartResult> {
+/** The profile facts the conversation may use: backend ProfileIn, which
+ * refuses any other key. The conversation never asks for these again. */
+export interface ConversationProfile {
+  district?: string;
+  stage?: Stage;
+  sector?: string; // the startup's domain, in the founder's words
+}
+
+/** The allowlisted projection of the browser profile (R081). Only these
+ * fields leave the browser; caste category, phone, date of birth and the rest
+ * stay, since the conversation has no purpose for them. */
+export function profileForConversation(p: ProfileDraft): ConversationProfile {
+  const out: ConversationProfile = {};
+  const district = p.founder.district?.trim();
+  if (district) out.district = district.slice(0, 80);
+  const stage = p.startup.stage;
+  if (stage && (STAGES as readonly string[]).includes(stage)) out.stage = stage as Stage;
+  const domain = p.startup.domain?.trim();
+  if (domain) out.sector = domain.slice(0, 120);
+  return out;
+}
+
+export function startSession(
+  name: string,
+  isPrivate: boolean,
+  profile?: ConversationProfile,
+): Promise<StartResult> {
+  const known = profile && Object.keys(profile).length ? profile : null;
   return fetch(BASE, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: name || null, private: isPrivate }),
+    body: JSON.stringify({ name: name || null, private: isPrivate, profile: known }),
   }).then((r) => json<StartResult>(r));
 }
 
