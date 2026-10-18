@@ -52,8 +52,6 @@ from app.voice.phrasebook import translation
 log = get_logger("ideation_agent")
 
 MAX_TOOL_ROUNDS = 4
-YES = {"yes", "yeah", "yep", "correct", "right", "ok", "okay", "sure", "seri", "aamaa", "aama"}
-NO = {"no", "nope", "wrong", "illai", "not"}
 # What counts as "the same idea": a change here is a new idea version.
 CORE_SLOTS = ("problem", "solution", "product_form", "sector", "beneficiary")
 # The founder asking for a judgement: worth convening the panel inside the turn.
@@ -690,7 +688,7 @@ async def _offline_stream(
             s.roadmap = state["roadmap"]
             out["tools"].append("build_roadmap")
         question = _roadmap_line(s.roadmap)
-    if lead is None and fresh is None and action.kind == "ask":
+    if lead is None and fresh is None and action.kind == "ask" and action.slot:
         lead = _next_novelty_point(s)
     reply = _fallback_reply(fresh, question, lead)  # templated from the session: no fact check
     s.messages.append({"role": "assistant", "content": reply})
@@ -844,14 +842,10 @@ async def _reword_one(
 
 
 def _advance(s: AgentSession, text: str) -> engine.Action:
-    """Fold the words into the elicitation engine; a yes/no answers a restatement."""
+    """Fold the words into the elicitation engine; a reply to the restatement is
+    read for corrections first, then for its yes or no (engine.reply)."""
     if s.elicitation.state is SessionState.CONFIRMING:
-        words = set(re.findall(r"[a-z]+", text.lower()))
-        if words & NO and not words & YES:
-            engine.observe(s.elicitation, text)
-            return engine.confirm(s.elicitation, False)
-        if words & YES:
-            return engine.confirm(s.elicitation, True)
+        return engine.reply(s.elicitation, text)
     if s.elicitation.state is SessionState.GENERATING:
         return engine.Action(kind="generate", objective=s.elicitation.objective, progress=1.0)
     if s.pending_slot and SKIP.match(text):
