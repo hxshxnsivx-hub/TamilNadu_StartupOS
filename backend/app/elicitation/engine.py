@@ -22,19 +22,35 @@ without a database.
 from __future__ import annotations
 
 import hashlib
+import re
 from dataclasses import dataclass
 from typing import Any, Literal
 
 from app.core.stages import parse_stage
 from app.elicitation.answers import validate
+from app.elicitation.confirmation import (
+    after_cue,
+    anchored,
+    corrections,
+    has_cue,
+    named,
+    named_values,
+    polarity,
+)
 from app.elicitation.extract import extract
-from app.elicitation.selector import Q_MAX, is_objective_clear, next_question
+from app.elicitation.selector import (
+    Q_MAX,
+    is_objective_clear,
+    next_question,
+    question_budget,
+)
 from app.elicitation.session import (
+    FOUNDER_GIVEN,
     ElicitationSession,
     SessionState,
     Source,
 )
-from app.elicitation.slots import BY_KEY, EntryMode
+from app.elicitation.slots import BY_KEY, REQUIRED_BY_MODE, SLOTS, EntryMode
 
 ActionKind = Literal["ask", "confirm", "generate", "done"]
 
@@ -213,7 +229,9 @@ def step(session: ElicitationSession) -> Action:
 
     # 2. Then a question the review panel raised: it marks where the evidence and
     #    the advisers disagree most. It still counts toward the Q_MAX ceiling.
-    if (dyn := _pending_dynamic(session)) is not None and session.turn_no < Q_MAX:
+    if (dyn := _pending_dynamic(session)) is not None and session.turn_no < question_budget(
+        session
+    ):
         dyn["asked"] = True
         session.state = SessionState.AWAITING_ANSWER
         return Action(
@@ -275,11 +293,29 @@ def _word(v: Any) -> str:
     return HUMAN.get(str(raw), str(raw).replace("_", " ").title())
 
 
+WHAT_TO_CHANGE = (
+    "Which part should I change? Tell me the right fact, for example: the district is Salem."
+)
+
+
 def confirm(session: ElicitationSession, accepted: bool) -> Action:
-    """User accepts or rejects the restated objective."""
+    """User accepts or rejects the restated objective.
+
+    A rejection that names no correction asks what to change and stays at
+    confirmation, so the next reply is read as the correction (`reply`).
+    Re-opening questioning used to land straight back on the same restatement.
+    """
     if not accepted:
-        session.state = SessionState.ELICITING
-        return step(session)
+        session.state = SessionState.CONFIRMING
+        session.awaiting_correction = True
+        return Action(
+            kind="ask",
+            question=WHAT_TO_CHANGE,
+            objective=session.objective,
+            progress=session.progress(),
+            turn=session.turn_no,
+            reason="rejected: asking what to change",
+        )
     session.state = SessionState.GENERATING
     return Action(
         kind="generate",
@@ -288,6 +324,65 @@ def confirm(session: ElicitationSession, accepted: bool) -> Action:
         turn=session.turn_no,
         reason="confirmed",
     )
+
+
+def reply(session: ElicitationSession, text: str) -> Action:
+    """The founder's answer to the restatement (R005).
+
+    Always read for facts first, with negated phrases removed ("Salem not
+    Madurai" is Salem). A fact that differs from what was restated is a
+    correction when the reply is anchored as one: a no, the slot named ("the
+    district is Salem"), the fact standing alone right after a correction word
+    ("yes, but it's Salem"), or a reply that is mostly the fact. A correction
+    is stored as founder-given and locked, one question is given back, and the
+    objective is restated. After "which part should I change?" the whole next
+    reply counts as a correction. An unanchored fact is an aside ("yes, but my
+    wife works in a school"), merged like any extraction, so it never replaces
+    what the founder gave (R025): it is kept as a rival instead.
+
+    Only a reply that changed nothing is a plain yes or no, and a yes with a
+    correction word that changed nothing asks what to change.
+
+    The reply itself is not a question, so it never uses the budget.
+    """
+    whole = anchored(text) or session.awaiting_correction
+    session.awaiting_correction = False
+    names = named(text) | after_cue(text)
+    found = corrections(text) + named_values(text)
+    session.refunds += 1
+    session.learned = []
+    corrected, moved = [], False
+    for e in found:
+        value = getattr(e.value, "value", e.value)
+        if e.key in session.slots and value == _current(session, e.key):
+            continue
+        if whole or e.key in names:
+            session.put(e.key, e.value, 0.90, Source.ANSWER, correction=True)
+            corrected.append(e.key)
+        else:
+            before = session.slots.get(e.key)
+            session.put(e.key, e.value, e.confidence, Source.EXTRACTED)
+            moved = moved or session.slots.get(e.key) is not before
+    session.learned = corrected
+    session.record(user_text=text, asked=None)
+    if corrected:
+        session.refunds += 1  # a correction gives back one question (task 1.1.2.3)
+    if corrected or moved:
+        session.state = SessionState.ELICITING
+        return step(session)
+    said = polarity(text)
+    if said is True and not has_cue(text):
+        return confirm(session, True)
+    if said is not None:  # a no, or "yes, but ..." with nothing we could read
+        return confirm(session, False)
+    # Neither a yes, a no nor a fact: say the restatement again.
+    session.state = SessionState.ELICITING
+    return step(session)
+
+
+def _current(session: ElicitationSession, key: str) -> Any:
+    v = session.slots[key].value
+    return getattr(v, "value", v)
 
 
 DYN = "dyn:"
@@ -321,18 +416,153 @@ def skip(session: ElicitationSession, key: str) -> Action:
     return step(session)
 
 
+# How each source is named when a fact is said back (task 1.1.2.1). Anything not
+# founder-given was inferred: from free text, a document or a model's note.
+LABELS: tuple[tuple[str, frozenset[Source]], ...] = (
+    ("You told me", frozenset({Source.ANSWER})),
+    ("From your profile", frozenset({Source.PROFILE})),
+    ("I assumed", frozenset(Source) - FOUNDER_GIVEN),
+)
+
+# The facts said back under those labels: every slot that is not free text and
+# that the roadmap or the scheme match reads (R154), in slot-table order. The
+# free-text slots (problem, solution, beneficiary) are said in their own
+# sentences, in the founder's words.
+RESTATED = tuple(
+    s.key for s in SLOTS if s.kind != "text" and {"roadmap", "scheme"} & set(s.consumers)
+)
+
+# What a slot is called when it is named as a gap.
+NAMES: dict[str, str] = {
+    "product_form": "product type",
+    "capital_band": "budget",
+    "funding_route": "funding",
+}
+
+# What the plan uses when a required slot has no value (R051), so the founder
+# hears the real default rather than "safe defaults". Each matches
+# app/planner: stage falls to the first stage (roadmap.applicable), an empty
+# district counts as Tamil Nadu (plan.build_plan), sector and product form
+# come from the domain the idea's words match, and without a budget or route
+# the risks keep the domain's own levels (risks.adjusted_levels).
+ASSUMED: dict[str, str] = {
+    "problem": "the idea as you described it",
+    "solution": "the idea as you described it",
+    "beneficiary": "the usual buyers for this kind of business",
+    "sector": "the sector your idea's words point to",
+    "product_form": "the product type your idea's words point to",
+    "district": "a place in Tamil Nadu",
+    "stage": "you are starting from the idea stage",
+    "capital_band": "the usual budget for this kind of business",
+    "funding_route": "no particular way of funding it",
+}
+
+_REACH = {
+    "local": "selling locally",
+    "district": "selling across your district",
+    "state": "selling across Tamil Nadu",
+    "national": "selling across India",
+    "export": "selling abroad",
+}
+_HORIZON = {
+    "<6mo": "running within 6 months",
+    "6-12mo": "running within a year",
+    "1-2y": "running within 2 years",
+    ">2y": "running in more than 2 years",
+}
+
+# The founder's own sentence, said back short (task 1.1.2.2): eval transcripts
+# repeated the whole opening sentence as "the problem".
+_INTENT = re.compile(
+    r"^(?:i|we)\s+(?:want|plan|hope|would like|am planning|are planning|am going|are going)"
+    r"\s+to\s+",
+    re.I,
+)
+_PROBLEM_LEAD = re.compile(r"^(?:the\s+)?(?:problem|issue)\s+is\s+(?:that\s+)?", re.I)
+_CLAUSE = frozenset(
+    {"using", "because", "so", "which", "where", "while", "buying", "through", "since", "who"}
+)
+_TRAILING = frozenset(
+    {"with", "for", "in", "and", "of", "to", "a", "an", "the", "from", "on", "at", "made", "by"}
+)
+_SHORT_WORDS = 12
+_MIN_WORDS = 4  # a clause word this early is part of the subject, not a new clause
+
+
+def _short(text: Any) -> tuple[str, bool]:
+    """(the sentence said short, whether it was an intent: "I want to ...")."""
+    t = str(text).strip().rstrip(".")
+    intent = bool(_INTENT.match(t))
+    t = _INTENT.sub("", t) if intent else _PROBLEM_LEAD.sub("", t)
+    words: list[str] = []
+    for w in t.split():
+        if len(words) >= _MIN_WORDS and w.lower() in _CLAUSE:
+            break
+        words.append(w)
+        if len(words) >= _SHORT_WORDS or (len(words) >= _MIN_WORDS and w[-1] in ",;:"):
+            break
+    while len(words) > 1 and words[-1].lower().strip(",;:") in _TRAILING:
+        words.pop()
+    return " ".join(words).rstrip(",;:"), intent
+
+
+def _join(parts: list[str]) -> str:
+    return parts[0] if len(parts) == 1 else f"{', '.join(parts[:-1])} and {parts[-1]}"
+
+
+def _plain(v: Any) -> str:
+    """Human label. Never show a user an internal enum code."""
+    raw = getattr(v, "value", v) if v is not None else ""
+    return HUMAN.get(str(raw), str(raw).replace("_", " "))
+
+
+def _article(word: str) -> str:
+    return "an" if word[:1].lower() in "aeiou" else "a"
+
+
+def _count(v: Any) -> int | None:
+    try:
+        return int(getattr(v, "value", v))
+    except (TypeError, ValueError):
+        return None  # a model can note "about five"; it is said as written
+
+
+def _fact(key: str, v: Any) -> str:
+    """One restated fact, as a phrase that reads after any label."""
+    raw = str(getattr(v, "value", v))
+    phrases = {
+        "sector": lambda: f"{_article(_plain(v))} {_plain(v)} business",
+        "product_form": lambda: _plain(v),
+        "district": lambda: f"{_word(v)} district",
+        "stage": lambda: f"the {_plain(v)} stage",
+        "capital_band": lambda: f"about {_plain(v)} to invest",
+        "funding_route": lambda: f"funded by {_plain(v)}",
+        "geo_scope": lambda: _REACH.get(raw, f"{_article(_plain(v))} {_plain(v)} reach"),
+        "time_horizon": lambda: _HORIZON.get(raw, f"running in {raw}"),
+    }
+    if key in phrases:
+        return phrases[key]()
+    n = _count(v)
+    if key == "team_size":
+        return "working alone" if n == 1 else f"a team of {raw if n is None else n}"
+    if key == "founder_years":
+        return "1 year in this line" if n == 1 else f"{raw if n is None else n} years in this line"
+    listed = _join([str(x) for x in v]) if isinstance(v, list) and v else raw
+    if key == "owned_assets":
+        return f"you own {listed}"
+    if key == "founder_skills":
+        return f"skills in {listed}"
+    return f"{key.replace('_', ' ')} {_plain(v)}"
+
+
 def restate(session: ElicitationSession) -> str:
     """The objective, said back in plain language.
 
     This is the client's explicit requirement — restate what was understood and
-    ask for confirmation, rather than silently proceeding on inference.
+    ask for confirmation, rather than silently proceeding on inference. Each
+    fact says where it came from, and each gap says what will be assumed.
     """
-    g = lambda k: session.slots[k].value if k in session.slots else None  # noqa: E731
-
-    def word(v: Any) -> str:
-        """Human label. Never show a user an internal enum code."""
-        raw = getattr(v, "value", v) if v is not None else ""
-        return HUMAN.get(str(raw), str(raw).replace("_", " "))
+    g = lambda k: session.slots[k].value if k in session.filled else None  # noqa: E731
 
     problem, solution = g("problem"), g("solution")
     # The extractor can land the same span in both slots on a short utterance.
@@ -340,61 +570,75 @@ def restate(session: ElicitationSession) -> str:
     if solution and problem and str(solution).lower() in str(problem).lower():
         solution = None
 
-    district = word(g("district"))
-    problem_txt = str(problem or "")
-
-    # Don't repeat a place the founder already named in their own words.
-    say_district = bool(district) and district.lower() not in problem_txt.lower()
-
     sentences: list[str] = []
+    said = ""  # the founder's words said back, so a place named in them is not repeated
 
-    # 1 — the problem, with the beneficiary placed BEFORE the colon so the
-    # sentence does not trail a prepositional phrase off a complete clause.
+    # 1 — the problem, short. An intent ("I want to start a unit") is said back
+    # as one ("You want to start a unit"); a problem keeps its frame, with the
+    # beneficiary BEFORE the colon so the sentence does not trail off a clause.
+    b = g("beneficiary")
     if problem:
-        who = f" for {b}" if (b := g("beneficiary")) else ""
-        sentences.append(f"You want to solve a problem{who}: {problem_txt.rstrip('.')}")
+        short, intent = _short(problem)
+        said += short
+        if b and (short.lower() in str(b).lower() or str(b).lower() in short.lower()):
+            b = None  # the problem already names who it is for: say it once
+        if intent:
+            sentences.append(f"You want to {short}" + (f", for {b}" if b else ""))
+        else:
+            who = f" for {b}" if b else ""
+            sentences.append(f"You want to solve a problem{who}: {short}")
+    elif b:
+        sentences.append(f"It is for {b}")
 
     # 2 — the plan. "Your plan is start a unit" is ungrammatical; a bare
     # infinitive needs "to", which the extractor strips along with the cue.
     if solution:
-        plan = str(solution).strip()
+        plan, _ = _short(solution)
+        said += f" {plan}"
         if plan.split(" ", 1)[0].lower() in _BARE_INFINITIVES:
             plan = f"to {plan}"
-        desc = []
-        if sec := g("sector"):
-            desc.append(f"a {word(sec)} business")
-        if pf := g("product_form"):
-            desc.append(word(pf))
-        tail = f" — {', '.join(desc)}" if desc else ""
-        sentences.append(f"Your plan is {plan}{tail}")
+        sentences.append(f"Your plan is {plan}")
 
-    # 3 — where things stand.
-    third = []
-    if st := g("stage"):
-        where = f" in {district}" if say_district else ""
-        third.append(f"You are at the {word(st)} stage{where}")
-    elif say_district:
-        third.append(f"You would operate from {district}")
-    if c := g("capital_band"):
-        third.append(f"with about {word(c)} to invest")
-    if r := g("funding_route"):
-        third.append(f"funded by {word(r)}")
-    if third:
-        sentences.append(", ".join(third))
+    # 3 — the facts the plan runs on, grouped by where each came from.
+    for label, sources in LABELS:
+        facts = [
+            _fact(key, g(key))
+            for key in RESTATED
+            if g(key) is not None and session.slots[key].source in sources
+            # the founder already named the place in their own words
+            and not (key == "district" and _word(g(key)).lower() in said.lower())
+        ]
+        if facts:
+            sentences.append(f"{label}: {', '.join(facts)}")
 
     body = ". ".join(s.strip() for s in sentences if s.strip()) or (
         "an idea we have not pinned down yet"
     )
 
-    # Gaps are named, never hidden. A user who ran out of patience deserves to
-    # know what we assumed rather than to discover it in a wrong roadmap.
-    gaps = sorted(session.missing)
-    if gaps:
-        pretty = ", ".join(g.replace("_", " ") for g in gaps)
+    # Gaps are named, never hidden, each with what will be assumed instead. A
+    # user who ran out of patience deserves to know what we assumed rather
+    # than to discover it in a wrong roadmap. Skipped and dropped questions
+    # are named apart from the ones never asked (R051).
+    unfilled = REQUIRED_BY_MODE[session.mode] - session.filled
+    order = [s.key for s in SLOTS]
+    skipped = sorted(unfilled & session.skipped, key=order.index)
+    unknown = sorted(unfilled - session.skipped, key=order.index)
+    if skipped:
+        body += f". You skipped your {_gap_names(skipped)}; I will assume {_assumed(skipped)}"
+    if unknown:
         body += (
-            f". I still don't know your {pretty} — I'll use safe defaults and widen the estimates"
+            f". I still don't know your {_gap_names(unknown)}; I will assume"
+            f" {_assumed(unknown)}, and widen the estimates"
         )
     return body + "."
+
+
+def _gap_names(keys: list[str]) -> str:
+    return _join([NAMES.get(k, k.replace("_", " ")) for k in keys])
+
+
+def _assumed(keys: list[str]) -> str:
+    return _join(list(dict.fromkeys(ASSUMED.get(k, "a typical value") for k in keys)))
 
 
 __all__ = [
@@ -403,6 +647,7 @@ __all__ = [
     "add_dynamic",
     "confirm",
     "observe",
+    "reply",
     "restate",
     "skip",
     "start",
