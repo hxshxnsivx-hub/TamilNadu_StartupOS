@@ -9,16 +9,18 @@ from __future__ import annotations
 
 import asyncio
 import json
+from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Path, Query
 from fastapi.responses import Response, StreamingResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
 from app.agents import ideation as agent
 from app.agents import providers
 from app.agents.jobs import board
 from app.agents.store import VersionConflict, get_store
 from app.agents.tools import compact_scan, council_brief
+from app.core.stages import Stage
 from app.models.ideation_schemas import (
     CategoryOut,
     CompletenessIn,
@@ -245,10 +247,33 @@ async def scan_idea(body: ScanIn) -> dict:
     return await scan(body.text, elements=body.elements, queries=body.queries)
 
 
+_Item = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)]
+
+
+class ProfileIn(BaseModel):
+    """What the founder's profile already says, never asked again (R019, R081).
+
+    Only these keys: the browser projects its profile onto them
+    (frontend agentClient.profileForConversation), so caste category, phone
+    and date of birth never leave it. Sizes and types are bounded here; each
+    value then passes its slot's rules in engine.start, and one that fits no
+    slot (a district outside Tamil Nadu, a domain with no sector) is asked.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    district: str | None = Field(default=None, max_length=80)
+    # the profile's startup domain, free text the slot maps onto a Sector
+    sector: str | None = Field(default=None, max_length=120)
+    stage: Stage | None = None
+    founder_years: int | None = Field(default=None, ge=0, le=40)
+    founder_skills: list[_Item] | None = Field(default=None, max_length=10)
+    owned_assets: list[_Item] | None = Field(default=None, max_length=10)
+
+
 class AgentStartIn(BaseModel):
     name: str | None = Field(default=None, max_length=80)
-    # what the founder's profile already says (district, sector...), never asked again
-    profile: dict | None = None
+    profile: ProfileIn | None = None
     # search nothing outside Vanigam for this conversation
     private: bool = False
     # the founder agrees that their incubator or programme may see this session in
@@ -289,7 +314,7 @@ async def agent_start(body: AgentStartIn) -> dict:
     """Open an ideation conversation; the reply is the greeting."""
     s, greeting = agent.new_session(
         body.name,
-        body.profile,
+        body.profile.model_dump(exclude_none=True, mode="json") if body.profile else None,
         private=body.private,
         share_with_programme=body.share_with_programme,
     )
