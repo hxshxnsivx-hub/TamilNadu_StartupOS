@@ -7,7 +7,9 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 District = Literal["chennai", "coimbatore", "madurai"]
-Stage = Literal["idea", "pre_seed", "seed", "pre_series_a", "series_a", "growth"]
+# The round the founder is raising, in investors' published words: the keys of
+# app.core.stages.ROUND_FITS (tests/unit/test_stages.py keeps them equal).
+Round = Literal["idea", "pre_seed", "seed", "pre_series_a", "series_a", "growth"]
 
 
 class ZoneOut(BaseModel):
@@ -111,7 +113,7 @@ class PlatformOut(BaseModel):
 
 class FounderIn(BaseModel):
     sectors: list[str] = Field(min_length=1)
-    stage: Stage
+    stage: Round
     district: District
     pin: str | None = Field(default=None, pattern=r"^[1-9]\d{5}$")
     ask_lakh: float | None = Field(default=None, gt=0)
