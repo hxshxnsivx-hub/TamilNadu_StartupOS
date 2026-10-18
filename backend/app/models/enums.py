@@ -2,6 +2,8 @@
 
 from enum import Enum
 
+from app.core.stages import Stage
+
 
 class Gender(str, Enum):
     MALE = "male"
@@ -26,14 +28,8 @@ class EntityType(str, Enum):
     SOLE_PROPRIETOR = "sole_proprietor"
 
 
-class StartupStage(str, Enum):
-    IDEA = "idea"
-    POC = "poc"
-    PROTOTYPE = "prototype"
-    MVP = "mvp"
-    REVENUE = "revenue"
-    GROWTH = "growth"
-    SCALE = "scale"
+# The one stage vocabulary (app.core.stages); kept under this name for the models.
+StartupStage = Stage
 
 
 class VerificationStatus(str, Enum):
