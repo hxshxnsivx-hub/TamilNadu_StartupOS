@@ -13,9 +13,12 @@ the agent can cite what it says and admit what was not searched.
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
-from app.elicitation.session import ElicitationSession, Source
+from app.core.stages import Stage
+from app.elicitation.places import DISTRICTS
+from app.elicitation.session import ElicitationSession, Outcome, Source
 from app.elicitation.slots import BY_KEY, SLOTS
 from app.planner import registry
 from app.planner.plan import build_plan
@@ -23,6 +26,18 @@ from app.research import novelty
 from app.research import scan as research
 
 _FACT_KEYS = [s.key for s in SLOTS if not s.sensitive]
+
+# The values each typed fact takes (R007), named in the tool description so the
+# model is guided before it calls. The server still checks every value
+# (session.put): providers do not enforce schemas.
+_ALLOWED = {
+    s.key: [m.value for m in s.enum] for s in SLOTS if s.enum is not None and not s.sensitive
+}
+_ALLOWED["stage"] = [s.value for s in Stage]
+_TYPED_HINT = "; ".join(f"{k}: {', '.join(v)}" for k, v in _ALLOWED.items())
+_INT_HINT = ", ".join(
+    f"{s.key} ({s.bounds[0]}-{s.bounds[1]})" for s in SLOTS if s.kind == "int" and s.bounds
+)
 
 TOOLS: list[dict] = [
     {
@@ -130,8 +145,11 @@ TOOLS: list[dict] = [
     {
         "name": "note_fact",
         "description": (
-            "Record a fact the founder stated, so it is never asked again. Use the founder's"
-            " own words for text facts."
+            "Record a fact the founder stated, so it is never asked again. Text facts,"
+            " skills, assets and the district must be the founder's own words, or they are"
+            " rejected. Typed facts take one of these values: " + _TYPED_HINT + ". Whole"
+            " numbers: " + _INT_HINT + ". The reply says whether the fact was recorded,"
+            " kept the earlier value, or is disputed (then the founder is asked)."
         ),
         "input_schema": {
             "type": "object",
@@ -228,7 +246,7 @@ def _support_for(domain_id: str, district: str | None) -> dict:
 def _roadmap(
     idea: str, domain_id: str | None, session: ElicitationSession, council: dict | None = None
 ) -> dict:
-    slots = {k: getattr(v.value, "value", v.value) for k, v in session.slots.items()}
+    slots = session.kept()  # a disputed or unknown value is not planned on
     p = build_plan(idea, slots, domain=domain_id, council=council)
     costs, road = p.get("costs") or {}, p.get("roadmap") or {}
     return {
@@ -268,11 +286,72 @@ def council_brief(r: dict) -> dict:
     }
 
 
+# Tamil (U+0B80-U+0BFF) and Devanagari (U+0900-U+097F) letters.
+_INDIC = re.compile(r"[ऀ-ॿ஀-௿]")
+
+
+def _words(text: str) -> str:
+    return " ".join(re.findall(r"[\w']+", text.lower()))
+
+
+def _in_founder_words(key: str, value: Any, session: ElicitationSession) -> bool:
+    """Did the founder say it (task 1.1.3.2)? A model can note a fact the founder
+    never stated. Text, skills and assets must each be a span of something the
+    founder said (case and punctuation aside); a district must have been named.
+    Enum and number facts are not spans ('agri' is never said); session.put
+    checks their type instead (R007)."""
+    said = " ".join(t.user_text for t in session.turns if t.user_text)
+    slot = BY_KEY[key]
+    if key == "district":
+        names = DISTRICTS.get(str(value).strip().lower())
+        if names is None:  # a spelling put() will map to a district, or reject
+            return True
+        if _INDIC.search(said):
+            # The district list holds Latin spellings only; a founder speaking in
+            # Tamil or Hindi script names the place in words it cannot match, and
+            # the model's note is then the only way the district gets recorded.
+            return True
+        low = said.lower()
+        return any(
+            re.search(rf"(?<![a-z]){re.escape(n)}(?![a-z])", low)
+            for n in (str(value).strip().lower(), *names)
+        )
+    if slot.kind == "text":
+        spans = [value] if isinstance(value, str) else None
+    elif slot.kind == "multi":
+        spans = [value] if isinstance(value, str) else value
+    else:
+        return True
+    if not isinstance(spans, list) or not all(isinstance(x, str) for x in spans):
+        return True  # not text at all: put() rejects it
+    haystack = f" {_words(said)} "
+    return all(f" {_words(x)} " in haystack for x in spans if _words(x)) and any(
+        _words(x) for x in spans
+    )
+
+
 def _note_fact(key: str, value: Any, session: ElicitationSession) -> dict:
+    """Store a model's note through the same gate as every other source, and say
+    truthfully what happened (R053): recorded, kept the earlier value, disputed,
+    or rejected."""
     if key not in BY_KEY or BY_KEY[key].sensitive:
         return {"error": f"{key} is not a fact the agent may record"}
-    session.put(key, value, 0.8, Source.EXTRACTED)
-    return {"recorded": key}
+    if not _in_founder_words(key, value, session):
+        return {"rejected": key, "reason": "not in the founder's words; ask them instead"}
+    result = session.put(key, value, 0.8, Source.EXTRACTED)
+    current = result.current
+    shown = getattr(current.value, "value", current.value) if current else None
+    if result.outcome is Outcome.STORED:
+        return {"recorded": key}
+    if result.outcome is Outcome.REJECTED:
+        return {"rejected": key, "reason": f"not a valid {key.replace('_', ' ')}"}
+    if result.outcome is Outcome.CONFLICT:
+        return {
+            "disputed": key,
+            "note": "This disagrees with what the founder's words suggested; the founder"
+            " will be asked.",
+        }
+    return {"kept": key, "current": shown, "note": "The founder's earlier fact stands."}
 
 
 async def run_tool(name: str, args: dict, session: ElicitationSession, state: dict) -> dict:
