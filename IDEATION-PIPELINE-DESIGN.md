@@ -65,9 +65,16 @@ A turn is delivered as a stream of events so the voice can start before the repl
 | `tool` | a tool started or finished | screen status line |
 | `evidence` | the compact evidence or novelty map, when new | evidence panel |
 | `done` | full reply, next question, known facts, tools used | screen, logs |
-| `error` | what failed and what the founder can do | screen |
+| `error` | a `code` (`conflict`: changed elsewhere, reload; `failed`) and what failed | screen |
 
 Only `sentence` events are spoken, and only after the fact check (§3.2).
+
+On a weak connection (task 1.1.4): a turn is saved only when `done` is sent, so a stream that
+ends without `done` was not applied, and the screen sends it again with the same
+`client_turn_id`. The session keeps its last turn's ack, sentences and `done`; a retry of that
+turn replays them instead of running it twice. The snapshot carries the pending action (what
+the founder is being asked), results that finished while nobody listened, and after 30 minutes
+away a short preamble that repeats the pending question without spending the question budget.
 
 ---
 
