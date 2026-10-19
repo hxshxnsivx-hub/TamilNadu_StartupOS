@@ -27,8 +27,8 @@ background while the conversation continues.
 | # | Stage | What the founder experiences | Decided by | Lane | Module |
 |---|---|---|---|---|---|
 | S0 | Open | Greeted by name; profile facts are never asked | code | fast | `agents/ideation` |
-| S1 | Understand | Words become facts; a wrong-type answer is caught and routed | code | fast | `elicitation` |
-| S2 | Ask | One question per turn, at most seven, never a skipped one again | code picks, model words | fast | `elicitation/selector` |
+| S1 | Understand | Words become facts, each checked against its slot's type; a wrong-type answer is caught and routed; a correction said in passing sticks | code | fast | `elicitation` |
+| S2 | Ask | One question per turn, the what before anything else, at most seven questions (re-asks are free), never a skipped one again | code picks, model words | fast | `elicitation/selector` |
 | S3 | Evidence | "Let me look at what exists": papers, trials, projects, patents, local startups | code | slow | `research` |
 | S4 | Novelty check | Which parts exist, which are rare, which combinations are rare | code | slow | `research/novelty` (new) |
 | S5 | Add novelty | Two or three concrete ways to stand out, each tied to a gap | code proposes, council ranks | slow | `research/novelty`, council |
@@ -158,6 +158,25 @@ asked slot is offered to the extractor instead (so "Chennai" becomes the distric
 question stays open, and it is asked once more, acknowledging the fact just learned. After two
 misses the question is dropped for good. A direct, valid answer still always beats an earlier
 guess (unchanged rule).
+
+**Question order and fact safety (task 1.1.3).**
+- *Order.* Until the idea is known (problem or solution), only WHAT questions are asked, so
+  capital is never asked before what it is for. Then required slots, then the WHY finger (any of
+  why now, what is different, motivation; a pitch that already said why is not asked), then
+  enrichment, and enrichment only before the first restatement. The choice is greedy by value;
+  the CP-SAT solver runs only when a burden budget binds.
+- *Budget.* Seven questions, counted as questions: a re-ask, a request for a view and a reply to
+  the restatement do not use it; a correction gives one back.
+- *Three bands.* Known (0.60 and up) is a fact; confirm (0.50 to 0.60) is not asked but said
+  back as "I assumed"; below 0.50 is asked.
+- *Every value is typed.* Extractor, profile, answer and model note all pass the slot's type
+  check before they are stored; a value that fits no slot is rejected.
+- *Model notes.* A noted text fact, skill, asset or district must be in the founder's words.
+  The tool reply says truthfully whether the note was recorded, kept the earlier value, or is
+  disputed: two inferences that disagree drop below the confirm band, so the founder is asked.
+- *Negation and corrections.* "No customers yet" is not revenue; "Salem, not Erode" is Salem;
+  "I live in Salem but sell in Coimbatore" is Salem. "Sorry, actually ..." makes a changed fact
+  the founder's answer.
 
 ### 3.2 Fact check before speech (conversation engine)
 
