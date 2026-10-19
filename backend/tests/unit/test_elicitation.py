@@ -40,6 +40,11 @@ def _answer_for(slot: str) -> str:
         "funding_route": "debt",
         "problem": "weavers cannot reach buyers outside the district",
         "solution": "a shared dyeing and finishing unit",
+        "motivation": "income",
+        "geo_scope": "state",
+        "founder_years": "5",
+        "team_size": "3",
+        "time_horizon": "6-12mo",
     }.get(slot, "yes")
 
 
