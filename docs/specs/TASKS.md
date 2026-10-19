@@ -180,16 +180,16 @@ licences and risks (S8), streamed fact-checked replies, private sessions, the jo
 - `1.1.5.7` `[ ]` [R066](arena/details-p1.md#r066) (weight 78) No state between confirm and roadmap for choosing an opportunity card. Fix: Add a CHOOSING state with a choose action.
 - `1.1.5.8` `[ ]` [R089](arena/details-p1.md#r089) (weight 74) Experience questions are idea-worded and ask money before skills. Fix: Per-mode question text on Slot (question_by_mode).
 - `1.1.5.9` `[ ]` [R118](arena/details-p1.md#r118) (weight 71) Experience mode runs prior-art and novelty on the founder's self-description. Fix: Gate research on mode and on problem/solution being filled.
-- `1.1.5.10` `[ ]` [R121](arena/details-p1.md#r121) (weight 68) Entry-mode/subtype vocabularies mismatch with no contract onto server slots. Fix: Typed enums on AgentStartIn plus one mapping table (subtype to registered, entity and a stage floor; frontend mode to EntryMode with a domain pre-fill).
+- `1.1.5.10` `[x]` [R121](arena/details-p1.md#r121) (weight 68) Entry-mode/subtype vocabularies mismatch with no contract onto server slots. Fix: Typed enums on AgentStartIn plus one mapping table (subtype to registered, entity and a stage floor; frontend mode to EntryMode with a domain pre-fill). *Built with 1.1.6: `elicitation/entry.py`; the backend subtype now uses the browser's `registered_with_product`. `CONVERSATION_MODE` maps domain_only and intent_only to EXPERIENCE, but sessions keep running the idea conversation until 1.1.5.2 switches it on; the domain pre-fill is the profile's sector, already sent (1.1.1).*
 
-#### 1.1.6 `[ ]` Registered-startup subtype reaches the agent
-- **Why:** a registered founder (2A/2B/2C) is asked idea questions they have already answered; the subtype lives only in the browser.
+#### 1.1.6 `[x]` Registered-startup subtype reaches the agent
+- **Why:** a registered founder (2A/2B/2C) is asked idea questions they have already answered; the subtype lives only in the browser. Four values: `registered_with_product` (2A), `registered_no_product` (2B), `idea_worker_no_company` (2C), `unregistered`.
 - **Where:** `frontend/src/journeyStore.ts`, `journey/engine.py`, agent greeting.
 - **How:** send the subtype as facts at session start; the journey engine and greeting use it.
 - **When:** with 1.1.5.1.
 - **What for:** the right path per founder (August P-34.3-6).
-- `1.1.6.1` Send `reg_subtype` and entry mode at session start.
-- `1.1.6.2` Greeting and journey use them.
+- `1.1.6.1` `[x]` Send `reg_subtype` and entry mode at session start (typed on `AgentStartIn`, unknown keys refused; `agentClient.entryForConversation`).
+- `1.1.6.2` `[x]` Greeting and journey use them: the subtype sets the opening question, a stage floor said back as assumed (2A: MVP) and the model's known facts; `POST /journey` takes `reg_subtype` for registered and entity. The entry mode is stored and shown in the snapshot; the greeting by entry mode comes with the experience conversation (1.1.5.2). The Journey page cannot send the subtype until the shared storage key is fixed (3.1.5, R018).
 
 #### 1.1.7 `[x]` The founder can delete a conversation
 - **Why:** `DELETE /ideation/agent/sessions/{id}` exists, but the Talk page offers no way to call it.
@@ -381,6 +381,7 @@ licences and risks (S8), streamed fact-checked replies, private sessions, the jo
 - `1.4.4.2` `[ ]` [R046](arena/details-p1.md#r046) (weight 84) Planner puts 'Apply for seed grants' after pilot and customers; prototype grants come too late. Fix: Split c_grant into stage-specific funding milestones (c_seed_grant before prototype, c_growth_funding after pilot) and annotate schemes onto them by target stage.
 - `1.4.4.3` `[ ]` [R049](arena/details-p1.md#r049) (weight 84) Scheme annotation ignores live status; it places closed SISFS on milestones. Fix: Annotate from registry.schemes_for routes with catalogue status: closed excluded, between_calls shown as 'next call expected', revamping labelled.
 - `1.4.4.4` `[ ]` [R055](arena/details-p1.md#r055) (weight 80) 'I'll widen the estimates' is never true: roadmap confidence is fixed at 0.8. Fix: Confidence from slot coverage.
+- `1.4.4.5` `[ ]` The planner ignores the registered-startup subtype: a registered founder is greeted as registered but the roadmap still starts with 'Choose the business entity and register it' (found in the 1.1.6 review). Fix: pass the registration facts (`elicitation/entry.py`) to the planner and skip registration milestones already done.
 
 ### 1.5 Voice and language
 
@@ -717,6 +718,7 @@ records start when conversations link to signed-in founders (SYSTEM-DESIGN §11,
 - `3.1.5.1` `[ ]` [R060](arena/details-p3.md#r060) (weight 78) Sign-out leaves founder's browser data (profile, consent, journey, session) for next user. Fix: Namespace keys by user ID, clear the anonymous namespace on logout, and confirm before claiming it.
 - `3.1.5.2` `[ ]` [R018](arena/details-p1.md#r018) (weight 84) Journey.tsx and journeyStore.ts share the 'vanigam_journey' key with different shapes. Fix: Fold Journey facts and done into journeyStore (a 'registration' field; version bumped to 2 with a migration that keeps consent and milestones).
 - `3.1.5.3` `[ ]` [R081](arena/details-p1.md#r081) (weight 74) Browser profile keys/vocabularies don't map to backend slots. Fix: Explicit allowlisted projection in the client (founder.district to district, startup.stage to stage, startup.domain to sector) plus a typed AgentStartIn.profile with only those keys.
+- `3.1.5.4` `[ ]` The `frontend/src/journeyStore.ts` header still says nothing in it is sent anywhere; `entry_mode` and `reg_subtype` are now sent at session start (1.1.6). Update the comment with the namespacing change.
 
 ### 3.2 Consent and protection
 
