@@ -249,7 +249,8 @@ def snapshot(s: AgentSession) -> dict:
 
 
 def _known_dict(s: AgentSession) -> dict:
-    return {k: _plain(v.value) for k, v in s.elicitation.slots.items()}
+    # Only what the restatement keeps: a disputed or unknown value is not a fact.
+    return {k: str(v) for k, v in s.elicitation.kept().items()}
 
 
 def _known(s: AgentSession) -> str:
