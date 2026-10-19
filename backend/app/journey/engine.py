@@ -22,6 +22,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+from app.elicitation.entry import journey_facts
 from app.planner import registry
 from app.planner.packs import parse_rule
 from app.schemes.rules import Combinator, Rule, RuleGroup, _apply
@@ -194,9 +195,16 @@ def normalise(facts: dict[str, Any]) -> dict[str, Any]:
 
 
 def journey(
-    facts: dict[str, Any], domain_id: str | None = None, done: list[str] | None = None
+    facts: dict[str, Any],
+    domain_id: str | None = None,
+    done: list[str] | None = None,
+    *,
+    reg_subtype: str | None = None,
 ) -> dict:
-    facts = normalise(facts)
+    """`reg_subtype` (the Start screen's answer) fills registered, and entity when
+    it follows (app/elicitation/entry.py); a fact in `facts` outranks it."""
+    given = {k: v for k, v in facts.items() if v is not None}
+    facts = normalise({**journey_facts(reg_subtype), **given})
     done_set = set(done or [])
     rows = [_step(raw, facts, done_set) for raw in library()["steps"]]
     rows += _licences(domain_id, facts.get("district"), done_set)
