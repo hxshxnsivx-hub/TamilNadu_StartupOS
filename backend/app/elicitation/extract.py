@@ -15,13 +15,14 @@ The deterministic path is not a stopgap. Many target users are on intermittent
 connections, and an ideation flow that stops working without a network is not
 usable for them.
 
-Confidence tiers are meaningful and drive the stopping rule (TAU_FILL = 0.60):
+Confidence tiers are meaningful and drive the bands (slots.py, R157):
 
   0.90  gazetteer / lexicon exact match
   0.85  structured cue ("the problem is X", a currency amount)
   0.70  weak cue
-  0.55  loose positional guess — deliberately BELOW the fill threshold, so it
-        becomes a confirmation question rather than a silent assumption
+  0.55  loose positional guess — deliberately BELOW the known band (TAU_FILL
+        0.60), in the confirm band: never asked, but said back as "I assumed"
+        so the founder confirms it at the restatement, never silently assumed
 """
 
 from __future__ import annotations
@@ -30,11 +31,12 @@ import re
 from dataclasses import dataclass
 
 from app.core.stages import Stage
-from app.elicitation.cues import compile_cues, matches
+from app.elicitation.cues import affirmed, compile_cues, matches
 from app.elicitation.places import find_district
 from app.elicitation.slots import (
     CapitalBand,
     FundingRoute,
+    Motivation,
     ProductForm,
     Sector,
 )
@@ -211,8 +213,9 @@ _ROUTE_CUES: dict[FundingRoute, tuple[str | re.Pattern[str], ...]] = {
 # confidently mislabels someone as pre-idea and then hands them a roadmap that
 # begins three steps behind where they are.
 #
-# Intent therefore scores 0.55 — deliberately BELOW TAU_FILL (0.60) — so it
-# becomes a confirmation question instead of a silent assumption.
+# Intent therefore scores 0.55 — deliberately BELOW TAU_FILL (0.60), in the
+# confirm band — so it is said back as an assumption, never silently assumed.
+# A denied state cue ("we don't have customers yet") is no evidence (R070).
 _STAGE_STATE: dict[Stage, tuple[str, ...]] = {
     Stage.REVENUE: (
         "already selling",
@@ -256,6 +259,34 @@ _STAGE_INTENT: tuple[str, ...] = (
     "going to start",
 )
 
+# WHY, in passing (R113): the five-finger rule needs a reason, and a pitch that
+# already gave one must not be asked for it. Phrases, kept narrow: the founder's
+# own words are stored, cue included.
+_WHY_NOW_CUE = re.compile(
+    r"\b(?:now that|nowadays|these days|the time is right because|right time (?:because|as))"
+    r"\b[^.!?\n]{8,200}",
+    re.I,
+)
+_DIFFERENT_CUE = re.compile(
+    r"\b(?:unlike|different from|better than|cheaper than|faster than|no one else|nobody else"
+    r"|what makes (?:it|us|ours|mine) different)\b[^.!?\n]{4,200}",
+    re.I,
+)
+# What the founder is after, said about themselves; "income" alone is too
+# often the customer's ("farmers lose income").
+_MOTIVATION_CUES: dict[Motivation, tuple[str, ...]] = {
+    Motivation.SUCCESSION: (
+        "family business",
+        "father's business",
+        "fathers business",
+        "carry on the business",
+        "take over the business",
+    ),
+    Motivation.INCOME: ("extra income", "steady income", "earn a living", "support my family"),
+    Motivation.INDEPENDENCE: ("my own boss", "work for myself", "be independent", "quit my job"),
+    Motivation.IMPACT: ("give back", "make a difference", "social impact", "help my village"),
+}
+
 
 def _compiled(cues: dict) -> dict:
     return {value: compile_cues(needles) for value, needles in cues.items()}
@@ -270,6 +301,7 @@ _STAGE_STATE_COMPILED = {
     for stage, needles in _STAGE_STATE.items()
 }
 _STAGE_INTENT_PATTERNS = compile_cues(_STAGE_INTENT)
+_MOTIVATION_PATTERNS = _compiled(_MOTIVATION_CUES)
 
 # "5 lakh", "₹2,00,000", "10L", "1.5 crore"
 _MONEY = re.compile(
@@ -337,10 +369,10 @@ def extract(text: str) -> list[Extraction]:
         out.append(Extraction("product_form", form, 0.70))
     if (route := _first_cue(low, _ROUTE_PATTERNS)) is not None:
         out.append(Extraction("funding_route", route, 0.85))
-    # State evidence wins outright; intent only ever produces a low-confidence
-    # hint that the stopping rule will turn into a confirmation question.
+    # State evidence wins outright; intent only ever produces a confirm-band
+    # hint that the restatement says back as an assumption.
     for stage, compiled in _STAGE_STATE_COMPILED.items():
-        if matches(low, compiled):
+        if affirmed(low, compiled):
             out.append(Extraction("stage", stage.value, 0.85))
             break
     else:
@@ -366,12 +398,21 @@ def extract(text: str) -> list[Extraction]:
         out.append(Extraction("problem", _clean(m.group(1)), 0.85))
     elif len(text.strip()) >= 25:
         # Loose positional guess at 0.55, deliberately BELOW TAU_FILL so it is
-        # confirmed rather than assumed. First sentence only.
+        # confirmed at the restatement rather than assumed. First sentence only.
         first = re.split(r"[.!?\n]", text.strip(), maxsplit=1)[0]
         out.append(Extraction("problem", _clean(first)[:200], 0.55))
 
     if (m := _SOLUTION_CUE.search(text)) is not None:
         out.append(Extraction("solution", _clean(m.group(1)), 0.70))
+
+    if (m := _WHY_NOW_CUE.search(text)) is not None:
+        out.append(Extraction("why_now", _clean(m.group(0)), 0.70))
+    if (m := _DIFFERENT_CUE.search(text)) is not None:
+        out.append(Extraction("differentiation", _clean(m.group(0)), 0.70))
+    for motive, compiled in _MOTIVATION_PATTERNS.items():
+        if affirmed(low, compiled):
+            out.append(Extraction("motivation", motive, 0.70))
+            break
 
     return out
 
