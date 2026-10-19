@@ -134,20 +134,20 @@ licences and risks (S8), streamed fact-checked replies, private sessions, the jo
 - **How:** a "what before anything else" gate on candidate questions; reject model-noted facts whose text span is not in the founder's words; cap confidence when sources disagree so the founder is asked.
 - **When:** now; every turn.
 - **What for:** a humane order and grounded facts (rnd-elicitation §3.4, §6.3, §6.4).
-- `1.1.3.1` Finger gate in the selector.
-- `1.1.3.2` Span check on `note_fact`.
-- `1.1.3.3` Disagreement cap in the merge.
-- `1.1.3.4` Tests.
-- `1.1.3.5` `[ ]` [R007](arena/details-p1.md#r007) (weight 94) note_fact stores untyped values in typed slots; planner crashes on them. Fix: Per-slot Pydantic validators in put(): coerce to the slot's Enum or int, reject otherwise, and return a typed result.
-- `1.1.3.6` `[ ]` [R009](arena/details-p1.md#r009) (weight 90) Required slots exceed the 7-question budget, so ranking inputs are never asked. Fix: Separate questions_asked counter on the session.
-- `1.1.3.7` `[ ]` [R053](arena/details-p1.md#r053) (weight 84) note_fact answers 'recorded' when put() drops the value, so wrong extractions stick. Fix: put() returns an outcome (stored / kept_existing / conflict) and records rivals; a conflict caps confidence below TAU_FILL.
-- `1.1.3.8` `[ ]` [R070](arena/details-p1.md#r070) (weight 78) Stage answers ignore negation: 'no customers yet' is stored as revenue. Fix: Negation window rule.
-- `1.1.3.9` `[ ]` [R063](arena/details-p1.md#r063) (weight 78) Mid-conversation corrections never stick; district picked by name length, not position. Fix: Correction cue -> treat as ANSWER.
-- `1.1.3.10` `[ ]` [R099](arena/details-p1.md#r099) (weight 74) No town-to-district gazetteer: 'Pollachi' is not recognised, so district is re-asked. Fix: India Post all-India pincode directory (data.gov.in).
-- `1.1.3.11` `[ ]` [R113](arena/details-p1.md#r113) (weight 73) The 'five-finger' stop rule checks four fingers: WHY has no required slot. Fix: WHY satisfied by any of why_now / differentiation / motivation, including extraction.
-- `1.1.3.12` `[ ]` [R119](arena/details-p1.md#r119) (weight 70) CP-SAT solved twice per turn yet never differs from greedy at default settings. Fix: Greedy with an explicit required-first filter; CP-SAT only when a budget binds.
-- `1.1.3.13` `[ ]` [R155](arena/details-p1.md#r155) (weight 67) Selector values slots by static consumer count, not by which result a gap blocks. Fix: Dynamic value term: count of downstream results (schemes, roadmap gates) whose evaluation is 'unknown' only because of this slot.
-- `1.1.3.14` `[ ]` [R157](arena/details-p1.md#r157) (weight 64) Two 'known' thresholds: 0.5 counts a slot filled, 0.6 still asks it. Fix: Three bands: known / confirm / unknown.
+- `1.1.3.1` `[x]` Finger gate in the selector.
+- `1.1.3.2` `[x]` Span check on `note_fact`.
+- `1.1.3.3` `[x]` Disagreement cap in the merge.
+- `1.1.3.4` `[x]` Tests.
+- `1.1.3.5` `[x]` [R007](arena/details-p1.md#r007) (weight 94) note_fact stores untyped values in typed slots; planner crashes on them. Fix: Per-slot Pydantic validators in put(): coerce to the slot's Enum or int, reject otherwise, and return a typed result.
+- `1.1.3.6` `[x]` [R009](arena/details-p1.md#r009) (weight 90) Required slots exceed the 7-question budget, so ranking inputs are never asked. Fix: Separate questions_asked counter on the session.
+- `1.1.3.7` `[x]` [R053](arena/details-p1.md#r053) (weight 84) note_fact answers 'recorded' when put() drops the value, so wrong extractions stick. Fix: put() returns an outcome (stored / kept_existing / conflict) and records rivals; a conflict caps confidence below TAU_FILL.
+- `1.1.3.8` `[x]` [R070](arena/details-p1.md#r070) (weight 78) Stage answers ignore negation: 'no customers yet' is stored as revenue. Fix: Negation window rule.
+- `1.1.3.9` `[x]` [R063](arena/details-p1.md#r063) (weight 78) Mid-conversation corrections never stick; district picked by name length, not position. Fix: Correction cue -> treat as ANSWER.
+- `1.1.3.10` `[ ]` [R099](arena/details-p1.md#r099) (weight 74) No town-to-district gazetteer: 'Pollachi' is not recognised, so district is re-asked. Fix: India Post all-India pincode directory (data.gov.in). *Open: needs the directory downloaded and committed (a download the owner approves); no hand-made town list (no invented data).*
+- `1.1.3.11` `[x]` [R113](arena/details-p1.md#r113) (weight 73) The 'five-finger' stop rule checks four fingers: WHY has no required slot. Fix: WHY satisfied by any of why_now / differentiation / motivation, including extraction.
+- `1.1.3.12` `[x]` [R119](arena/details-p1.md#r119) (weight 70) CP-SAT solved twice per turn yet never differs from greedy at default settings. Fix: Greedy with an explicit required-first filter; CP-SAT only when a budget binds.
+- `1.1.3.13` `[ ]` [R155](arena/details-p1.md#r155) (weight 67) Selector values slots by static consumer count, not by which result a gap blocks. Fix: Dynamic value term: count of downstream results (schemes, roadmap gates) whose evaluation is 'unknown' only because of this slot. *Open: needs the three-valued scheme evaluation (4.1.1.3, R003) to say which results are 'unknown'.*
+- `1.1.3.14` `[x]` [R157](arena/details-p1.md#r157) (weight 64) Two 'known' thresholds: 0.5 counts a slot filled, 0.6 still asks it. Fix: Three bands: known / confirm / unknown.
 
 #### 1.1.4 `[ ]` Safe on a 2G connection
 - **Why:** a replayed answer after a dropped response is consumed twice; a conflict shows a raw error; a resumed session has no re-orientation.
