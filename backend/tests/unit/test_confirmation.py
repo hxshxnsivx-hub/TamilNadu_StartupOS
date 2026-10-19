@@ -28,6 +28,7 @@ ANSWERS = {
     "stage": "prototype",
     "capital_band": "10L_50L",
     "funding_route": "debt",
+    "motivation": "income",  # the WHY finger (R113)
 }
 
 
@@ -241,8 +242,9 @@ def test_a_later_aside_does_not_replace_a_direct_answer():
 
 def test_a_model_note_does_not_replace_a_profile_fact():
     s = engine.start("u1", profile={"district": "Erode"})
+    s.record(user_text="my brother is in Madurai")
     out = asyncio.run(tools.run_tool("note_fact", {"key": "district", "value": "madurai"}, s, {}))
-    assert out == {"recorded": "district"}
+    assert out["kept"] == "district"  # reported truthfully (R053), not "recorded"
     assert s.slots["district"].value == "erode"
     assert s.slots["district"].source is Source.PROFILE
 
