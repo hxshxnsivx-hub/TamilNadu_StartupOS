@@ -17,7 +17,7 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
 from app.agents import ideation as agent
 from app.agents import providers
-from app.agents.jobs import KINDS, board
+from app.agents.jobs import GONE, KINDS, board
 from app.agents.store import VersionConflict, get_store
 from app.agents.tools import compact_scan, council_brief
 from app.core.stages import Stage
@@ -296,10 +296,22 @@ _SESSION_ID = Path(pattern=r"^[0-9a-f]{32}$")
 _turn_locks: dict[str, asyncio.Lock] = {}
 
 
+EXPIRED = (
+    "This conversation ended after 6 hours without activity. It is still stored; "
+    "you can start a new one, or have this one deleted."
+)
+
+
 async def _load(session_id: str) -> agent.AgentSession:
-    s = await (await get_store()).get(session_id)
+    """The live session; 410 when it is hidden after 6 idle hours but still stored
+    (the screen keeps its id so the founder can delete it, R107), 404 when there
+    is no such session."""
+    store = await get_store()
+    s = await store.get(session_id)
     if s is None:
-        raise HTTPException(status_code=404, detail="Session not found or expired")
+        if await store.get(session_id, include_expired=True) is not None:
+            raise HTTPException(status_code=410, detail=EXPIRED)
+        raise HTTPException(status_code=404, detail="Session not found")
     return s
 
 
@@ -342,10 +354,18 @@ async def agent_resume(session_id: str = _SESSION_ID) -> dict:
 
 @router.delete("/ideation/agent/sessions/{session_id}", status_code=204, response_class=Response)
 async def agent_delete(session_id: str = _SESSION_ID) -> Response:
-    """Delete a conversation with its transcript, evidence and roadmap."""
-    if not await (await get_store()).delete(session_id):
+    """Delete a conversation with its transcript, evidence and roadmap, including
+    one hidden after 6 idle hours.
+
+    Waits for a turn that is running (the turn lock), so the turn cannot save
+    or start work after the delete; its background work is forgotten first, so
+    a job still running cannot store its results afterwards (R173)."""
+    async with _turn_locks.setdefault(session_id, asyncio.Lock()):
+        await board.forget(session_id)
+        deleted = await (await get_store()).delete(session_id)
+    _turn_locks.pop(session_id, None)
+    if not deleted:
         raise HTTPException(status_code=404, detail="Session not found")
-    await board.forget(session_id)  # its background work and results go too
     return Response(status_code=204)
 
 
@@ -423,7 +443,8 @@ async def agent_notices(
 
     A (re)subscribe first sends the latest finished result of each kind, so work
     that finished while the connection was down is not lost (R143); the screen
-    replaces its panels, so a repeat is harmless."""
+    replaces its panels, so a repeat is harmless. The stream ends when the
+    conversation is deleted."""
     await _load(session_id)  # 404 for an unknown session
     q = board.subscribe(session_id)
     missed = [
@@ -442,6 +463,8 @@ async def agent_notices(
                     except TimeoutError:
                         yield ": still here\n\n"
                         continue
+                if n["kind"] == GONE:
+                    return  # the conversation was deleted
                 if n["kind"] == "research":
                     yield _sse("evidence", compact_scan(n["payload"]["scan"]))
                     yield _sse("novelty", n["payload"]["novelty"])
