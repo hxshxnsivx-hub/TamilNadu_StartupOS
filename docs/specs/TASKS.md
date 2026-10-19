@@ -191,16 +191,16 @@ licences and risks (S8), streamed fact-checked replies, private sessions, the jo
 - `1.1.6.1` Send `reg_subtype` and entry mode at session start.
 - `1.1.6.2` Greeting and journey use them.
 
-#### 1.1.7 `[ ]` The founder can delete a conversation
+#### 1.1.7 `[x]` The founder can delete a conversation
 - **Why:** `DELETE /ideation/agent/sessions/{id}` exists, but the Talk page offers no way to call it.
 - **Where:** `Talk.tsx`, `agentClient.ts`.
 - **How:** a delete control that calls the endpoint and clears the local session ID.
 - **When:** now; "delete all" follows with founder records (3.2.4.1).
 - **What for:** erasure the founder controls (SYSTEM-DESIGN §3.2).
-- `1.1.7.1` Delete control.
-- `1.1.7.2` `[ ]` [R107](arena/details-p1.md#r107) (weight 74) Talk page discards the only delete handle while the database row survives. Fix: Keep the ID on failure; on a 404 'expired' answer offer 'delete it' alongside 'start fresh'.
-- `1.1.7.3` `[ ]` [R114](arena/details-p2.md#r114) (weight 72) Redis copy is written without a version guard: a deleted session can come back. Fix: Lua compare-and-set put plus a tombstone.
-- `1.1.7.4` `[ ]` [R173](arena/details-p1.md#r173) (weight 61) Results outlive their conversation; a running turn re-creates them after delete. Fix: Delete takes the session's turn lock, plus a 'forgotten' tombstone that board.start and results.put refuse.
+- `1.1.7.1` `[x]` Delete control.
+- `1.1.7.2` `[x]` [R107](arena/details-p1.md#r107) (weight 74) Talk page discards the only delete handle while the database row survives. Fix: Keep the ID on failure; on a 404 'expired' answer offer 'delete it' alongside 'start fresh'.
+- `1.1.7.3` `[x]` [R114](arena/details-p2.md#r114) (weight 72) Redis copy is written without a version guard: a deleted session can come back. Fix: Lua compare-and-set put plus a tombstone.
+- `1.1.7.4` `[x]` [R173](arena/details-p1.md#r173) (weight 61) Results outlive their conversation; a running turn re-creates them after delete. Fix: Delete takes the session's turn lock, plus a 'forgotten' tombstone that board.start and results.put refuse.
 
 #### 1.1.8 `[x]` One stage vocabulary and whole-word cues
 - **Why:** stage words differ between modules (revenue founders score zero) and keyword cues match inside words ('app' in Tiruchirappalli).
@@ -526,6 +526,7 @@ model and source outages (§9).
 - `2.1.6.1` `[ ]` [R029](arena/details-p2.md#r029) (weight 84) Talk page forgets the saved session ID on any resume error, not only 404. Fix: Error class carrying the HTTP status; forget only on 404.
 - `2.1.6.2` `[ ]` [R058](arena/details-p2.md#r058) (weight 78) Programme cohort aggregates use store.get and drop sessions idle over 6 hours. Fix: Separate store method list_for_analytics(ids or since) without idle expiry.
 - `2.1.6.3` `[ ]` [R179](arena/details-p1.md#r179) (weight 58) In-memory session store and per-session turn locks grow forever. Fix: Lazy sweep on create, plus lock cleanup on release and on delete.
+- `2.1.6.4` `[ ]` The stream route takes the turn lock before the response starts; a client that disconnects before the stream begins leaves the lock held, so later turns and a delete for that session hang (found in the 1.1.7 review). Fix: acquire the lock inside the generator, or release it in a background task if the stream never starts.
 
 ### 2.2 Caching rules
 
@@ -600,7 +601,7 @@ model and source outages (§9).
 #### 2.3.1 `[w]` Durable results and a shared queue
 - **Waiting on:** the database (2.1.1).
 - **Why:** a restart loses running jobs, and several server processes cannot share them.
-- **How:** a results table keyed by session, idea version and kind; a Redis queue (decision 0010).
+- **How:** a results table keyed by session, idea version and kind; a Redis queue (decision 0010). The table keeps the rules of `agents/results.py` (R173): rows go with their session (ON DELETE CASCADE from `agent_sessions`), a write for a deleted session is refused, and rows expire with idle sessions.
 - `2.3.1.1` Results table and migration.
 - `2.3.1.2` Redis queue.
 
