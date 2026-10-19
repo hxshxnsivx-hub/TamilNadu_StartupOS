@@ -26,8 +26,7 @@ import re
 from dataclasses import dataclass
 from typing import Any, Literal
 
-from app.core.stages import parse_stage
-from app.elicitation.answers import validate
+from app.elicitation.answers import coerce, validate
 from app.elicitation.confirmation import (
     after_cue,
     anchored,
@@ -36,6 +35,7 @@ from app.elicitation.confirmation import (
     named,
     named_values,
     polarity,
+    strip_negated,
 )
 from app.elicitation.extract import extract
 from app.elicitation.selector import (
@@ -50,7 +50,15 @@ from app.elicitation.session import (
     SessionState,
     Source,
 )
-from app.elicitation.slots import BY_KEY, REQUIRED_BY_MODE, SLOTS, EntryMode
+from app.elicitation.slots import (
+    BY_KEY,
+    REQUIRED_BY_MODE,
+    SLOTS,
+    TAU_FILL,
+    Band,
+    EntryMode,
+    Finger,
+)
 
 ActionKind = Literal["ask", "confirm", "generate", "done"]
 
@@ -150,15 +158,22 @@ def start(
 
 
 def _from_profile(key: str, raw: Any) -> Any | None:
-    """The typed slot value for a profile field, or None when it fits no slot."""
-    if key == "stage":  # the profile picks from the shared list (app/core/stages.py)
-        stage = parse_stage(raw)
-        return stage.value if stage else None
-    if isinstance(raw, list) and all(isinstance(x, str) for x in raw):
-        raw = ", ".join(raw)
-    if isinstance(raw, bool) or not isinstance(raw, (str, int)):
-        return None
-    return validate(key, str(raw))
+    """The typed slot value for a profile field, or None when it fits no slot.
+    The same gate as every other source (answers.coerce): the stage picks from
+    the shared list (app/core/stages.py), the rest pass the slot's answer rules."""
+    if isinstance(raw, int) and not isinstance(raw, bool) and BY_KEY[key].kind != "int":
+        raw = str(raw)
+    return coerce(key, raw)
+
+
+# A correction said in passing, mid-conversation (R063): "sorry, actually I am
+# in Salem, not Erode". A fact it states that differs from the one held is the
+# founder's answer, not an inference that loses to the earlier answer.
+_CORRECTION = re.compile(
+    r"\b(?:actually|sorry|i mean|i meant|correction|instead|moved|shifted|relocated)\b"
+    r"|\bnot\s+\w+(?:\s+\w+)?\s*,?\s*but\b",
+    re.I,
+)
 
 
 def observe(session: ElicitationSession, text: str, *, answering: str | None = None) -> None:
@@ -167,9 +182,15 @@ def observe(session: ElicitationSession, text: str, *, answering: str | None = N
     `answering` names the slot we asked about, so a direct reply is recorded
     as an ANSWER (which outranks any earlier extraction) even when the free-text
     extractor cannot parse it.
+
+    A reply that answered a free-text question fills no other free-text slot:
+    the founder's words about who it is for are not a new problem (the 1.1.2
+    review). A reply with a correction word ("sorry, actually I am in Salem")
+    states the founder's answer for each fact it changes (R063).
     """
     session.state = SessionState.EXTRACTING
     session.learned = []
+    answered_text = False
 
     if answering and answering.startswith(DYN) and text.strip():
         for d in session.dynamic:  # free text: the founder's own answer, kept as said
@@ -180,6 +201,7 @@ def observe(session: ElicitationSession, text: str, *, answering: str | None = N
         if value is not None:
             session.put(answering, value, 0.90, Source.ANSWER)
             session.reask = None
+            answered_text = BY_KEY[answering].kind == "text"
         else:
             # Not an answer to this question ("Chennai" for the stage). Never
             # store it there; let the extractor place it, and ask once more.
@@ -189,17 +211,51 @@ def observe(session: ElicitationSession, text: str, *, answering: str | None = N
             if misses >= 2:
                 session.skip(answering)
 
-    for e in extract(text):
+    correcting = bool(_CORRECTION.search(text))
+    for e in extract(strip_negated(text) if correcting else text):
         # Never let an extraction overwrite the direct answer we just stored.
-        if e.key == answering:
+        if e.key == answering or (answered_text and BY_KEY[e.key].kind == "text"):
             continue
         was_filled = e.key in session.filled
-        session.put(e.key, e.value, e.confidence, Source.EXTRACTED)
+        held = session.slots.get(e.key)
+        if (
+            correcting
+            and held is not None
+            and e.confidence >= TAU_FILL
+            and _plain_value(held.value) != _plain_value(e.value)
+        ):
+            session.put(e.key, e.value, 0.90, Source.ANSWER)
+        else:
+            session.put(e.key, e.value, e.confidence, Source.EXTRACTED)
         if not was_filled and e.key in session.filled:
             session.learned.append(e.key)
 
     session.record(user_text=text, asked=answering)
+    session.open_question = None  # the founder replied
     session.state = SessionState.ELICITING
+
+
+def _plain_value(v: Any) -> Any:
+    return getattr(v, "value", v)
+
+
+def _ask(
+    session: ElicitationSession, key: str, question: str, reason: str, *, new: bool = True
+) -> Action:
+    """Ask `key`. A new question uses the budget (R009) unless it is the one
+    already waiting for a reply; a re-ask never does."""
+    if new and session.open_question != key:
+        session.questions_asked += 1
+    session.open_question = key
+    session.state = SessionState.AWAITING_ANSWER
+    return Action(
+        kind="ask",
+        slot=key,
+        question=question,
+        progress=session.progress(),
+        turn=session.turn_no,
+        reason=reason,
+    )
 
 
 def step(session: ElicitationSession) -> Action:
@@ -217,46 +273,28 @@ def step(session: ElicitationSession) -> Action:
         and key not in session.filled
         and key not in session.skipped
     ):
-        session.state = SessionState.AWAITING_ANSWER
-        return Action(
-            kind="ask",
-            slot=key,
-            question=f"{_acknowledge(session)} {BY_KEY[key].question}",
-            progress=session.progress(),
-            turn=session.turn_no,
-            reason="reask: the reply did not answer the question",
+        return _ask(
+            session,
+            key,
+            f"{_acknowledge(session)} {BY_KEY[key].question}",
+            "reask: the reply did not answer the question",
+            new=False,
         )
 
     # 2. Then a question the review panel raised: it marks where the evidence and
     #    the advisers disagree most. It still counts toward the Q_MAX ceiling.
-    if (dyn := _pending_dynamic(session)) is not None and session.turn_no < question_budget(
+    if (dyn := _pending_dynamic(session)) is not None and session.questions_asked < question_budget(
         session
     ):
         dyn["asked"] = True
-        session.state = SessionState.AWAITING_ANSWER
-        return Action(
-            kind="ask",
-            slot=dyn["key"],
-            question=dyn["question"],
-            progress=session.progress(),
-            turn=session.turn_no,
-            reason=f"dynamic: raised by {dyn['source']}",
-        )
+        return _ask(session, dyn["key"], dyn["question"], f"dynamic: raised by {dyn['source']}")
 
     # 3. Otherwise the most valuable unanswered slot.
     if not decision.stop:
         nq = next_question(session)
         if nq is not None:
             key, question = nq
-            session.state = SessionState.AWAITING_ANSWER
-            return Action(
-                kind="ask",
-                slot=key,
-                question=question,
-                progress=session.progress(),
-                turn=session.turn_no,
-                reason=decision.reason,
-            )
+            return _ask(session, key, question, decision.reason)
         # Nothing left worth asking; fall through to confirmation.
 
     session.objective = restate(session)
@@ -349,7 +387,7 @@ def reply(session: ElicitationSession, text: str) -> Action:
     session.awaiting_correction = False
     names = named(text) | after_cue(text)
     found = corrections(text) + named_values(text)
-    session.refunds += 1
+    session.open_question = None
     session.learned = []
     corrected, moved = [], False
     for e in found:
@@ -412,6 +450,7 @@ def _pending_dynamic(session: ElicitationSession) -> dict | None:
 def skip(session: ElicitationSession, key: str) -> Action:
     """User declines a question. Never ask it again — nagging loses people."""
     session.skip(key)
+    session.open_question = None
     session.state = SessionState.ELICITING
     return step(session)
 
@@ -423,6 +462,17 @@ LABELS: tuple[tuple[str, frozenset[Source]], ...] = (
     ("From your profile", frozenset({Source.PROFILE})),
     ("I assumed", frozenset(Source) - FOUNDER_GIVEN),
 )
+ASSUMED_LABEL = LABELS[-1][0]
+
+
+def _label(session: ElicitationSession, key: str) -> str:
+    """A confirm-band value is said as an assumption whatever its source (R157):
+    it was not asked, so the founder confirms it here."""
+    if session.band(key) is not Band.KNOWN:
+        return ASSUMED_LABEL
+    source = session.slots[key].source
+    return next(label for label, sources in LABELS if source in sources)
+
 
 # The facts said back under those labels: every slot that is not free text and
 # that the roadmap or the scheme match reads (R154), in slot-table order. The
@@ -437,7 +487,10 @@ NAMES: dict[str, str] = {
     "product_form": "product type",
     "capital_band": "budget",
     "funding_route": "funding",
+    "why_now": "reason for doing this now",
 }
+# The slot named as the gap when the WHY finger is still open (R113).
+WHY_GAP = "why_now"
 
 # What the plan uses when a required slot has no value (R051), so the founder
 # hears the real default rather than "safe defaults". Each matches
@@ -455,6 +508,7 @@ ASSUMED: dict[str, str] = {
     "stage": "you are starting from the idea stage",
     "capital_band": "the usual budget for this kind of business",
     "funding_route": "no particular way of funding it",
+    "why_now": "no particular reason it has to be now",
 }
 
 _REACH = {
@@ -600,11 +654,11 @@ def restate(session: ElicitationSession) -> str:
         sentences.append(f"Your plan is {plan}")
 
     # 3 — the facts the plan runs on, grouped by where each came from.
-    for label, sources in LABELS:
+    for label, _ in LABELS:
         facts = [
             _fact(key, g(key))
             for key in RESTATED
-            if g(key) is not None and session.slots[key].source in sources
+            if g(key) is not None and _label(session, key) == label
             # the founder already named the place in their own words
             and not (key == "district" and _word(g(key)).lower() in said.lower())
         ]
@@ -623,6 +677,8 @@ def restate(session: ElicitationSession) -> str:
     order = [s.key for s in SLOTS]
     skipped = sorted(unfilled & session.skipped, key=order.index)
     unknown = sorted(unfilled - session.skipped, key=order.index)
+    if Finger.WHY in session.uncovered:
+        unknown.append(WHY_GAP)
     if skipped:
         body += f". You skipped your {_gap_names(skipped)}; I will assume {_assumed(skipped)}"
     if unknown:
