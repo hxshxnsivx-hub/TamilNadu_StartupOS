@@ -19,10 +19,11 @@ import re
 
 from app.elicitation.answers import validate
 from app.elicitation.extract import Extraction, extract
+from app.elicitation.slots import TAU_FILL
 
-# The fill threshold (selector.TAU_FILL). A correction must be a fact, not the
-# loose positional guess that reads any long reply as "the problem".
-_MIN_CONFIDENCE = 0.60
+# The known band (slots.TAU_FILL). A correction must be a fact, not the loose
+# positional guess that reads any long reply as "the problem".
+_MIN_CONFIDENCE = TAU_FILL
 
 YES = frozenset(
     {
