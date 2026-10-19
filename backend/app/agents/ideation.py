@@ -45,8 +45,11 @@ from app.core.config import get_settings
 from app.core.logging import get_logger
 from app.elicitation import engine
 from app.elicitation.answers import SKIP
+from app.elicitation.entry import REGISTRATION
 from app.elicitation.session import ElicitationSession, SessionState
-from app.elicitation.slots import BY_KEY
+from app.elicitation.slots import BY_KEY, EntryMode
+from app.models.enums import EntryMode as Door
+from app.models.enums import RegSubtype
 from app.research import novelty
 from app.voice.phrasebook import translation
 
@@ -111,7 +114,7 @@ Known so far: {known}
 # A founder away this long hears where the conversation stopped before anything
 # else (task 1.1.4.3); a reload within it just shows the last question.
 RESUME_GAP = timedelta(minutes=30)
-OPENING_QUESTION = "Tell me about the idea you are working on, in your own words."
+OPENING_QUESTION = REGISTRATION[RegSubtype.UNREGISTERED].opening
 
 
 class PendingAction(BaseModel):
@@ -156,6 +159,10 @@ class AgentSession:
     # it again (R038).
     last_turn: dict | None = None
     private: bool = False  # search nothing outside Vanigam
+    # the Start screen's two answers (app.models.enums values), sent at session
+    # start; app/elicitation/entry.py says what they mean (task 1.1.6, R121)
+    entry_mode: str | None = None
+    reg_subtype: str | None = None
     version: int = 0  # bumped on every save; guards against lost updates
     updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
@@ -187,6 +194,8 @@ class AgentSession:
             "pending": self.pending,
             "last_turn": self.last_turn,
             "private": self.private,
+            "entry_mode": self.entry_mode,
+            "reg_subtype": self.reg_subtype,
             "version": self.version,
             "updated_at": self.updated_at.isoformat(),
         }
@@ -217,6 +226,8 @@ class AgentSession:
             pending_slot=d.get("pending_slot"),
             last_turn=d.get("last_turn"),
             private=d.get("private", False),
+            entry_mode=d.get("entry_mode"),
+            reg_subtype=d.get("reg_subtype"),
             version=d.get("version", 0),
             updated_at=datetime.fromisoformat(d["updated_at"]),
         )
@@ -235,7 +246,7 @@ def _derive_pending(s: AgentSession) -> dict | None:
     if el.state is SessionState.CONFIRMING:
         return {"kind": "confirm", "question": _confirm_question(el.objective)}
     if not el.turns:  # only the greeting so far
-        return {"kind": "ask", "question": OPENING_QUESTION}
+        return {"kind": "ask", "question": opening_question(s.reg_subtype)}
     return None
 
 
@@ -254,22 +265,52 @@ def _plain(v: Any) -> str:
     return str(getattr(v, "value", v))
 
 
+def opening_question(reg_subtype: str | None) -> str:
+    """The first question: about the product for a registered founder, about the
+    idea otherwise (task 1.1.6)."""
+    return REGISTRATION[RegSubtype(reg_subtype)].opening if reg_subtype else OPENING_QUESTION
+
+
 def new_session(
     name: str | None = None,
     profile: dict | None = None,
     user_id: str = "anon",
     private: bool = False,
     share_with_programme: bool = False,
+    entry_mode: Door | None = None,
+    reg_subtype: RegSubtype | None = None,
 ) -> tuple[AgentSession, str]:
+    """A new conversation and its greeting.
+
+    The registration subtype sets the opening and a stage floor (entry.py), so a
+    registered founder is not asked what the Start screen already said. The
+    entry mode is kept; the experience conversation it maps to
+    (entry.CONVERSATION_MODE) starts with task 1.1.5.2, so until then every
+    session runs the idea conversation."""
     who = (name or "").strip() or "there"
-    s = AgentSession(name=who, elicitation=engine.start(user_id, profile=profile), user_id=user_id)
+    reg = REGISTRATION[reg_subtype] if reg_subtype else None
+    el = engine.start(
+        user_id,
+        mode=EntryMode.IDEA,
+        profile=profile,
+        stage_floor=reg.stage_floor if reg else None,
+    )
+    s = AgentSession(name=who, elicitation=el, user_id=user_id)
     s.private = private
     s.cohort_consent = share_with_programme
-    s.pending = PendingAction(kind="ask", question=OPENING_QUESTION).model_dump()
+    s.entry_mode = entry_mode.value if entry_mode else None
+    s.reg_subtype = reg_subtype.value if reg_subtype else None
+    opening = opening_question(s.reg_subtype)
+    s.pending = PendingAction(kind="ask", question=opening).model_dump()
+    lead = f" {reg.lead}" if reg and reg.lead else ""
+    shape = (
+        " It can be a product, a machine, an app or a service."
+        if opening == OPENING_QUESTION
+        else ""
+    )
     greeting = (
-        f"Vanakkam {who}! {OPENING_QUESTION}"
-        " It can be a product, a machine, an app or a service. I will look up what already"
-        " exists for it, papers, patents, projects and products, and we will shape it together."
+        f"Vanakkam {who}!{lead} {opening}{shape} I will look up what already exists for it,"
+        " papers, patents, projects and products, and we will shape it together."
     )
     if private:
         greeting += " You chose private mode, so I will search only Vanigam's own data."
@@ -309,6 +350,8 @@ def snapshot(s: AgentSession, latest: dict | None = None) -> dict:
         "session_id": s.id,
         "name": s.name,
         "private": s.private,
+        "entry_mode": s.entry_mode,
+        "reg_subtype": s.reg_subtype,
         "state": s.elicitation.state.value,
         "pending_slot": s.pending_slot,
         "pending": s.pending,
@@ -360,6 +403,8 @@ def _known_dict(s: AgentSession) -> dict:
 
 def _known(s: AgentSession) -> str:
     rows = [f"{k}={v}" for k, v in sorted(_known_dict(s).items())]
+    if s.reg_subtype:  # from the Start screen, not a slot (task 1.1.6)
+        rows.append(f"registration={REGISTRATION[RegSubtype(s.reg_subtype)].said}")
     return ", ".join(rows) or "nothing yet"
 
 
