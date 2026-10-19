@@ -212,7 +212,8 @@ database (default when a database is configured). Saved per session: the elicita
 current evidence, roadmap, privacy flag and idea version, as one JSON document per session
 (decision [0003](docs/decisions/0003-sessions-as-json-document.md)). Writes check a version
 number so two writers cannot overwrite each other silently. Sessions expire after six hours
-idle, as now. When no database is available, conversations are kept in memory and the start
+idle, as now: an expired session answers 410 (still stored, and deletable from the Talk page),
+an unknown or deleted one 404. When no database is available, conversations are kept in memory and the start
 response says `saved: false`.
 
 ### 3.5 Streamed replies (conversation engine)
