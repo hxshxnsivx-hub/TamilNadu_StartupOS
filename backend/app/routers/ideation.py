@@ -17,7 +17,7 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
 from app.agents import ideation as agent
 from app.agents import providers
-from app.agents.jobs import board
+from app.agents.jobs import KINDS, board
 from app.agents.store import VersionConflict, get_store
 from app.agents.tools import compact_scan, council_brief
 from app.core.stages import Stage
@@ -285,6 +285,9 @@ class AgentTurnIn(BaseModel):
     text: str = Field(min_length=1, max_length=4000)
     # the founder's language this turn (ta-IN, en-IN, hi-IN); the reply follows it
     language: str | None = Field(default=None, pattern=r"^(ta|en|hi)-IN$")
+    # names this turn: the phone sends the same id again when the connection drops,
+    # and gets the saved turn back instead of a second one (R038)
+    client_turn_id: str | None = Field(default=None, pattern=r"^[A-Za-z0-9_-]{8,64}$")
 
 
 _SESSION_ID = Path(pattern=r"^[0-9a-f]{32}$")
@@ -331,8 +334,10 @@ async def agent_start(body: AgentStartIn) -> dict:
 
 @router.get("/ideation/agent/sessions/{session_id}")
 async def agent_resume(session_id: str = _SESSION_ID) -> dict:
-    """Where a conversation stands, to resume it on any device."""
-    return agent.snapshot(await _load(session_id))
+    """Where a conversation stands, to resume it on any device, with the results
+    that finished while nobody was listening."""
+    s = await _load(session_id)
+    return agent.snapshot(s, {kind: await board.take(session_id, kind) for kind in KINDS})
 
 
 @router.delete("/ideation/agent/sessions/{session_id}", status_code=204, response_class=Response)
@@ -349,7 +354,12 @@ async def agent_turn(body: AgentTurnIn, session_id: str = _SESSION_ID) -> dict:
     """One founder turn: the reply, the next question, and the evidence it rests on."""
     async with _turn_locks.setdefault(session_id, asyncio.Lock()):
         s = await _load(session_id)
-        out = await agent.turn(s, body.text, language=body.language)
+        # checked under the lock, after loading: a retry waits for a slow original
+        if (saved := agent.replay(s, body.client_turn_id)) is not None:
+            return saved[-1]["data"]
+        out = await agent.turn(
+            s, body.text, language=body.language, client_turn_id=body.client_turn_id
+        )
         await _save(s)
         return out
 
@@ -359,6 +369,11 @@ async def agent_turn_stream(body: AgentTurnIn, session_id: str = _SESSION_ID):
     """The same turn as server-sent events: ack, sentence…, tool, evidence, done.
 
     Only `sentence` events are meant for speech; each has passed the fact check.
+    A turn is applied only if `done` arrives; a stream that ends without it was
+    not saved, and the client sends it again with the same `client_turn_id`.
+    A failure after the stream started is an `error` event with a `code`
+    (`conflict`: changed elsewhere, reload; `failed`: the turn broke), since the
+    status is already 200 by then (R159).
     """
     lock = _turn_locks.setdefault(session_id, asyncio.Lock())
     await lock.acquire()
@@ -367,19 +382,29 @@ async def agent_turn_stream(body: AgentTurnIn, session_id: str = _SESSION_ID):
     except HTTPException:
         lock.release()
         raise
+    if (saved := agent.replay(s, body.client_turn_id)) is not None:
+        lock.release()  # nothing to save: the turn was applied the first time
+
+        async def again():
+            for ev in saved:
+                yield _sse(ev["event"], ev["data"])
+
+        return StreamingResponse(again(), media_type="text/event-stream")
 
     async def events():
         try:
-            async for ev in agent.turn_stream(s, body.text, language=body.language):
+            async for ev in agent.turn_stream(
+                s, body.text, language=body.language, client_turn_id=body.client_turn_id
+            ):
                 if ev["event"] == "done":
                     try:
                         await _save(s)
                     except HTTPException as exc:
-                        yield _sse("error", {"detail": exc.detail})
+                        yield _sse("error", {"code": "conflict", "detail": exc.detail})
                         return
                 yield _sse(ev["event"], ev["data"])
         except Exception as exc:  # the stream has started; report, don't crash it
-            yield _sse("error", {"detail": f"turn failed: {type(exc).__name__}"})
+            yield _sse("error", {"code": "failed", "detail": f"turn failed: {type(exc).__name__}"})
         finally:
             lock.release()
 
@@ -394,19 +419,29 @@ async def agent_notices(
     """Background work as it finishes (server-sent events), so the screen can show the
     evidence, novelty and review panel before the next turn: `evidence`, `novelty`,
     `council`. A comment line every 15 s keeps the connection open. `limit` ends the
-    stream after that many notices (0: until the screen closes it)."""
+    stream after that many notices (0: until the screen closes it).
+
+    A (re)subscribe first sends the latest finished result of each kind, so work
+    that finished while the connection was down is not lost (R143); the screen
+    replaces its panels, so a repeat is harmless."""
     await _load(session_id)  # 404 for an unknown session
     q = board.subscribe(session_id)
+    missed = [
+        {"kind": kind, "payload": r} for kind in KINDS if (r := await board.take(session_id, kind))
+    ]
 
     async def events():
         sent = 0
         try:
             while not limit or sent < limit:
-                try:
-                    n = await asyncio.wait_for(q.get(), timeout=15)
-                except TimeoutError:
-                    yield ": still here\n\n"
-                    continue
+                if missed:
+                    n = missed.pop(0)
+                else:
+                    try:
+                        n = await asyncio.wait_for(q.get(), timeout=15)
+                    except TimeoutError:
+                        yield ": still here\n\n"
+                        continue
                 if n["kind"] == "research":
                     yield _sse("evidence", compact_scan(n["payload"]["scan"]))
                     yield _sse("novelty", n["payload"]["novelty"])
