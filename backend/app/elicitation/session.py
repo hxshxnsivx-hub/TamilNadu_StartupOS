@@ -18,13 +18,20 @@ from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
+from app.elicitation.answers import coerce
 from app.elicitation.slots import (
+    ANY_OF,
     BY_KEY,
+    DISPUTED,
     REQUIRED_BY_MODE,
+    TAU_CONFIRM,
+    Band,
     EntryMode,
     Finger,
+    band,
+    contract_fingers,
     fingers_covered,
     missing_required,
 )
@@ -76,6 +83,21 @@ class SlotValue(BaseModel):
     turn: int = 0
 
 
+class Outcome(str, Enum):
+    """What `put` did with a value (R053), so a caller never reports a fact as
+    recorded when it was not."""
+
+    STORED = "stored"  # the slot now holds the value
+    KEPT_EXISTING = "kept_existing"  # a founder-given, locked or surer value stands
+    CONFLICT = "conflict"  # two inferences disagree; the founder will be asked
+    REJECTED = "rejected"  # the value fits no slot (R007)
+
+
+class PutResult(BaseModel):
+    outcome: Outcome
+    current: SlotValue | None = None  # the slot after the merge
+
+
 class Turn(BaseModel):
     n: int
     asked: str | None = None  # slot key we asked about
@@ -116,8 +138,14 @@ class ElicitationSession(BaseModel):
     # A value that disagreed with a founder-given or locked one and lost; kept,
     # not silently dropped, so a later check can ask about the disagreement.
     rivals: dict[str, SlotValue] = Field(default_factory=dict)
-    # Turns that do not count against the question budget: replies to the
-    # restatement, and one question given back per correction.
+    # The question budget counts questions, not turns (R009): a re-ask, a reply
+    # to the restatement or a request for a view used to spend it too, so with
+    # nine required slots the ranking inputs were never asked.
+    questions_asked: int = 0
+    # The question waiting for a reply: asking it again before the founder
+    # replies is the same question, not a new one.
+    open_question: str | None = None
+    # Questions given back: one per correction.
     refunds: int = 0
     # The founder said the restatement is wrong and was asked what to change,
     # so the next reply is a correction however it is phrased.
@@ -128,17 +156,56 @@ class ElicitationSession(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
+    @model_validator(mode="before")
+    @classmethod
+    def _count_questions_in_old_documents(cls, data: Any) -> Any:
+        """A document saved before the counter existed: count the turns that
+        answered a question, so a resumed session does not get a fresh budget."""
+        if isinstance(data, dict) and "questions_asked" not in data and data.get("turns"):
+            asked = sum(
+                1
+                for t in data["turns"]
+                if (t.get("asked") if isinstance(t, dict) else getattr(t, "asked", None))
+            )
+            data = {**data, "questions_asked": asked}
+        return data
+
     # ---------------------------------------------------------------- views
 
     @property
     def filled(self) -> set[str]:
-        """Slot keys whose value we actually trust.
+        """Slot keys whose value we keep: the known and confirm bands (R157).
 
-        The 0.5 floor is deliberate: a low-confidence extraction is a *hint*,
-        not a fact, and treating it as filled is how the system ends up
-        confidently wrong about someone's business.
+        Below TAU_CONFIRM a value is not a fact and is asked; a confirm-band
+        value is not asked but said back as an assumption.
         """
-        return {k for k, v in self.slots.items() if v.confidence >= 0.5}
+        return {k for k, v in self.slots.items() if v.confidence >= TAU_CONFIRM}
+
+    def kept(self) -> dict[str, Any]:
+        """The plain values of the filled slots: what the roadmap, the panel and
+        the restatement all work from. A value below TAU_CONFIRM (unknown or
+        disputed) is left out, so the planner falls back to the same default the
+        restatement says it will assume."""
+        return {
+            k: getattr(v.value, "value", v.value) for k, v in self.slots.items() if k in self.filled
+        }
+
+    def band(self, key: str) -> Band:
+        v = self.slots.get(key)
+        return band(v.confidence) if v is not None else Band.UNKNOWN
+
+    @property
+    def uncovered(self) -> set[Finger]:
+        """Contract fingers still open (R113). A finger whose every askable slot
+        was skipped is let go: a skipped question is never nagged."""
+        open_ = contract_fingers(self.mode) - self.fingers
+        req = REQUIRED_BY_MODE[self.mode]
+        out = set()
+        for finger in open_:
+            keys = ANY_OF.get(finger) or {k for k in req if BY_KEY[k].finger is finger}
+            if keys - self.skipped:
+                out.add(finger)
+        return out
 
     @property
     def missing(self) -> set[str]:
@@ -176,49 +243,84 @@ class ElicitationSession(BaseModel):
         source: Source,
         *,
         correction: bool = False,
-    ) -> None:
-        """Merge a slot value.
+    ) -> PutResult:
+        """Merge a slot value and say what happened.
 
-        Precedence, rank before confidence (R025):
+        The value is first coerced to the slot's type (R007); one that fits no
+        slot is rejected and nothing changes. Then, rank before confidence
+        (R025):
 
         * a locked slot changes only by another `correction`;
         * a founder-given value (profile or answer) is never replaced by an
           inference (extraction, document, model note), however confident;
         * a direct answer always wins over anything that is not one: the user
           correcting us must never lose to our own guess;
-        * otherwise the new value wins when it is at least as confident.
+        * two inferences that disagree, both in the known band, are a conflict
+          (R053, task 1.1.3.3): the surer one is kept at DISPUTED confidence,
+          below the confirm band, so the founder is asked; the other is kept
+          in `rivals`. Only the founder settles a dispute;
+        * otherwise an inference replaces another only when it is surer, and
+          a founder-given value replaces one when it is at least as sure. At
+          equal confidence the first inference stands: a reply to another
+          question must not rewrite an earlier one.
 
         A value that loses to a founder-given or locked one and disagrees with
         it is kept in `rivals`.
         """
-        if key not in BY_KEY:
-            return
+        typed = coerce(key, value)
+        if typed is None:
+            return PutResult(outcome=Outcome.REJECTED, current=self.slots.get(key))
+        new = SlotValue(
+            key=key, value=typed, confidence=confidence, source=source, turn=self.turn_no
+        )
         existing = self.slots.get(key)
         if existing is not None and not correction:
-            protected = key in self.locked or (
-                existing.source in FOUNDER_GIVEN and source not in FOUNDER_GIVEN
-            )
-            if protected:
-                if value != existing.value:
-                    self.rivals[key] = SlotValue(
-                        key=key,
-                        value=value,
-                        confidence=confidence,
-                        source=source,
-                        turn=self.turn_no,
-                    )
-                return
-            user_correcting = source is Source.ANSWER and existing.source is not Source.ANSWER
-            if not user_correcting and confidence < existing.confidence:
-                return
-        self.slots[key] = SlotValue(
-            key=key, value=value, confidence=confidence, source=source, turn=self.turn_no
-        )
+            founder = source in FOUNDER_GIVEN
+            if key in self.locked or (existing.source in FOUNDER_GIVEN and not founder):
+                if typed != existing.value:
+                    self.rivals[key] = new
+                return PutResult(outcome=Outcome.KEPT_EXISTING, current=existing)
+            if not founder and existing.source not in FOUNDER_GIVEN:
+                outcome = self._merge_inference(existing, new)
+                if outcome is not None:
+                    return PutResult(outcome=outcome, current=self.slots.get(key))
+            elif not (source is Source.ANSWER and existing.source is not Source.ANSWER):
+                if confidence < existing.confidence:
+                    return PutResult(outcome=Outcome.KEPT_EXISTING, current=existing)
+        self.slots[key] = new
         self.rivals.pop(key, None)
         if correction:
             self.locked.add(key)
             self.skipped.discard(key)
         self.touch()
+        return PutResult(outcome=Outcome.STORED, current=new)
+
+    def _merge_inference(self, existing: SlotValue, new: SlotValue) -> Outcome | None:
+        """One inference meeting another. None means store the new one."""
+        key = existing.key
+        if key in self.rivals:  # disputed: only the founder settles it
+            return Outcome.CONFLICT
+        if new.value == existing.value:
+            if new.confidence > existing.confidence:
+                return None
+            return Outcome.STORED  # the slot already holds it
+        known = band(existing.confidence) is Band.KNOWN and band(new.confidence) is Band.KNOWN
+        if known and BY_KEY[key].kind != "text":
+            keep, rival = (
+                (new, existing)
+                if new.confidence > existing.confidence  # at a tie the first stands
+                else (
+                    existing,
+                    new,
+                )
+            )
+            self.slots[key] = keep.model_copy(update={"confidence": min(keep.confidence, DISPUTED)})
+            self.rivals[key] = rival
+            self.touch()
+            return Outcome.CONFLICT
+        if new.confidence > existing.confidence:
+            return None
+        return Outcome.KEPT_EXISTING
 
     def skip(self, key: str) -> None:
         self.skipped.add(key)
