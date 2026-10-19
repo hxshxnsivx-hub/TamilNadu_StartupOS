@@ -50,6 +50,38 @@ class Finger(str, Enum):
     HOW = "how"
 
 
+# ---------------------------------------------------------------- confidence bands
+#
+# One rule for how sure a value must be (R157). There used to be two: 0.5
+# counted a slot filled while the selector still asked it below 0.6.
+#
+#   KNOWN    at or above TAU_FILL: a fact. Never asked; said back with its source.
+#   CONFIRM  from TAU_CONFIRM up to TAU_FILL: a guess worth keeping. Never asked;
+#            said back as "I assumed", so the founder confirms it at the
+#            restatement instead of spending a question on it.
+#   UNKNOWN  below TAU_CONFIRM: not a fact. Asked.
+
+TAU_FILL = 0.60
+TAU_CONFIRM = 0.50
+# Where a value lands when two inferences disagree (R053): below the confirm
+# band, so the founder is asked rather than either guess being trusted.
+DISPUTED = 0.45
+
+
+class Band(str, Enum):
+    KNOWN = "known"
+    CONFIRM = "confirm"
+    UNKNOWN = "unknown"
+
+
+def band(confidence: float) -> Band:
+    if confidence >= TAU_FILL:
+        return Band.KNOWN
+    if confidence >= TAU_CONFIRM:
+        return Band.CONFIRM
+    return Band.UNKNOWN
+
+
 class Need(str, Enum):
     REQUIRED = "required"  # blocks progress past elicitation
     ENRICHING = "enriching"  # improves output, never blocks
@@ -388,10 +420,28 @@ REQUIRED_BY_MODE: dict[EntryMode, frozenset[str]] = {
 }
 
 
+# Fingers satisfied by ANY of their slots, whatever their need (R113). WHY has
+# no required slot, so the stop rule used to check four fingers; promoting one
+# WHY slot would cost a question even when the pitch already said why. Any of
+# these, extracted from the founder's words or answered, covers it.
+ANY_OF: dict[Finger, frozenset[str]] = {
+    Finger.WHY: frozenset({"why_now", "differentiation", "motivation"}),
+}
+
+
 def fingers_covered(filled: set[str], mode: EntryMode) -> set[Finger]:
-    """Which fingers have at least one REQUIRED slot filled."""
+    """Which fingers have at least one REQUIRED slot filled, or any of their
+    `ANY_OF` slots."""
     req = REQUIRED_BY_MODE[mode]
-    return {BY_KEY[k].finger for k in filled if k in req and k in BY_KEY}
+    covered = {BY_KEY[k].finger for k in filled if k in req and k in BY_KEY}
+    covered |= {finger for finger, keys in ANY_OF.items() if keys & filled}
+    return covered
+
+
+def contract_fingers(mode: EntryMode) -> set[Finger]:
+    """The fingers an objective must cover before it is clear: every finger with
+    a REQUIRED slot in the mode, and every `ANY_OF` finger."""
+    return {BY_KEY[k].finger for k in REQUIRED_BY_MODE[mode]} | set(ANY_OF)
 
 
 def missing_required(filled: set[str], mode: EntryMode) -> set[str]:
