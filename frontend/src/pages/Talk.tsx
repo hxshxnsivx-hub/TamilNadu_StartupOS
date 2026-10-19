@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Orb, { type OrbState } from "../voice/Orb";
 import {
+  deleteSession,
   getSession,
   listenNotices,
   newTurnId,
@@ -55,8 +56,15 @@ const CONFLICT_LINE = "This conversation changed on another screen, so I reloade
  * by itself, since the other screen may already have answered. */
 const lostLine = (said: string) =>
   `${CONFLICT_LINE} What you just said was not kept: "${said}". Please say it again.`;
+// Hidden after 6 idle hours, but still stored: the id is kept so the founder can
+// delete it (R107). Starting fresh drops the id and leaves the stored copy.
 const EXPIRED_LINE =
-  "Your last conversation ended after 6 hours without activity, so this is a fresh start.";
+  "Your last conversation ended after 6 hours without activity. It is still stored on Vanigam's server: you can delete it, or start fresh and leave it stored.";
+const GONE_LINE = "Your last conversation is no longer stored, so this is a fresh start.";
+const DELETED_LINE =
+  "Your conversation is deleted: its transcript, evidence and roadmap are gone from Vanigam.";
+const CONFIRM_DELETE =
+  "Delete this conversation? Its transcript, evidence and roadmap are erased from Vanigam. This cannot be undone.";
 
 const pause = (ms: number) => new Promise((r) => window.setTimeout(r, ms));
 
@@ -99,8 +107,13 @@ export default function Talk() {
   const [evidence, setEvidence] = useState<Evidence | null>(null);
   const [novelty, setNovelty] = useState<Novelty | null>(null);
   const [council, setCouncil] = useState<CouncilBrief | null>(null);
+  // a conversation that expired but is still stored: kept to offer deleting it
+  const [expiredId, setExpiredId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [notice, setNotice] = useState("");
 
   const busyRef = useRef(false);
+  const turnAbortRef = useRef<AbortController | null>(null); // the turn now streaming
   const mutedRef = useRef(false); // founder interrupted: stop speaking this turn
   // what the founder said while a turn was busy: all of it goes in the next turn (R144)
   const queuedRef = useRef<string[]>([]);
@@ -163,8 +176,10 @@ export default function Talk() {
       .then((snap) => show(snap))
       .catch((e) => {
         if (e instanceof TurnError && e.code === "expired") {
-          save(null); // gone: start fresh, and say why (R143)
-          setError(EXPIRED_LINE);
+          setExpiredId(id); // kept: the founder may still delete it (R107)
+        } else if (e instanceof TurnError && e.code === "gone") {
+          save(null); // nothing left to resume or delete: start fresh, and say why
+          setError(GONE_LINE);
         } else {
           setError("Could not reach Vanigam. Your conversation is kept; reload to try again.");
         }
@@ -193,6 +208,8 @@ export default function Talk() {
       }
       busyRef.current = true;
       mutedRef.current = false;
+      const ctl = new AbortController(); // a delete stops this turn
+      turnAbortRef.current = ctl;
       setBusy(true);
       setError("");
       setPartial("");
@@ -248,16 +265,20 @@ export default function Talk() {
           spoken = "";
           n = 0;
           try {
-            await streamTurn(sessionId, said, onEvent, undefined, turnLang(heardLang), turnId);
+            await streamTurn(sessionId, said, onEvent, ctl.signal, turnLang(heardLang), turnId);
             break;
           } catch (e) {
-            if (!retryable(e) || attempt >= RETRY_WAIT_MS.length) throw e;
+            if (ctl.signal.aborted || !retryable(e) || attempt >= RETRY_WAIT_MS.length) throw e;
             setStatus("The connection dropped; trying again…");
             await pause(RETRY_WAIT_MS[attempt]);
+            if (ctl.signal.aborted) throw e;
           }
         }
       } catch (e) {
-        if (e instanceof TurnError && e.code === "conflict") {
+        if (ctl.signal.aborted) {
+          kept = false; // the founder deleted the conversation mid-turn
+          queuedRef.current = [];
+        } else if (e instanceof TurnError && e.code === "conflict") {
           // the reply was heard but not kept: take it back and show what is kept
           kept = false;
           speaker.cancel();
@@ -270,9 +291,14 @@ export default function Talk() {
             setError(`${lost} Reload the page first to continue.`);
           }
         } else if (e instanceof TurnError && e.code === "expired") {
+          kept = false; // still stored: keep the id and offer to delete it (R107)
+          queuedRef.current = [];
+          leave();
+          setExpiredId(sessionId);
+        } else if (e instanceof TurnError && e.code === "gone") {
           kept = false;
           save(null);
-          setError(EXPIRED_LINE + " Press Start over to begin again.");
+          setError(GONE_LINE + " Press Start over to begin again.");
         } else if (retryable(e)) {
           kept = false;
           setError(
@@ -282,6 +308,7 @@ export default function Talk() {
           setError(e instanceof Error ? e.message : "The turn failed. Try again.");
         }
       } finally {
+        if (turnAbortRef.current === ctl) turnAbortRef.current = null;
         if (spoken && kept) setLines((l) => [...l, { role: "assistant", text: spoken }]);
         busyRef.current = false;
         setBusy(false);
@@ -406,6 +433,7 @@ export default function Talk() {
   // ---- starting and ending a conversation
   async function begin() {
     setError("");
+    setNotice("");
     try {
       // what the profile already says is never asked again (task 1.1.1)
       const r = await startSession(name.trim(), isPrivate, profileForConversation(loadProfile()));
@@ -421,10 +449,10 @@ export default function Talk() {
     }
   }
 
-  function startOver() {
+  /** Close the conversation on this screen; the saved id is left as it is. */
+  function leave() {
     stopListening();
     speaker.cancel();
-    save(null);
     queuedRef.current = [];
     setSessionId(null);
     setLines([]);
@@ -435,6 +463,32 @@ export default function Talk() {
     setAction(null);
   }
 
+  function startOver() {
+    leave();
+    save(null);
+  }
+
+  /** Erase a conversation on the server. The id is dropped only once the server
+   * confirms; on a failure it is kept, so the founder can try again (R107). */
+  async function remove(id: string) {
+    if (!window.confirm(CONFIRM_DELETE)) return;
+    setDeleting(true);
+    setError("");
+    turnAbortRef.current?.abort(); // a reply still streaming stops; the server waits for it to end
+    try {
+      await deleteSession(id);
+    } catch (e) {
+      const why = e instanceof Error ? e.message : "The delete failed.";
+      setError(`Could not delete the conversation: ${why} It is kept here; try again.`);
+      return;
+    } finally {
+      setDeleting(false);
+    }
+    setExpiredId(null);
+    startOver();
+    setNotice(DELETED_LINE);
+  }
+
   const orbState: OrbState = speaking ? "speaking" : busy ? "thinking" : listening ? "listening" : "idle";
 
   // ---- before the conversation
@@ -442,42 +496,69 @@ export default function Talk() {
     return (
       <section aria-labelledby="talk-title">
         <h1 id="talk-title">Talk through your idea</h1>
-        <p>
-          Describe your idea in your own words, by voice or by typing. I look up what already
-          exists (papers, trials, open projects, patents, Tamil Nadu startups), tell you what is
-          rare, and ask one question at a time.
-        </p>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            void begin();
-          }}
-        >
-          <p>
-            <label htmlFor="talk-name">Your name (optional) </label>
-            <input id="talk-name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="given-name" />
-          </p>
-          <p>
-            <input id="talk-private" type="checkbox" checked={isPrivate} onChange={(e) => setPrivate(e.target.checked)} />{" "}
-            <label htmlFor="talk-private">
-              Private: search only Vanigam's own data, nothing outside it
-            </label>
-          </p>
-          <p>
-            <button type="submit">Start</button>
-          </p>
-        </form>
-        {canListen ? (
-          <p>
-            <small>
-              Voice uses your browser's speech service to turn speech into text; Vanigam receives
-              only the text, and no audio is stored.
-            </small>
-          </p>
+        {notice ? <p role="status">{notice}</p> : null}
+        {expiredId ? (
+          // the founder chooses before anything else replaces the kept id (R107)
+          <section aria-labelledby="talk-expired">
+            <h2 id="talk-expired">Your last conversation</h2>
+            <p>{EXPIRED_LINE}</p>
+            <p>
+              <button type="button" onClick={() => void remove(expiredId)} disabled={deleting}>
+                {deleting ? "Deleting…" : "Delete it"}
+              </button>{" "}
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => {
+                  save(null);
+                  setExpiredId(null);
+                  setError("");
+                }}
+              >
+                Start fresh
+              </button>
+            </p>
+          </section>
         ) : (
-          <p>
-            <small>This browser has no speech recognition; you can type.</small>
-          </p>
+          <>
+            <p>
+              Describe your idea in your own words, by voice or by typing. I look up what already
+              exists (papers, trials, open projects, patents, Tamil Nadu startups), tell you what is
+              rare, and ask one question at a time.
+            </p>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void begin();
+              }}
+            >
+              <p>
+                <label htmlFor="talk-name">Your name (optional) </label>
+                <input id="talk-name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="given-name" />
+              </p>
+              <p>
+                <input id="talk-private" type="checkbox" checked={isPrivate} onChange={(e) => setPrivate(e.target.checked)} />{" "}
+                <label htmlFor="talk-private">
+                  Private: search only Vanigam's own data, nothing outside it
+                </label>
+              </p>
+              <p>
+                <button type="submit">Start</button>
+              </p>
+            </form>
+            {canListen ? (
+              <p>
+                <small>
+                  Voice uses your browser's speech service to turn speech into text; Vanigam receives
+                  only the text, and no audio is stored.
+                </small>
+              </p>
+            ) : (
+              <p>
+                <small>This browser has no speech recognition; you can type.</small>
+              </p>
+            )}
+          </>
         )}
         {error ? <p role="alert">{error}</p> : null}
       </section>
@@ -575,6 +656,9 @@ export default function Talk() {
         </button>{" "}
         <button type="button" onClick={startOver}>
           Start over
+        </button>{" "}
+        <button type="button" onClick={() => void remove(sessionId)} disabled={deleting}>
+          {deleting ? "Deleting…" : "Delete this conversation"}
         </button>
       </p>
       {action ? (
