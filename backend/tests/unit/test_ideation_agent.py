@@ -219,6 +219,7 @@ def test_note_fact_refuses_unknown_keys():
     s = _new()
     out = _run(tools.run_tool("note_fact", {"key": "aadhaar", "value": "1"}, s.elicitation, {}))
     assert "error" in out
+    s.elicitation.record(user_text="our workshop is near Madurai")
     out = _run(
         tools.run_tool("note_fact", {"key": "district", "value": "madurai"}, s.elicitation, {})
     )
