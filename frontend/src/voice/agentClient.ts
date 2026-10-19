@@ -6,6 +6,7 @@
  */
 
 import type { ProfileDraft } from "../completeness";
+import type { EntryMode, Journey, RegSubtype } from "../journeyStore";
 import { STAGES, type Stage } from "../lib/stages";
 
 const BASE = "/api/v1/ideation/agent/sessions";
@@ -81,6 +82,8 @@ export interface Snapshot {
   session_id: string;
   name: string;
   private: boolean;
+  entry_mode: EntryMode | null;
+  reg_subtype: RegSubtype | null;
   last_question: string | null;
   pending: PendingAction | null;
   /** After a long gap: welcome back and the pending question again (1.1.4.3). */
@@ -183,16 +186,39 @@ export function profileForConversation(p: ProfileDraft): ConversationProfile {
   return out;
 }
 
+/** The Start screen's two answers, as backend AgentStartIn takes them (task
+ * 1.1.6): a registered founder is greeted about the product and not asked the
+ * stage the subtype implies. Only these two fields of the journey leave the
+ * browser; consent and milestones stay. */
+export interface ConversationEntry {
+  entry_mode?: EntryMode;
+  reg_subtype?: RegSubtype;
+}
+
+export function entryForConversation(j: Journey): ConversationEntry {
+  const out: ConversationEntry = {};
+  if (j.entry_mode) out.entry_mode = j.entry_mode;
+  if (j.reg_subtype) out.reg_subtype = j.reg_subtype;
+  return out;
+}
+
 export function startSession(
   name: string,
   isPrivate: boolean,
   profile?: ConversationProfile,
+  entry: ConversationEntry = {},
 ): Promise<StartResult> {
   const known = profile && Object.keys(profile).length ? profile : null;
   return fetch(BASE, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: name || null, private: isPrivate, profile: known }),
+    body: JSON.stringify({
+      name: name || null,
+      private: isPrivate,
+      profile: known,
+      entry_mode: entry.entry_mode ?? null,
+      reg_subtype: entry.reg_subtype ?? null,
+    }),
   }).then((r) => json<StartResult>(r));
 }
 
