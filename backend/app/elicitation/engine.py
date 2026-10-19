@@ -26,6 +26,8 @@ import re
 from dataclasses import dataclass
 from typing import Any, Literal
 
+from app.core.stages import ORDER as STAGE_ORDER
+from app.core.stages import Stage
 from app.elicitation.answers import coerce, validate
 from app.elicitation.confirmation import (
     after_cue,
@@ -146,15 +148,34 @@ def start(
     *,
     mode: EntryMode = EntryMode.IDEA,
     profile: dict[str, Any] | None = None,
+    stage_floor: Stage | None = None,
 ) -> ElicitationSession:
-    """Open a session, pre-filling anything the profile already knows."""
+    """Open a session, pre-filling anything the profile already knows.
+
+    `stage_floor` is the lowest stage the founder's registration implies
+    (entry.REGISTRATION, task 1.1.6). With no profile stage, or one below it
+    (the two disagree), the floor is held in the confirm band: not asked, said
+    back as an assumption at the restatement."""
     s = ElicitationSession(user_id=user_id, mode=mode)
     for key in PROFILE_SLOTS:
         value = _from_profile(key, (profile or {}).get(key))
+        if key == "stage" and stage_floor is not None and _below(value, stage_floor):
+            value = None
         if value is not None:
             s.put(key, value, 0.95, Source.PROFILE)
+    if stage_floor is not None and "stage" not in s.slots:
+        s.put("stage", stage_floor.value, ASSUMED_CONFIDENCE, Source.DEFAULT)
     s.state = SessionState.ELICITING
     return s
+
+
+# Inside the confirm band (slots.TAU_CONFIRM to TAU_FILL): kept and said back as
+# "I assumed", never asked.
+ASSUMED_CONFIDENCE = 0.55
+
+
+def _below(stage: str | None, floor: Stage) -> bool:
+    return stage is None or STAGE_ORDER.index(Stage(stage)) < STAGE_ORDER.index(floor)
 
 
 def _from_profile(key: str, raw: Any) -> Any | None:
