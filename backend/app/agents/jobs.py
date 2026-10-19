@@ -17,6 +17,10 @@ per conversation, as before; the panel runs again when asked.
 Listeners (the Talk screen) get a notice when a job finishes, so the panels
 fill in before the next turn.
 
+A deleted conversation is forgotten: its jobs are cancelled, its results
+dropped, and no job starts or stores results for it afterwards (R173). Finished
+jobs are pruned after KEEP, like their results.
+
 Jobs run in this process (asyncio tasks): enough for one server. A Redis
 queue with separate workers is the step after this (SYSTEM-DESIGN.md §7).
 """
@@ -29,7 +33,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
-from app.agents.results import MemoryResults
+from app.agents.results import KEEP, MemoryResults
 from app.core.logging import get_logger
 
 log = get_logger("jobs")
@@ -37,14 +41,16 @@ log = get_logger("jobs")
 KINDS = ("research", "council")
 DONE, RUNNING, FAILED = "done", "running", "failed"
 LATEST = "latest"
+GONE = "gone"  # the notice that ends a deleted conversation's stream
 
 
 @dataclass
 class Job:
     session_id: str
     kind: str
-    task: asyncio.Task
+    task: asyncio.Future
     started: datetime = field(default_factory=lambda: datetime.now(UTC))
+    finished: datetime | None = None
 
     @property
     def state(self) -> str:
@@ -67,23 +73,40 @@ class Board:
         reuse_done: bool = False,
     ) -> Job:
         """Start `work`, unless a job of this kind is already running for the session
-        (or, with `reuse_done`, has already finished): that job is returned instead."""
+        (or, with `reuse_done`, has already finished): that job is returned instead.
+
+        For a deleted conversation nothing runs: the job returned has already
+        failed, so a caller waiting on it carries on without a result."""
+        loop = asyncio.get_running_loop()
+        if self.results.forgotten(session_id):
+            refused = loop.create_future()
+            refused.cancel()
+            return Job(session_id, kind, refused)
+        self._prune()
         current = self.jobs.get((session_id, kind))
         if current and (current.state == RUNNING or (reuse_done and current.state == DONE)):
             return current
 
         async def run() -> dict:
             payload = await work()
-            await self.results.put(session_id, LATEST, kind, payload)
-            self.notify(session_id, kind, payload)
+            if not self.results.forgotten(session_id):
+                await self.results.put(session_id, LATEST, kind, payload)
+                self.notify(session_id, kind, payload)
             return payload
 
-        task = asyncio.get_running_loop().create_task(run(), name=f"{kind}:{session_id}")
-        task.add_done_callback(lambda t: _log_failure(t, kind))
+        task = loop.create_task(run(), name=f"{kind}:{session_id}")
         job = Job(session_id, kind, task)
+        task.add_done_callback(lambda t: _finished(job, t))
         self.jobs[(session_id, kind)] = job
         log.info("job.started", kind=kind, session=session_id)
         return job
+
+    def _prune(self) -> None:
+        """Drop jobs that finished more than KEEP ago (their results go too)."""
+        now = datetime.now(UTC)
+        old = [k for k, j in self.jobs.items() if j.finished and now - j.finished > KEEP]
+        for key in old:
+            del self.jobs[key]
 
     async def wait(self, job: Job, seconds: float) -> bool:
         """True when the job finished (successfully) within `seconds`."""
@@ -115,18 +138,23 @@ class Board:
                 q.put_nowait({"kind": kind, "payload": payload})
 
     async def forget(self, session_id: str) -> None:
-        """The conversation was deleted: stop its jobs and drop its results."""
+        """The conversation was deleted: stop its jobs, drop its results, refuse
+        any later start or result for it, and end its notice streams."""
+        await self.results.delete_session(session_id)  # first: refuses from here on
         for kind in KINDS:
             job = self.jobs.pop((session_id, kind), None)
             if job and job.state == RUNNING:
                 job.task.cancel()
-        await self.results.delete_session(session_id)
-        self.listeners.pop(session_id, None)
+        for q in self.listeners.pop(session_id, ()):
+            if q.full():  # the end notice matters more than an old one
+                q.get_nowait()
+            q.put_nowait({"kind": GONE, "payload": None})
 
 
-def _log_failure(task: asyncio.Task, kind: str) -> None:
+def _finished(job: Job, task: asyncio.Future) -> None:
+    job.finished = datetime.now(UTC)
     if not task.cancelled() and (exc := task.exception()):
-        log.warning("job.failed", kind=kind, error=type(exc).__name__)
+        log.warning("job.failed", kind=job.kind, error=type(exc).__name__)
 
 
 board = Board()
