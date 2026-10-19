@@ -1,22 +1,27 @@
 """Question selection and the stopping rule (Req 1.2 AC4).
 
 Which single question to ask next, given partial information, is the
-intellectual core of the elicitation loop. It is posed as a constrained
-optimisation over a question *plan* and re-solved every turn, with a greedy
-maximum-value fallback if the solver is unavailable.
+intellectual core of the elicitation loop. Five things constrain the choice at
+once: a burden budget that is tighter on the voice channel, an ask-once
+contract against profile pre-fill, skip handling, a what-before-anything
+order with required-before-enriching after it, and a ceiling on questions.
 
-Why not just sort by value? Because five things constrain the choice at once —
-a burden budget that is tighter on the voice channel, an ask-once contract
-against profile pre-fill, skip handling, required-before-enriching ordering,
-and a ceiling on total questions. A sort key cannot express a budget.
+HOW IT CHOOSES (R119)
+---------------------
+Greedy by value over a filtered pool: first the finger gate (nothing but the
+WHAT finger until the idea is known), then the required tier (required slots,
+and the slots of a contract finger still open, before any enrichment). That is
+the whole rule at default settings: the burden budget (3 per plan slot) cannot
+bind at horizon 3, and over every subset of filled required slots the CP-SAT
+plan's head equals greedy's, at about 700x the cost and two solves per turn.
 
-The solver strictly generalises greedy: at plan horizon 1 with slack, both
-return the same head question.
-
-TWO FINDINGS FROM THE R&D THAT ARE ENCODED HERE AND MUST NOT BE "SIMPLIFIED":
+The CP-SAT model is kept for the case it was built for, a burden budget that
+binds (a tighter voice budget): `select_next` runs it only when the greedy
+plan's burden exceeds the budget. Two findings from the R&D are encoded in it
+and must not be "simplified":
 
 1. `plan_size` is a VARIABLE, not a constant. Pinning it makes the model
-   INFEASIBLE whenever the burden budget binds — a tight budget must be able
+   INFEASIBLE whenever the burden budget binds: a tight budget must be able
    to *shrink* the plan rather than fail.
 
 2. `num_search_workers = 1`. It is ~30% faster at this model size, and
@@ -30,11 +35,17 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from app.elicitation.session import ElicitationSession
-from app.elicitation.slots import BY_KEY, REQUIRED_BY_MODE, Finger, Slot
+from app.elicitation.slots import (
+    ANY_OF,
+    BY_KEY,
+    REQUIRED_BY_MODE,
+    TAU_CONFIRM,
+    TAU_FILL,
+    Finger,
+)
 
 # ---------------------------------------------------------------- constants
 
-TAU_FILL = 0.60  # confidence at or above which a slot counts as known
 TAU_GAIN = 900  # scaled x1000: below this, another question is not worth it
 Q_MAX = 7  # ceiling on questions asked. A product decision — see §4.2
 # of rnd-elicitation.md; marked UNVERIFIED and due A/B calibration.
@@ -69,7 +80,7 @@ class Plan:
 # ---------------------------------------------------------------- value
 
 
-def _decision_bits(slot: Slot) -> float:
+def _decision_bits(slot) -> float:
     """Value of resolving this slot, in decision-equivalent classes.
 
     NOT log2(len(domain)). See slots.py — scoring over raw domain size makes
@@ -100,30 +111,71 @@ def question_value(key: str, session: ElicitationSession) -> int:
 
 
 def candidates(session: ElicitationSession) -> list[str]:
-    """Askable slots: not confidently known, not skipped, not sensitive.
+    """Askable slots: in the unknown band (below TAU_CONFIRM) and not skipped.
 
-    Profile-sourced slots are excluded by the confidence filter — bootstrap
-    seeds them at 0.95, so the selector never asks a founder for a district
-    they already gave us. Re-asking is the single most corrosive thing this
-    feature could do.
+    A confirm-band value is not asked but said back as an assumption (R157).
+    Profile-sourced slots are excluded by the same rule: bootstrap seeds them
+    at 0.95, so the selector never asks a founder for a district they already
+    gave us. Re-asking is the single most corrosive thing this feature could
+    do. A disputed slot sits below the band (R053), so it is asked.
     """
     out = []
     for s in BY_KEY.values():
         if s.key in session.skipped:
             continue
         cur = session.slots.get(s.key)
-        if cur is not None and cur.confidence >= TAU_FILL:
+        if cur is not None and cur.confidence >= TAU_CONFIRM:
             continue
         out.append(s.key)
     return out
+
+
+def _idea_known(session: ElicitationSession) -> bool:
+    """Is the what known? The mode's required free-text WHAT slots (problem,
+    solution) when it has any, else any of its required WHAT slots."""
+    what = [k for k in REQUIRED_BY_MODE[session.mode] if BY_KEY[k].finger is Finger.WHAT]
+    idea = [k for k in what if BY_KEY[k].kind == "text"] or what
+    return not idea or any(k in session.filled for k in idea)
+
+
+def askable(session: ElicitationSession) -> list[str]:
+    """Candidates behind the finger gate (task 1.1.3.1): until the idea is
+    known only WHAT questions are asked, so capital is never asked before what
+    it is for. When no WHAT question is left to ask, the gate opens."""
+    pool = candidates(session)
+    if not _idea_known(session):
+        what = [k for k in pool if BY_KEY[k].finger is Finger.WHAT]
+        if what:
+            return what
+    return pool
+
+
+def needed(session: ElicitationSession) -> set[str]:
+    """Slots that come before any enrichment: the missing required ones, and
+    the slots of a contract finger still open (R113)."""
+    keys = set(session.missing)
+    for finger in session.uncovered:
+        keys |= set(ANY_OF.get(finger, ()))
+    return keys
+
+
+def _tier(session: ElicitationSession, pool: list[str]) -> list[str]:
+    """Required work comes before enrichment: no other slot is planned while a
+    needed one is still askable."""
+    first = needed(session)
+    return [k for k in pool if k in first] or pool
 
 
 # ---------------------------------------------------------------- selection
 
 
 def _greedy(session: ElicitationSession, pool: list[str], horizon: int) -> Plan:
-    ranked = sorted(pool, key=lambda k: -question_value(k, session))
+    ranked = sorted(_tier(session, pool), key=lambda k: -question_value(k, session))
     return Plan(head=ranked[0] if ranked else None, plan=tuple(ranked[:horizon]), status="GREEDY")
+
+
+def _burden(keys) -> int:
+    return sum(BURDEN_BY_KIND.get(BY_KEY[k].kind, 2) for k in keys)
 
 
 def select_next(
@@ -132,14 +184,25 @@ def select_next(
     horizon: int = 3,
     burden_budget: int | None = None,
 ) -> Plan:
-    """Choose the next question (and a short look-ahead plan)."""
-    pool = candidates(session)
+    """Choose the next question (and a short look-ahead plan): greedy, or the
+    solver when a burden budget binds."""
+    pool = askable(session)
     if not pool:
         return Plan(head=None, plan=(), status="EMPTY")
-
     if burden_budget is None:
         burden_budget = 3 * horizon
+    plan = _greedy(session, pool, horizon)
+    if _burden(plan.plan) <= burden_budget:
+        return plan
+    return _solve(session, pool, horizon=horizon, burden_budget=burden_budget)
 
+
+def _solve(
+    session: ElicitationSession, pool: list[str], *, horizon: int, burden_budget: int
+) -> Plan:
+    """The plan as a CP-SAT model: most value within the burden budget."""
+    if not pool:
+        return Plan(head=None, plan=(), status="EMPTY")
     try:
         from ortools.sat.python import cp_model
     except ImportError:  # solver absent — degrade, never fail
@@ -156,12 +219,10 @@ def select_next(
 
     model.Add(sum(BURDEN_BY_KIND.get(BY_KEY[k].kind, 2) * x[k] for k in pool) <= burden_budget)
 
-    # Required work comes before enrichment: no ENRICHING slot may be selected
-    # while any REQUIRED one is still available to ask.
-    req_pool = [k for k in pool if k in REQUIRED_BY_MODE[session.mode]]
-    enr_pool = [k for k in pool if k not in REQUIRED_BY_MODE[session.mode]]
-    if req_pool:
-        for k in enr_pool:
+    # Required work comes before enrichment, as in `_tier`.
+    tier = set(_tier(session, pool))
+    for k in pool:
+        if k not in tier:
             model.Add(x[k] == 0)
 
     model.Maximize(sum(question_value(k, session) * x[k] for k in pool))
@@ -187,8 +248,8 @@ def select_next(
 
 
 def question_budget(session: ElicitationSession) -> int:
-    """Turns allowed before the restatement: Q_MAX plus the turns given back
-    (replies to the restatement, and one question per correction)."""
+    """Questions allowed before the restatement: Q_MAX plus one given back per
+    correction. Counted in questions, not turns (R009)."""
     return Q_MAX + session.refunds
 
 
@@ -196,36 +257,33 @@ def is_objective_clear(session: ElicitationSession) -> StopDecision:
     """Is the objective specified well enough to generate a roadmap?
 
     Three conjuncts, in evaluation order: required coverage, five-finger
-    coverage, then diminishing returns.
+    coverage (every finger with a required slot, and WHY by any of its slots),
+    then diminishing returns.
     """
     unfilled = tuple(sorted(session.missing))
-    fingers_ok = session.fingers >= _fingers_with_required(session)
+    uncovered = session.uncovered
 
-    if unfilled or not fingers_ok:
-        if session.turn_no >= question_budget(session):
+    if unfilled or uncovered:
+        if session.questions_asked >= question_budget(session):
             # Do NOT pretend this is clear. Proceed to confirmation with the
             # gaps named, and let the roadmap widen its pessimistic estimates.
             # Failing loudly-but-usefully beats silently guessing for a user
             # who is tired of questions.
             return StopDecision(True, "budget_exhausted", unfilled)
-        return StopDecision(False, "required_unfilled", unfilled)
+        if unfilled:
+            return StopDecision(False, "required_unfilled", unfilled)
+        if askable(session):
+            return StopDecision(False, "finger_uncovered")
 
+    # Enrichment only before the first restatement: a question given back for a
+    # correction is for what the correction opened, not for new topics.
+    if session.objective is not None:
+        return StopDecision(True, "clear")
     plan = select_next(session)
     best = question_value(plan.head, session) if plan.head else 0
-    if best >= TAU_GAIN and session.turn_no < question_budget(session):
+    if best >= TAU_GAIN and session.questions_asked < question_budget(session):
         return StopDecision(False, "enrichment_available")
     return StopDecision(True, "clear")
-
-
-def _fingers_with_required(session: ElicitationSession) -> set[Finger]:
-    """Fingers that have at least one REQUIRED slot in the active mode.
-
-    Checked explicitly rather than assumed from required-coverage: it is the
-    client's stated contract, and it stays correct if someone later adds a
-    REQUIRED slot to a finger that currently has none.
-    """
-    req = REQUIRED_BY_MODE[session.mode]
-    return {BY_KEY[k].finger for k in req}
 
 
 def next_question(session: ElicitationSession) -> tuple[str, str] | None:
@@ -243,8 +301,10 @@ __all__ = [
     "Q_MAX",
     "TAU_FILL",
     "TAU_GAIN",
+    "askable",
     "candidates",
     "is_objective_clear",
+    "needed",
     "next_question",
     "question_budget",
     "question_value",
