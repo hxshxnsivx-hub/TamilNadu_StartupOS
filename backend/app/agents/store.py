@@ -7,7 +7,9 @@ Two stores behind one interface, holding the same JSON document:
 
 Both apply the same rules: a save carries the version it loaded and is refused
 if the stored version moved on (no silent lost updates), and a session idle
-for more than six hours is treated as gone.
+for more than six hours is hidden. A hidden session is still stored until it is
+deleted: `get(..., include_expired=True)` finds it, so the founder can be told
+it expired (not that it never existed) and can still delete it (R107).
 
 AGENT_STORE picks one: "database", "memory", or "auto" (the database when it
 answers and the table exists; otherwise memory, with a warning).
@@ -36,7 +38,7 @@ class VersionConflict(Exception):
 class SessionStore(Protocol):
     name: str
 
-    async def get(self, session_id: str) -> AgentSession | None: ...
+    async def get(self, session_id: str, include_expired: bool = False) -> AgentSession | None: ...
 
     async def create(self, s: AgentSession) -> None: ...
 
@@ -57,12 +59,12 @@ class MemoryStore:
     def __init__(self) -> None:
         self._docs: dict[str, str] = {}
 
-    async def get(self, session_id: str) -> AgentSession | None:
+    async def get(self, session_id: str, include_expired: bool = False) -> AgentSession | None:
         doc = self._docs.get(session_id)
         if doc is None:
             return None
         s = AgentSession.from_dict(json.loads(doc))
-        return None if _expired(s) else s
+        return None if _expired(s) and not include_expired else s
 
     async def create(self, s: AgentSession) -> None:
         s.version = 1
@@ -83,7 +85,7 @@ class MemoryStore:
 class SqlStore:
     name = "database"
 
-    async def get(self, session_id: str) -> AgentSession | None:
+    async def get(self, session_id: str, include_expired: bool = False) -> AgentSession | None:
         from app.db.session import SessionLocal
         from app.models.agent_session import AgentSessionRow
 
@@ -92,7 +94,7 @@ class SqlStore:
             if row is None:
                 return None
             s = AgentSession.from_dict({**row.data, "version": row.version})
-            return None if _expired(s) else s
+            return None if _expired(s) and not include_expired else s
 
     async def create(self, s: AgentSession) -> None:
         from app.db.session import SessionLocal
@@ -174,6 +176,25 @@ async def _database_ready() -> bool:
 _store: SessionStore | None = None
 
 
+# Write the Redis copy only when it is newer than the one there and the session
+# has not been deleted, in one atomic step (R114). Without the guard, a read that
+# loaded the row before a delete (or before a newer save) could put its old copy
+# back afterwards: a deleted conversation readable for hours, or a spurious 409.
+#   KEYS[1] sess:{id}   KEYS[2] sess:gone:{id}   ARGV doc, version, ttl seconds
+_PUT_IF_NEWER = """
+if redis.call('EXISTS', KEYS[2]) == 1 then return 0 end
+local current = redis.call('GET', KEYS[1])
+if current then
+  local ok, held = pcall(cjson.decode, current)
+  if ok and tonumber(held['version']) and tonumber(held['version']) >= tonumber(ARGV[2]) then
+    return 0
+  end
+end
+redis.call('SET', KEYS[1], ARGV[1], 'EX', tonumber(ARGV[3]))
+return 1
+"""
+
+
 class CachedStore:
     """A Redis copy of live sessions in front of the database (SYSTEM-DESIGN.md §4.3).
 
@@ -181,21 +202,36 @@ class CachedStore:
     idle hours. Reads try Redis, then the database. A refused save (someone else
     saved first) also drops the Redis copy, so the next read fetches the newer
     version instead of looping on a stale one.
+
+    Every copy is written by one script that refuses an older version and a
+    deleted session. Delete removes the row first, then leaves a tombstone
+    (sess:gone:{id}, as long as a copy could live) and drops the copy, so a read
+    still in flight cannot bring the conversation back (R114).
     """
 
     def __init__(self, inner: SessionStore, redis) -> None:
         self.inner = inner
         self.redis = redis
         self.name = f"{inner.name}+redis"
+        self._put_script = None
 
     @staticmethod
     def _key(session_id: str) -> str:
         return f"sess:{session_id}"
 
+    @staticmethod
+    def _gone(session_id: str) -> str:
+        return f"sess:gone:{session_id}"
+
     async def _put(self, s: AgentSession) -> None:
         try:
+            if self._put_script is None:
+                self._put_script = self.redis.register_script(_PUT_IF_NEWER)
             doc = json.dumps(s.to_dict(), default=str)
-            await self.redis.set(self._key(s.id), doc, ex=int(IDLE_EXPIRY.total_seconds()))
+            await self._put_script(
+                keys=[self._key(s.id), self._gone(s.id)],
+                args=[doc, s.version, int(IDLE_EXPIRY.total_seconds())],
+            )
         except Exception:  # the copy is optional
             pass
 
@@ -203,17 +239,20 @@ class CachedStore:
         with contextlib.suppress(Exception):
             await self.redis.delete(self._key(session_id))
 
-    async def get(self, session_id: str) -> AgentSession | None:
+    async def get(self, session_id: str, include_expired: bool = False) -> AgentSession | None:
         try:
             doc = await self.redis.get(self._key(session_id))
         except Exception:
             doc = None
         if doc is not None:
             s = AgentSession.from_dict(json.loads(doc))
-            return None if _expired(s) else s
-        s = await self.inner.get(session_id)
-        if s is not None:
-            await self._put(s)
+            if not _expired(s):
+                return s
+            if not include_expired:
+                return None
+        s = await self.inner.get(session_id, include_expired)
+        if s is not None and not _expired(s):
+            await self._put(s)  # a hidden session is not copied
         return s
 
     async def create(self, s: AgentSession) -> None:
@@ -229,8 +268,15 @@ class CachedStore:
         await self._put(s)
 
     async def delete(self, session_id: str) -> bool:
+        deleted = await self.inner.delete(session_id)
+        try:
+            ttl = int(IDLE_EXPIRY.total_seconds())
+            await self.redis.set(self._gone(session_id), "1", ex=ttl)
+        except Exception:  # the copy is still dropped below; logged, since a read
+            # racing this delete could then write one back until its expiry
+            log.warning("agent_store.tombstone_failed", session=session_id)
         await self._drop(session_id)
-        return await self.inner.delete(session_id)
+        return deleted
 
 
 async def get_store() -> SessionStore:
