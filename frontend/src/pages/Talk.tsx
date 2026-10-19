@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Orb, { type OrbState } from "../voice/Orb";
 import {
   deleteSession,
+  entryForConversation,
   getSession,
   listenNotices,
   newTurnId,
@@ -30,6 +31,7 @@ import {
 } from "../voice/agentClient";
 import { Listener, canListen, isBargeIn, micLevel } from "../voice/speech";
 import { AudioSpeaker, RecordingListener } from "../voice/mentorVoice";
+import { loadJourney } from "../journeyStore";
 import { loadProfile } from "../profileStore";
 
 const LANGS: Lang[] = ["ta-IN", "en-IN", "hi-IN"];
@@ -435,8 +437,14 @@ export default function Talk() {
     setError("");
     setNotice("");
     try {
-      // what the profile already says is never asked again (task 1.1.1)
-      const r = await startSession(name.trim(), isPrivate, profileForConversation(loadProfile()));
+      // what the profile and the Start screen already say is never asked again
+      // (tasks 1.1.1, 1.1.6)
+      const r = await startSession(
+        name.trim(),
+        isPrivate,
+        profileForConversation(loadProfile()),
+        entryForConversation(loadJourney()),
+      );
       setSessionId(r.session_id);
       setSaved(r.saved);
       save(r.session_id);
