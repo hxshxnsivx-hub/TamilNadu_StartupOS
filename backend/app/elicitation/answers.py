@@ -15,8 +15,8 @@ import re
 from enum import Enum
 from typing import Any
 
-from app.core.stages import Stage
-from app.elicitation.cues import compile_cues, matches
+from app.core.stages import Stage, parse_stage
+from app.elicitation.cues import affirmed, compile_cues
 from app.elicitation.extract import extract
 from app.elicitation.places import find_district
 from app.elicitation.slots import BY_KEY
@@ -30,7 +30,15 @@ _STAGE_WORDS: dict[Stage, tuple[str, ...]] = {
     Stage.MVP: ("mvp", "pilot", "beta", "first version", "launched"),
     Stage.PROTOTYPE: ("prototyp*", "sample", "working model", "demo"),
     Stage.POC: ("proof of concept", "poc", "tested", "validated"),
-    Stage.IDEA: ("idea", "nothing built", "not started", "planning", "concept"),
+    Stage.IDEA: (
+        "idea",
+        "nothing built",
+        "not started",
+        "haven't started",
+        "yet to start",
+        "planning",
+        "concept",
+    ),
 }
 _STAGE_PATTERNS = {stage: compile_cues(words) for stage, words in _STAGE_WORDS.items()}
 
@@ -51,9 +59,16 @@ SKIP = re.compile(
 
 
 def _stage(text: str) -> str | None:
+    """The first stage whose word the reply says without denying it (R070).
+
+    A denied stage word ("no customers yet", "we haven't launched") says where
+    the founder is not, not where they are. With nothing else said, the reply
+    does not answer the question and is asked once more rather than guessed:
+    a guess here would be stored as the founder's own answer.
+    """
     low = text.lower()
     for stage, patterns in _STAGE_PATTERNS.items():
-        if matches(low, patterns):
+        if affirmed(low, patterns):
             return stage.value
     return None
 
@@ -103,3 +118,38 @@ def validate(key: str, text: str) -> Any | None:
     if re.fullmatch(r"[\d\s.,₹]+", raw) or len(raw) < 3:
         return None
     return raw
+
+
+def coerce(key: str, value: Any) -> Any | None:
+    """The slot's typed value for `value` from any source, or None (R007).
+
+    Every value passes here before it is stored (session.put): the extractor's
+    and the profile's, a spoken answer and a model's note. A model could store
+    "about five" as the team size, which then broke the roadmap's number
+    comparisons, or "healthtech" as a sector no downstream rule knows. Typed
+    values pass as they are; text is read with the slot's own answer rules.
+    The stage takes only the shared vocabulary (app/core/stages.py), never a
+    loose phrase.
+    """
+    slot = BY_KEY.get(key)
+    if slot is None or value is None or isinstance(value, bool):
+        return None
+    if key == "stage":
+        stage = parse_stage(value)
+        return stage.value if stage else None
+    if slot.enum is not None:
+        if isinstance(value, slot.enum):
+            return value
+        return validate(key, value) if isinstance(value, str) else None
+    if slot.kind == "int":
+        if isinstance(value, float) and value.is_integer():
+            value = int(value)
+        if isinstance(value, int):
+            lo, hi = slot.bounds or (0, 10**6)
+            return value if lo <= value <= hi else None
+        return _int(value, slot.bounds) if isinstance(value, str) else None
+    if slot.kind == "multi" and isinstance(value, (list, tuple)):
+        if not all(isinstance(x, str) for x in value):
+            return None
+        return [x.strip() for x in value if x.strip()] or None
+    return validate(key, value) if isinstance(value, str) else None
