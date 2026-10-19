@@ -149,21 +149,21 @@ licences and risks (S8), streamed fact-checked replies, private sessions, the jo
 - `1.1.3.13` `[ ]` [R155](arena/details-p1.md#r155) (weight 67) Selector values slots by static consumer count, not by which result a gap blocks. Fix: Dynamic value term: count of downstream results (schemes, roadmap gates) whose evaluation is 'unknown' only because of this slot. *Open: needs the three-valued scheme evaluation (4.1.1.3, R003) to say which results are 'unknown'.*
 - `1.1.3.14` `[x]` [R157](arena/details-p1.md#r157) (weight 64) Two 'known' thresholds: 0.5 counts a slot filled, 0.6 still asks it. Fix: Three bands: known / confirm / unknown.
 
-#### 1.1.4 `[ ]` Safe on a 2G connection
+#### 1.1.4 `[x]` Safe on a 2G connection
 - **Why:** a replayed answer after a dropped response is consumed twice; a conflict shows a raw error; a resumed session has no re-orientation.
 - **Where:** `routers/ideation.py` (`agent_turn`), `Talk.tsx`, `agents/ideation.py` (`snapshot`).
 - **How:** optional `client_turn_id` returns the same response on replay; the Talk page offers reload on 409; a resume after a long gap repeats the pending question first.
 - **When:** now.
 - **What for:** conversations survive bad networks (rnd-elicitation §5.4; decision 0003).
-- `1.1.4.1` `client_turn_id` idempotency.
-- `1.1.4.2` 409 handling in the Talk page.
-- `1.1.4.3` Resume preamble that repeats the pending question without charging the budget.
-- `1.1.4.4` `[ ]` [R038](arena/details-p1.md#r038) (weight 84) Idempotency is planned on agent_turn, but the Talk page only uses the stream. Fix: Keep last_turn {client_turn_id, done payload, sentences} in the session document.
-- `1.1.4.5` `[ ]` [R076](arena/details-p1.md#r076) (weight 77) A stream cut before 'done' is treated as a finished turn. Fix: Done-sentinel check plus automatic retry with the same client_turn_id.
-- `1.1.4.6` `[ ]` [R144](arena/details-p1.md#r144) (weight 68) Speaking twice during a slow turn silently drops the first utterance. Fix: Concatenate queued utterances into one next turn.
-- `1.1.4.7` `[ ]` [R143](arena/details-p1.md#r143) (weight 68) Results that finish while offline are missing on reconnect and on resume. Fix: Replay the latest results on subscribe, and include them in the snapshot.
-- `1.1.4.8` `[ ]` [R159](arena/details-p1.md#r159) (weight 62) A stream conflict arrives as 200 + error after the reply was spoken and shown. Fix: Typed SSE error events with a code field.
-- `1.1.4.9` `[ ]` [R176](arena/details-p1.md#r176) (weight 61) Snapshot has no 'pending action' contract for choices, only pending_slot. Fix: Typed pending-action object in the session document.
+- `1.1.4.1` `[x]` `client_turn_id` idempotency.
+- `1.1.4.2` `[x]` 409 handling in the Talk page.
+- `1.1.4.3` `[x]` Resume preamble that repeats the pending question without charging the budget.
+- `1.1.4.4` `[x]` [R038](arena/details-p1.md#r038) (weight 84) Idempotency is planned on agent_turn, but the Talk page only uses the stream. Fix: Keep last_turn {client_turn_id, done payload, sentences} in the session document.
+- `1.1.4.5` `[x]` [R076](arena/details-p1.md#r076) (weight 77) A stream cut before 'done' is treated as a finished turn. Fix: Done-sentinel check plus automatic retry with the same client_turn_id.
+- `1.1.4.6` `[x]` [R144](arena/details-p1.md#r144) (weight 68) Speaking twice during a slow turn silently drops the first utterance. Fix: Concatenate queued utterances into one next turn.
+- `1.1.4.7` `[x]` [R143](arena/details-p1.md#r143) (weight 68) Results that finish while offline are missing on reconnect and on resume. Fix: Replay the latest results on subscribe, and include them in the snapshot.
+- `1.1.4.8` `[x]` [R159](arena/details-p1.md#r159) (weight 62) A stream conflict arrives as 200 + error after the reply was spoken and shown. Fix: Typed SSE error events with a code field.
+- `1.1.4.9` `[x]` [R176](arena/details-p1.md#r176) (weight 61) Snapshot has no 'pending action' contract for choices, only pending_slot. Fix: Typed pending-action object in the session document.
 
 #### 1.1.5 `[ ]` Entry for founders with experience but no idea
 - **Why:** a large share of founders arrive with skills, not an idea; `EntryMode.EXPERIENCE` exists but no endpoint can start it, and `/start` sends them to `/schemes`.
