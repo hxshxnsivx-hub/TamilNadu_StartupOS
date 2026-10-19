@@ -84,7 +84,10 @@ Four tiers, from shortest-lived to longest:
   only written there if they agree.
 - **Forgetting is a feature:** a founder can delete one session or all of them. Deletion removes
   the session, its transcript, evidence and verdicts, and removes it from cohort data at the next
-  nightly rebuild.
+  nightly rebuild. A delete waits for a turn that is running, and background work for a deleted
+  session can neither start nor store results afterwards. A session hidden after six idle hours
+  is still stored until deleted, so the Talk page keeps its id and offers to delete it (the API
+  answers 410 for it, 404 only when nothing is stored).
 
 ### 3.3 Model-side memory: the prompt cache
 
@@ -117,7 +120,8 @@ both cost and delay.
 
 | Key | Holds | Expiry |
 |---|---|---|
-| `sess:{id}` | live copy of a session, with its version | 6 hours idle |
+| `sess:{id}` | live copy of a session, with its version; written only by a script that refuses an older version or a deleted session | 6 hours idle |
+| `sess:gone:{id}` | tombstone of a deleted session, so a read in flight cannot write its copy back | 6 hours |
 | `rs:{source}:{hash of query}` | one research response | 7 days |
 | `rs:neg:{source}:{hash}` | "rate limited, try after X" | the `Retry-After` time |
 | `budget:{source}:{date}` | requests used today against a source | 2 days |
