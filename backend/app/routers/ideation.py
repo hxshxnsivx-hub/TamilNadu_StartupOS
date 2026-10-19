@@ -21,6 +21,7 @@ from app.agents.jobs import GONE, KINDS, board
 from app.agents.store import VersionConflict, get_store
 from app.agents.tools import compact_scan, council_brief
 from app.core.stages import Stage
+from app.models.enums import EntryMode, RegSubtype
 from app.models.ideation_schemas import (
     CategoryOut,
     CompletenessIn,
@@ -272,8 +273,15 @@ class ProfileIn(BaseModel):
 
 
 class AgentStartIn(BaseModel):
+    # only these keys: a misspelt or free-form one (raw "facts") is refused, not dropped
+    model_config = ConfigDict(extra="forbid")
+
     name: str | None = Field(default=None, max_length=80)
     profile: ProfileIn | None = None
+    # the Start screen's two answers, as the browser stores them (journeyStore.ts);
+    # app/elicitation/entry.py says what each means (tasks 1.1.5.1, 1.1.6; R121)
+    entry_mode: EntryMode | None = None
+    reg_subtype: RegSubtype | None = None
     # search nothing outside Vanigam for this conversation
     private: bool = False
     # the founder agrees that their incubator or programme may see this session in
@@ -332,6 +340,8 @@ async def agent_start(body: AgentStartIn) -> dict:
         body.profile.model_dump(exclude_none=True, mode="json") if body.profile else None,
         private=body.private,
         share_with_programme=body.share_with_programme,
+        entry_mode=body.entry_mode,
+        reg_subtype=body.reg_subtype,
     )
     store = await get_store()
     await store.create(s)
