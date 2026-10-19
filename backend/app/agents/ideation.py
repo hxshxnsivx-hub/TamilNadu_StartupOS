@@ -30,10 +30,11 @@ import re
 import uuid
 from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
-from typing import Any
+from datetime import UTC, datetime, timedelta
+from typing import Any, Literal
 
 import httpx
+from pydantic import BaseModel, Field
 
 from app.agents import council, providers
 from app.agents.council.seats import CRITERION_WORDS
@@ -107,6 +108,28 @@ How you work:
 Known so far: {known}
 """
 
+# A founder away this long hears where the conversation stopped before anything
+# else (task 1.1.4.3); a reload within it just shows the last question.
+RESUME_GAP = timedelta(minutes=30)
+OPENING_QUESTION = "Tell me about the idea you are working on, in your own words."
+
+
+class PendingAction(BaseModel):
+    """What the founder is being asked right now (R176): one record for the
+    resume preamble, the screen and later choice checks. `options` and
+    `idea_version` let a choice among cards or levers (1.1.5, 1.2.4) be
+    re-presented and checked against the idea it was offered for."""
+
+    kind: Literal["ask", "confirm", "choose_card", "choose_lever"]
+    slot: str | None = None
+    question: str | None = None
+    options: list[str] = Field(default_factory=list)
+    idea_version: str | None = None
+
+
+def _confirm_question(objective: str | None) -> str:
+    return f"Here is what I understood. {objective} Is that right?"
+
 
 @dataclass
 class AgentSession:
@@ -127,6 +150,11 @@ class AgentSession:
     # the founder agreed that their programme may see this session in aggregates
     cohort_consent: bool = False
     pending_slot: str | None = None
+    pending: dict | None = None  # a PendingAction: what the founder is being asked
+    # The last turn sent with a client_turn_id: its ack, sentences and done payload,
+    # saved in the same write as the turn, so a retry replays it instead of running
+    # it again (R038).
+    last_turn: dict | None = None
     private: bool = False  # search nothing outside Vanigam
     version: int = 0  # bumped on every save; guards against lost updates
     updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
@@ -156,6 +184,8 @@ class AgentSession:
             "language": self.language,
             "cohort_consent": self.cohort_consent,
             "pending_slot": self.pending_slot,
+            "pending": self.pending,
+            "last_turn": self.last_turn,
             "private": self.private,
             "version": self.version,
             "updated_at": self.updated_at.isoformat(),
@@ -169,7 +199,7 @@ class AgentSession:
             if enum is not None and isinstance(sv.value, str):
                 with contextlib.suppress(ValueError):
                     sv.value = enum(sv.value)
-        return cls(
+        s = cls(
             name=d["name"],
             elicitation=el,
             id=d["id"],
@@ -185,10 +215,39 @@ class AgentSession:
             language=d.get("language"),
             cohort_consent=d.get("cohort_consent", False),
             pending_slot=d.get("pending_slot"),
+            last_turn=d.get("last_turn"),
             private=d.get("private", False),
             version=d.get("version", 0),
             updated_at=datetime.fromisoformat(d["updated_at"]),
         )
+        # a document saved before `pending` existed: rebuild it from what it kept
+        pending = d["pending"] if "pending" in d else _derive_pending(s)
+        s.pending = PendingAction.model_validate(pending).model_dump() if pending else None
+        return s
+
+
+def _derive_pending(s: AgentSession) -> dict | None:
+    el = s.elicitation
+    if s.pending_slot:
+        asked = next((t.question for t in reversed(el.turns) if t.question), None)
+        question = asked or _question_for(s, s.pending_slot)
+        return {"kind": "ask", "slot": s.pending_slot, "question": question}
+    if el.state is SessionState.CONFIRMING:
+        return {"kind": "confirm", "question": _confirm_question(el.objective)}
+    if not el.turns:  # only the greeting so far
+        return {"kind": "ask", "question": OPENING_QUESTION}
+    return None
+
+
+def _pending_for(s: AgentSession, action: engine.Action, question: str) -> dict | None:
+    if action.kind not in ("ask", "confirm"):
+        return None
+    return PendingAction(
+        kind=action.kind,
+        slot=action.slot if action.kind == "ask" else None,
+        question=question or None,
+        idea_version=s.idea_version,
+    ).model_dump()
 
 
 def _plain(v: Any) -> str:
@@ -206,8 +265,9 @@ def new_session(
     s = AgentSession(name=who, elicitation=engine.start(user_id, profile=profile), user_id=user_id)
     s.private = private
     s.cohort_consent = share_with_programme
+    s.pending = PendingAction(kind="ask", question=OPENING_QUESTION).model_dump()
     greeting = (
-        f"Vanakkam {who}! Tell me about the idea you are working on, in your own words."
+        f"Vanakkam {who}! {OPENING_QUESTION}"
         " It can be a product, a machine, an app or a service. I will look up what already"
         " exists for it, papers, patents, projects and products, and we will shape it together."
     )
@@ -221,8 +281,22 @@ def new_session(
     return s, greeting
 
 
-def snapshot(s: AgentSession) -> dict:
-    """Where the conversation stands: enough for a screen to resume it."""
+def snapshot(s: AgentSession, latest: dict | None = None) -> dict:
+    """Where the conversation stands: enough for a screen to resume it.
+
+    `latest` holds the board's latest finished results by kind (research,
+    council): work that finished while the founder was away shows at once,
+    before the next turn takes it in (R143). Reading never changes the session,
+    so the resume preamble spends no question.
+    """
+    latest = latest or {}
+    research = latest.get("research") if s.scan is None else None
+    scan = s.scan or (research or {}).get("scan")
+    nov = s.novelty or (research or {}).get("novelty")
+    c = latest.get("council")
+    fresh_council = bool(c) and (not s.council or s.council.get("at") != c.get("at"))
+    panel = c if fresh_council else s.council
+    fresh = [w for w, new in (("the search", research), ("the review panel", fresh_council)) if new]
     said = [
         {"role": m["role"], "text": m["content"]}
         for m in s.messages[1:]
@@ -237,15 +311,46 @@ def snapshot(s: AgentSession) -> dict:
         "private": s.private,
         "state": s.elicitation.state.value,
         "pending_slot": s.pending_slot,
+        "pending": s.pending,
         "last_question": question,
+        "resume": _resume_line(s, question, fresh),
         "transcript": said,
         "known": _known_dict(s),
-        "evidence": compact_scan(s.scan) if s.scan else None,
+        "evidence": compact_scan(scan) if scan else None,
         "roadmap": s.roadmap,
-        "novelty": s.novelty,
-        "council": council_brief(s.council) if s.council else None,
+        "novelty": nov,
+        "council": council_brief(panel) if panel else None,
         "idea_version": s.idea_version,
     }
+
+
+def _resume_line(s: AgentSession, last_question: str | None, fresh: list[str]) -> str | None:
+    """After a long gap: welcome back, what finished meanwhile, then the pending
+    question again (task 1.1.4.3). It is the question already asked, so it spends
+    nothing: the next reply answers it as before."""
+    if datetime.now(UTC) - s.updated_at < RESUME_GAP:
+        return None
+    parts = ["Welcome back." if s.name == "there" else f"Welcome back, {s.name}."]
+    if fresh:
+        parts.append(f"While you were away, {' and '.join(fresh)} finished; it is shown below.")
+    question = (s.pending or {}).get("question") or last_question
+    if question:
+        parts += ["Here is where we stopped.", question]
+    return " ".join(parts)
+
+
+def replay(s: AgentSession, client_turn_id: str | None) -> list[dict] | None:
+    """The saved events of the last turn, when this is a retry of it (R038): the
+    same ack, the same fact-checked sentences and the same done payload, with no
+    model call and nothing applied twice. None when it is a new turn."""
+    t = s.last_turn
+    if not client_turn_id or not t or t.get("client_turn_id") != client_turn_id:
+        return None
+    return [
+        _event("ack", t["ack"]),
+        *(_event("sentence", x) for x in t["sentences"]),
+        _event("done", {**t["done"], "replayed": True}),
+    ]
 
 
 def _known_dict(s: AgentSession) -> dict:
@@ -910,11 +1015,13 @@ async def turn_stream(
     *,
     client: httpx.AsyncClient | None = None,
     language: str | None = None,
+    client_turn_id: str | None = None,
 ) -> AsyncIterator[dict]:
     """One founder turn as events: ack, sentence…, tool, evidence, done.
 
     `language` is the founder's language for this turn (from speech recognition or
     their choice); the reply comes back in it when a model is available.
+    `client_turn_id` names the turn so a retry of it can be replayed (`replay`).
     """
     s.updated_at = datetime.now(UTC)
     if language in LANGUAGE_NAMES:
@@ -923,22 +1030,21 @@ async def turn_stream(
     action = _advance(s, text)
     s.pending_slot = action.slot if action.kind == "ask" else None
     if action.kind == "confirm":
-        question = f"Here is what I understood. {action.objective} Is that right?"
+        question = _confirm_question(action.objective)
     elif action.kind == "generate":
         question = "They confirmed: build the roadmap now and walk them through it."
     else:
         question = action.question or ""
     if action.kind == "ask" and s.elicitation.turns:
         s.elicitation.turns[-1].question = question  # so a resumed session can repeat it
-    yield _event(
-        "ack",
-        {
-            "session_id": s.id,
-            "action": _action_dict(action),
-            # so the voice can start speaking the first sentence in the right language
-            "reply_language": (s.language or "en-IN") if _model_allowed(s) else "en-IN",
-        },
-    )
+    s.pending = _pending_for(s, action, question)
+    ack = {
+        "session_id": s.id,
+        "action": _action_dict(action),
+        # so the voice can start speaking the first sentence in the right language
+        "reply_language": (s.language or "en-IN") if _model_allowed(s) else "en-IN",
+    }
+    yield _event("ack", ack)
 
     s.messages.append({"role": "user", "content": text})
     out: dict = {
@@ -988,27 +1094,32 @@ async def turn_stream(
             await client.aclose()
         _add_usage(s.usage, out["usage"])
 
-    yield _event(
-        "done",
-        {
-            "session_id": s.id,
-            "reply": " ".join(out["spoken"]),
-            "action": _action_dict(action),
-            "tools_used": out["tools"],
-            "dropped": len(out["dropped"]),
-            "evidence": compact_scan(s.scan) if s.scan else None,
-            "roadmap": s.roadmap,
-            "novelty": s.novelty,
-            "council": council_brief(s.council) if s.council else None,
-            "model": out["model"],
-            "provider": out["provider"],
-            # the language the reply was written in: offline templates are English only
-            "language": (s.language or "en-IN") if out["model"] == "model" else "en-IN",
-            "usage": s.usage,
-            "known": _known_dict(s),
-            "idea_version": s.idea_version,
-        },
+    done = {
+        "session_id": s.id,
+        "reply": " ".join(out["spoken"]),
+        "action": _action_dict(action),
+        "tools_used": out["tools"],
+        "dropped": len(out["dropped"]),
+        "evidence": compact_scan(s.scan) if s.scan else None,
+        "roadmap": s.roadmap,
+        "novelty": s.novelty,
+        "council": council_brief(s.council) if s.council else None,
+        "model": out["model"],
+        "provider": out["provider"],
+        # the language the reply was written in: offline templates are English only
+        "language": (s.language or "en-IN") if out["model"] == "model" else "en-IN",
+        "usage": s.usage,
+        "known": _known_dict(s),
+        "idea_version": s.idea_version,
+    }
+    # saved with the turn (the caller saves on `done`); a turn without an id
+    # forgets the last one, so an old id can never replay a stale reply
+    s.last_turn = (
+        {"client_turn_id": client_turn_id, "ack": ack, "sentences": out["spoken"][:], "done": done}
+        if client_turn_id
+        else None
     )
+    yield _event("done", done)
 
 
 async def turn(
@@ -1017,13 +1128,16 @@ async def turn(
     *,
     client: httpx.AsyncClient | None = None,
     language: str | None = None,
+    client_turn_id: str | None = None,
 ) -> dict:
     """The same turn, collected: returns the `done` payload."""
     done: dict = {}
-    async for ev in turn_stream(s, text, client=client, language=language):
+    async for ev in turn_stream(
+        s, text, client=client, language=language, client_turn_id=client_turn_id
+    ):
         if ev["event"] == "done":
             done = ev["data"]
     return done
 
 
-__all__ = ["AgentSession", "new_session", "snapshot", "turn", "turn_stream"]
+__all__ = ["AgentSession", "new_session", "replay", "snapshot", "turn", "turn_stream"]
