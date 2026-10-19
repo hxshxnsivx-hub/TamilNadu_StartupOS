@@ -11,11 +11,16 @@ import Orb, { type OrbState } from "../voice/Orb";
 import {
   getSession,
   listenNotices,
+  newTurnId,
   profileForConversation,
+  retryable,
   startSession,
   streamTurn,
+  TurnError,
   voiceStatus,
   type Action,
+  type AgentEvent,
+  type Snapshot,
   type Lang,
   type CouncilBrief,
   type Evidence,
@@ -40,6 +45,20 @@ const TOOL_LABEL: Record<string, string> = {
 };
 
 type Line = { role: "user" | "assistant"; text: string };
+
+// A turn cut off by the network is sent again with the same id after these
+// pauses (ms): the server replays it if it was saved, or runs it once (R076).
+const RETRY_WAIT_MS = [1000, 3000, 7000];
+// Said when another screen changed the conversation and this reply was not kept (R159).
+const CONFLICT_LINE = "This conversation changed on another screen, so I reloaded it.";
+/** The conflict line, plus what the founder said that was not kept: never resent
+ * by itself, since the other screen may already have answered. */
+const lostLine = (said: string) =>
+  `${CONFLICT_LINE} What you just said was not kept: "${said}". Please say it again.`;
+const EXPIRED_LINE =
+  "Your last conversation ended after 6 hours without activity, so this is a fresh start.";
+
+const pause = (ms: number) => new Promise((r) => window.setTimeout(r, ms));
 
 function readSaved(): string | null {
   try {
@@ -83,7 +102,8 @@ export default function Talk() {
 
   const busyRef = useRef(false);
   const mutedRef = useRef(false); // founder interrupted: stop speaking this turn
-  const queuedRef = useRef<string | null>(null);
+  // what the founder said while a turn was busy: all of it goes in the next turn (R144)
+  const queuedRef = useRef<string[]>([]);
   const stopMicRef = useRef<(() => void) | null>(null);
   const voiceOnRef = useRef(voiceOn);
   voiceOnRef.current = voiceOn;
@@ -119,22 +139,37 @@ export default function Talk() {
   const turnLang = (heard?: Lang): Lang | undefined =>
     langRef.current === "auto" ? heard ?? founderLangRef.current : langRef.current;
 
+  /** Show a conversation as the server holds it; `lead` is said before the
+   * pending question (after a long gap the server writes its own preamble). */
+  function show(snap: Snapshot, lead?: string) {
+    setSessionId(snap.session_id);
+    setName(snap.name === "there" ? "" : snap.name);
+    setPrivate(snap.private);
+    setLines(snap.transcript);
+    setEvidence(snap.evidence);
+    setNovelty(snap.novelty);
+    setCouncil(snap.council);
+    const question = snap.pending?.question ?? snap.last_question ?? "";
+    const say = lead ? `${lead} ${question}`.trim() : snap.resume ?? "";
+    setCaption(say || question);
+    if (say && voiceOnRef.current) speaker.say(say, "en-IN");
+  }
+
   // ---- resume a saved conversation
   useEffect(() => {
     const id = readSaved();
     if (!id) return;
     getSession(id)
-      .then((snap) => {
-        setSessionId(snap.session_id);
-        setName(snap.name === "there" ? "" : snap.name);
-        setPrivate(snap.private);
-        setLines(snap.transcript);
-        setEvidence(snap.evidence);
-        setNovelty(snap.novelty);
-        setCouncil(snap.council);
-        setCaption(snap.last_question ?? "");
-      })
-      .catch(() => save(null)); // expired or gone: start fresh
+      .then((snap) => show(snap))
+      .catch((e) => {
+        if (e instanceof TurnError && e.code === "expired") {
+          save(null); // gone: start fresh, and say why (R143)
+          setError(EXPIRED_LINE);
+        } else {
+          setError("Could not reach Vanigam. Your conversation is kept; reload to try again.");
+        }
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ---- slow work (search, novelty, review panel) shows up the moment it finishes
@@ -149,11 +184,11 @@ export default function Talk() {
 
   // ---- one turn
   const send = useCallback(
-    async (text: string, heard?: Lang) => {
+    async (text: string, heardLang?: Lang) => {
       const said = text.trim();
       if (!said || !sessionId) return;
       if (busyRef.current) {
-        queuedRef.current = said; // sent when this turn finishes
+        queuedRef.current.push(said); // sent, joined, when this turn finishes
         return;
       }
       busyRef.current = true;
@@ -164,56 +199,99 @@ export default function Talk() {
       setLines((l) => [...l, { role: "user", text: said }]);
       let spoken = "";
       let replyLang: Lang = "en-IN";
-      try {
-        await streamTurn(sessionId, said, (ev) => {
-          switch (ev.event) {
-            case "ack":
-              setAction(ev.data.action);
-              replyLang = ev.data.reply_language ?? "en-IN";
-              break;
-            case "sentence":
-              spoken = spoken ? `${spoken} ${ev.data}` : ev.data;
-              setCaption(ev.data);
-              setStatus("");
-              if (voiceOnRef.current && !mutedRef.current) speaker.say(ev.data, replyLang);
-              break;
-            case "tool":
-              setStatus(ev.data.status === "started" ? `${TOOL_LABEL[ev.data.name] ?? ev.data.name}…` : "");
-              break;
-            case "evidence":
-              setEvidence(ev.data);
-              break;
-            case "novelty":
-              setNovelty(ev.data);
-              break;
-            case "council":
-              setCouncil(ev.data);
-              break;
-            case "done":
-              speaker.flush(); // the reply is complete: say what is still waiting
-              setAction(ev.data.action);
-              if (ev.data.evidence) setEvidence(ev.data.evidence);
-              if (ev.data.novelty) setNovelty(ev.data.novelty);
-              if (ev.data.council) setCouncil(ev.data.council);
-              spoken = ev.data.reply || spoken;
-              break;
-            case "error":
-              setError(ev.data.detail);
-              break;
+      let kept = true; // false when the server did not keep this turn
+      // One id for this turn and all its retries; what was already said aloud in
+      // an attempt cut short is not said again when the retry brings it back.
+      const turnId = newTurnId();
+      const heard: string[] = [];
+      let n = 0;
+      const onEvent = (ev: AgentEvent) => {
+        switch (ev.event) {
+          case "ack":
+            setAction(ev.data.action);
+            replyLang = ev.data.reply_language ?? "en-IN";
+            break;
+          case "sentence": {
+            spoken = spoken ? `${spoken} ${ev.data}` : ev.data;
+            const again = heard[n] === ev.data;
+            heard[n++] = ev.data;
+            if (again) break;
+            setCaption(ev.data);
+            setStatus("");
+            if (voiceOnRef.current && !mutedRef.current) speaker.say(ev.data, replyLang);
+            break;
           }
-        }, undefined, turnLang(heard));
+          case "tool":
+            setStatus(ev.data.status === "started" ? `${TOOL_LABEL[ev.data.name] ?? ev.data.name}…` : "");
+            break;
+          case "evidence":
+            setEvidence(ev.data);
+            break;
+          case "novelty":
+            setNovelty(ev.data);
+            break;
+          case "council":
+            setCouncil(ev.data);
+            break;
+          case "done":
+            speaker.flush(); // the reply is complete: say what is still waiting
+            setAction(ev.data.action);
+            if (ev.data.evidence) setEvidence(ev.data.evidence);
+            if (ev.data.novelty) setNovelty(ev.data.novelty);
+            if (ev.data.council) setCouncil(ev.data.council);
+            spoken = ev.data.reply || spoken;
+            break;
+        }
+      };
+      try {
+        for (let attempt = 0; ; attempt++) {
+          spoken = "";
+          n = 0;
+          try {
+            await streamTurn(sessionId, said, onEvent, undefined, turnLang(heardLang), turnId);
+            break;
+          } catch (e) {
+            if (!retryable(e) || attempt >= RETRY_WAIT_MS.length) throw e;
+            setStatus("The connection dropped; trying again…");
+            await pause(RETRY_WAIT_MS[attempt]);
+          }
+        }
       } catch (e) {
-        setError(e instanceof Error ? e.message : "The turn failed. Try again.");
+        if (e instanceof TurnError && e.code === "conflict") {
+          // the reply was heard but not kept: take it back and show what is kept
+          kept = false;
+          speaker.cancel();
+          const lost = lostLine(said);
+          setDraft(said); // in the box, ready to send again with one tap
+          setError(lost); // stays visible after the caption moves on
+          try {
+            show(await getSession(sessionId), lost);
+          } catch {
+            setError(`${lost} Reload the page first to continue.`);
+          }
+        } else if (e instanceof TurnError && e.code === "expired") {
+          kept = false;
+          save(null);
+          setError(EXPIRED_LINE + " Press Start over to begin again.");
+        } else if (retryable(e)) {
+          kept = false;
+          setError(
+            "The connection keeps dropping, so I could not finish that turn. When the signal is back, reload the page to see where we stopped.",
+          );
+        } else {
+          setError(e instanceof Error ? e.message : "The turn failed. Try again.");
+        }
       } finally {
-        if (spoken) setLines((l) => [...l, { role: "assistant", text: spoken }]);
+        if (spoken && kept) setLines((l) => [...l, { role: "assistant", text: spoken }]);
         busyRef.current = false;
         setBusy(false);
         setStatus("");
-        const next = queuedRef.current;
-        queuedRef.current = null;
+        const next = queuedRef.current.join(" ");
+        queuedRef.current = [];
         if (next) void send(next);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [sessionId, speaker],
   );
   const sendRef = useRef(send);
@@ -347,6 +425,7 @@ export default function Talk() {
     stopListening();
     speaker.cancel();
     save(null);
+    queuedRef.current = [];
     setSessionId(null);
     setLines([]);
     setCaption("");
