@@ -65,6 +65,16 @@ export interface Done {
   known: Record<string, string>;
   model?: string;
   language?: Lang;
+  replayed?: boolean; // a retry of a turn the server had already saved
+}
+
+/** What the founder is being asked right now (backend PendingAction, R176). */
+export interface PendingAction {
+  kind: "ask" | "confirm" | "choose_card" | "choose_lever";
+  slot: string | null;
+  question: string | null;
+  options: string[];
+  idea_version: string | null;
 }
 
 export interface Snapshot {
@@ -72,6 +82,9 @@ export interface Snapshot {
   name: string;
   private: boolean;
   last_question: string | null;
+  pending: PendingAction | null;
+  /** After a long gap: welcome back and the pending question again (1.1.4.3). */
+  resume: string | null;
   transcript: Array<{ role: "user" | "assistant"; text: string }>;
   evidence: Evidence | null;
   novelty: Novelty | null;
@@ -85,8 +98,48 @@ export type AgentEvent =
   | { event: "evidence"; data: Evidence }
   | { event: "novelty"; data: Novelty }
   | { event: "council"; data: CouncilBrief }
-  | { event: "done"; data: Done }
-  | { event: "error"; data: { detail: string } };
+  | { event: "done"; data: Done };
+
+/** Why a turn did not finish (R076, R159):
+ * - conflict: the conversation changed elsewhere; the reply was not saved
+ * - expired: the conversation is gone (6 hours idle, or deleted)
+ * - failed: the server could not finish the turn
+ * - truncated: the stream ended before `done`; the turn was not saved
+ * - network: the request never reached the server */
+export type TurnErrorCode = "conflict" | "expired" | "failed" | "truncated" | "network";
+
+export class TurnError extends Error {
+  code: TurnErrorCode;
+  constructor(code: TurnErrorCode, message: string) {
+    super(message);
+    this.name = "TurnError";
+    this.code = code;
+  }
+}
+
+/** Worth sending again with the same turn id: the server either replays the
+ * saved turn or runs it for the first time, never twice. */
+export function retryable(e: unknown): boolean {
+  return e instanceof TurnError && (e.code === "truncated" || e.code === "network");
+}
+
+/** A name for one turn, kept across its retries (backend AgentTurnIn.client_turn_id). */
+export function newTurnId(): string {
+  try {
+    if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+  } catch {
+    /* not a secure context: fall back below */
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+}
+
+async function failure(res: Response): Promise<TurnError> {
+  const body = await res.json().catch(() => ({}));
+  const b = body as { error_message?: string; detail?: string };
+  const detail = b.error_message || b.detail || `Request failed (${res.status})`;
+  const code: TurnErrorCode = res.status === 404 ? "expired" : res.status === 409 ? "conflict" : "failed";
+  return new TurnError(code, detail);
+}
 
 async function json<T>(res: Response): Promise<T> {
   const body = await res.json().catch(() => ({}));
@@ -134,8 +187,17 @@ export function startSession(
   }).then((r) => json<StartResult>(r));
 }
 
-export function getSession(id: string): Promise<Snapshot> {
-  return fetch(`${BASE}/${id}`).then((r) => json<Snapshot>(r));
+/** Rejects with TurnError: `expired` when the conversation is gone, `network`
+ * when the server could not be reached (the saved id is then worth keeping). */
+export async function getSession(id: string): Promise<Snapshot> {
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}/${id}`);
+  } catch {
+    throw new TurnError("network", "Could not reach Vanigam.");
+  }
+  if (!res.ok) throw await failure(res);
+  return (await res.json()) as Snapshot;
 }
 
 export interface Notices {
@@ -202,29 +264,49 @@ export function transcribe(
   );
 }
 
-/** Parse a server-sent event stream into events, as they arrive. */
+/** Parse a server-sent event stream into events, as they arrive.
+ *
+ * Resolves only when `done` arrived: that is the server's sign the turn was
+ * saved. Otherwise rejects with a TurnError: an `error` event's code, or
+ * `truncated` when the stream stopped first, or `network` (R076, R159).
+ * `clientTurnId` names the turn; send the same one again to retry it. */
 export async function streamTurn(
   sessionId: string,
   text: string,
   onEvent: (ev: AgentEvent) => void,
   signal?: AbortSignal,
   language?: Lang,
+  clientTurnId?: string,
 ): Promise<void> {
-  const res = await fetch(`${BASE}/${sessionId}/turns/stream`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(language ? { text, language } : { text }),
-    signal,
-  });
-  if (!res.ok || !res.body) {
-    await json(res); // throws with the server's message
-    return;
+  const body: Record<string, string> = { text };
+  if (language) body.language = language;
+  if (clientTurnId) body.client_turn_id = clientTurnId;
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}/${sessionId}/turns/stream`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal,
+    });
+  } catch (e) {
+    if (signal?.aborted) throw e;
+    throw new TurnError("network", "Could not reach Vanigam.");
   }
+  if (!res.ok) throw await failure(res);
+  if (!res.body) throw new TurnError("truncated", "The reply did not arrive.");
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buf = "";
   for (;;) {
-    const { value, done } = await reader.read();
+    let chunk: ReadableStreamReadResult<Uint8Array>;
+    try {
+      chunk = await reader.read();
+    } catch (e) {
+      if (signal?.aborted) throw e;
+      throw new TurnError("truncated", "The connection dropped during the reply.");
+    }
+    const { value, done } = chunk;
     if (done) break;
     buf += decoder.decode(value, { stream: true });
     let cut: number;
@@ -238,11 +320,20 @@ export async function streamTurn(
         else if (line.startsWith("data:")) data.push(line.slice(5).trimStart());
       }
       if (!data.length) continue;
+      let parsed: unknown;
       try {
-        onEvent({ event, data: JSON.parse(data.join("\n")) } as AgentEvent);
+        parsed = JSON.parse(data.join("\n"));
       } catch {
-        /* a malformed event is skipped, never fatal */
+        continue; // a malformed event is skipped, never fatal
       }
+      if (event === "error") {
+        const e = parsed as { code?: TurnErrorCode; detail?: string };
+        void reader.cancel().catch(() => undefined);
+        throw new TurnError(e.code ?? "failed", e.detail ?? "The turn failed.");
+      }
+      onEvent({ event, data: parsed } as AgentEvent);
+      if (event === "done") return; // saved: anything after it is not part of the turn
     }
   }
+  throw new TurnError("truncated", "The reply stopped before it finished.");
 }
