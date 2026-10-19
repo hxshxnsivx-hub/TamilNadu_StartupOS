@@ -102,11 +102,13 @@ export type AgentEvent =
 
 /** Why a turn did not finish (R076, R159):
  * - conflict: the conversation changed elsewhere; the reply was not saved
- * - expired: the conversation is gone (6 hours idle, or deleted)
+ * - expired: hidden after 6 hours idle, but still stored: keep the id, so the
+ *   founder can still delete it (R107)
+ * - gone: no such conversation (deleted, or never saved): the id is useless
  * - failed: the server could not finish the turn
  * - truncated: the stream ended before `done`; the turn was not saved
  * - network: the request never reached the server */
-export type TurnErrorCode = "conflict" | "expired" | "failed" | "truncated" | "network";
+export type TurnErrorCode = "conflict" | "expired" | "gone" | "failed" | "truncated" | "network";
 
 export class TurnError extends Error {
   code: TurnErrorCode;
@@ -137,7 +139,14 @@ async function failure(res: Response): Promise<TurnError> {
   const body = await res.json().catch(() => ({}));
   const b = body as { error_message?: string; detail?: string };
   const detail = b.error_message || b.detail || `Request failed (${res.status})`;
-  const code: TurnErrorCode = res.status === 404 ? "expired" : res.status === 409 ? "conflict" : "failed";
+  const code: TurnErrorCode =
+    res.status === 410
+      ? "expired"
+      : res.status === 404
+        ? "gone"
+        : res.status === 409
+          ? "conflict"
+          : "failed";
   return new TurnError(code, detail);
 }
 
@@ -187,8 +196,9 @@ export function startSession(
   }).then((r) => json<StartResult>(r));
 }
 
-/** Rejects with TurnError: `expired` when the conversation is gone, `network`
- * when the server could not be reached (the saved id is then worth keeping). */
+/** Rejects with TurnError: `expired` when it is hidden but still stored (keep
+ * the id: it can still be deleted), `gone` when there is no such conversation,
+ * `network` when the server could not be reached (the id is worth keeping). */
 export async function getSession(id: string): Promise<Snapshot> {
   let res: Response;
   try {
@@ -198,6 +208,21 @@ export async function getSession(id: string): Promise<Snapshot> {
   }
   if (!res.ok) throw await failure(res);
   return (await res.json()) as Snapshot;
+}
+
+/** Delete a conversation (also one that expired) with its transcript, evidence
+ * and roadmap. Resolves when the server no longer holds it, including when it
+ * was already gone. Rejects with TurnError (`network`, `failed`): the id is then
+ * still needed to try again. */
+export async function deleteSession(id: string): Promise<void> {
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}/${id}`, { method: "DELETE" });
+  } catch {
+    throw new TurnError("network", "Could not reach Vanigam.");
+  }
+  if (res.ok || res.status === 404) return;
+  throw await failure(res);
 }
 
 export interface Notices {
