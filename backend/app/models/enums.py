@@ -51,13 +51,19 @@ class DocumentType(str, Enum):
 
 # ── v2 hybrid-ideology fields (design ADDENDUM v2 · B1) ──
 class EntryMode(str, Enum):
+    """How the founder came in, as the front door asks it (frontend journeyStore).
+    Not the conversation's mode: app/elicitation/entry.py maps one onto the other."""
+
     IDEA = "idea"
     DOMAIN_ONLY = "domain_only"
     INTENT_ONLY = "intent_only"
 
 
 class RegSubtype(str, Enum):
-    REGISTERED_PRODUCT = "registered_product"  # 2A
+    """What already exists legally. The values are the ones the browser stores
+    (frontend journeyStore.ts); the 2A-2C labels are the August spec's."""
+
+    REGISTERED_WITH_PRODUCT = "registered_with_product"  # 2A
     REGISTERED_NO_PRODUCT = "registered_no_product"  # 2B
     IDEA_WORKER_NO_COMPANY = "idea_worker_no_company"  # 2C
     UNREGISTERED = "unregistered"
