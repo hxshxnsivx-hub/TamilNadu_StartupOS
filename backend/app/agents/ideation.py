@@ -23,6 +23,7 @@ runs once the idea is clear, and a templated reply summarises it.
 from __future__ import annotations
 
 import contextlib
+import dataclasses
 import functools
 import hashlib
 import json
@@ -45,11 +46,13 @@ from app.core.config import get_settings
 from app.core.logging import get_logger
 from app.elicitation import engine
 from app.elicitation.answers import SKIP
-from app.elicitation.entry import REGISTRATION
+from app.elicitation.confirmation import polarity
+from app.elicitation.entry import CONVERSATION_MODE, REGISTRATION
 from app.elicitation.session import ElicitationSession, SessionState
 from app.elicitation.slots import BY_KEY, EntryMode
 from app.models.enums import EntryMode as Door
 from app.models.enums import RegSubtype
+from app.planner import opportunities
 from app.research import novelty
 from app.voice.phrasebook import translation
 
@@ -111,10 +114,46 @@ How you work:
 Known so far: {known}
 """
 
+# Said to the model while the founder has no idea yet (task 1.1.5, R118): it may
+# not search, judge or invent; it learns what the founder can do.
+EXPERIENCE_RULE = """
+This founder has no idea yet. You are learning what they can do: the work they
+have done, their skills and years in it, what they own, the field they know and
+where they live. Do not suggest business ideas or opportunities, do not search
+for what already exists and do not judge an idea: there is none yet.
+Opportunities are offered only from Vanigam's own cited list, after the founder
+confirms what you learned.
+"""
+
 # A founder away this long hears where the conversation stopped before anything
 # else (task 1.1.4.3); a reload within it just shows the last question.
 RESUME_GAP = timedelta(minutes=30)
 OPENING_QUESTION = REGISTRATION[RegSubtype.UNREGISTERED].opening
+# The experience conversation opens on what the founder can do (R089): its
+# anchor slot, asked in its own words, so the first reply is the answer to it.
+EXPERIENCE_SLOT = "founder_skills"
+EXPERIENCE_OPENING = BY_KEY[EXPERIENCE_SLOT].question_for(EntryMode.EXPERIENCE)
+
+# The choice among opportunity cards (R066). With no cited card to offer (the
+# ranking, task 1.1.5.3, waits on the sector taxonomy), the conversation says so
+# instead of inventing one, and offers the idea conversation instead.
+NO_CARDS = (
+    "I cannot suggest opportunities to you yet: the list I would choose them from is still"
+    " being checked, and I will not make one up. If you have an idea of your own, even a"
+    " rough one, would you like to tell me about it?"
+)
+NONE_FIT = (
+    "That is fine. If you have an idea of your own, even a rough one, tell me about it and"
+    " we will shape it together."
+)
+DECLINED = (
+    "That is fine. Everything you told me is kept here. Come back when you have an idea,"
+    " and we will start from what you know."
+)
+_NONE = re.compile(r"\b(none|neither|not these|not any of (these|them))\b", re.I)
+IDEA_WORDS = 4  # a reply this long that picks no card is read as the founder's own idea
+_ORDINALS = ("first", "second", "third", "fourth", "fifth")
+_NUMBERS = ("one", "two", "three", "four", "five")
 
 
 class PendingAction(BaseModel):
@@ -163,6 +202,10 @@ class AgentSession:
     # start; app/elicitation/entry.py says what they mean (task 1.1.6, R121)
     entry_mode: str | None = None
     reg_subtype: str | None = None
+    # the opportunity cards offered at the choice (opportunities.Card, as JSON),
+    # and the id of the one the founder picked (task 1.1.5, R066)
+    cards: list[dict] = field(default_factory=list)
+    chosen: str | None = None
     version: int = 0  # bumped on every save; guards against lost updates
     updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
@@ -196,6 +239,8 @@ class AgentSession:
             "private": self.private,
             "entry_mode": self.entry_mode,
             "reg_subtype": self.reg_subtype,
+            "cards": self.cards,
+            "chosen": self.chosen,
             "version": self.version,
             "updated_at": self.updated_at.isoformat(),
         }
@@ -228,6 +273,8 @@ class AgentSession:
             private=d.get("private", False),
             entry_mode=d.get("entry_mode"),
             reg_subtype=d.get("reg_subtype"),
+            cards=d.get("cards", []),
+            chosen=d.get("chosen"),
             version=d.get("version", 0),
             updated_at=datetime.fromisoformat(d["updated_at"]),
         )
@@ -245,12 +292,16 @@ def _derive_pending(s: AgentSession) -> dict | None:
         return {"kind": "ask", "slot": s.pending_slot, "question": question}
     if el.state is SessionState.CONFIRMING:
         return {"kind": "confirm", "question": _confirm_question(el.objective)}
+    if el.state is SessionState.CHOOSING:
+        return _choice_pending(s)
     if not el.turns:  # only the greeting so far
         return {"kind": "ask", "question": opening_question(s.reg_subtype)}
     return None
 
 
 def _pending_for(s: AgentSession, action: engine.Action, question: str) -> dict | None:
+    if action.kind == "choose":
+        return _choice_pending(s)
     if action.kind not in ("ask", "confirm"):
         return None
     return PendingAction(
@@ -259,6 +310,34 @@ def _pending_for(s: AgentSession, action: engine.Action, question: str) -> dict 
         question=question or None,
         idea_version=s.idea_version,
     ).model_dump()
+
+
+def _choice_pending(s: AgentSession) -> dict:
+    """The choice waiting for a reply, whatever was last said around it: the
+    cards' ids, and the question that offers them."""
+    return PendingAction(
+        kind="choose_card",
+        question=_choice_question(s),
+        options=[c["id"] for c in s.cards],
+        idea_version=s.idea_version,
+    ).model_dump()
+
+
+def _choice_question(s: AgentSession) -> str:
+    """The cards, each with the source it rests on, then the question; or, with
+    nothing cited to offer, the honest NO_CARDS."""
+    if not s.cards:
+        return NO_CARDS
+    items = " ".join(
+        f"Number {i} is {c['label']}, from {c['sources'][0]['title']}."
+        for i, c in enumerate(s.cards, 1)
+    )
+    many = len(s.cards) > 1
+    return (
+        f"Here {'are' if many else 'is'} {len(s.cards)} opportunit{'ies' if many else 'y'} that"
+        f" fit what you can do. {items} Which one would you like to explore? Say its number,"
+        " or tell me an idea of your own."
+    )
 
 
 def _plain(v: Any) -> str:
@@ -284,14 +363,16 @@ def new_session(
 
     The registration subtype sets the opening and a stage floor (entry.py), so a
     registered founder is not asked what the Start screen already said. The
-    entry mode is kept; the experience conversation it maps to
-    (entry.CONVERSATION_MODE) starts with task 1.1.5.2, so until then every
-    session runs the idea conversation."""
+    entry mode picks the conversation (entry.CONVERSATION_MODE, task 1.1.5.1): a
+    founder with no idea (domain_only, intent_only) gets the experience
+    conversation, which opens on what they can do. A domain_only founder's
+    domain is the profile's sector, already filled from the profile."""
     who = (name or "").strip() or "there"
     reg = REGISTRATION[reg_subtype] if reg_subtype else None
+    mode = CONVERSATION_MODE[entry_mode] if entry_mode else EntryMode.IDEA
     el = engine.start(
         user_id,
-        mode=EntryMode.IDEA,
+        mode=mode,
         profile=profile,
         stage_floor=reg.stage_floor if reg else None,
     )
@@ -300,18 +381,10 @@ def new_session(
     s.cohort_consent = share_with_programme
     s.entry_mode = entry_mode.value if entry_mode else None
     s.reg_subtype = reg_subtype.value if reg_subtype else None
-    opening = opening_question(s.reg_subtype)
-    s.pending = PendingAction(kind="ask", question=opening).model_dump()
-    lead = f" {reg.lead}" if reg and reg.lead else ""
-    shape = (
-        " It can be a product, a machine, an app or a service."
-        if opening == OPENING_QUESTION
-        else ""
-    )
-    greeting = (
-        f"Vanakkam {who}!{lead} {opening}{shape} I will look up what already exists for it,"
-        " papers, patents, projects and products, and we will shape it together."
-    )
+    if mode is EntryMode.EXPERIENCE:
+        greeting = _experience_greeting(s, who)
+    else:
+        greeting = _idea_greeting(s, who, reg)
     if private:
         greeting += " You chose private mode, so I will search only Vanigam's own data."
     # The Messages API starts with a user turn; the screen opening stands in for it.
@@ -320,6 +393,36 @@ def new_session(
         {"role": "assistant", "content": greeting},
     ]
     return s, greeting
+
+
+def _experience_greeting(s: AgentSession, who: str) -> str:
+    """No idea yet: the first question is the anchor slot (R089), so the reply is
+    read as the founder's answer to it, not searched as an idea (R118). Like the
+    idea conversation's opening, it uses no question from the budget."""
+    s.pending_slot = EXPERIENCE_SLOT
+    s.elicitation.open_question = EXPERIENCE_SLOT
+    s.pending = PendingAction(
+        kind="ask", slot=EXPERIENCE_SLOT, question=EXPERIENCE_OPENING
+    ).model_dump()
+    return (
+        f"Vanakkam {who}! You do not need an idea to start: we begin from what you know."
+        f" {EXPERIENCE_OPENING}"
+    )
+
+
+def _idea_greeting(s: AgentSession, who: str, reg: Any) -> str:
+    opening = opening_question(s.reg_subtype)
+    s.pending = PendingAction(kind="ask", question=opening).model_dump()
+    lead = f" {reg.lead}" if reg and reg.lead else ""
+    shape = (
+        " It can be a product, a machine, an app or a service."
+        if opening == OPENING_QUESTION
+        else ""
+    )
+    return (
+        f"Vanakkam {who}!{lead} {opening}{shape} I will look up what already exists for it,"
+        " papers, patents, projects and products, and we will shape it together."
+    )
 
 
 def snapshot(s: AgentSession, latest: dict | None = None) -> dict:
@@ -364,6 +467,7 @@ def snapshot(s: AgentSession, latest: dict | None = None) -> dict:
         "novelty": nov,
         "council": council_brief(panel) if panel else None,
         "idea_version": s.idea_version,
+        "cards": s.cards,
     }
 
 
@@ -416,6 +520,15 @@ def _action_dict(a: engine.Action) -> dict:
         "objective": a.objective,
         "progress": round(a.progress, 2),
     }
+
+
+def _research_open(s: AgentSession) -> bool:
+    """Is there an idea to search for, judge or build a roadmap for (R118)? Not
+    while the experience conversation is still learning about the founder: its
+    words are a self-description, not an idea. A picked card or the founder's
+    own idea moves the session to the idea conversation, and research starts
+    then, on the idea."""
+    return s.elicitation.mode is EntryMode.IDEA
 
 
 def _idea_text(s: AgentSession) -> str:
@@ -638,6 +751,10 @@ async def _llm_stream(
     system = SYSTEM.format(
         name=s.name, question=question, known=_known(s), language_rule=_language_rule(s)
     )
+    tools = TOOLS
+    if not _research_open(s):  # nothing to search or judge yet: it may only take notes
+        system += EXPERIENCE_RULE
+        tools = [t for t in TOOLS if t["name"] == "note_fact"]
     if out.get("news"):  # finished in the background since the last turn
         system += (
             "\nNew since your last reply (share the main point in a sentence or two;"
@@ -656,7 +773,7 @@ async def _llm_stream(
 
     for _ in range(MAX_TOOL_ROUNDS + 1):
         content, stop, extra = [], None, {}
-        async for kind, payload in provider.stream(client, system, s.messages, TOOLS, out["usage"]):
+        async for kind, payload in provider.stream(client, system, s.messages, tools, out["usage"]):
             if kind == "text":
                 for sentence in splitter.feed(payload):
                     if ev := speak(sentence):
@@ -806,7 +923,7 @@ async def _offline_stream(
 ) -> AsyncIterator[dict]:
     idea = _idea_text(s)
     lead = None
-    if s.scan is None and len(idea) >= 20:
+    if s.scan is None and _research_open(s) and len(idea) >= 20:
         job = board.start(s.id, "research", _research_work(s), reuse_done=True)
         if "searching" not in s.narrated:
             yield _event("tool", {"name": "scan_prior_art", "status": "started"})
@@ -818,7 +935,7 @@ async def _offline_stream(
             s.narrated.append("searching")
             lead = SEARCHING
     fresh = out.get("fresh")
-    if out.get("wants_opinion") and fresh is None:
+    if out.get("wants_opinion") and fresh is None and _research_open(s):
         before = s.council
         if await _convene(s) is None:  # asked for: worth a wait, but not forever
             lead = PANEL_BUSY
@@ -995,8 +1112,10 @@ async def _reword_one(
 def _advance(s: AgentSession, text: str) -> engine.Action:
     """Fold the words into the elicitation engine; a reply to the restatement is
     read for corrections first, then for its yes or no (engine.reply)."""
+    if s.elicitation.state is SessionState.CHOOSING:
+        return _choose(s, text)
     if s.elicitation.state is SessionState.CONFIRMING:
-        return engine.reply(s.elicitation, text)
+        return _offer(s, engine.reply(s.elicitation, text))
     if s.elicitation.state is SessionState.GENERATING:
         return engine.Action(kind="generate", objective=s.elicitation.objective, progress=1.0)
     if s.pending_slot and SKIP.match(text):
@@ -1018,10 +1137,87 @@ def _advance(s: AgentSession, text: str) -> engine.Action:
     return engine.step(s.elicitation)
 
 
+def _offer(s: AgentSession, action: engine.Action) -> engine.Action:
+    """The experience conversation's restatement was confirmed: rank and keep the
+    cards to offer (only cited, reviewed ones validate as cards, R048), and word
+    the choice."""
+    if action.kind != "choose":
+        return action
+    ranked = opportunities.rank(s.elicitation.kept())
+    s.cards = [c.model_dump(mode="json") for c in opportunities.offer(ranked)]
+    return dataclasses.replace(action, question=_choice_question(s))
+
+
+def _choose(s: AgentSession, text: str) -> engine.Action:
+    """The founder's reply to the choice (R066): a card, by its number or name,
+    is written into the idea slots (task 1.1.5.5); an idea of their own, or a yes
+    to telling one, starts the idea conversation over the facts given; a no
+    stops here, kept for later. Anything else offers the choice again."""
+    el = s.elicitation
+    cards = [opportunities.Card.model_validate(c) for c in s.cards]
+    if (card := _picked(text, cards)) is not None:
+        el.record(user_text=text, asked=None)
+        s.chosen = card.id
+        s.idea = opportunities.idea_text(card)
+        return engine.choose(el, opportunities.idea_slots(card))
+    said, words = polarity(text), len(text.split())
+    # their idea, in their words: more than a yes ("yes, I would like to" is not
+    # an idea to search for), and not a refusal
+    if not _NONE.search(text) and (
+        (said is None and words >= IDEA_WORDS) or (said is True and words >= 2 * IDEA_WORDS)
+    ):
+        engine.continue_with_idea(el)
+        s.idea = text
+        engine.observe(el, text)
+        return engine.step(el)
+    el.record(user_text=text, asked=None)
+    if said is True and not cards:
+        engine.continue_with_idea(el)
+        return engine.Action(
+            kind="ask",
+            question=OPENING_QUESTION,
+            progress=el.progress(),
+            turn=el.turn_no,
+            reason="no card: the founder will tell an idea of their own",
+        )
+    if cards and _NONE.search(text):
+        line = NONE_FIT
+    elif said is False:
+        line = DECLINED
+    else:
+        line = _choice_question(s)
+    return engine.Action(
+        kind="choose",
+        question=line,
+        progress=el.progress(),
+        turn=el.turn_no,
+        reason="choosing: no card picked",
+    )
+
+
+def _picked(text: str, cards: list[opportunities.Card]) -> opportunities.Card | None:
+    """The card a reply names: its label, or its place in a short reply ("2",
+    "the second", "number two")."""
+    low = text.lower()
+    for c in cards:
+        if c.label.lower() in low:
+            return c
+    words = re.findall(r"[a-z0-9]+", low)
+    if not cards or len(words) > 5:
+        return None
+    for w in words:
+        for names in (_ORDINALS, _NUMBERS):
+            if w in names and names.index(w) < len(cards):
+                return cards[names.index(w)]
+        if w.isdigit() and 1 <= int(w) <= len(cards):
+            return cards[int(w) - 1]
+    return None
+
+
 def _question_for(s: AgentSession, slot: str) -> str:
     if slot.startswith(engine.DYN):
         return next((d["question"] for d in s.elicitation.dynamic if d["key"] == slot), "")
-    return BY_KEY[slot].question if slot in BY_KEY else ""
+    return BY_KEY[slot].question_for(s.elicitation.mode) if slot in BY_KEY else ""
 
 
 def _same_view(a: dict, b: dict) -> bool:
@@ -1071,11 +1267,15 @@ async def turn_stream(
     s.updated_at = datetime.now(UTC)
     if language in LANGUAGE_NAMES:
         s.language = language
-    s.idea = s.idea or text
+    talking_idea = _research_open(s)  # an experience reply is not the idea (R118)
     action = _advance(s, text)
+    if talking_idea:
+        s.idea = s.idea or text
     s.pending_slot = action.slot if action.kind == "ask" else None
     if action.kind == "confirm":
         question = _confirm_question(action.objective)
+    elif action.kind == "choose":
+        question = action.question or _choice_question(s)
     elif action.kind == "generate":
         question = "They confirmed: build the roadmap now and walk them through it."
     else:
@@ -1108,7 +1308,10 @@ async def turn_stream(
         for ev in await _absorb(s, out):  # background work finished since the last turn
             yield ev
         failed = []
-        for p in providers.chain() if _budget_left(s) else []:
+        # The choice is worded by the code alone: no model may add an opportunity
+        # that is not a cited card.
+        talks = _budget_left(s) and action.kind != "choose"
+        for p in providers.chain() if talks else []:
             if not p.tools:  # rewords the code's reply; handles its own failure
                 async for ev in _reword_stream(s, action, question, client, out, p):
                     yield ev
@@ -1156,6 +1359,7 @@ async def turn_stream(
         "usage": s.usage,
         "known": _known_dict(s),
         "idea_version": s.idea_version,
+        "cards": s.cards,
     }
     # saved with the turn (the caller saves on `done`); a turn without an id
     # forgets the last one, so an old id can never replay a stale reply
