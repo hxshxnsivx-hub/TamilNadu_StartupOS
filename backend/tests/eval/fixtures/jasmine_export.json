@@ -1,7 +1,7 @@
 {
  "id": "jasmine_export",
  "idea": "I want to export fresh Madurai malli jasmine flowers to Singapore and the Gulf with a proper cold chain",
- "recorded": "2026-10-10",
+ "recorded": "2026-10-20",
  "coverage": [
   {
    "source": "papers",
@@ -18,6 +18,10 @@
   {
    "source": "trials",
    "status": "skipped"
+  },
+  {
+   "source": "local startups",
+   "status": "ok"
   }
  ],
  "scan": {
@@ -146,13 +150,43 @@
   },
   "vanigam_categories": [
    "agriculture",
-   "electrical",
-   "health_bio"
+   "electrical"
   ],
+  "matched_domain": "jasmine_postharvest",
   "papers": {
-   "total": 170,
+   "total": 171,
+   "closest": {
+    "title": "Packaging Technology for Export of Jasmine (Jasminum sambac Ait.) Flowers",
+    "year": 2012,
+    "cited_by": 12,
+    "venue": "Journal of Horticultural Sciences",
+    "url": "https://doi.org/10.24154/jhs.v7i2.372",
+    "topics": [
+     {
+      "topic": "Postharvest Quality and Shelf Life Management",
+      "subfield": "Plant Science",
+      "field": "Agricultural and Biological Sciences",
+      "domain": "Life Sciences",
+      "score": 0.9980000257492065
+     },
+     {
+      "topic": "Flowering Plant Growth and Cultivation",
+      "subfield": "Plant Science",
+      "field": "Agricultural and Biological Sciences",
+      "domain": "Life Sciences",
+      "score": 0.001500000013038516
+     },
+     {
+      "topic": "Meat and Animal Product Quality",
+      "subfield": "Animal Science and Zoology",
+      "field": "Agricultural and Biological Sciences",
+      "domain": "Life Sciences",
+      "score": 0.0
+     }
+    ]
+   },
    "by_year": {
-    "2026": 26,
+    "2026": 27,
     "2025": 25,
     "2024": 21,
     "2022": 17,
@@ -363,36 +397,6 @@
      ]
     },
     {
-     "title": "Impact of Silicon on Vegetative Growth and Flower Production in Jasmine (Jasminum sambac L.)",
-     "year": 2026,
-     "cited_by": 0,
-     "venue": "Acta Agricultural Sciences",
-     "url": "https://doi.org/10.68163/aas.2025.46",
-     "topics": [
-      {
-       "topic": "Silicon Effects in Agriculture",
-       "subfield": "Plant Science",
-       "field": "Agricultural and Biological Sciences",
-       "domain": "Life Sciences",
-       "score": 1.0
-      },
-      {
-       "topic": "Plant Growth and Agriculture Techniques",
-       "subfield": "Soil Science",
-       "field": "Agricultural and Biological Sciences",
-       "domain": "Life Sciences",
-       "score": 0.0
-      },
-      {
-       "topic": "Flowering Plant Growth and Cultivation",
-       "subfield": "Plant Science",
-       "field": "Agricultural and Biological Sciences",
-       "domain": "Life Sciences",
-       "score": 0.0
-      }
-     ]
-    },
-    {
      "title": "Influence of postharvest treatments on quality and shelf life of flowers of Jasminum sambac cv. Gundumalli",
      "year": 2020,
      "cited_by": 0,
@@ -421,13 +425,43 @@
        "score": 0.0
       }
      ]
+    },
+    {
+     "title": "Impact of Silicon on Vegetative Growth and Flower Production in Jasmine (Jasminum sambac L.)",
+     "year": 2026,
+     "cited_by": 0,
+     "venue": "Acta Agricultural Sciences",
+     "url": "https://doi.org/10.68163/aas.2025.46",
+     "topics": [
+      {
+       "topic": "Silicon Effects in Agriculture",
+       "subfield": "Plant Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 1.0
+      },
+      {
+       "topic": "Plant Growth and Agriculture Techniques",
+       "subfield": "Soil Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.0
+      },
+      {
+       "topic": "Flowering Plant Growth and Cultivation",
+       "subfield": "Plant Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.0
+      }
+     ]
     }
    ],
    "most_cited": [
     {
      "title": "Modified Atmosphere Packaging Technology of Fresh and Fresh-cut Produce and the Microbial Consequences—A Review",
      "year": 2012,
-     "cited_by": 348,
+     "cited_by": 350,
      "venue": "Food and Bioprocess Technology",
      "url": "https://doi.org/10.1007/s11947-012-0932-4",
      "topics": [
@@ -457,7 +491,7 @@
     {
      "title": "Colletotrichum species causing anthracnose disease of chili in China",
      "year": 2016,
-     "cited_by": 189,
+     "cited_by": 190,
      "venue": "Persoonia - Molecular Phylogeny and Evolution of Fungi",
      "url": "https://doi.org/10.3767/003158517x692788",
      "topics": [
@@ -487,7 +521,7 @@
     {
      "title": "Fungal and bacterial nematicides in integrated nematode management strategies",
      "year": 2018,
-     "cited_by": 160,
+     "cited_by": 161,
      "venue": "Egyptian Journal of Biological Pest Control",
      "url": "https://doi.org/10.1186/s41938-018-0080-x",
      "topics": [
@@ -547,7 +581,7 @@
     {
      "title": "Phytochemicals from edible flowers: Opening a new arena for healthy lifestyle",
      "year": 2021,
-     "cited_by": 151,
+     "cited_by": 150,
      "venue": "Journal of Functional Foods",
      "url": "https://doi.org/10.1016/j.jff.2021.104375",
      "topics": [
@@ -581,7 +615,7 @@
    "items": []
   },
   "projects": {
-   "total": 3,
+   "total": 4,
    "items": [
     {
      "name": "Ly1874dia/jasminum-sambac-benchmark",
@@ -606,30 +640,56 @@
      "updated": "2019-10-23T03:39:13Z",
      "license": null,
      "url": "https://github.com/Suanqin/hxmlh"
+    },
+    {
+     "name": "menatisathish259-debug/smart-jasmine-assistant",
+     "description": "AI-powered Smart Jasmine Farming Assistant (Jasminum sambac / குண்டு மல்லி / గుండు మల్లె) with tri-lingual UI, MobileNetV2 maturity staging, and agronomic management.",
+     "stars": 0,
+     "updated": "2026-10-13T16:12:12Z",
+     "license": null,
+     "url": "https://github.com/menatisathish259-debug/smart-jasmine-assistant"
     }
    ]
   },
   "patents": {
    "total": 0,
-   "items": []
+   "items": [],
+   "india": null
   },
   "local": {
+   "status": "ok",
    "startups": [],
-   "registry_domains": []
+   "registry_domains": [
+    {
+     "id": "jasmine_postharvest",
+     "label": "Jasmine and flower post-harvest"
+    }
+   ],
+   "searched": 654,
+   "districts": [
+    "Chennai",
+    "Coimbatore",
+    "Madurai"
+   ],
+   "scope": "the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai",
+   "sectors": [
+    "agritech",
+    "food"
+   ]
   },
   "elements": [],
   "discuss": [
    {
-    "field": "Agricultural and Biological Sciences",
+    "field": "Jasmine and flower post-harvest",
     "questions": [
-     "Which crop or animal, which season, and which FPO or farmers will pilot it?"
+     "Which buyer comes first (flower traders, perfume and extract makers and exporters), and what do they use today?",
+     "Which of these do you need before the first sale: GI authorised user registration and APEDA registration for agri exports?"
     ]
    },
    {
-    "field": "Engineering",
+    "field": "Agricultural and Biological Sciences",
     "questions": [
-     "Which sensors and hardware, at what unit cost, and how durable in Indian conditions?",
-     "What certification does the hardware need before sale?"
+     "Which crop or animal, which season, and which FPO or farmers will pilot it?"
     ]
    },
    {
@@ -645,26 +705,32 @@
    {
     "source": "papers",
     "status": "ok",
-    "found": 170,
+    "found": 171,
     "note": ""
    },
    {
     "source": "projects",
     "status": "ok",
-    "found": 3,
+    "found": 4,
     "note": ""
    },
    {
     "source": "patents",
     "status": "no_key",
     "found": 0,
-    "note": "Patents not searched: add a free PatentsView key (PATENTSVIEW_API_KEY)"
+    "note": "Patents not searched: register free with the EPO (EPO_OPS_KEY and EPO_OPS_SECRET) for worldwide and Indian patents"
    },
    {
     "source": "trials",
     "status": "skipped",
     "found": 0,
     "note": "Not a health idea, so clinical trials were not searched"
+   },
+   {
+    "source": "local startups",
+    "status": "ok",
+    "found": 0,
+    "note": "Only the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai"
    }
   ],
   "caveat": "Counts come from the sources listed in coverage. 'Nothing found' means nothing in those sources, not that the idea is new; have a patent attorney search before filing."
@@ -674,7 +740,7 @@
    {
     "element": "jasmine",
     "query": "\"Jasminum sambac\"",
-    "papers": 4871,
+    "papers": 4907,
     "label": "active"
    }
   ],
@@ -682,21 +748,26 @@
   "context": {
    "query": "\"Jasminum sambac\"",
    "searched": true,
-   "world_papers": 4871,
-   "india_papers": 570,
-   "india_share_pct": 11.7,
+   "world_papers": 4907,
+   "india_papers": 569,
+   "india_share_pct": 11.6,
    "tn_startups": 0,
+   "tn_scope": "the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai",
    "gap": false
   },
+  "coverage": {
+   "pairs_expected": 0,
+   "pairs_counted": 0
+  },
   "statement": {
-   "type": "crowded",
-   "text": "Each part is well studied, and so are their combinations. The edge has to come from who you serve, the cost, or how you deliver it."
+   "type": "unclear",
+   "text": "I could search only one part on its own, jasmine (4,907 papers), so I can't say how new the idea is as a whole."
   },
   "levers": [
    {
-    "kind": "business model",
-    "text": "Compete on how it is delivered, as a service, a rental, or a scheme-backed rollout rather than a product sale.",
-    "because": "every part and combination is crowded"
+    "kind": "cost-down",
+    "text": "Compete on cost, using the costing for this domain to see where to cut.",
+    "because": "a Vanigam cost pack exists for this domain"
    }
   ],
   "thresholds": {
