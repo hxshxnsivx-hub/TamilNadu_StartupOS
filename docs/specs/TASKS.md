@@ -233,17 +233,17 @@ licences and risks (S8), streamed fact-checked replies, private sessions, the jo
 - `1.2.1.12` `[x]` [R093](arena/details-p1.md#r093) (weight 74) Generic words from registry prose take query slots ('banana small chips'). Fix: Document-frequency filter over the registry.
 - `1.2.1.13` `[x]` `_idea_text` joins problem and solution even when both came from one sentence, so the search text repeats itself ('I want to make banana chips make banana chips'; found in the 1.1.5 review). Fix: skip the solution when the problem already contains it.
 
-#### 1.2.2 `[ ]` Levers worded for the founder's domain
+#### 1.2.2 `[x]` Levers worded for the founder's domain
 - **Why:** the localise lever says "local hospital or market routines" for banana chips and t-shirts.
 - **Where:** `research/novelty.py` (`_levers`).
 - **How:** word each lever from the matched domain and sector.
 - **When:** now.
 - **What for:** relevant advice (IDEATION §3.6 r4).
-- `1.2.2.1` Domain-aware lever text.
-- `1.2.2.2` Test across three sectors.
-- `1.2.2.3` `[ ]` [R044](arena/details-p1.md#r044) (weight 84) Novelty and planner match domains differently; banana chips loses its cost lever. Fix: One domain resolver (registry.detect_domain) whose result is stored on the session and passed to scan, novelty, council and planner.
-- `1.2.2.4` `[ ]` [R139](arena/details-p1.md#r139) (weight 68) Novelty's medical 'regulatory route' lever is 1.3.3's twin, missing from its scope. Fix: One shared is_health_product(idea, scan, slots) requiring a device or clinical signal, used by novelty and council.
-- `1.2.2.5` `[ ]` [R190](arena/details-p1.md#r190) (weight 57) Lever text is fixed at search time; rewording by sector would force a new search. Fix: Return structured levers (kind, numbers, pair) from novelty; render wording at narration from session slots with per-sector phrase tables.
+- `1.2.2.1` `[x]` Domain-aware lever text.
+- `1.2.2.2` `[x]` Test across three sectors.
+- `1.2.2.3` `[x]` [R044](arena/details-p1.md#r044) (weight 84) Novelty and planner match domains differently; banana chips loses its cost lever. Fix: One domain resolver (registry.detect_domain) whose result is stored on the session and passed to scan, novelty, council and planner.
+- `1.2.2.4` `[x]` [R139](arena/details-p1.md#r139) (weight 68) Novelty's medical 'regulatory route' lever is 1.3.3's twin, missing from its scope. Fix: One shared is_health_product(idea, scan, slots) requiring a device or clinical signal, used by novelty and council.
+- `1.2.2.5` `[x]` [R190](arena/details-p1.md#r190) (weight 57) Lever text is fixed at search time; rewording by sector would force a new search. Fix: Return structured levers (kind, numbers, pair) from novelty; render wording at narration from session slots with per-sector phrase tables.
 
 #### 1.2.3 `[ ]` Results tied to the idea version
 - **Why:** research runs once per conversation and is never re-run when the idea changes, so an old verdict can be spoken (decision 0001 requires the opposite).
@@ -336,6 +336,7 @@ licences and risks (S8), streamed fact-checked replies, private sessions, the jo
 - **What for:** correct variants (docs/eval/report.md, medical_emi).
 - `1.3.3.1` Tighten the trigger.
 - `1.3.3.2` Eval assertion.
+- `1.3.3.3` `[ ]` `is_health_product` still counts a crop-disease diagnosis app as a health product ('disease' + 'diagnos'), so a farm app hears the medical-device lever and the panel treats it as health (found in the 1.2.2 review). Fix: a known founder sector other than health vetoes the health rule.
 
 ### 1.4 Roadmap
 
