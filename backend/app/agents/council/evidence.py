@@ -105,8 +105,11 @@ def build(idea: str, scan: dict | None, novelty: dict | None, district: str | No
             f"Tamil Nadu startup {st['name']} ({st.get('district')}):"
             f" {st.get('description') or ''}",
         )
-    if s and not s.get("local", {}).get("startups"):
-        pack.add("local:none", "local", "No Tamil Nadu startup matching the idea was found")
+    local = s.get("local", {})
+    # Only what the lookup covered (R023): a failed lookup or an old scan without its
+    # scope says nothing about Tamil Nadu startups.
+    if s and local.get("status") == "ok" and local.get("scope") and not local.get("startups"):
+        pack.add("local:none", "local", f"None of {local['scope']} matches the idea")
 
     for c in s.get("coverage", []):
         if c["status"] != "ok":
@@ -144,7 +147,11 @@ def _add_novelty(pack: EvidencePack, novelty: dict | None) -> None:
             f"{ctx.get('india_papers')} of {ctx['world_papers']} matching papers are"
             f" India-affiliated"
             + (f" ({share}%)" if share is not None else "")
-            + f"; Tamil Nadu startups found: {ctx.get('tn_startups', 0)}",
+            + (
+                f"; Tamil Nadu startups found: {ctx['tn_startups']}"
+                if ctx.get("tn_startups") is not None
+                else "; Tamil Nadu startups not searched"
+            ),
         )
     for i, lv in enumerate(novelty.get("levers", [])[:4]):
         pack.add(f"novelty:lever:{i}", "novelty", f"Way to stand out ({lv['kind']}): {lv['text']}")
