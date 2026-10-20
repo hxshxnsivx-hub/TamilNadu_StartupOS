@@ -1,7 +1,7 @@
 {
  "id": "inverter_repair",
  "idea": "board-level repair of solar inverters out of warranty for farm and rooftop solar owners near Madurai",
- "recorded": "2026-10-10",
+ "recorded": "2026-10-20",
  "coverage": [
   {
    "source": "papers",
@@ -18,6 +18,10 @@
   {
    "source": "trials",
    "status": "skipped"
+  },
+  {
+   "source": "local startups",
+   "status": "ok"
   }
  ],
  "scan": {
@@ -27,18 +31,18 @@
    "trials": "photovoltaic inverter photovoltaic",
    "projects": "photovoltaic inverter photovoltaic",
    "patents": "photovoltaic inverter photovoltaic board-level repair",
-   "local": "board-level repair warranty farm rooftop owners near photovoltaic inverter photovoltaic"
+   "local": "board-level repair warranty rooftop owners near photovoltaic inverter photovoltaic"
   },
   "associated_domains": {
    "basis": "papers",
    "domains": [
     {
      "name": "Physical Sciences",
-     "share_pct": 100
+     "share_pct": 99
     },
     {
      "name": "Social Sciences",
-     "share_pct": 0
+     "share_pct": 1
     }
    ],
    "fields": [
@@ -68,6 +72,10 @@
     },
     {
      "name": "Materials Science",
+     "share_pct": 0
+    },
+    {
+     "name": "Business, Management and Accounting",
      "share_pct": 0
     }
    ],
@@ -144,25 +152,57 @@
    "ai_ml",
    "climate",
    "electrical",
-   "renewable"
+   "renewable",
+   "saas"
   ],
+  "matched_domain": "solar_inverter_repair",
   "papers": {
-   "total": 2352,
+   "total": 2368,
+   "closest": {
+    "title": "Status and Needs of Power Electronics for Photovoltaic Inverters",
+    "year": 2002,
+    "cited_by": 29,
+    "venue": null,
+    "url": "https://doi.org/10.2172/800985",
+    "topics": [
+     {
+      "topic": "Multilevel Inverters and Converters",
+      "subfield": "Electrical and Electronic Engineering",
+      "field": "Engineering",
+      "domain": "Physical Sciences",
+      "score": 0.8438000082969666
+     },
+     {
+      "topic": "Photovoltaic System Optimization Techniques",
+      "subfield": "Renewable Energy, Sustainability and the Environment",
+      "field": "Energy",
+      "domain": "Physical Sciences",
+      "score": 0.06369999796152115
+     },
+     {
+      "topic": "Advanced DC-DC Converters",
+      "subfield": "Electrical and Electronic Engineering",
+      "field": "Engineering",
+      "domain": "Physical Sciences",
+      "score": 0.026499999687075615
+     }
+    ]
+   },
    "by_year": {
-    "2022": 219,
+    "2022": 221,
     "2021": 218,
-    "2023": 217,
-    "2024": 200,
-    "2025": 188,
-    "2026": 175,
-    "2020": 110,
+    "2023": 216,
+    "2024": 199,
+    "2025": 195,
+    "2026": 179,
+    "2020": 111,
     "2019": 99,
     "2018": 90,
-    "2016": 86,
+    "2016": 87,
     "2015": 68,
     "2017": 68,
-    "2014": 62,
-    "2012": 51,
+    "2014": 63,
+    "2012": 52,
     "2013": 49,
     "2011": 44,
     "2007": 42,
@@ -240,7 +280,7 @@
     {
      "title": "A Photovoltaic Technology Review: History, Fundamentals and Applications",
      "year": 2022,
-     "cited_by": 173,
+     "cited_by": 174,
      "venue": "Energies",
      "url": "https://doi.org/10.3390/en15051823",
      "topics": [
@@ -420,7 +460,7 @@
     {
      "title": "Sustainable Development Perspectives of Solar Energy Technologies with Focus on Solar Photovoltaic—A Review",
      "year": 2022,
-     "cited_by": 239,
+     "cited_by": 243,
      "venue": "Energies",
      "url": "https://doi.org/10.3390/en15082790",
      "topics": [
@@ -452,7 +492,7 @@
     {
      "title": "Firm‐Level Climate Change Exposure",
      "year": 2023,
-     "cited_by": 1371,
+     "cited_by": 1395,
      "venue": "The Journal of Finance",
      "url": "https://doi.org/10.1111/jofi.13219",
      "topics": [
@@ -512,7 +552,7 @@
     {
      "title": "Transitioning to Physics-of-Failure as a Reliability Driver in Power Electronics",
      "year": 2013,
-     "cited_by": 687,
+     "cited_by": 690,
      "venue": "IEEE Journal of Emerging and Selected Topics in Power Electronics",
      "url": "https://doi.org/10.1109/jestpe.2013.2290282",
      "topics": [
@@ -572,7 +612,7 @@
     {
      "title": "The Role of AI, Machine Learning, and Big Data in Digital Twinning: A Systematic Literature Review, Challenges, and Opportunities",
      "year": 2021,
-     "cited_by": 612,
+     "cited_by": 614,
      "venue": "IEEE Access",
      "url": "https://doi.org/10.1109/access.2021.3060863",
      "topics": [
@@ -606,12 +646,12 @@
    "items": []
   },
   "projects": {
-   "total": 197,
+   "total": 205,
    "items": [
     {
      "name": "OpenInverterGateway/OpenInverterGateway",
      "description": "Firmware replacement for Growatt ShineWiFi-S",
-     "stars": 448,
+     "stars": 449,
      "updated": "2026-05-16T17:38:56Z",
      "license": "MIT",
      "url": "https://github.com/OpenInverterGateway/OpenInverterGateway"
@@ -620,14 +660,14 @@
      "name": "TimSoethout/goodwe-sems-home-assistant",
      "description": "Home Assistant integration for monitoring GoodWe SEMS+ solar inverters, batteries, smart meters, and energy data.",
      "stars": 147,
-     "updated": "2026-10-03T16:59:22Z",
+     "updated": "2026-10-18T14:19:45Z",
      "license": "MIT",
      "url": "https://github.com/TimSoethout/goodwe-sems-home-assistant"
     },
     {
      "name": "squishykid/solax",
      "description": "🌞 Solax Inverter API Wrapper",
-     "stars": 118,
+     "stars": 119,
      "updated": "2025-12-03T16:28:59Z",
      "license": "MIT",
      "url": "https://github.com/squishykid/solax"
@@ -635,8 +675,8 @@
     {
      "name": "Lewa-Reka/esphome-deye-inverter",
      "description": "An easy way to integrate Deye 3P & 1P PV inverters with Home Assistant using the ESPHome platform.",
-     "stars": 106,
-     "updated": "2026-09-09T21:56:16Z",
+     "stars": 108,
+     "updated": "2026-10-11T05:38:10Z",
      "license": "Apache-2.0",
      "url": "https://github.com/Lewa-Reka/esphome-deye-inverter"
     },
@@ -692,19 +732,38 @@
   },
   "patents": {
    "total": 0,
-   "items": []
+   "items": [],
+   "india": null
   },
   "local": {
+   "status": "ok",
    "startups": [],
    "registry_domains": [
     {
      "id": "solar_inverter_repair",
      "label": "Solar inverter repair and servicing"
     }
+   ],
+   "searched": 654,
+   "districts": [
+    "Chennai",
+    "Coimbatore",
+    "Madurai"
+   ],
+   "scope": "the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai",
+   "sectors": [
+    "cleantech"
    ]
   },
   "elements": [],
   "discuss": [
+   {
+    "field": "Solar inverter repair and servicing",
+    "questions": [
+     "Which buyer comes first (solar owners and installers), and what do they use today?",
+     "Which of these do you need before the first sale: E-waste producer responsibility?"
+    ]
+   },
    {
     "field": "Engineering",
     "questions": [
@@ -713,22 +772,9 @@
     ]
    },
    {
-    "field": "Environmental Science",
-    "questions": [
-     "What is measured, by whom, and who pays for the improvement?"
-    ]
-   },
-   {
     "field": "Energy",
     "questions": [
      "What does it cost per unit of energy saved or produced, and who finances it?"
-    ]
-   },
-   {
-    "field": "Computer Science",
-    "questions": [
-     "What data trains the model, who owns it, and what accuracy is good enough to act on?",
-     "Does it run on the device or in the cloud, and what happens offline?"
     ]
    },
    {
@@ -744,26 +790,32 @@
    {
     "source": "papers",
     "status": "ok",
-    "found": 2352,
+    "found": 2368,
     "note": ""
    },
    {
     "source": "projects",
     "status": "ok",
-    "found": 197,
+    "found": 205,
     "note": ""
    },
    {
     "source": "patents",
     "status": "no_key",
     "found": 0,
-    "note": "Patents not searched: add a free PatentsView key (PATENTSVIEW_API_KEY)"
+    "note": "Patents not searched: register free with the EPO (EPO_OPS_KEY and EPO_OPS_SECRET) for worldwide and Indian patents"
    },
    {
     "source": "trials",
     "status": "skipped",
     "found": 0,
     "note": "Not a health idea, so clinical trials were not searched"
+   },
+   {
+    "source": "local startups",
+    "status": "ok",
+    "found": 0,
+    "note": "Only the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai"
    }
   ],
   "caveat": "Counts come from the sources listed in coverage. 'Nothing found' means nothing in those sources, not that the idea is new; have a patent attorney search before filing."
@@ -773,44 +825,30 @@
    {
     "element": "solar inverters",
     "query": "\"photovoltaic inverter\"",
-    "papers": 17633,
-    "label": "crowded"
-   },
-   {
-    "element": "solar",
-    "query": "photovoltaic",
-    "papers": 774323,
+    "papers": 17680,
     "label": "crowded"
    }
   ],
-  "pairs": [
-   {
-    "a": "solar inverters",
-    "b": "solar",
-    "a_papers": 17633,
-    "b_papers": 774323,
-    "papers": 14665,
-    "share_pct": 83.17,
-    "gap": false
-   }
-  ],
+  "pairs": [],
   "context": {
-   "query": "photovoltaic \"photovoltaic inverter\"",
-   "searched": false,
+   "query": "\"photovoltaic inverter\"",
+   "searched": true,
+   "world_papers": 17680,
+   "india_papers": 1635,
+   "india_share_pct": 9.2,
    "tn_startups": 0,
+   "tn_scope": "the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai",
    "gap": false
   },
-  "statement": {
-   "type": "crowded",
-   "text": "Each part is well studied, and so are their combinations. The edge has to come from who you serve, the cost, or how you deliver it."
+  "coverage": {
+   "pairs_expected": 0,
+   "pairs_counted": 0
   },
-  "levers": [
-   {
-    "kind": "business model",
-    "text": "Compete on how it is delivered, as a service, a rental, or a scheme-backed rollout rather than a product sale.",
-    "because": "every part and combination is crowded"
-   }
-  ],
+  "statement": {
+   "type": "unclear",
+   "text": "I could search only one part on its own, solar inverters (17,680 papers), so I can't say how new the idea is as a whole."
+  },
+  "levers": [],
   "thresholds": {
    "active_papers": 300,
    "crowded_papers": 5000,
