@@ -87,7 +87,8 @@
      "Solomon Islands",
      "Which sensors and hardware",
      "What is measured",
-     "and so are their combinations"
+     "and so are their combinations",
+     "local hospital"
     ],
     "elements_exclude": [
      "farmers"
@@ -122,7 +123,9 @@
     "must_not_mention": [
      "medical-device",
      "which patients",
-     "What is measured"
+     "What is measured",
+     "local hospital",
+     "a rental"
     ],
     "categories_exclude": [
      "health_bio"
@@ -159,7 +162,8 @@
     "must_not_mention": [
      "medical-device",
      "which patients",
-     "and so are their combinations"
+     "and so are their combinations",
+     "local hospital"
     ]
    }
   },
@@ -188,7 +192,8 @@
     "must_not_mention": [
      "medical-device",
      "which patients",
-     "and so are their combinations"
+     "and so are their combinations",
+     "local hospital"
     ],
     "elements_exclude": [
      "farmers",
@@ -228,7 +233,8 @@
      "medical-device",
      "which patients",
      "What is measured",
-     "and so are their combinations"
+     "and so are their combinations",
+     "local hospital"
     ],
     "query_excludes": [
      "work",
@@ -262,7 +268,8 @@
      "which patients",
      "dry-run: no papers",
      "dry run: no papers",
-     "and so are their combinations"
+     "and so are their combinations",
+     "local hospital"
     ]
    }
   },
@@ -293,7 +300,8 @@
      "Kaleidofin",
      "Yubi",
      "What is measured",
-     "and so are their combinations"
+     "and so are their combinations",
+     "local hospital"
     ],
     "query_excludes": [
      "small",
@@ -325,7 +333,9 @@
     "max_questions": 7,
     "must_not_mention": [
      "Agarwal",
-     "Wabag"
+     "Wabag",
+     "local hospital",
+     "communication aid"
     ],
     "query_excludes": [
      "plans",
@@ -356,7 +366,8 @@
     "must_not_mention": [
      "medical-device",
      "which patients",
-     "and so are their combinations"
+     "and so are their combinations",
+     "local hospital"
     ],
     "elements_exclude": [
      "solar"
