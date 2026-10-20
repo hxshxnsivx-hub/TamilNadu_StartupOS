@@ -204,6 +204,16 @@ def matched_domain(text: str) -> dict | None:
     return card
 
 
+def domain_id(idea: str, found: dict | None) -> str | None:
+    """The idea's one registry domain (R044): the one a scan matched, or matched now the
+    same way when there is no scan. The related domains a scan also lists are never
+    taken as the idea's own."""
+    if found and "matched_domain" in found:
+        return found["matched_domain"]
+    card = matched_domain(idea)
+    return card["id"] if card else None
+
+
 def _sectors(domain: dict | None) -> set[str]:
     """Startup-map sectors that fit the matched domain; empty means no sector filter."""
     if not domain:
