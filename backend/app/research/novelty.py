@@ -23,7 +23,14 @@ import httpx
 
 from app.core.config import get_settings
 from app.research import sources
-from app.research.terms import element_query, is_health, or_query, public_vocabulary, term_groups
+from app.research.terms import (
+    BENEFICIARY,
+    element_query,
+    is_health,
+    or_query,
+    public_vocabulary,
+    term_groups,
+)
 
 MAX_ELEMENTS = 6  # 15 pairs at most
 AUTO_ELEMENTS = 4  # parts found by the lexicon alone: 6 pairs at most
@@ -38,6 +45,13 @@ CAVEAT = (
 )
 
 
+NOT_SEARCHED_WELL = "not searched well"
+NO_PARTS = (
+    "I couldn't split the idea into parts to search: none of its words are in the"
+    " vocabulary I may send to the sources yet."
+)
+
+
 def _label(n: int | None) -> str:
     if n is None:
         return "not searched"
@@ -49,14 +63,30 @@ def _label(n: int | None) -> str:
 
 
 def _parts(idea: str, elements: list[str] | None) -> list[dict]:
+    """The parts to count. Found by the lexicon, they leave out who is served (the
+    re-target lever covers that) and any part that only restates another more broadly:
+    "solar" beside "solar inverters", "coconut" beside "virgin coconut oil" (1.2.1.4)."""
     if elements:
         rows = [{"element": e, "query": element_query(e)} for e in elements[:MAX_ELEMENTS]]
     else:
-        rows = [
-            {"element": phrase, "query": or_query(terms)}
-            for phrase, terms in term_groups(idea)[:AUTO_ELEMENTS]
-        ]
+        groups = [(p, t) for p, t in term_groups(idea) if p not in BENEFICIARY]
+        groups = [(p, t) for p, t in groups if not _broader(t, groups)]
+        rows = [{"element": p, "query": or_query(t)} for p, t in groups[:AUTO_ELEMENTS]]
     return [r for r in rows if r["query"]]
+
+
+def _broader(terms: list[str], groups: list[tuple[str, list[str]]]) -> bool:
+    """Every term of this part sits inside a longer term of another part."""
+    others = [o.lower() for _, ts in groups if ts != terms for o in ts]
+    return all(any(t.lower() in o and t.lower() != o for o in others) for t in terms)
+
+
+def _one_term(query: str) -> bool:
+    """A single name: one word or one quoted phrase, not an OR group or several words."""
+    q = query.strip()
+    if q.startswith('"') and q.endswith('"'):
+        return q.count('"') == 2
+    return " " not in q and not q.startswith("(")
 
 
 async def check(
@@ -72,8 +102,8 @@ async def check(
     parts = _parts(idea, elements)
     if private:
         return _unclear(parts, "Private mode: nothing was searched outside Vanigam.", "private")
-    if not parts:
-        return _unclear(parts, "I couldn't split the idea into searchable parts.", "skipped")
+    if not parts:  # the lexicon knows none of its words: say so, not "nothing found" (1.2.1.6)
+        return _unclear(parts, NO_PARTS, "skipped")
 
     settings = get_settings()
     cache = sources.Cache(settings.research_cache_dir, settings.research_cache_days)
@@ -87,10 +117,22 @@ async def check(
         for p, c in zip(parts, counts, strict=True):
             p["papers"] = c.total if c.status == "ok" else None
             p["label"] = _label(p["papers"])
+            # One name with no paper at all is a name the literature does not use, not a
+            # gap: "dry-run" searched as "pump dry running protection" finds nothing.
+            if p["papers"] == 0 and _one_term(p["query"]):
+                p["label"] = NOT_SEARCHED_WELL
         if "ok" not in statuses:
             return _unclear(parts, "I couldn't search papers this time.", counts[0].status)
 
-        searched = [p for p in parts if p["papers"] is not None]
+        searched = [p for p in parts if p["papers"] is not None and p["label"] != NOT_SEARCHED_WELL]
+        if not searched:
+            return _unclear(
+                parts,
+                "None of the idea's parts found a paper under the names I searched, so the"
+                " names are probably not the ones research uses.",
+                "not_searched_well",
+                keep_counts=True,
+            )
         pairs = [{"a": a, "b": b} for a, b in combinations(searched, 2)]
         pair_counts = await asyncio.gather(
             *(
@@ -131,11 +173,13 @@ async def check(
         if own:
             await client.aclose()
 
-    statement = _statement(searched, pair_rows, context)
+    expected = len(searched) * (len(searched) - 1) // 2
+    statement = _statement(searched, pair_rows, context, expected)
     return {
         "elements": [{k: p.get(k) for k in ("element", "query", "papers", "label")} for p in parts],
         "pairs": sorted(pair_rows, key=lambda r: (not r["gap"], r["papers"])),
         "context": context,
+        "coverage": {"pairs_expected": expected, "pairs_counted": len(pair_rows)},
         "statement": statement,
         "levers": _levers(
             searched, pair_rows, context, retarget, scan, statement, _is_health(idea, scan)
@@ -165,9 +209,20 @@ async def _context(client, cache, parts: list[dict], scan: dict | None) -> dict:
             client, query, cache, filter="authorships.institutions.country_code:IN"
         ),
     )
-    tn = len((scan or {}).get("local", {}).get("startups", []))
+    # Tamil Nadu startups count only when the local lookup ran, and only for what it
+    # covered: a failed lookup is not "no startup does this" (R023).
+    local = (scan or {}).get("local", {})
+    searched_tn = local.get("status") == "ok" and bool(local.get("scope"))
+    tn = len(local.get("startups", [])) if searched_tn else None
+    scope = local.get("scope") if searched_tn else None
     if world.status != "ok" or india.status != "ok":
-        return {"query": query, "searched": False, "tn_startups": tn, "gap": False}
+        return {
+            "query": query,
+            "searched": False,
+            "tn_startups": tn,
+            "tn_scope": scope,
+            "gap": False,
+        }
     share = india.total / world.total if world.total else None
     return {
         "query": query,
@@ -176,6 +231,7 @@ async def _context(client, cache, parts: list[dict], scan: dict | None) -> dict:
         "india_papers": india.total,
         "india_share_pct": round(100 * share, 1) if share is not None else None,
         "tn_startups": tn,
+        "tn_scope": scope,
         # India-affiliated papers: affiliation data is incomplete, so this is a hint
         "gap": world.total >= ACTIVE and share is not None and share < INDIA_LOW_SHARE and tn == 0,
     }
@@ -195,7 +251,10 @@ async def _retarget(client, cache, parts: list[dict], beneficiary: str | None) -
     return {"who": " ".join(words), "papers": with_users.total}
 
 
-def _statement(parts: list[dict], pairs: list[dict], context: dict) -> dict:
+def _statement(parts: list[dict], pairs: list[dict], context: dict, expected: int) -> dict:
+    """One statement from the counts. "Crowded" and "active" need every combination and
+    the context counted; anything less is "unclear", since not searched is never
+    nothing found (R030)."""
     gaps = [p for p in pairs if p["gap"]]
     if gaps:
         g = min(gaps, key=lambda p: p["papers"])
@@ -213,8 +272,7 @@ def _statement(parts: list[dict], pairs: list[dict], context: dict) -> dict:
             "text": (
                 f"Work on this is active worldwide ({context['world_papers']:,} papers), but"
                 f" {_few(context['india_papers'], 'comes', 'come', none='none')} from Indian"
-                " institutions, and I found no"
-                " Tamil Nadu startup doing it."
+                f" institutions, and none of {context['tn_scope']} does it."
             ),
         }
     sparse = [p for p in parts if p["label"] in ("sparse", "nothing found")]
@@ -229,13 +287,43 @@ def _statement(parts: list[dict], pairs: list[dict], context: dict) -> dict:
             "type": "element",
             "text": "Every part is thinly studied, so the evidence is weak either way.",
         }
+    if len(parts) < 2:
+        p = parts[0]
+        return {
+            "type": "unclear",
+            "text": (
+                f"I could search only one part on its own, {p['element']}"
+                f" ({_count(p['papers'], 'paper')}), so I can't say how new the idea is as a"
+                " whole."
+            ),
+        }
+    if len(pairs) < expected or not context.get("searched"):
+        return {
+            "type": "unclear",
+            "text": (
+                "Each part is well studied, but I could not count every combination this"
+                " time, so I can't say whether the idea as a whole is crowded."
+            ),
+        }
+    if all(p["label"] == "crowded" for p in parts):
+        return {
+            "type": "crowded",
+            "text": (
+                "Each part is well studied, and so are their combinations. The edge has to"
+                " come from who you serve, the cost, or how you deliver it."
+            ),
+        }
     return {
-        "type": "crowded",
+        "type": "active",
         "text": (
-            "Each part is well studied, and so are their combinations. The edge has to come"
-            " from who you serve, the cost, or how you deliver it."
+            "Each part is actively studied, and the combinations I counted are studied too."
+            " The edge is likely to come from who you serve, the cost, or how you deliver it."
         ),
     }
+
+
+def _count(n: int, noun: str) -> str:
+    return f"{n:,} {noun}" + ("" if n == 1 else "s")
 
 
 def _few(n: int, one: str, many: str, none: str = "") -> str:
@@ -272,7 +360,7 @@ def _levers(parts, pairs, context, retarget, scan, statement, health=False) -> l
                 ),
                 "because": (
                     f"{context['india_papers']:,} of {context['world_papers']:,} papers are from"
-                    " India, and no Tamil Nadu startup was found"
+                    f" India, and none of {context['tn_scope']} does it"
                 ),
             }
         )
@@ -328,10 +416,15 @@ def _has_pack(scan: dict | None) -> bool:
     )
 
 
-def _unclear(parts: list[dict], why: str, status: str) -> dict:
+def _unclear(parts: list[dict], why: str, status: str, keep_counts: bool = False) -> dict:
     return {
         "elements": [
-            {"element": p["element"], "query": p["query"], "papers": None, "label": "not searched"}
+            {
+                "element": p["element"],
+                "query": p["query"],
+                "papers": p.get("papers") if keep_counts else None,
+                "label": p.get("label") if keep_counts else "not searched",
+            }
             for p in parts
         ],
         "pairs": [],
