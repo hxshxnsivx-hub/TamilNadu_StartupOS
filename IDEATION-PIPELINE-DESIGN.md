@@ -103,7 +103,10 @@ and the evidence pack.
 
 1. **Element map.** Each element is labelled from paper counts (already built):
    crowded (≥ 5,000, or ≥ 1,000 with ≥ 50 projects), active (≥ 300), sparse (> 0),
-   nothing found, or not searched.
+   nothing found, or not searched. Elements are what is built: who is served ("farmers",
+   "physically challenged") is left to the re-target lever, and a part that only restates
+   another more broadly ("solar" beside "solar inverters") is dropped. A zero on a single
+   name is labelled *not searched well* (the literature uses another name), not a gap.
 2. **Combination map.** For each pair of elements, search both together. Rarity of the pair:
 
    `rarity = pair_count / min(count_a, count_b)`
@@ -117,16 +120,19 @@ and the evidence pack.
    is both parts' searches side by side.
 3. **Context map.** For the whole idea: share of matching papers with an Indian institution;
    matching TN startups; matching registry domains. **Context gap** when the idea is active
-   globally but India's share is under 5% and no TN startup matches.
+   globally but India's share is under 5% and none of the startups searched matches. The
+   startups searched are named with the claim (today the 654 on the Tamil Nadu Startup Map in
+   Chennai, Coimbatore and Madurai); a failed lookup makes no claim.
 4. **Novelty statement.** One of these types, with the evidence that supports it:
 
    | Type | Meaning | Typical wording |
    |---|---|---|
    | `combination` | known parts, rare together | "EEG spellers and nurse-call systems are both well studied; I found very little that joins them." |
-   | `context` | exists elsewhere, rare here | "This exists abroad; I found almost nothing from India and no Tamil Nadu startup." |
+   | `context` | exists elsewhere, rare here | "This exists abroad; I found almost nothing from India, and none of the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai does it." |
    | `element` | one part is sparse | "Medication requests by brain signal is the rare part." |
-   | `crowded` | everything is crowded | "This space is busy; the edge has to come from cost, users or the business model." |
-   | `unclear` | too little was searched | "I couldn't search enough to judge; papers were not searched." |
+   | `crowded` | every part crowded, every pair and the context counted | "This space is busy; the edge has to come from cost, users or the business model." |
+   | `active` | parts well studied but not all crowded, every pair counted | "Each part is actively studied, and the combinations I counted are studied too." |
+   | `unclear` | too little was searched: papers not searched, one part only, a pair not counted, or no part the vocabulary knows | "I could search only one part on its own, so I can't say how new the idea is as a whole." |
 
    Every statement carries the caveat: *not found in these sources is not proof of novelty;
    have a patent attorney search before filing.*
