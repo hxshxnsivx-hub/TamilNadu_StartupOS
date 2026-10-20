@@ -163,3 +163,30 @@ def test_model_seats_share_a_cached_prefix_and_fall_back_on_failure(monkeypatch)
     assert r["usage"]["input_tokens"] == 60
     basis = {o["seat"]: o["basis"] for o in r["opinions"]}
     assert basis["technical"] == "rules" and basis["customer"] == "model"
+
+
+def test_the_pack_uses_the_scans_one_domain():
+    """R044: the panel's domain, licences and cost pack come from the domain the scan
+    matched; a related domain the scan also listed is not the idea's own."""
+    scan = {
+        **SCAN,
+        "matched_domain": None,
+        "local": {**SCAN["local"], "registry_domains": [{"id": "banana_value_added"}]},
+    }
+    pack = ev.build("banana chips for export", scan, None, None)
+    assert pack.domain_id is None and not any(i.startswith("pack:") for i in pack.ids)
+    pack = ev.build("a small unit", {**SCAN, "matched_domain": "banana_value_added"}, None, None)
+    assert pack.domain_id == "banana_value_added" and "pack:banana_value_added" in pack.ids
+
+
+def test_a_loan_that_names_a_hospital_is_no_health_product():
+    """R139: the same rule as the novelty lever; trials found are not enough."""
+    emi = "hospital bill instalment loans for medical treatment"
+    assert not ev.build(emi, SCAN, None, None, {"product_form": "software"}).health
+    assert _pack().health  # brain waves and medication: a clinical product
+
+
+def test_the_panel_hears_levers_worded_for_the_founder():
+    nov = {**NOVELTY, "levers": [{"kind": "business model", "facts": {}}]}
+    pack = ev.build(IDEA, SCAN, nov, None, {"sector": "food"})
+    assert "subscriptions" in pack.items["novelty:lever:0"]["text"]
