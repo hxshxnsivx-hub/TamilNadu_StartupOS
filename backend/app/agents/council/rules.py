@@ -43,8 +43,8 @@ def customer(pack: EvidencePack, slots: dict) -> dict:
         claims.append({"text": "The closest Vanigam domain names its usual buyers.",
                        "evidence": domain})  # fmt: skip
     if "local:none" in pack.items:
-        claims.append({"text": "No Tamil Nadu startup does this yet, so demand is unproven"
-                       " locally.", "evidence": ["local:none"]})  # fmt: skip
+        claims.append({"text": "None of the Tamil Nadu startups searched does this, so"
+                       " demand is unproven locally.", "evidence": ["local:none"]})  # fmt: skip
     return {
         "stance": "conditional",
         "scores": {"need": 3 if slots.get("beneficiary") else 2},
@@ -134,11 +134,12 @@ def prior_art(pack: EvidencePack, slots: dict) -> dict:
         cites = gap_pairs[:1] + _cite(pack, "novelty:context", "novelty:statement", n=1)
         lever = pack.items.get("novelty:lever:0", {}).get("text", "")
         lever_text = lever.split(": ", 1)[-1] if lever else None
+        found = statement.split(": ", 1)[-1]  # a full stop, not a second colon, before it
         return {
             "stance": "support",
             "scores": {"differentiation": 4},
             "confidence": CONF,
-            "claims": [{"text": "There is a gap in what exists: " + statement.split(": ", 1)[-1],
+            "claims": [{"text": f"There is a gap in what exists. {found[:1].upper()}{found[1:]}",
                         "evidence": cites}],  # fmt: skip
             "variant": lever_text,
         }
