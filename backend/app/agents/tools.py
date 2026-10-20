@@ -19,7 +19,7 @@ from typing import Any
 from app.core.stages import Stage
 from app.elicitation.places import DISTRICTS
 from app.elicitation.session import ElicitationSession, Outcome, Source
-from app.elicitation.slots import BY_KEY, SLOTS
+from app.elicitation.slots import ASKABLE_BY_MODE, BY_KEY, SLOTS
 from app.planner import registry
 from app.planner.plan import build_plan
 from app.research import novelty
@@ -336,6 +336,9 @@ def _note_fact(key: str, value: Any, session: ElicitationSession) -> dict:
     or rejected."""
     if key not in BY_KEY or BY_KEY[key].sensitive:
         return {"error": f"{key} is not a fact the agent may record"}
+    allowed = ASKABLE_BY_MODE.get(session.mode)
+    if allowed is not None and key not in allowed:  # no idea yet: no problem to note (R118)
+        return {"rejected": key, "reason": "this conversation does not record it yet"}
     if not _in_founder_words(key, value, session):
         return {"rejected": key, "reason": "not in the founder's words; ask them instead"}
     result = session.put(key, value, 0.8, Source.EXTRACTED)
