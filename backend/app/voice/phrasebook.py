@@ -95,7 +95,9 @@ def wanted() -> list[dict]:
         for a in acks:
             add(a, language)
     recurring = json.loads(RECURRING.read_text(encoding="utf8")) if RECURRING.exists() else []
-    for text in FIXED_EN + [s.question for s in SLOTS if s.question] + recurring:
+    # each slot's question in every conversation's words (R089)
+    questions = [s.question for s in SLOTS if s.question] + [q for s in SLOTS for _, q in s.by_mode]
+    for text in FIXED_EN + questions + recurring:
         add(text, "en-IN")
     for langs in _translations().values():  # the same sentences for Kavitha and Rohit
         for language in ("ta-IN", "hi-IN"):
