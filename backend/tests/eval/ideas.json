@@ -9,7 +9,11 @@
   "roadmap_must_include": "words that must appear in some milestone title",
   "risks_must_include": "risk types that must appear in the roadmap's risks",
   "max_questions": "ceiling on questions asked before the restatement",
-  "must_not_mention": "text that must never appear in the agent's replies"
+  "must_not_mention": "text that must never appear in the agent's replies",
+  "categories_exclude": "Vanigam categories the research must not associate with the idea (R035)",
+  "elements_exclude": "phrases that must not be novelty parts: who is served, broader restatements (1.2.1.4)",
+  "query_excludes": "words that must not take a slot in the papers query (R093)",
+  "idea_type": "the review panel's idea type, from the founder's sector before paper categories (R035)"
  },
  "ideas": [
   {
@@ -33,14 +37,18 @@
     "must_mention": [
      "clinical trials",
      "open-source projects",
-     "Looking at it from seven angles"
+     "Looking at it from seven angles",
+     "Tamil Nadu Startup Map"
     ],
     "roadmap_must_include": [],
     "risks_must_include": [
      "regulatory"
     ],
     "max_questions": 7,
-    "must_not_mention": []
+    "must_not_mention": [],
+    "elements_exclude": [
+     "physically challenged"
+    ]
    }
   },
   {
@@ -62,7 +70,9 @@
     "must_not_ask": [
      "district"
     ],
-    "must_mention": [],
+    "must_mention": [
+     "Which buyer comes first"
+    ],
     "roadmap_must_include": [
      "FSSAI",
      "yield"
@@ -73,7 +83,17 @@
     "max_questions": 7,
     "must_not_mention": [
      "medical-device",
-     "which patients"
+     "which patients",
+     "Solomon Islands",
+     "Which sensors and hardware",
+     "What is measured",
+     "and so are their combinations"
+    ],
+    "elements_exclude": [
+     "farmers"
+    ],
+    "categories_exclude": [
+     "health_bio"
     ]
    }
   },
@@ -101,8 +121,13 @@
     "max_questions": 7,
     "must_not_mention": [
      "medical-device",
-     "which patients"
-    ]
+     "which patients",
+     "What is measured"
+    ],
+    "categories_exclude": [
+     "health_bio"
+    ],
+    "idea_type": "agri"
    }
   },
   {
@@ -122,7 +147,9 @@
     "must_not_ask": [
      "district"
     ],
-    "must_mention": [],
+    "must_mention": [
+     "only one part"
+    ],
     "roadmap_must_include": [
      "GI",
      "flowers"
@@ -131,7 +158,8 @@
     "max_questions": 7,
     "must_not_mention": [
      "medical-device",
-     "which patients"
+     "which patients",
+     "and so are their combinations"
     ]
    }
   },
@@ -159,7 +187,15 @@
     "max_questions": 7,
     "must_not_mention": [
      "medical-device",
-     "which patients"
+     "which patients",
+     "and so are their combinations"
+    ],
+    "elements_exclude": [
+     "farmers",
+     "coconut"
+    ],
+    "categories_exclude": [
+     "health_bio"
     ]
    }
   },
@@ -179,7 +215,9 @@
     "must_not_ask": [
      "district"
     ],
-    "must_mention": [],
+    "must_mention": [
+     "Tamil Nadu Startup Map"
+    ],
     "roadmap_must_include": [
      "sample",
      "marker"
@@ -188,7 +226,13 @@
     "max_questions": 7,
     "must_not_mention": [
      "medical-device",
-     "which patients"
+     "which patients",
+     "What is measured",
+     "and so are their combinations"
+    ],
+    "query_excludes": [
+     "work",
+     "units"
     ]
    }
   },
@@ -215,7 +259,10 @@
     "max_questions": 7,
     "must_not_mention": [
      "medical-device",
-     "which patients"
+     "which patients",
+     "dry-run: no papers",
+     "dry run: no papers",
+     "and so are their combinations"
     ]
    }
   },
@@ -241,7 +288,16 @@
     "max_questions": 7,
     "must_not_mention": [
      "medical-device",
-     "which patients"
+     "which patients",
+     "BankBazaar",
+     "Kaleidofin",
+     "Yubi",
+     "What is measured",
+     "and so are their combinations"
+    ],
+    "query_excludes": [
+     "small",
+     "units"
     ]
    }
   },
@@ -261,11 +317,20 @@
     "must_not_ask": [
      "district"
     ],
-    "must_mention": [],
+    "must_mention": [
+     "can't judge novelty yet"
+    ],
     "roadmap_must_include": [],
     "risks_must_include": [],
     "max_questions": 7,
-    "must_not_mention": []
+    "must_not_mention": [
+     "Agarwal",
+     "Wabag"
+    ],
+    "query_excludes": [
+     "plans",
+     "offered"
+    ]
    }
   },
   {
@@ -290,7 +355,11 @@
     "max_questions": 7,
     "must_not_mention": [
      "medical-device",
-     "which patients"
+     "which patients",
+     "and so are their combinations"
+    ],
+    "elements_exclude": [
+     "solar"
     ]
    }
   }
