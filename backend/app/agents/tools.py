@@ -178,6 +178,7 @@ def compact_scan(r: dict) -> dict:
         "papers": {
             "total": r["papers"]["total"],
             "recent_years": dict(sorted(r["papers"]["by_year"].items())[-5:]),
+            "closest": _paper(p) if (p := r["papers"].get("closest")) else None,
             "most_relevant": [_paper(p) for p in r["papers"]["most_relevant"][:5]],
             "most_cited": [_paper(p) for p in r["papers"]["most_cited"][:3]],
         },
