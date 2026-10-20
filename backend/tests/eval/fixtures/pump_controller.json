@@ -1,7 +1,7 @@
 {
  "id": "pump_controller",
  "idea": "a dry-run protection starter for farm pump motors made in Coimbatore with phone alerts",
- "recorded": "2026-10-10",
+ "recorded": "2026-10-20",
  "coverage": [
   {
    "source": "papers",
@@ -18,117 +18,137 @@
   {
    "source": "trials",
    "status": "skipped"
+  },
+  {
+   "source": "local startups",
+   "status": "ok"
   }
  ],
  "scan": {
   "idea": "a dry-run protection starter for farm pump motors made in Coimbatore with phone alerts",
   "queries": {
-   "papers": "pump dry running protection electric motor pump protection farm",
+   "papers": "pump dry running protection electric motor pump protection phone",
    "trials": "pump dry running protection electric motor pump",
    "projects": "pump dry running protection",
-   "patents": "pump dry running protection electric motor pump protection farm",
-   "local": "protection farm phone alerts electric motor pump pump dry running protection"
+   "patents": "pump dry running protection electric motor pump protection phone",
+   "local": "protection phone alerts electric motor pump pump dry running protection"
   },
   "associated_domains": {
    "basis": "papers",
    "domains": [
     {
      "name": "Physical Sciences",
-     "share_pct": 67
+     "share_pct": 83
     },
     {
      "name": "Life Sciences",
-     "share_pct": 33
+     "share_pct": 9
+    },
+    {
+     "name": "Social Sciences",
+     "share_pct": 8
     }
    ],
    "fields": [
     {
      "name": "Engineering",
-     "share_pct": 50
-    },
-    {
-     "name": "Agricultural and Biological Sciences",
-     "share_pct": 33
-    },
-    {
-     "name": "Energy",
-     "share_pct": 15
+     "share_pct": 61
     },
     {
      "name": "Environmental Science",
+     "share_pct": 15
+    },
+    {
+     "name": "Agricultural and Biological Sciences",
+     "share_pct": 9
+    },
+    {
+     "name": "Energy",
+     "share_pct": 7
+    },
+    {
+     "name": "Decision Sciences",
+     "share_pct": 5
+    },
+    {
+     "name": "Social Sciences",
      "share_pct": 2
     },
     {
-     "name": "Materials Science",
+     "name": "Business, Management and Accounting",
+     "share_pct": 1
+    },
+    {
+     "name": "Earth and Planetary Sciences",
      "share_pct": 0
     }
    ],
    "subfields": [
     {
-     "name": "Electrical and Electronic Engineering",
-     "share_pct": 27
-    },
-    {
-     "name": "Aquatic Science",
-     "share_pct": 22
-    },
-    {
      "name": "Mechanical Engineering",
      "share_pct": 16
     },
     {
+     "name": "Electrical and Electronic Engineering",
+     "share_pct": 14
+    },
+    {
+     "name": "Water Science and Technology",
+     "share_pct": 12
+    },
+    {
+     "name": "Ocean Engineering",
+     "share_pct": 10
+    },
+    {
+     "name": "Safety, Risk, Reliability and Quality",
+     "share_pct": 9
+    },
+    {
+     "name": "Aquatic Science",
+     "share_pct": 8
+    },
+    {
      "name": "Renewable Energy, Sustainability and the Environment",
-     "share_pct": 11
+     "share_pct": 6
     },
     {
-     "name": "Energy Engineering and Power Technology",
+     "name": "Statistics, Probability and Uncertainty",
      "share_pct": 5
-    },
-    {
-     "name": "Industrial and Manufacturing Engineering",
-     "share_pct": 4
-    },
-    {
-     "name": "Plant Science",
-     "share_pct": 4
-    },
-    {
-     "name": "Soil Science",
-     "share_pct": 4
     }
    ],
    "topics": [
     {
-     "name": "Engineering and Agricultural Innovations",
-     "share_pct": 22
+     "name": "Arduino and IoT Applications",
+     "share_pct": 14
     },
     {
-     "name": "Arduino and IoT Applications",
-     "share_pct": 15
+     "name": "Water Quality and Resources Studies",
+     "share_pct": 11
     },
     {
      "name": "Refrigeration and Air Conditioning Technologies",
-     "share_pct": 12
+     "share_pct": 10
     },
     {
-     "name": "Photovoltaic System Optimization Techniques",
-     "share_pct": 7
+     "name": "Fire dynamics and safety research",
+     "share_pct": 8
     },
     {
-     "name": "Power Systems and Renewable Energy",
+     "name": "Engineering and Agricultural Innovations",
+     "share_pct": 8
+    },
+    {
+     "name": "Oil and Gas Production Techniques",
+     "share_pct": 8
+    },
+    {
+     "name": "Risk and Safety Analysis",
      "share_pct": 5
     },
     {
-     "name": "Agricultural Engineering and Mechanization",
-     "share_pct": 4
-    },
-    {
-     "name": "Digital Transformation in Industry",
-     "share_pct": 4
-    },
-    {
-     "name": "Wind Turbine Control Systems",
-     "share_pct": 4
+     "name": "Water Systems and Optimization",
+     "share_pct": 5
     }
    ]
   },
@@ -136,328 +156,137 @@
    "agriculture",
    "climate",
    "electrical",
-   "renewable"
+   "renewable",
+   "saas"
   ],
+  "matched_domain": "pump_motor_controllers",
   "papers": {
-   "total": 4058,
+   "total": 2658,
+   "closest": null,
    "by_year": {
-    "2000": 199,
-    "2018": 128,
-    "2017": 127,
-    "2015": 122,
-    "2016": 122,
-    "2020": 121,
-    "2019": 113,
-    "2021": 112,
-    "2011": 111,
-    "2023": 108,
-    "2012": 103,
-    "2009": 102,
-    "2013": 100,
-    "2022": 99,
-    "2008": 97,
-    "2024": 95,
-    "2014": 92,
-    "2010": 88,
-    "2007": 77,
-    "2026": 67,
-    "2006": 60,
-    "2025": 60,
-    "2003": 49,
-    "2005": 49,
-    "2004": 48,
+    "2000": 183,
+    "2016": 93,
+    "2012": 87,
+    "2018": 86,
+    "2013": 82,
+    "2017": 79,
+    "2019": 79,
+    "2015": 78,
+    "2011": 74,
+    "2014": 74,
+    "2023": 74,
+    "2021": 71,
+    "2020": 69,
+    "2008": 67,
+    "2009": 62,
+    "2024": 60,
+    "2007": 58,
+    "2010": 53,
+    "2006": 50,
+    "2022": 50,
+    "2005": 47,
+    "2004": 44,
+    "2025": 42,
+    "2026": 38,
     "1971": 37,
-    "2002": 37,
-    "1972": 34,
-    "1979": 34,
-    "2001": 33,
-    "1990": 32,
-    "1978": 31,
-    "1969": 30,
-    "1996": 30,
-    "1968": 29,
-    "1999": 29,
-    "1920": 28,
-    "1983": 28,
-    "1982": 27,
-    "1988": 26,
-    "1998": 26,
-    "1967": 24,
-    "1992": 24,
-    "1994": 24,
-    "1930": 23,
-    "1977": 23,
-    "1981": 23,
-    "1980": 22,
-    "1987": 22,
+    "2001": 35,
+    "1972": 32,
+    "2002": 31,
+    "2003": 31,
+    "1969": 27,
+    "1967": 25,
+    "1968": 25,
+    "1993": 25,
+    "1979": 24,
+    "1998": 24,
+    "1986": 22,
     "1989": 22,
-    "1993": 22,
-    "1921": 21,
-    "1927": 21,
-    "1984": 21,
-    "1997": 21,
-    "1924": 20,
-    "1965": 20,
-    "1991": 20,
-    "1917": 19,
-    "1976": 19,
-    "1913": 18,
-    "1916": 18,
-    "1922": 18,
-    "1931": 18,
-    "1986": 18,
-    "1995": 18,
-    "1918": 17,
-    "1919": 16,
-    "1932": 16,
-    "1939": 16,
-    "1966": 16,
-    "1937": 15,
-    "1964": 15,
-    "1975": 15,
-    "1985": 14,
-    "1914": 13,
-    "1923": 13,
-    "1936": 13,
-    "1961": 13,
-    "1911": 12,
-    "1926": 12,
-    "1928": 12,
-    "1929": 12,
-    "1938": 12,
-    "1941": 12,
-    "1942": 12,
-    "1956": 12,
-    "1906": 11,
-    "1909": 11,
-    "1940": 11,
-    "1949": 11,
-    "1953": 11,
-    "1910": 10,
-    "1915": 10,
-    "1925": 10,
-    "1948": 10,
-    "1951": 10,
-    "1957": 10,
-    "1962": 10,
-    "1945": 9,
+    "1992": 22,
+    "1988": 21,
+    "1999": 21,
+    "1995": 17,
+    "1978": 16,
+    "1980": 16,
+    "1990": 16,
+    "1996": 16,
+    "1997": 16,
+    "1984": 15,
+    "1991": 15,
+    "1994": 15,
+    "1983": 13,
+    "1930": 12,
+    "1987": 12,
+    "1975": 11,
+    "1976": 10,
+    "1977": 10,
+    "1981": 10,
+    "1911": 9,
+    "1927": 9,
     "1963": 9,
-    "1905": 8,
-    "1912": 8,
-    "1944": 8,
-    "1970": 8,
-    "1973": 8,
+    "1982": 9,
+    "1913": 8,
+    "1920": 8,
+    "1921": 8,
+    "1962": 8,
+    "1964": 8,
+    "1965": 8,
     "1974": 8,
-    "1907": 7,
-    "1952": 7,
-    "1955": 7,
-    "1958": 7,
-    "1934": 6,
-    "1950": 6,
-    "1960": 6,
-    "1900": 5,
-    "1935": 5,
-    "1898": 4,
-    "1902": 4,
-    "1903": 4,
-    "1908": 4,
-    "1933": 4,
-    "1947": 4,
-    "1904": 3,
-    "1954": 3,
-    "1959": 3,
-    "1894": 2,
-    "1899": 2,
-    "1901": 2,
-    "1943": 2,
-    "1874": 1,
-    "1884": 1,
-    "1885": 1,
-    "1889": 1,
-    "1891": 1,
-    "1892": 1
+    "1905": 7,
+    "1917": 7,
+    "1922": 7,
+    "1928": 7,
+    "1931": 7,
+    "1932": 7,
+    "1949": 7,
+    "1916": 6,
+    "1929": 6,
+    "1906": 5,
+    "1910": 5,
+    "1914": 5,
+    "1924": 5,
+    "1958": 5,
+    "1961": 5,
+    "1966": 5,
+    "1973": 5,
+    "1985": 5,
+    "1912": 4,
+    "1915": 4,
+    "1937": 4,
+    "1938": 4,
+    "1944": 4,
+    "1953": 4,
+    "1956": 4,
+    "1959": 4,
+    "1970": 4,
+    "1926": 3,
+    "1936": 3,
+    "1939": 3,
+    "1941": 3,
+    "1948": 3,
+    "1957": 3,
+    "1907": 2,
+    "1909": 2,
+    "1918": 2,
+    "1919": 2,
+    "1923": 2,
+    "1933": 2,
+    "1940": 2,
+    "1942": 2,
+    "1951": 2,
+    "1954": 2,
+    "1955": 2,
+    "1960": 2,
+    "1894": 1,
+    "1895": 1,
+    "1904": 1,
+    "1908": 1,
+    "1925": 1,
+    "1934": 1,
+    "1935": 1,
+    "1945": 1,
+    "1946": 1
    },
    "most_relevant": [
-    {
-     "title": "Internet of Things-Based Steam Pump Motor Protection Due to Voltage Unbalance",
-     "year": 2020,
-     "cited_by": 8,
-     "venue": "Journal of Robotics and Control (JRC)",
-     "url": "https://doi.org/10.18196/jrc.1214",
-     "topics": [
-      {
-       "topic": "Arduino and IoT Applications",
-       "subfield": "Electrical and Electronic Engineering",
-       "field": "Engineering",
-       "domain": "Physical Sciences",
-       "score": 0.5127000212669373
-      },
-      {
-       "topic": "Power Quality and Harmonics",
-       "subfield": "Electrical and Electronic Engineering",
-       "field": "Engineering",
-       "domain": "Physical Sciences",
-       "score": 0.4171999990940094
-      },
-      {
-       "topic": "Industrial Automation and Control Systems",
-       "subfield": "Control and Systems Engineering",
-       "field": "Engineering",
-       "domain": "Physical Sciences",
-       "score": 0.009999999776482582
-      }
-     ]
-    },
-    {
-     "title": "Selecting Electric Motors For Farm Use (Reprinted 1958)",
-     "year": 1958,
-     "cited_by": 0,
-     "venue": "University of Minnesota Digital Conservancy (University of Minnesota)",
-     "url": "https://openalex.org/W3199296186",
-     "topics": [
-      {
-       "topic": "Agricultural Engineering and Mechanization",
-       "subfield": "Mechanical Engineering",
-       "field": "Engineering",
-       "domain": "Physical Sciences",
-       "score": 0.7490000128746033
-      },
-      {
-       "topic": "Electric Power Systems and Control",
-       "subfield": "Electrical and Electronic Engineering",
-       "field": "Engineering",
-       "domain": "Physical Sciences",
-       "score": 0.09200000017881393
-      },
-      {
-       "topic": "Electric Motor Design and Analysis",
-       "subfield": "Electrical and Electronic Engineering",
-       "field": "Engineering",
-       "domain": "Physical Sciences",
-       "score": 0.09059999883174896
-      }
-     ]
-    },
-    {
-     "title": "A Comparative Study of Photovoltaic Water Pumping System-Driving Conventional AC Single-phase and Three-phase Motor Submersible Pumps",
-     "year": 2022,
-     "cited_by": 7,
-     "venue": "Evergreen",
-     "url": "https://doi.org/10.5109/4843121",
-     "topics": [
-      {
-       "topic": "Photovoltaic System Optimization Techniques",
-       "subfield": "Renewable Energy, Sustainability and the Environment",
-       "field": "Energy",
-       "domain": "Physical Sciences",
-       "score": 0.9750999808311462
-      },
-      {
-       "topic": "Power Systems and Renewable Energy",
-       "subfield": "Energy Engineering and Power Technology",
-       "field": "Energy",
-       "domain": "Physical Sciences",
-       "score": 0.008200000040233135
-      },
-      {
-       "topic": "Engineering and Agricultural Innovations",
-       "subfield": "Aquatic Science",
-       "field": "Agricultural and Biological Sciences",
-       "domain": "Life Sciences",
-       "score": 0.004399999976158142
-      }
-     ]
-    },
-    {
-     "title": "Small Irrigation Pumping Plants",
-     "year": 1940,
-     "cited_by": 5,
-     "venue": "Digital Collections of Colorado (Colorado State University)",
-     "url": "https://openalex.org/W241782958",
-     "topics": [
-      {
-       "topic": "Irrigation Practices and Water Management",
-       "subfield": "Soil Science",
-       "field": "Agricultural and Biological Sciences",
-       "domain": "Life Sciences",
-       "score": 0.6758000254631042
-      },
-      {
-       "topic": "Engineering and Agricultural Innovations",
-       "subfield": "Aquatic Science",
-       "field": "Agricultural and Biological Sciences",
-       "domain": "Life Sciences",
-       "score": 0.31049999594688416
-      },
-      {
-       "topic": "Water management and technologies",
-       "subfield": "Ecology, Evolution, Behavior and Systematics",
-       "field": "Agricultural and Biological Sciences",
-       "domain": "Life Sciences",
-       "score": 0.004600000102072954
-      }
-     ]
-    },
-    {
-     "title": "Alarm based Solar Fencing and Pump Control System",
-     "year": 2019,
-     "cited_by": 2,
-     "venue": "International Journal of Recent Technology and Engineering (IJRTE)",
-     "url": "https://doi.org/10.35940/ijrte.d1083.1284s219",
-     "topics": [
-      {
-       "topic": "Smart Agriculture and AI",
-       "subfield": "Plant Science",
-       "field": "Agricultural and Biological Sciences",
-       "domain": "Life Sciences",
-       "score": 0.6304000020027161
-      },
-      {
-       "topic": "Arduino and IoT Applications",
-       "subfield": "Electrical and Electronic Engineering",
-       "field": "Engineering",
-       "domain": "Physical Sciences",
-       "score": 0.21299999952316284
-      },
-      {
-       "topic": "IoT-based Smart Home Systems",
-       "subfield": "Electrical and Electronic Engineering",
-       "field": "Engineering",
-       "domain": "Physical Sciences",
-       "score": 0.027300000190734863
-      }
-     ]
-    },
-    {
-     "title": "Electric motor selection",
-     "year": 1983,
-     "cited_by": 0,
-     "venue": "MOspace Institutional Repository (University of Missouri)",
-     "url": "https://openalex.org/W3041384540",
-     "topics": [
-      {
-       "topic": "Electric Motor Design and Analysis",
-       "subfield": "Electrical and Electronic Engineering",
-       "field": "Engineering",
-       "domain": "Physical Sciences",
-       "score": 0.7939000129699707
-      },
-      {
-       "topic": "Electric Power Systems and Control",
-       "subfield": "Electrical and Electronic Engineering",
-       "field": "Engineering",
-       "domain": "Physical Sciences",
-       "score": 0.1949000060558319
-      },
-      {
-       "topic": "Material Selection and Properties",
-       "subfield": "Materials Chemistry",
-       "field": "Materials Science",
-       "domain": "Physical Sciences",
-       "score": 0.0013000000035390258
-      }
-     ]
-    },
     {
      "title": "Three Phase Motor Controlling Using GSM",
      "year": 2020,
@@ -489,87 +318,267 @@
      ]
     },
     {
-     "title": "Plants at the Pump: Biofuels, Climate Change, and Sustainability",
-     "year": 2008,
-     "cited_by": 24,
-     "venue": "ROSA P",
-     "url": "https://openalex.org/W1576184151",
+     "title": "(Meetings to share advancements in heat pump technologies). [Meetings to Share Advancements in Heap Pumps]",
+     "year": 1990,
+     "cited_by": 0,
+     "venue": null,
+     "url": "https://doi.org/10.2172/7012113",
      "topics": [
       {
-       "topic": "Bioenergy crop production and management",
-       "subfield": "Agronomy and Crop Science",
-       "field": "Agricultural and Biological Sciences",
-       "domain": "Life Sciences",
-       "score": 0.524399995803833
-      },
-      {
-       "topic": "Biofuel production and bioconversion",
-       "subfield": "Biomedical Engineering",
+       "topic": "Refrigeration and Air Conditioning Technologies",
+       "subfield": "Mechanical Engineering",
        "field": "Engineering",
        "domain": "Physical Sciences",
-       "score": 0.20069999992847443
+       "score": 0.9984999895095825
       },
       {
-       "topic": "Bioeconomy and Sustainability Development",
-       "subfield": "General Agricultural and Biological Sciences",
+       "topic": "Energy Efficiency and Management",
+       "subfield": "Renewable Energy, Sustainability and the Environment",
+       "field": "Energy",
+       "domain": "Physical Sciences",
+       "score": 0.00019999999494757503
+      },
+      {
+       "topic": "Building Energy and Comfort Optimization",
+       "subfield": "Building and Construction",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 9.999999747378752e-05
+      }
+     ]
+    },
+    {
+     "title": "Controlling of agriculture motor with water level using GSM and Arduino Nano",
+     "year": 2022,
+     "cited_by": 0,
+     "venue": "International Journal for Research in Applied Science and Engineering Technology",
+     "url": "https://doi.org/10.22214/ijraset.2022.44580",
+     "topics": [
+      {
+       "topic": "Arduino and IoT Applications",
+       "subfield": "Electrical and Electronic Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.9868000149726868
+      },
+      {
+       "topic": "Smart Agriculture and AI",
+       "subfield": "Plant Science",
        "field": "Agricultural and Biological Sciences",
        "domain": "Life Sciences",
-       "score": 0.20020000636577606
+       "score": 0.004100000020116568
+      },
+      {
+       "topic": "Industrial Automation and Control Systems",
+       "subfield": "Control and Systems Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.0026000000070780516
+      }
+     ]
+    },
+    {
+     "title": "IoT-Based DOL Starter for 3-Phase Water Pump in Agriculture",
+     "year": 2025,
+     "cited_by": 0,
+     "venue": "International Journal of Innovative Science and Research Technology (IJISRT)",
+     "url": "https://doi.org/10.38124/ijisrt/25dec123",
+     "topics": [
+      {
+       "topic": "Arduino and IoT Applications",
+       "subfield": "Electrical and Electronic Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.7778000235557556
+      },
+      {
+       "topic": "Smart Agriculture and AI",
+       "subfield": "Plant Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.17139999568462372
+      },
+      {
+       "topic": "IoT-based Smart Home Systems",
+       "subfield": "Electrical and Electronic Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.014499999582767487
+      }
+     ]
+    },
+    {
+     "title": "Application of Digital Twins and Metaverse in the Field of Fluid Machinery Pumps and Fans: A Review",
+     "year": 2022,
+     "cited_by": 46,
+     "venue": "Sensors",
+     "url": "https://doi.org/10.3390/s22239294",
+     "topics": [
+      {
+       "topic": "Digital Transformation in Industry",
+       "subfield": "Industrial and Manufacturing Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.9932000041007996
+      },
+      {
+       "topic": "Applied Advanced Technologies",
+       "subfield": "Industrial and Manufacturing Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.0008999999845400453
+      },
+      {
+       "topic": "Turbomachinery Performance and Optimization",
+       "subfield": "Aerospace Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.0007999999797903001
+      }
+     ]
+    },
+    {
+     "title": "Design and Construction of a Remedial Pumping System",
+     "year": 2013,
+     "cited_by": 0,
+     "venue": "DigitalCommons - CalPoly (California State Polytechnic University)",
+     "url": "https://openalex.org/W157003559",
+     "topics": [
+      {
+       "topic": "Engineering and Agricultural Innovations",
+       "subfield": "Aquatic Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.5913000106811523
+      },
+      {
+       "topic": "Water Systems and Optimization",
+       "subfield": "Civil and Structural Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.20720000565052032
+      },
+      {
+       "topic": "Water and Wastewater Treatment",
+       "subfield": "Computational Mechanics",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.09080000221729279
+      }
+     ]
+    },
+    {
+     "title": "Solar Water Pumps in Zambia: Irrigating the Fields of Shamiyoyo",
+     "year": 2018,
+     "cited_by": 3,
+     "venue": "CU Scholar (University of Colorado Boulder)",
+     "url": "https://openalex.org/W2902751946",
+     "topics": [
+      {
+       "topic": "Energy and Environment Impacts",
+       "subfield": "Pollution",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 0.3212999999523163
+      },
+      {
+       "topic": "Engineering and Agricultural Innovations",
+       "subfield": "Aquatic Science",
+       "field": "Agricultural and Biological Sciences",
+       "domain": "Life Sciences",
+       "score": 0.2587999999523163
+      },
+      {
+       "topic": "Photovoltaic Systems and Sustainability",
+       "subfield": "Environmental Engineering",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 0.07699999958276749
+      }
+     ]
+    },
+    {
+     "title": "Development and demonstration of an electric heat pump for waste-heat recovery in industry. Topical report No. 2. Design and analysis report",
+     "year": 1981,
+     "cited_by": 0,
+     "venue": null,
+     "url": "https://doi.org/10.2172/6423487",
+     "topics": [
+      {
+       "topic": "Refrigeration and Air Conditioning Technologies",
+       "subfield": "Mechanical Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.5849999785423279
+      },
+      {
+       "topic": "Thermodynamic and Exergetic Analyses of Power and Cooling Systems",
+       "subfield": "Mechanical Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.38040000200271606
+      },
+      {
+       "topic": "Advanced Thermodynamic Systems and Engines",
+       "subfield": "Mechanical Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.007400000002235174
       }
      ]
     }
    ],
    "most_cited": [
     {
-     "title": "The role of hydrogen and fuel cells in the global energy system",
-     "year": 2018,
-     "cited_by": 4154,
-     "venue": "Energy & Environmental Science",
-     "url": "https://doi.org/10.1039/c8ee01157e",
+     "title": "Technologies and policies to decarbonize global industry: Review and assessment of mitigation drivers through 2070",
+     "year": 2020,
+     "cited_by": 1036,
+     "venue": "Applied Energy",
+     "url": "https://doi.org/10.1016/j.apenergy.2020.114848",
      "topics": [
       {
-       "topic": "Hybrid Renewable Energy Systems",
-       "subfield": "Energy Engineering and Power Technology",
-       "field": "Energy",
-       "domain": "Physical Sciences",
-       "score": 0.9951000213623047
+       "topic": "Climate Change Policy and Economics",
+       "subfield": "Economics and Econometrics",
+       "field": "Economics, Econometrics and Finance",
+       "domain": "Social Sciences",
+       "score": 0.9560999870300293
       },
       {
-       "topic": "Integrated Energy Systems Optimization",
-       "subfield": "Electrical and Electronic Engineering",
-       "field": "Engineering",
-       "domain": "Physical Sciences",
-       "score": 0.0007999999797903001
-      },
-      {
-       "topic": "Global Energy and Sustainability Research",
+       "topic": "Energy Efficiency and Management",
        "subfield": "Renewable Energy, Sustainability and the Environment",
        "field": "Energy",
        "domain": "Physical Sciences",
-       "score": 0.000699999975040555
+       "score": 0.011900000274181366
+      },
+      {
+       "topic": "Iron and Steelmaking Processes",
+       "subfield": "Mechanical Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.007699999958276749
       }
      ]
     },
     {
-     "title": "Progress in electrical energy storage system: A critical review",
-     "year": 2009,
-     "cited_by": 3744,
-     "venue": "Progress in Natural Science Materials International",
-     "url": "https://doi.org/10.1016/j.pnsc.2008.07.014",
+     "title": "Review of energy storage services, applications, limitations, and benefits",
+     "year": 2020,
+     "cited_by": 699,
+     "venue": "Energy Reports",
+     "url": "https://doi.org/10.1016/j.egyr.2020.07.028",
      "topics": [
       {
        "topic": "Power Systems and Renewable Energy",
        "subfield": "Energy Engineering and Power Technology",
        "field": "Energy",
        "domain": "Physical Sciences",
-       "score": 0.9984999895095825
+       "score": 0.9994999766349792
       },
       {
        "topic": "Integrated Energy Systems Optimization",
        "subfield": "Electrical and Electronic Engineering",
        "field": "Engineering",
        "domain": "Physical Sciences",
-       "score": 0.0003000000142492354
+       "score": 0.00019999999494757503
       },
       {
        "topic": "Hybrid Renewable Energy Systems",
@@ -581,69 +590,9 @@
      ]
     },
     {
-     "title": "The LHCb Detector at the LHC",
-     "year": 2008,
-     "cited_by": 2002,
-     "venue": "Journal of Instrumentation",
-     "url": "https://doi.org/10.1088/1748-0221/3/08/s08005",
-     "topics": [
-      {
-       "topic": "Particle Detector Development and Performance",
-       "subfield": "Nuclear and High Energy Physics",
-       "field": "Physics and Astronomy",
-       "domain": "Physical Sciences",
-       "score": 0.9779999852180481
-      },
-      {
-       "topic": "Particle physics theoretical and experimental studies",
-       "subfield": "Nuclear and High Energy Physics",
-       "field": "Physics and Astronomy",
-       "domain": "Physical Sciences",
-       "score": 0.019899999722838402
-      },
-      {
-       "topic": "Particle accelerators and beam dynamics",
-       "subfield": "Aerospace Engineering",
-       "field": "Engineering",
-       "domain": "Physical Sciences",
-       "score": 0.00019999999494757503
-      }
-     ]
-    },
-    {
-     "title": "Biopolymer: A Sustainable Material for Food and Medical Applications",
-     "year": 2022,
-     "cited_by": 730,
-     "venue": "Polymers",
-     "url": "https://doi.org/10.3390/polym14050983",
-     "topics": [
-      {
-       "topic": "Nanocomposite Films for Food Packaging",
-       "subfield": "Biomaterials",
-       "field": "Materials Science",
-       "domain": "Physical Sciences",
-       "score": 0.5532000064849854
-      },
-      {
-       "topic": "biodegradable polymer synthesis and properties",
-       "subfield": "Biomaterials",
-       "field": "Materials Science",
-       "domain": "Physical Sciences",
-       "score": 0.41260001063346863
-      },
-      {
-       "topic": "Polysaccharides Composition and Applications",
-       "subfield": "Food Science",
-       "field": "Agricultural and Biological Sciences",
-       "domain": "Life Sciences",
-       "score": 0.01590000092983246
-      }
-     ]
-    },
-    {
      "title": "Strategies to save energy in the context of the energy crisis: a review",
      "year": 2023,
-     "cited_by": 691,
+     "cited_by": 683,
      "venue": "Environmental Chemistry Letters",
      "url": "https://doi.org/10.1007/s10311-023-01591-5",
      "topics": [
@@ -667,6 +616,66 @@
        "field": "Energy",
        "domain": "Physical Sciences",
        "score": 0.11540000140666962
+      }
+     ]
+    },
+    {
+     "title": "Fresh Water availability and Its Global challenge",
+     "year": 2023,
+     "cited_by": 622,
+     "venue": "British Journal of Multidisciplinary and Advanced Studies",
+     "url": "https://doi.org/10.37745/bjmas.2022.0208",
+     "topics": [
+      {
+       "topic": "Environmental Science and Water Management",
+       "subfield": "Water Science and Technology",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 0.6420999765396118
+      },
+      {
+       "topic": "Water resources management and optimization",
+       "subfield": "Ocean Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.19120000302791595
+      },
+      {
+       "topic": "Climate Change and Environmental Impact",
+       "subfield": "Global and Planetary Change",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 0.03060000017285347
+      }
+     ]
+    },
+    {
+     "title": "Green Jobs: Towards Decent Work in a Sustainable, Low-Carbon World",
+     "year": 2008,
+     "cited_by": 447,
+     "venue": "University of North Texas Digital Library (University of North Texas)",
+     "url": "https://openalex.org/W1589141825",
+     "topics": [
+      {
+       "topic": "Sustainable Development and Policies",
+       "subfield": "Management, Monitoring, Policy and Law",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 1.0
+      },
+      {
+       "topic": "Employment and Welfare Studies",
+       "subfield": "General Health Professions",
+       "field": "Health Professions",
+       "domain": "Health Sciences",
+       "score": 0.0
+      },
+      {
+       "topic": "Employment, Labor, and Gender Studies",
+       "subfield": "Safety Research",
+       "field": "Social Sciences",
+       "domain": "Social Sciences",
+       "score": 0.0
       }
      ]
     }
@@ -707,19 +716,42 @@
   },
   "patents": {
    "total": 0,
-   "items": []
+   "items": [],
+   "india": null
   },
   "local": {
+   "status": "ok",
    "startups": [],
    "registry_domains": [
     {
      "id": "pump_motor_controllers",
      "label": "Smart pump and motor controllers"
+    },
+    {
+     "id": "ev_motor_controllers",
+     "label": "Motor controllers and converters for EVs"
     }
+   ],
+   "searched": 654,
+   "districts": [
+    "Chennai",
+    "Coimbatore",
+    "Madurai"
+   ],
+   "scope": "the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai",
+   "sectors": [
+    "electronics"
    ]
   },
   "elements": [],
   "discuss": [
+   {
+    "field": "Smart pump and motor controllers",
+    "questions": [
+     "Which buyer comes first (farmers, pump makers and apartments), and what do they use today?",
+     "Which of these do you need before the first sale: BIS certification for notified products?"
+    ]
+   },
    {
     "field": "Engineering",
     "questions": [
@@ -728,21 +760,9 @@
     ]
    },
    {
-    "field": "Agricultural and Biological Sciences",
-    "questions": [
-     "Which crop or animal, which season, and which FPO or farmers will pilot it?"
-    ]
-   },
-   {
     "field": "Energy",
     "questions": [
      "What does it cost per unit of energy saved or produced, and who finances it?"
-    ]
-   },
-   {
-    "field": "Environmental Science",
-    "questions": [
-     "What is measured, by whom, and who pays for the improvement?"
     ]
    },
    {
@@ -758,7 +778,7 @@
    {
     "source": "papers",
     "status": "ok",
-    "found": 4058,
+    "found": 2658,
     "note": ""
    },
    {
@@ -771,13 +791,19 @@
     "source": "patents",
     "status": "no_key",
     "found": 0,
-    "note": "Patents not searched: add a free PatentsView key (PATENTSVIEW_API_KEY)"
+    "note": "Patents not searched: register free with the EPO (EPO_OPS_KEY and EPO_OPS_SECRET) for worldwide and Indian patents"
    },
    {
     "source": "trials",
     "status": "skipped",
     "found": 0,
     "note": "Not a health idea, so clinical trials were not searched"
+   },
+   {
+    "source": "local startups",
+    "status": "ok",
+    "found": 0,
+    "note": "Only the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai"
    }
   ],
   "caveat": "Counts come from the sources listed in coverage. 'Nothing found' means nothing in those sources, not that the idea is new; have a patent attorney search before filing."
@@ -787,39 +813,34 @@
    {
     "element": "pump motors",
     "query": "\"electric motor pump\"",
-    "papers": 581,
+    "papers": 583,
     "label": "active"
    },
    {
-    "element": "dry-run",
+    "element": "dry run",
     "query": "\"pump dry running protection\"",
     "papers": 0,
-    "label": "nothing found"
+    "label": "not searched well"
    }
   ],
-  "pairs": [
-   {
-    "a": "pump motors",
-    "b": "dry-run",
-    "a_papers": 581,
-    "b_papers": 0,
-    "papers": 0,
-    "share_pct": null,
-    "gap": false
-   }
-  ],
+  "pairs": [],
   "context": {
-   "query": "\"electric motor pump\" \"pump dry running protection\"",
+   "query": "\"electric motor pump\"",
    "searched": true,
-   "world_papers": 0,
-   "india_papers": 0,
-   "india_share_pct": null,
+   "world_papers": 583,
+   "india_papers": 41,
+   "india_share_pct": 7.0,
    "tn_startups": 0,
+   "tn_scope": "the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai",
    "gap": false
   },
+  "coverage": {
+   "pairs_expected": 0,
+   "pairs_counted": 0
+  },
   "statement": {
-   "type": "element",
-   "text": "The rarest part is dry-run: no papers."
+   "type": "unclear",
+   "text": "I could search only one part on its own, pump motors (583 papers), so I can't say how new the idea is as a whole."
   },
   "levers": [
    {
