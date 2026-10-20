@@ -36,7 +36,9 @@ from dataclasses import dataclass
 
 from app.elicitation.session import ElicitationSession
 from app.elicitation.slots import (
+    ANCHOR,
     ANY_OF,
+    ASKABLE_BY_MODE,
     BY_KEY,
     REQUIRED_BY_MODE,
     TAU_CONFIRM,
@@ -117,11 +119,13 @@ def candidates(session: ElicitationSession) -> list[str]:
     Profile-sourced slots are excluded by the same rule: bootstrap seeds them
     at 0.95, so the selector never asks a founder for a district they already
     gave us. Re-asking is the single most corrosive thing this feature could
-    do. A disputed slot sits below the band (R053), so it is asked.
+    do. A disputed slot sits below the band (R053), so it is asked. A mode
+    that asks only some slots (slots.ASKABLE_BY_MODE) never offers the rest.
     """
+    allowed = ASKABLE_BY_MODE.get(session.mode)
     out = []
     for s in BY_KEY.values():
-        if s.key in session.skipped:
+        if s.key in session.skipped or (allowed is not None and s.key not in allowed):
             continue
         cur = session.slots.get(s.key)
         if cur is not None and cur.confidence >= TAU_CONFIRM:
@@ -141,8 +145,17 @@ def _idea_known(session: ElicitationSession) -> bool:
 def askable(session: ElicitationSession) -> list[str]:
     """Candidates behind the finger gate (task 1.1.3.1): until the idea is
     known only WHAT questions are asked, so capital is never asked before what
-    it is for. When no WHAT question is left to ask, the gate opens."""
+    it is for. A mode with its own anchor (slots.ANCHOR, R089) asks that first
+    instead: the experience conversation starts from what the founder can do.
+    When nothing gated is left to ask, the gate opens."""
     pool = candidates(session)
+    anchor = ANCHOR.get(session.mode)
+    if anchor is not None:
+        if not anchor & session.filled:
+            first = [k for k in pool if k in anchor]
+            if first:
+                return first
+        return pool
     if not _idea_known(session):
         what = [k for k in pool if BY_KEY[k].finger is Finger.WHAT]
         if what:
@@ -292,7 +305,7 @@ def next_question(session: ElicitationSession) -> tuple[str, str] | None:
     if plan.head is None:
         return None
     slot = BY_KEY[plan.head]
-    return plan.head, slot.question
+    return plan.head, slot.question_for(session.mode)
 
 
 __all__ = [
