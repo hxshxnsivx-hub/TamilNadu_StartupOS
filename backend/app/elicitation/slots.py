@@ -188,6 +188,13 @@ class Slot:
     # during ideation. See SENSITIVE below.
     sensitive: bool = False
     examples: tuple[str, ...] = field(default_factory=tuple)
+    # The question in another conversation's words (R089): a founder who has
+    # just said they have no idea is not asked what "this" is. One slot, one
+    # meaning; only the wording changes. A mode not listed uses `question`.
+    by_mode: tuple[tuple[EntryMode, str], ...] = ()
+
+    def question_for(self, mode: EntryMode) -> str:
+        return next((q for m, q in self.by_mode if m is mode), self.question)
 
 
 SLOTS: tuple[Slot, ...] = (
@@ -220,6 +227,13 @@ SLOTS: tuple[Slot, ...] = (
         ("roadmap", "scheme", "opportunity", "b2b"),
         enum=Sector,
         question="Which sector does this sit in?",
+        by_mode=(
+            (
+                EntryMode.EXPERIENCE,
+                "Which line of work do you know best: farming, textiles, food, IT, health,"
+                " or something else?",
+            ),
+        ),
     ),
     Slot(
         "product_form",
@@ -230,6 +244,12 @@ SLOTS: tuple[Slot, ...] = (
         ("roadmap", "b2b"),
         enum=ProductForm,
         question="Is this software, a physical product, a service, or a mix?",
+        by_mode=(
+            (
+                EntryMode.EXPERIENCE,
+                "Would you rather make a product, offer a service, or build software?",
+            ),
+        ),
     ),
     # ---- WHO / WHERE -----------------------------------------------------
     Slot(
@@ -249,6 +269,7 @@ SLOTS: tuple[Slot, ...] = (
         3,
         ("scheme", "opportunity"),
         question="Which district will you operate from?",
+        by_mode=((EntryMode.EXPERIENCE, "Which district would you work from?"),),
     ),
     Slot(
         "geo_scope",
@@ -329,6 +350,7 @@ SLOTS: tuple[Slot, ...] = (
         ("roadmap", "opportunity"),
         bounds=(0, 40),
         question="How many years have you worked in this line?",
+        by_mode=((EntryMode.EXPERIENCE, "How many years have you done that work?"),),
     ),
     Slot(
         "founder_skills",
@@ -338,6 +360,7 @@ SLOTS: tuple[Slot, ...] = (
         8,
         ("roadmap", "opportunity"),
         question="What can you already do well?",
+        by_mode=((EntryMode.EXPERIENCE, "What work have you done, and what can you do well?"),),
     ),
     Slot(
         "owned_assets",
@@ -347,6 +370,12 @@ SLOTS: tuple[Slot, ...] = (
         5,
         ("opportunity", "scheme"),
         question="Do you already own land, machinery or premises you'd use?",
+        by_mode=(
+            (
+                EntryMode.EXPERIENCE,
+                "Do you own anything you could use, such as land, a vehicle, machines or a shop?",
+            ),
+        ),
     ),
     # ---- WHY -------------------------------------------------------------
     Slot(
@@ -379,6 +408,15 @@ SLOTS: tuple[Slot, ...] = (
             "What are you mainly after — income, independence, impact, "
             "continuing a family business?"
         ),
+        by_mode=(
+            (
+                EntryMode.EXPERIENCE,
+                (
+                    "What are you mainly after: a steady income, being your own boss, giving"
+                    " back, or carrying on a family business?"
+                ),
+            ),
+        ),
     ),
 )
 
@@ -403,13 +441,22 @@ SENSITIVE_DEFERRED: frozenset[str] = frozenset(
 # ---------------------------------------------------------------- entry modes
 
 
+# The slots that describe an idea. A founder with no idea yet cannot have
+# them: in the experience conversation they are filled only by a picked card
+# (task 1.1.5.5), never guessed from what the founder says about themselves (R118).
+IDEA_SLOTS = frozenset({"problem", "solution", "beneficiary"})
+
+
 def _required_for(mode: EntryMode) -> frozenset[str]:
     if mode is EntryMode.IDEA:
         return frozenset(s.key for s in SLOTS if s.need is Need.REQUIRED)
     # Req 1.6: the user has no idea yet — that is the entire point — so the
     # idea-shaped slots cannot be required. What they DO have is experience,
-    # so the slots describing it are promoted.
-    drop = {"problem", "solution", "beneficiary"}
+    # so the slots describing it are promoted. Money waits (R089): the budget
+    # and the funding route are financial-capacity questions, asked only after
+    # the founder's separate consent (task 3.2.1), and never before anyone has
+    # asked what the founder can do.
+    drop = IDEA_SLOTS | {"capital_band", "funding_route"}
     promote = {"founder_skills", "founder_years", "owned_assets", "motivation"}
     base = {s.key for s in SLOTS if s.need is Need.REQUIRED} - drop
     return frozenset(base | promote)
@@ -417,6 +464,22 @@ def _required_for(mode: EntryMode) -> frozenset[str]:
 
 REQUIRED_BY_MODE: dict[EntryMode, frozenset[str]] = {
     mode: _required_for(mode) for mode in EntryMode
+}
+
+# Slots a conversation may ask at all, when it is narrower than every slot. The
+# experience conversation asks only about the founder: the idea's slots wait for
+# an idea (a picked card fills them), and money waits for consent (3.2.1).
+# Asking them as enrichment would undo both (R089).
+ASKABLE_BY_MODE: dict[EntryMode, frozenset[str]] = {
+    EntryMode.EXPERIENCE: REQUIRED_BY_MODE[EntryMode.EXPERIENCE],
+}
+
+# What each conversation must know before anything else (the 1.1.3.1 gate, R089).
+# The idea conversation starts from its WHAT finger: capital is never asked before
+# what it is for. The experience conversation has no "what" to wait for; it starts
+# from what the founder can do.
+ANCHOR: dict[EntryMode, frozenset[str]] = {
+    EntryMode.EXPERIENCE: frozenset({"founder_skills"}),
 }
 
 
