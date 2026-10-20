@@ -13,7 +13,16 @@ State machine (rnd-elicitation.md §5.2):
                         CONFIRMING --reject--> ELICITING
                              | confirm
                              v
+     (experience mode)  CHOOSING --pick a card--> ELICITING (idea mode)
+                             |
+                             v
                         GENERATING -> COMPLETE | FAILED
+
+The experience conversation (EntryMode.EXPERIENCE) has no idea to build a
+roadmap for, so its confirmation leads to CHOOSING (R066): the founder picks
+one of the offered opportunities (`choose`, which writes the card into the idea
+slots) or continues with an idea of their own (`continue_with_idea`). Either
+way the idea conversation takes over, keeping every fact already given.
 
 Pure domain logic — no I/O, no ORM — so the whole loop is unit-testable
 without a database.
@@ -53,7 +62,9 @@ from app.elicitation.session import (
     Source,
 )
 from app.elicitation.slots import (
+    ASKABLE_BY_MODE,
     BY_KEY,
+    IDEA_SLOTS,
     REQUIRED_BY_MODE,
     SLOTS,
     TAU_FILL,
@@ -62,7 +73,7 @@ from app.elicitation.slots import (
     Finger,
 )
 
-ActionKind = Literal["ask", "confirm", "generate", "done"]
+ActionKind = Literal["ask", "confirm", "choose", "generate", "done"]
 
 
 @dataclass(frozen=True)
@@ -155,7 +166,10 @@ def start(
     `stage_floor` is the lowest stage the founder's registration implies
     (entry.REGISTRATION, task 1.1.6). With no profile stage, or one below it
     (the two disagree), the floor is held in the confirm band: not asked, said
-    back as an assumption at the restatement."""
+    back as an assumption at the restatement. A founder with no idea yet is at
+    the first stage by definition (R089: "just an idea, a prototype, already
+    selling?" means nothing to them), so in the experience conversation it is
+    held the same way instead of asked."""
     s = ElicitationSession(user_id=user_id, mode=mode)
     for key in PROFILE_SLOTS:
         value = _from_profile(key, (profile or {}).get(key))
@@ -163,6 +177,8 @@ def start(
             value = None
         if value is not None:
             s.put(key, value, 0.95, Source.PROFILE)
+    if stage_floor is None and mode is EntryMode.EXPERIENCE:
+        stage_floor = Stage.IDEA
     if stage_floor is not None and "stage" not in s.slots:
         s.put("stage", stage_floor.value, ASSUMED_CONFIDENCE, Source.DEFAULT)
     s.state = SessionState.ELICITING
@@ -208,8 +224,14 @@ def observe(session: ElicitationSession, text: str, *, answering: str | None = N
     the founder's words about who it is for are not a new problem (the 1.1.2
     review). A reply with a correction word ("sorry, actually I am in Salem")
     states the founder's answer for each fact it changes (R063).
+
+    A conversation that asks only some slots (slots.ASKABLE_BY_MODE) takes only
+    those from free text: "I worked 12 years as a cook in Salem" tells the
+    experience conversation the founder's skills and district, not a problem to
+    solve (R118). Its idea slots are filled by a picked card alone.
     """
     session.state = SessionState.EXTRACTING
+    allowed = ASKABLE_BY_MODE.get(session.mode)
     session.learned = []
     answered_text = False
 
@@ -236,6 +258,8 @@ def observe(session: ElicitationSession, text: str, *, answering: str | None = N
     for e in extract(strip_negated(text) if correcting else text):
         # Never let an extraction overwrite the direct answer we just stored.
         if e.key == answering or (answered_text and BY_KEY[e.key].kind == "text"):
+            continue
+        if allowed is not None and e.key not in allowed:
             continue
         was_filled = e.key in session.filled
         held = session.slots.get(e.key)
@@ -297,7 +321,7 @@ def step(session: ElicitationSession) -> Action:
         return _ask(
             session,
             key,
-            f"{_acknowledge(session)} {BY_KEY[key].question}",
+            f"{_acknowledge(session)} {BY_KEY[key].question_for(session.mode)}",
             "reask: the reply did not answer the question",
             new=False,
         )
@@ -363,6 +387,10 @@ def confirm(session: ElicitationSession, accepted: bool) -> Action:
     A rejection that names no correction asks what to change and stays at
     confirmation, so the next reply is read as the correction (`reply`).
     Re-opening questioning used to land straight back on the same restatement.
+
+    In the experience conversation a yes leads to the choice among opportunities
+    (CHOOSING, R066), never to a roadmap: there is no idea to build one for. The
+    caller offers the cards and words the choice.
     """
     if not accepted:
         session.state = SessionState.CONFIRMING
@@ -374,6 +402,15 @@ def confirm(session: ElicitationSession, accepted: bool) -> Action:
             progress=session.progress(),
             turn=session.turn_no,
             reason="rejected: asking what to change",
+        )
+    if session.mode is EntryMode.EXPERIENCE:
+        session.state = SessionState.CHOOSING
+        return Action(
+            kind="choose",
+            objective=session.objective,
+            progress=session.progress(),
+            turn=session.turn_no,
+            reason="confirmed: choose an opportunity",
         )
     session.state = SessionState.GENERATING
     return Action(
@@ -439,6 +476,46 @@ def reply(session: ElicitationSession, text: str) -> Action:
     return step(session)
 
 
+def choose(session: ElicitationSession, idea: dict[str, Any]) -> Action:
+    """The founder picked an opportunity card (task 1.1.5.5): its idea slots
+    (problem, solution, sector, product form, beneficiary) are written in as the
+    founder's choice, locked like a correction so a later guess cannot rewrite
+    them, and the idea conversation continues from there (`_to_idea`). Slot
+    values a card does not fit are left out."""
+    for key, value in idea.items():
+        if key in BY_KEY and value is not None:
+            session.put(key, value, 0.90, Source.CHOSEN, correction=True)
+    _to_idea(session)
+    return step(session)
+
+
+def continue_with_idea(session: ElicitationSession) -> None:
+    """The founder would rather bring an idea of their own (no card fits, or
+    none can be offered yet). The idea conversation starts over the facts
+    already given, with its own questions: the experience questions answered so
+    far were about the founder, not about this idea, so the budget starts again.
+    Nothing given is asked twice: every filled slot stays filled."""
+    _to_idea(session)
+    session.questions_asked = 0
+
+
+def _to_idea(session: ElicitationSession) -> None:
+    # An idea slot not given by the founder (or their card) is a guess made
+    # before there was an idea (R118): it would be searched and restated as
+    # their problem. Sessions saved before observe stopped guessing them hold one.
+    for key in IDEA_SLOTS:
+        held = session.slots.get(key)
+        if held is not None and held.source not in FOUNDER_GIVEN:
+            del session.slots[key]
+            session.rivals.pop(key, None)
+    session.mode = EntryMode.IDEA
+    session.objective = None  # restated again, with the idea in it
+    session.awaiting_correction = False
+    session.open_question = None
+    session.state = SessionState.ELICITING
+    session.touch()
+
+
 def _current(session: ElicitationSession, key: str) -> Any:
     v = session.slots[key].value
     return getattr(v, "value", v)
@@ -481,6 +558,7 @@ def skip(session: ElicitationSession, key: str) -> Action:
 LABELS: tuple[tuple[str, frozenset[Source]], ...] = (
     ("You told me", frozenset({Source.ANSWER})),
     ("From your profile", frozenset({Source.PROFILE})),
+    ("From the opportunity you chose", frozenset({Source.CHOSEN})),
     ("I assumed", frozenset(Source) - FOUNDER_GIVEN),
 )
 ASSUMED_LABEL = LABELS[-1][0]
@@ -509,6 +587,10 @@ NAMES: dict[str, str] = {
     "capital_band": "budget",
     "funding_route": "funding",
     "why_now": "reason for doing this now",
+    "founder_skills": "skills",
+    "founder_years": "years in your line of work",
+    "owned_assets": "assets",
+    "motivation": "main aim",
 }
 # The slot named as the gap when the WHY finger is still open (R113).
 WHY_GAP = "why_now"
@@ -530,6 +612,10 @@ ASSUMED: dict[str, str] = {
     "capital_band": "the usual budget for this kind of business",
     "funding_route": "no particular way of funding it",
     "why_now": "no particular reason it has to be now",
+    "founder_skills": "the skills of someone starting out",
+    "founder_years": "you are new to this line of work",
+    "owned_assets": "you start without land, machines or premises of your own",
+    "motivation": "no particular aim beyond a working business",
 }
 
 _REACH = {
@@ -538,6 +624,12 @@ _REACH = {
     "state": "selling across Tamil Nadu",
     "national": "selling across India",
     "export": "selling abroad",
+}
+_AIM = {
+    "income": "a steady income",
+    "independence": "being your own boss",
+    "impact": "giving back",
+    "succession": "carrying on a family business",
 }
 _HORIZON = {
     "<6mo": "running within 6 months",
@@ -614,6 +706,7 @@ def _fact(key: str, v: Any) -> str:
         "funding_route": lambda: f"funded by {_plain(v)}",
         "geo_scope": lambda: _REACH.get(raw, f"{_article(_plain(v))} {_plain(v)} reach"),
         "time_horizon": lambda: _HORIZON.get(raw, f"running in {raw}"),
+        "motivation": lambda: f"mainly after {_AIM.get(raw, _plain(v))}",
     }
     if key in phrases:
         return phrases[key]()
@@ -674,11 +767,15 @@ def restate(session: ElicitationSession) -> str:
             plan = f"to {plan}"
         sentences.append(f"Your plan is {plan}")
 
-    # 3 — the facts the plan runs on, grouped by where each came from.
+    # 3 — the facts the plan runs on, grouped by where each came from, and every
+    # other fact the conversation required (the experience conversation's
+    # motivation, for one), so nothing it asked for goes unconfirmed.
+    required = REQUIRED_BY_MODE[session.mode]
+    shown = [s.key for s in SLOTS if s.key in RESTATED or (s.kind != "text" and s.key in required)]
     for label, _ in LABELS:
         facts = [
             _fact(key, g(key))
-            for key in RESTATED
+            for key in shown
             if g(key) is not None and _label(session, key) == label
             # the founder already named the place in their own words
             and not (key == "district" and _word(g(key)).lower() in said.lower())
@@ -722,7 +819,9 @@ __all__ = [
     "Action",
     "Q_MAX",
     "add_dynamic",
+    "choose",
     "confirm",
+    "continue_with_idea",
     "observe",
     "reply",
     "restate",
