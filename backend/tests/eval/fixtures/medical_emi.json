@@ -1,7 +1,7 @@
 {
  "id": "medical_emi",
  "idea": "instalment plans for medical treatment offered at hospital billing desks in Chennai",
- "recorded": "2026-10-10",
+ "recorded": "2026-10-20",
  "coverage": [
   {
    "source": "papers",
@@ -18,577 +18,607 @@
   {
    "source": "trials",
    "status": "ok"
+  },
+  {
+   "source": "local startups",
+   "status": "ok"
   }
  ],
  "scan": {
   "idea": "instalment plans for medical treatment offered at hospital billing desks in Chennai",
   "queries": {
-   "papers": "instalment plans",
-   "trials": "instalment plans medical",
-   "projects": "instalment plans medical",
-   "patents": "instalment plans",
-   "local": "instalment plans medical treatment offered hospital billing"
+   "papers": "instalment medical",
+   "trials": "instalment medical treatment",
+   "projects": "instalment medical treatment",
+   "patents": "instalment medical",
+   "local": "instalment medical treatment hospital billing"
   },
   "associated_domains": {
    "basis": "papers",
    "domains": [
     {
      "name": "Social Sciences",
-     "share_pct": 79
-    },
-    {
-     "name": "Physical Sciences",
-     "share_pct": 14
+     "share_pct": 46
     },
     {
      "name": "Health Sciences",
-     "share_pct": 4
+     "share_pct": 41
     },
     {
      "name": "Life Sciences",
-     "share_pct": 3
+     "share_pct": 7
+    },
+    {
+     "name": "Physical Sciences",
+     "share_pct": 7
     }
    ],
    "fields": [
     {
-     "name": "Social Sciences",
-     "share_pct": 30
-    },
-    {
-     "name": "Business, Management and Accounting",
-     "share_pct": 18
+     "name": "Health Professions",
+     "share_pct": 28
     },
     {
      "name": "Economics, Econometrics and Finance",
-     "share_pct": 13
+     "share_pct": 18
+    },
+    {
+     "name": "Medicine",
+     "share_pct": 12
     },
     {
      "name": "Arts and Humanities",
-     "share_pct": 11
+     "share_pct": 10
     },
     {
-     "name": "Engineering",
-     "share_pct": 8
+     "name": "Business, Management and Accounting",
+     "share_pct": 10
+    },
+    {
+     "name": "Social Sciences",
+     "share_pct": 7
     },
     {
      "name": "Mathematics",
      "share_pct": 5
     },
     {
-     "name": "Health Professions",
+     "name": "Agricultural and Biological Sciences",
      "share_pct": 4
-    },
-    {
-     "name": "Psychology",
-     "share_pct": 3
     }
    ],
    "subfields": [
     {
-     "name": "Accounting",
-     "share_pct": 18
+     "name": "General Health Professions",
+     "share_pct": 28
     },
     {
-     "name": "Law",
+     "name": "Accounting",
      "share_pct": 10
     },
     {
      "name": "Economics and Econometrics",
-     "share_pct": 9
+     "share_pct": 8
     },
     {
-     "name": "Political Science and International Relations",
-     "share_pct": 9
-    },
-    {
-     "name": "Civil and Structural Engineering",
+     "name": "Conservation",
      "share_pct": 6
     },
     {
-     "name": "History and Philosophy of Science",
+     "name": "Finance",
      "share_pct": 5
+    },
+    {
+     "name": "General Economics, Econometrics and Finance",
+     "share_pct": 4
     },
     {
      "name": "Numerical Analysis",
-     "share_pct": 5
+     "share_pct": 4
     },
     {
-     "name": "Sociology and Political Science",
-     "share_pct": 5
+     "name": "General Agricultural and Biological Sciences",
+     "share_pct": 4
     }
    ],
    "topics": [
     {
-     "name": "Historical Economic and Legal Thought",
-     "share_pct": 9
+     "name": "Primary Care and Health Outcomes",
+     "share_pct": 8
     },
     {
-     "name": "Financial Literacy, Pension, Retirement Analysis",
-     "share_pct": 7
+     "name": "Nursing Roles and Practices",
+     "share_pct": 8
     },
     {
-     "name": "Legal principles and applications",
+     "name": "Occupational and Professional Licensing Regulation",
+     "share_pct": 8
+    },
+    {
+     "name": "Health Services Management and Policy",
      "share_pct": 6
     },
     {
-     "name": "Iterative Methods for Nonlinear Equations",
-     "share_pct": 5
+     "name": "Digital and Traditional Archives Management",
+     "share_pct": 6
     },
     {
-     "name": "Aviation History and Innovations",
-     "share_pct": 5
-    },
-    {
-     "name": "Criminal Justice and Penology",
-     "share_pct": 5
-    },
-    {
-     "name": "Working Capital and Financial Performance",
+     "name": "Islamic Finance and Banking Studies",
      "share_pct": 4
     },
     {
-     "name": "Political Economy and Marxism",
+     "name": "Iterative Methods for Nonlinear Equations",
+     "share_pct": 4
+    },
+    {
+     "name": "Agricultural Economics and Practices",
      "share_pct": 4
     }
    ]
   },
   "vanigam_categories": [
-   "electrical",
+   "agriculture",
    "fintech",
    "health_bio",
    "saas"
   ],
+  "matched_domain": "medical_emi",
   "papers": {
-   "total": 28543,
+   "total": 11466,
+   "closest": {
+    "title": "Sale of Medical Practices. Purchase Price Payable by Instalments",
+    "year": 1936,
+    "cited_by": 0,
+    "venue": "BMJ",
+    "url": "https://doi.org/10.1136/bmj.1.3917.229",
+    "topics": [
+     {
+      "topic": "Health Services Management and Policy",
+      "subfield": "General Health Professions",
+      "field": "Health Professions",
+      "domain": "Health Sciences",
+      "score": 0.7026000022888184
+     },
+     {
+      "topic": "Corporate Finance and Governance",
+      "subfield": "Accounting",
+      "field": "Business, Management and Accounting",
+      "domain": "Social Sciences",
+      "score": 0.05550000071525574
+     },
+     {
+      "topic": "Legal Cases and Commentary",
+      "subfield": "Reproductive Medicine",
+      "field": "Medicine",
+      "domain": "Health Sciences",
+      "score": 0.026399999856948853
+     }
+    ]
+   },
    "by_year": {
-    "2023": 1989,
-    "2021": 1720,
-    "2020": 1685,
-    "2022": 1676,
-    "2024": 1654,
-    "2018": 1636,
-    "2025": 1605,
-    "2019": 1507,
-    "2026": 1272,
-    "2017": 1206,
-    "2016": 1142,
-    "2014": 912,
-    "2015": 874,
-    "2013": 780,
-    "2011": 689,
-    "2012": 630,
-    "2010": 583,
-    "2009": 498,
-    "2007": 370,
-    "2008": 357,
-    "2006": 293,
-    "2005": 251,
-    "2004": 240,
-    "2003": 213,
-    "2002": 191,
-    "2001": 163,
-    "2000": 148,
-    "1997": 140,
-    "1999": 128,
-    "1998": 116,
-    "1995": 107,
-    "1996": 105,
-    "1994": 97,
-    "1992": 90,
-    "1993": 81,
-    "1983": 76,
-    "1990": 73,
-    "1980": 72,
-    "1982": 72,
-    "1991": 72,
-    "1969": 67,
-    "1977": 67,
-    "1979": 66,
-    "1988": 66,
-    "1981": 64,
-    "1984": 64,
-    "1974": 61,
-    "1970": 60,
-    "1978": 58,
-    "1987": 58,
-    "1975": 54,
-    "1968": 52,
-    "1985": 52,
-    "1989": 52,
-    "1967": 51,
-    "1973": 49,
-    "1986": 48,
-    "1976": 47,
-    "1972": 46,
-    "1971": 43,
-    "1966": 41,
-    "1960": 39,
-    "1965": 38,
-    "1912": 31,
-    "1904": 30,
-    "1911": 30,
-    "1913": 30,
-    "1915": 30,
-    "1957": 29,
-    "1903": 28,
-    "1941": 28,
-    "1961": 28,
-    "1906": 27,
-    "1935": 27,
-    "1962": 27,
-    "1963": 27,
-    "1934": 25,
-    "1956": 25,
-    "1958": 25,
-    "1907": 24,
-    "1964": 24,
-    "1902": 23,
-    "1918": 23,
-    "1920": 23,
-    "1950": 22,
-    "1914": 21,
-    "1928": 21,
-    "1940": 21,
-    "1955": 21,
-    "1938": 20,
-    "1945": 20,
-    "1947": 20,
-    "1952": 20,
-    "1959": 20,
-    "1917": 19,
-    "1919": 19,
-    "1916": 18,
-    "1927": 18,
-    "1936": 18,
-    "1888": 17,
-    "1923": 17,
-    "1924": 17,
-    "1926": 17,
-    "1939": 17,
-    "1942": 17,
-    "1954": 17,
-    "1884": 16,
-    "1889": 16,
-    "1905": 16,
-    "1908": 16,
-    "1910": 16,
-    "1931": 16,
-    "1932": 16,
-    "1933": 16,
-    "1948": 16,
-    "1949": 16,
-    "1953": 16,
-    "1880": 15,
-    "1886": 15,
-    "1887": 15,
-    "1909": 15,
-    "1921": 15,
-    "1929": 15,
+    "2023": 775,
+    "2018": 736,
+    "2022": 711,
+    "2021": 707,
+    "2024": 689,
+    "2020": 647,
+    "2025": 611,
+    "2019": 535,
+    "2026": 472,
+    "2017": 408,
+    "2016": 403,
+    "2014": 343,
+    "2015": 321,
+    "2013": 274,
+    "2012": 247,
+    "2011": 243,
+    "2010": 219,
+    "2009": 164,
+    "2007": 129,
+    "2008": 127,
+    "2006": 114,
+    "2005": 95,
+    "2003": 88,
+    "2002": 77,
+    "2000": 71,
+    "2004": 65,
+    "2001": 60,
+    "1998": 52,
+    "1997": 49,
+    "1995": 46,
+    "1992": 45,
+    "1999": 45,
+    "1981": 39,
+    "1996": 39,
+    "1975": 38,
+    "1994": 38,
+    "1970": 35,
+    "1978": 34,
+    "1983": 34,
+    "1977": 33,
+    "1988": 33,
+    "1979": 32,
+    "1985": 31,
+    "1986": 31,
+    "1969": 30,
+    "1984": 30,
+    "1989": 29,
+    "1993": 27,
+    "1976": 26,
+    "1990": 26,
+    "1974": 25,
+    "1932": 24,
+    "1965": 24,
+    "1968": 24,
+    "1991": 24,
+    "1960": 22,
+    "1971": 22,
+    "1973": 22,
+    "1915": 21,
+    "1982": 21,
+    "1963": 20,
+    "1987": 20,
+    "1964": 19,
+    "1967": 19,
+    "1980": 19,
+    "1889": 18,
+    "1972": 18,
+    "1907": 17,
+    "1911": 17,
+    "1912": 17,
+    "1928": 17,
+    "1950": 17,
+    "1904": 16,
+    "1961": 16,
+    "1966": 16,
+    "1885": 15,
     "1937": 15,
-    "1946": 15,
-    "1881": 14,
-    "1885": 13,
-    "1893": 13,
-    "1895": 13,
-    "1896": 13,
-    "1925": 13,
-    "1930": 13,
-    "1943": 13,
-    "1944": 13,
-    "1900": 12,
-    "1922": 12,
-    "1870": 11,
-    "1899": 11,
-    "1901": 11,
-    "1951": 11,
-    "1882": 10,
-    "1883": 10,
-    "1890": 10,
-    "1894": 10,
-    "1898": 10,
-    "1875": 9,
-    "1877": 9,
-    "1879": 9,
+    "1947": 15,
+    "1902": 14,
+    "1909": 14,
+    "1913": 14,
+    "1927": 14,
+    "1931": 14,
+    "1934": 14,
+    "1935": 14,
+    "1957": 14,
+    "1884": 13,
+    "1952": 13,
+    "1956": 13,
+    "1918": 12,
+    "1920": 12,
+    "1923": 12,
+    "1938": 12,
+    "1940": 12,
+    "1941": 12,
+    "1896": 11,
+    "1903": 11,
+    "1906": 11,
+    "1916": 11,
+    "1944": 11,
+    "1953": 11,
+    "1900": 10,
+    "1905": 10,
+    "1908": 10,
+    "1919": 10,
+    "1921": 10,
+    "1955": 10,
+    "1859": 9,
     "1892": 9,
-    "1859": 7,
-    "1891": 7,
-    "1873": 6,
-    "1897": 6,
-    "1856": 5,
-    "1861": 5,
-    "1867": 5,
-    "1871": 5,
-    "1872": 5,
-    "1878": 5,
-    "1851": 4,
+    "1894": 9,
+    "1901": 9,
+    "1917": 9,
+    "1924": 9,
+    "1929": 9,
+    "1936": 9,
+    "1943": 9,
+    "1954": 9,
+    "1962": 9,
+    "1880": 8,
+    "1887": 8,
+    "1910": 8,
+    "1925": 8,
+    "1926": 8,
+    "1930": 8,
+    "1933": 8,
+    "1942": 8,
+    "1945": 8,
+    "1959": 8,
+    "1875": 7,
+    "1888": 7,
+    "1895": 7,
+    "1914": 7,
+    "1946": 7,
+    "1870": 6,
+    "1872": 6,
+    "1877": 6,
+    "1878": 6,
+    "1881": 6,
+    "1883": 6,
+    "1891": 6,
+    "1898": 6,
+    "1939": 6,
+    "1949": 6,
+    "1958": 6,
+    "1879": 5,
+    "1882": 5,
+    "1948": 5,
     "1858": 4,
-    "1874": 4,
-    "1834": 3,
-    "1840": 3,
-    "1847": 3,
-    "1852": 3,
-    "1854": 3,
-    "1855": 3,
-    "1864": 3,
-    "1865": 3,
-    "1827": 2,
+    "1861": 4,
+    "1890": 4,
+    "1893": 4,
+    "1922": 4,
+    "1851": 3,
+    "1856": 3,
+    "1871": 3,
+    "1873": 3,
+    "1886": 3,
+    "1899": 3,
     "1830": 2,
-    "1832": 2,
-    "1850": 2,
+    "1847": 2,
+    "1848": 2,
+    "1852": 2,
     "1857": 2,
-    "1862": 2,
+    "1864": 2,
+    "1865": 2,
+    "1866": 2,
+    "1867": 2,
     "1869": 2,
-    "1805": 1,
+    "1874": 2,
+    "1897": 2,
+    "1951": 2,
     "1810": 1,
-    "1816": 1,
-    "1823": 1,
     "1824": 1,
     "1826": 1,
-    "1842": 1,
-    "1848": 1,
-    "1853": 1,
+    "1831": 1,
+    "1834": 1,
+    "1840": 1,
+    "1846": 1,
+    "1849": 1,
+    "1854": 1,
+    "1855": 1,
+    "1862": 1,
     "1863": 1,
-    "1866": 1,
-    "1868": 1
+    "1876": 1
    },
    "most_relevant": [
     {
-     "title": "Intentionality on the Instalment Plan",
-     "year": 1998,
-     "cited_by": 24,
-     "venue": "Philosophy",
-     "url": "https://doi.org/10.1017/s0031819197000089",
-     "topics": [
-      {
-       "topic": "Philosophy and Theoretical Science",
-       "subfield": "Experimental and Cognitive Psychology",
-       "field": "Psychology",
-       "domain": "Social Sciences",
-       "score": 0.676800012588501
-      },
-      {
-       "topic": "Syntax, Semantics, Linguistic Variation",
-       "subfield": "Language and Linguistics",
-       "field": "Arts and Humanities",
-       "domain": "Social Sciences",
-       "score": 0.1859000027179718
-      },
-      {
-       "topic": "Philosophy, Science, and History",
-       "subfield": "History and Philosophy of Science",
-       "field": "Arts and Humanities",
-       "domain": "Social Sciences",
-       "score": 0.04399999976158142
-      }
-     ]
-    },
-    {
-     "title": "Paradise on the Instalment Plan",
-     "year": 2025,
-     "cited_by": 2,
-     "venue": "BRILL eBooks",
-     "url": "https://doi.org/10.1163/9789004756731",
-     "topics": [
-      {
-       "topic": "Australian History and Society",
-       "subfield": "Sociology and Political Science",
-       "field": "Social Sciences",
-       "domain": "Social Sciences",
-       "score": 0.10679999738931656
-      },
-      {
-       "topic": "Housing, Finance, and Neoliberalism",
-       "subfield": "Finance",
-       "field": "Economics, Econometrics and Finance",
-       "domain": "Social Sciences",
-       "score": 0.06989999860525131
-      },
-      {
-       "topic": "Housing Market and Economics",
-       "subfield": "Economics and Econometrics",
-       "field": "Economics, Econometrics and Finance",
-       "domain": "Social Sciences",
-       "score": 0.0608999989926815
-      }
-     ]
-    },
-    {
-     "title": "Are Instalment Plans Usurious",
-     "year": 1952,
+     "title": "Sale of Medical Practices. Purchase Price Payable by Instalments",
+     "year": 1936,
      "cited_by": 0,
-     "venue": "Minnesota law review",
-     "url": "https://doi.org/10.24926/265535.3600",
+     "venue": "BMJ",
+     "url": "https://doi.org/10.1136/bmj.1.3917.229",
      "topics": [
       {
-       "topic": "Historical Economic and Legal Thought",
-       "subfield": "Political Science and International Relations",
-       "field": "Social Sciences",
-       "domain": "Social Sciences",
-       "score": 0.8086000084877014
-      },
-      {
-       "topic": "Legal principles and applications",
-       "subfield": "Law",
-       "field": "Social Sciences",
-       "domain": "Social Sciences",
-       "score": 0.15060000121593475
-      },
-      {
-       "topic": "Legal and Constitutional Studies",
-       "subfield": "Economics and Econometrics",
-       "field": "Economics, Econometrics and Finance",
-       "domain": "Social Sciences",
-       "score": 0.012299999594688416
-      }
-     ]
-    },
-    {
-     "title": "Investments on the Instalment Plan",
-     "year": 1912,
-     "cited_by": 0,
-     "venue": "Proceedings of the Academy of Political Science in the City of New York",
-     "url": "https://doi.org/10.2307/1171940",
-     "topics": [
-      {
-       "topic": "Financial Literacy, Pension, Retirement Analysis",
-       "subfield": "Accounting",
-       "field": "Business, Management and Accounting",
-       "domain": "Social Sciences",
-       "score": 0.25609999895095825
-      },
-      {
-       "topic": "Economic and Fiscal Studies",
-       "subfield": "Economics and Econometrics",
-       "field": "Economics, Econometrics and Finance",
-       "domain": "Social Sciences",
-       "score": 0.09359999746084213
+       "topic": "Health Services Management and Policy",
+       "subfield": "General Health Professions",
+       "field": "Health Professions",
+       "domain": "Health Sciences",
+       "score": 0.7026000022888184
       },
       {
        "topic": "Corporate Finance and Governance",
        "subfield": "Accounting",
        "field": "Business, Management and Accounting",
        "domain": "Social Sciences",
-       "score": 0.0803999975323677
+       "score": 0.05550000071525574
+      },
+      {
+       "topic": "Legal Cases and Commentary",
+       "subfield": "Reproductive Medicine",
+       "field": "Medicine",
+       "domain": "Health Sciences",
+       "score": 0.026399999856948853
       }
      ]
     },
     {
-     "title": "Death on the Instalment Plan",
-     "year": 1966,
-     "cited_by": 1,
-     "venue": "Medical Entomology and Zoology",
-     "url": "https://openalex.org/W584489190",
-     "topics": [
-      {
-       "topic": "Death, Funerary Practices, and Mourning",
-       "subfield": "Anthropology",
-       "field": "Social Sciences",
-       "domain": "Social Sciences",
-       "score": 0.29739999771118164
-      },
-      {
-       "topic": "Forensic Entomology and Diptera Studies",
-       "subfield": "Insect Science",
-       "field": "Agricultural and Biological Sciences",
-       "domain": "Life Sciences",
-       "score": 0.23360000550746918
-      },
-      {
-       "topic": "Insects and Parasite Interactions",
-       "subfield": "Health, Toxicology and Mutagenesis",
-       "field": "Environmental Science",
-       "domain": "Physical Sciences",
-       "score": 0.08219999819993973
-      }
-     ]
-    },
-    {
-     "title": "Are Instalment Plans Usurious",
-     "year": 1952,
+     "title": "Practice. A Handbook of Primary Medical Care. Instalment V",
+     "year": 1978,
      "cited_by": 0,
-     "venue": null,
-     "url": "https://openalex.org/W3200211420",
+     "venue": "Postgraduate Medical Journal",
+     "url": "https://doi.org/10.1136/pgmj.54.634.575-c",
      "topics": [
       {
-       "topic": "Historical Economic and Legal Thought",
-       "subfield": "Political Science and International Relations",
-       "field": "Social Sciences",
-       "domain": "Social Sciences",
-       "score": 0.9980000257492065
+       "topic": "Primary Care and Health Outcomes",
+       "subfield": "General Health Professions",
+       "field": "Health Professions",
+       "domain": "Health Sciences",
+       "score": 0.975600004196167
       },
       {
-       "topic": "Islamic Finance and Banking Studies",
-       "subfield": "Accounting",
-       "field": "Business, Management and Accounting",
-       "domain": "Social Sciences",
-       "score": 0.00039999998989515007
+       "topic": "Medical research and treatments",
+       "subfield": "Surgery",
+       "field": "Medicine",
+       "domain": "Health Sciences",
+       "score": 0.010599999688565731
       },
       {
-       "topic": "Financial Literacy, Pension, Retirement Analysis",
-       "subfield": "Accounting",
-       "field": "Business, Management and Accounting",
-       "domain": "Social Sciences",
-       "score": 0.00019999999494757503
+       "topic": "Innovations in Medical Education",
+       "subfield": "Public Health, Environmental and Occupational Health",
+       "field": "Medicine",
+       "domain": "Health Sciences",
+       "score": 0.0035000001080334187
       }
      ]
     },
     {
-     "title": "Planes on the Instalment Plan, Curtiss-Caproni, and more",
-     "year": 1929,
+     "title": "Practice—a handbook of primary medical care Instalment 1",
+     "year": 1977,
      "cited_by": 0,
-     "venue": "Scientific American",
-     "url": "https://doi.org/10.1038/scientificamerican0429-356",
+     "venue": "Postgraduate Medical Journal",
+     "url": "https://doi.org/10.1136/pgmj.53.616.114-a",
      "topics": [
       {
-       "topic": "Aviation History and Innovations",
+       "topic": "Primary Care and Health Outcomes",
+       "subfield": "General Health Professions",
+       "field": "Health Professions",
+       "domain": "Health Sciences",
+       "score": 0.9589999914169312
+      },
+      {
+       "topic": "Innovations in Medical Education",
+       "subfield": "Public Health, Environmental and Occupational Health",
+       "field": "Medicine",
+       "domain": "Health Sciences",
+       "score": 0.01940000057220459
+      },
+      {
+       "topic": "Medical research and treatments",
+       "subfield": "Surgery",
+       "field": "Medicine",
+       "domain": "Health Sciences",
+       "score": 0.007899999618530273
+      }
+     ]
+    },
+    {
+     "title": "\"HISTORY OF AMERICAN MEDICAL ASSOCIATION\"",
+     "year": 1947,
+     "cited_by": 5,
+     "venue": "JAMA",
+     "url": "https://doi.org/10.1001/jama.1947.02880130038010",
+     "topics": [
+      {
+       "topic": "History of Science and Medicine",
        "subfield": "History and Philosophy of Science",
        "field": "Arts and Humanities",
        "domain": "Social Sciences",
-       "score": 0.9937000274658203
+       "score": 0.7592999935150146
       },
       {
-       "topic": "Advanced Aircraft Design and Technologies",
-       "subfield": "Global and Planetary Change",
-       "field": "Environmental Science",
-       "domain": "Physical Sciences",
-       "score": 0.00139999995008111
+       "topic": "Medical History and Innovations",
+       "subfield": "History",
+       "field": "Arts and Humanities",
+       "domain": "Social Sciences",
+       "score": 0.14790000021457672
       },
       {
-       "topic": "Military Technology and Strategies",
-       "subfield": "Aerospace Engineering",
-       "field": "Engineering",
-       "domain": "Physical Sciences",
-       "score": 0.0005000000237487257
+       "topic": "History of Medical Practice",
+       "subfield": "Neurology",
+       "field": "Medicine",
+       "domain": "Health Sciences",
+       "score": 0.04989999905228615
       }
      ]
     },
     {
-     "title": "Social and Economic Consequences of Buying on the Instalment Plan",
-     "year": 1927,
-     "cited_by": 3,
-     "venue": "The Annals of the American Academy of Political and Social Science",
-     "url": "https://doi.org/10.1177/0002716227129001s03",
+     "title": "THEORIES OF INFLATION AND CONSUMER INSTALMENT CREDIT*",
+     "year": 1960,
+     "cited_by": 0,
+     "venue": "The Journal of Finance",
+     "url": "https://doi.org/10.1111/j.1540-6261.1960.tb01607.x",
      "topics": [
       {
-       "topic": "Financial Literacy, Pension, Retirement Analysis",
-       "subfield": "Accounting",
-       "field": "Business, Management and Accounting",
+       "topic": "Monetary Policy and Economic Impact",
+       "subfield": "General Economics, Econometrics and Finance",
+       "field": "Economics, Econometrics and Finance",
        "domain": "Social Sciences",
-       "score": 0.7470999956130981
+       "score": 0.9955999851226807
       },
       {
-       "topic": "Consumer Market Behavior and Pricing",
-       "subfield": "Marketing",
-       "field": "Business, Management and Accounting",
+       "topic": "Economic theories and models",
+       "subfield": "Economics and Econometrics",
+       "field": "Economics, Econometrics and Finance",
        "domain": "Social Sciences",
-       "score": 0.03290000185370445
+       "score": 0.0017999999690800905
       },
       {
        "topic": "Economic Theory and Policy",
        "subfield": "General Economics, Econometrics and Finance",
        "field": "Economics, Econometrics and Finance",
        "domain": "Social Sciences",
-       "score": 0.024900000542402267
+       "score": 0.00139999995008111
+      }
+     ]
+    },
+    {
+     "title": "Setting aside of the payment of the debt of another as a disposition without value in terms of section 26 of the Insolvency Act 24 of 1936 : aantekeninge",
+     "year": 2008,
+     "cited_by": 0,
+     "venue": "Journal of South African Law / Tydskrif vir die Suid-Afrikaanse Reg",
+     "url": "https://openalex.org/W1493483656",
+     "topics": [
+      {
+       "topic": "Corporate Insolvency and Governance",
+       "subfield": "Accounting",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.9794999957084656
+      },
+      {
+       "topic": "Legal Issues in South Africa",
+       "subfield": "Law",
+       "field": "Social Sciences",
+       "domain": "Social Sciences",
+       "score": 0.007499999832361937
+      },
+      {
+       "topic": "Legal principles and applications",
+       "subfield": "Law",
+       "field": "Social Sciences",
+       "domain": "Social Sciences",
+       "score": 0.007199999876320362
+      }
+     ]
+    },
+    {
+     "title": "Dentists can now pay their ARF in instalments",
+     "year": 2021,
+     "cited_by": 0,
+     "venue": "BDJ",
+     "url": "https://doi.org/10.1038/s41415-021-3547-1",
+     "topics": [
+      {
+       "topic": "Occupational and Professional Licensing Regulation",
+       "subfield": "Economics and Econometrics",
+       "field": "Economics, Econometrics and Finance",
+       "domain": "Social Sciences",
+       "score": 0.5234000086784363
+      },
+      {
+       "topic": "Health Services Management and Policy",
+       "subfield": "General Health Professions",
+       "field": "Health Professions",
+       "domain": "Health Sciences",
+       "score": 0.28540000319480896
+      },
+      {
+       "topic": "Healthcare Regulation",
+       "subfield": "Health Information Management",
+       "field": "Health Professions",
+       "domain": "Health Sciences",
+       "score": 0.08990000188350677
+      }
+     ]
+    },
+    {
+     "title": "GDC introduces option to pay ARF by instalments",
+     "year": 2021,
+     "cited_by": 0,
+     "venue": "BDJ",
+     "url": "https://doi.org/10.1038/s41415-021-2935-x",
+     "topics": [
+      {
+       "topic": "Occupational and Professional Licensing Regulation",
+       "subfield": "Economics and Econometrics",
+       "field": "Economics, Econometrics and Finance",
+       "domain": "Social Sciences",
+       "score": 0.9932000041007996
+      },
+      {
+       "topic": "Healthcare Regulation",
+       "subfield": "Health Information Management",
+       "field": "Health Professions",
+       "domain": "Health Sciences",
+       "score": 0.005100000184029341
+      },
+      {
+       "topic": "Health Services Management and Policy",
+       "subfield": "General Health Professions",
+       "field": "Health Professions",
+       "domain": "Health Sciences",
+       "score": 0.000699999975040555
       }
      ]
     }
@@ -597,7 +627,7 @@
     {
      "title": "Artificial Intelligence (AI): Multidisciplinary perspectives on emerging challenges, opportunities, and agenda for research, practice and policy",
      "year": 2019,
-     "cited_by": 4537,
+     "cited_by": 4559,
      "venue": "International Journal of Information Management",
      "url": "https://doi.org/10.1016/j.ijinfomgt.2019.08.002",
      "topics": [
@@ -625,39 +655,9 @@
      ]
     },
     {
-     "title": "Gaia Data Release 3",
-     "year": 2022,
-     "cited_by": 4179,
-     "venue": "Astronomy and Astrophysics",
-     "url": "https://doi.org/10.1051/0004-6361/202243940",
-     "topics": [
-      {
-       "topic": "Stellar, planetary, and galactic studies",
-       "subfield": "Astronomy and Astrophysics",
-       "field": "Physics and Astronomy",
-       "domain": "Physical Sciences",
-       "score": 0.9965999722480774
-      },
-      {
-       "topic": "Astronomy and Astrophysical Research",
-       "subfield": "Instrumentation",
-       "field": "Physics and Astronomy",
-       "domain": "Physical Sciences",
-       "score": 0.003000000026077032
-      },
-      {
-       "topic": "Galaxies: Formation, Evolution, Phenomena",
-       "subfield": "Astronomy and Astrophysics",
-       "field": "Physics and Astronomy",
-       "domain": "Physical Sciences",
-       "score": 9.999999747378752e-05
-      }
-     ]
-    },
-    {
      "title": "Parkinson's disease",
      "year": 2021,
-     "cited_by": 3854,
+     "cited_by": 3866,
      "venue": "The Lancet",
      "url": "https://doi.org/10.1016/s0140-6736(21)00218-x",
      "topics": [
@@ -685,62 +685,92 @@
      ]
     },
     {
-     "title": "Crime and Punishment: An Economic Approach",
-     "year": 1968,
-     "cited_by": 1891,
-     "venue": "Palgrave Macmillan UK eBooks",
-     "url": "https://doi.org/10.1002/9780470752135.ch25",
+     "title": "The unpublished manuscript",
+     "year": 2018,
+     "cited_by": 3216,
+     "venue": "ANU Press eBooks",
+     "url": "https://doi.org/10.22459/cschd.08.2018.04",
      "topics": [
       {
-       "topic": "Law, Economics, and Judicial Systems",
-       "subfield": "Economics and Econometrics",
-       "field": "Economics, Econometrics and Finance",
+       "topic": "Libraries, Manuscripts, and Books",
+       "subfield": "History",
+       "field": "Arts and Humanities",
        "domain": "Social Sciences",
-       "score": 0.986299991607666
+       "score": 0.8804000020027161
       },
       {
-       "topic": "Legal and Constitutional Studies",
-       "subfield": "Economics and Econometrics",
-       "field": "Economics, Econometrics and Finance",
-       "domain": "Social Sciences",
-       "score": 0.008500000461935997
-      },
-      {
-       "topic": "Criminal Justice and Penology",
-       "subfield": "Law",
+       "topic": "Australian History and Society",
+       "subfield": "Sociology and Political Science",
        "field": "Social Sciences",
        "domain": "Social Sciences",
-       "score": 0.003000000026077032
+       "score": 0.01600000075995922
+      },
+      {
+       "topic": "Literature: history, themes, analysis",
+       "subfield": "Literature and Literary Theory",
+       "field": "Arts and Humanities",
+       "domain": "Social Sciences",
+       "score": 0.011800000444054604
       }
      ]
     },
     {
-     "title": "Identity and Language Learning",
-     "year": 2013,
-     "cited_by": 1755,
-     "venue": "Multilingual Matters eBooks",
-     "url": "https://doi.org/10.21832/9781783090563",
+     "title": "Prevalence of autism-spectrum conditions: UK school-based population study",
+     "year": 2009,
+     "cited_by": 916,
+     "venue": "The British Journal of Psychiatry",
+     "url": "https://doi.org/10.1192/bjp.bp.108.059345",
      "topics": [
       {
-       "topic": "EFL/ESL Teaching and Learning",
-       "subfield": "Language and Linguistics",
-       "field": "Arts and Humanities",
-       "domain": "Social Sciences",
-       "score": 0.975600004196167
+       "topic": "Autism Spectrum Disorder Research",
+       "subfield": "Cognitive Neuroscience",
+       "field": "Neuroscience",
+       "domain": "Life Sciences",
+       "score": 1.0
       },
       {
-       "topic": "Multilingual Education and Policy",
-       "subfield": "Linguistics and Language",
-       "field": "Social Sciences",
-       "domain": "Social Sciences",
-       "score": 0.013899999670684338
+       "topic": "Child Nutrition and Feeding Issues",
+       "subfield": "Psychiatry and Mental health",
+       "field": "Medicine",
+       "domain": "Health Sciences",
+       "score": 0.0
       },
       {
-       "topic": "Second Language Learning and Teaching",
-       "subfield": "Literature and Literary Theory",
-       "field": "Arts and Humanities",
+       "topic": "Family and Disability Support Research",
+       "subfield": "Clinical Psychology",
+       "field": "Psychology",
        "domain": "Social Sciences",
-       "score": 0.0020000000949949026
+       "score": 0.0
+      }
+     ]
+    },
+    {
+     "title": "Remediation approaches for polycyclic aromatic hydrocarbons (PAHs) contaminated soils: Technological constraints, emerging trends and future directions",
+     "year": 2016,
+     "cited_by": 793,
+     "venue": "Chemosphere",
+     "url": "https://doi.org/10.1016/j.chemosphere.2016.10.115",
+     "topics": [
+      {
+       "topic": "Microbial bioremediation and biosurfactants",
+       "subfield": "Pollution",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 0.9994999766349792
+      },
+      {
+       "topic": "Environmental and Analytical Chemistry Studies",
+       "subfield": "Water Science and Technology",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 0.0003000000142492354
+      },
+      {
+       "topic": "Electrokinetic Soil Remediation Techniques",
+       "subfield": "Electrical and Electronic Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.00019999999494757503
       }
      ]
     }
@@ -756,65 +786,46 @@
   },
   "patents": {
    "total": 0,
-   "items": []
+   "items": [],
+   "india": null
   },
   "local": {
-   "startups": [
-    {
-     "name": "Dr. Agarwal's Health Care Limited",
-     "district": "chennai",
-     "description": "Dr. Agarwal's Health Care is a listed eye-hospital chain with its registered office in Chennai, running eye hospitals across India and Africa.",
-     "url": "https://www.dragarwal.com"
-    },
-    {
-     "name": "Dr. Prem's Foot Care Hospital Private Limited",
-     "district": "chennai",
-     "description": "Dr. Prem’s Footcare Hospital Pvt. Ltd. is an advanced healthcare startup transforming diabetic foot care, varicose vein treatment, and limb-saving services through modern technology and patient-centric innovation. With seed funding, we aim to expand integrated podiatry, vascular, and rehab care across India through enhanced infrastructure and digital health solutions",
-     "url": "https://www.chennaidiabeticfootcare.com"
-    },
-    {
-     "name": "VA Tech Wabag Limited",
-     "district": "chennai",
-     "description": "VA Tech Wabag is a listed water-technology company headquartered in Chennai, building and operating water and wastewater treatment plants worldwide.",
-     "url": "https://www.wabag.com"
-    }
-   ],
+   "status": "ok",
+   "startups": [],
    "registry_domains": [
-    {
-     "id": "medical_tourism_facilitation",
-     "label": "Medical travel facilitation"
-    },
     {
      "id": "medical_emi",
      "label": "Instalment plans for medical treatment"
+    },
+    {
+     "id": "medical_tourism_facilitation",
+     "label": "Medical travel facilitation"
     }
+   ],
+   "searched": 654,
+   "districts": [
+    "Chennai",
+    "Coimbatore",
+    "Madurai"
+   ],
+   "scope": "the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai",
+   "sectors": [
+    "fintech"
    ]
   },
   "elements": [],
   "discuss": [
    {
+    "field": "Instalment plans for medical treatment",
+    "questions": [
+     "Which buyer comes first (patients and hospitals), and what do they use today?",
+     "Which of these do you need before the first sale: Lending only through RBI-regulated entities and Health records and telemedicine rules?"
+    ]
+   },
+   {
     "field": "Economics, Econometrics and Finance",
     "questions": [
      "Which regulated entity (bank, NBFC, insurer) do you partner with?"
-    ]
-   },
-   {
-    "field": "Engineering",
-    "questions": [
-     "Which sensors and hardware, at what unit cost, and how durable in Indian conditions?",
-     "What certification does the hardware need before sale?"
-    ]
-   },
-   {
-    "field": "Health Professions",
-    "questions": [
-     "How does it fit the nurse's or caregiver's routine without adding work?"
-    ]
-   },
-   {
-    "field": "Psychology",
-    "questions": [
-     "How do you measure that users can and will use it day to day?"
     ]
    },
    {
@@ -830,7 +841,7 @@
    {
     "source": "papers",
     "status": "ok",
-    "found": 28543,
+    "found": 11466,
     "note": ""
    },
    {
@@ -843,13 +854,19 @@
     "source": "patents",
     "status": "no_key",
     "found": 0,
-    "note": "Patents not searched: add a free PatentsView key (PATENTSVIEW_API_KEY)"
+    "note": "Patents not searched: register free with the EPO (EPO_OPS_KEY and EPO_OPS_SECRET) for worldwide and Indian patents"
    },
    {
     "source": "trials",
     "status": "ok",
     "found": 0,
     "note": ""
+   },
+   {
+    "source": "local startups",
+    "status": "ok",
+    "found": 0,
+    "note": "Only the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai"
    }
   ],
   "caveat": "Counts come from the sources listed in coverage. 'Nothing found' means nothing in those sources, not that the idea is new; have a patent attorney search before filing."
@@ -862,7 +879,7 @@
   },
   "statement": {
    "type": "unclear",
-   "text": "I couldn't split the idea into searchable parts. I can't judge novelty yet."
+   "text": "I couldn't split the idea into parts to search: none of its words are in the vocabulary I may send to the sources yet. I can't judge novelty yet."
   },
   "levers": [],
   "status": "skipped",
