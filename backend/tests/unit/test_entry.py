@@ -113,10 +113,12 @@ def test_the_model_hears_the_registration():
     assert REGISTRATION[RegSubtype.REGISTERED_NO_PRODUCT].said in agent._known(s)
 
 
-def test_entry_mode_is_kept_but_the_idea_conversation_runs_until_1_1_5():
+def test_entry_mode_is_kept_and_picks_the_conversation():
+    """1.1.5.1: a domain_only founder runs the experience conversation
+    (tests/unit/test_experience.py covers it)."""
     s, _ = agent.new_session("K", entry_mode=Door.DOMAIN_ONLY)
     assert s.entry_mode == "domain_only"
-    assert s.elicitation.mode is EntryMode.IDEA
+    assert s.elicitation.mode is EntryMode.EXPERIENCE
 
 
 async def test_api_takes_typed_subtype_and_mode_and_refuses_others(client: AsyncClient):
