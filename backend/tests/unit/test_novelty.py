@@ -184,3 +184,63 @@ def test_an_idea_with_no_known_part_says_why_it_is_unclear():
     assert seen == [] and r["statement"]["type"] == "unclear"
     assert "none of its words are in the vocabulary" in r["statement"]["text"]
     assert "can't judge novelty yet" in r["statement"]["text"]
+
+
+def test_levers_carry_their_facts_for_later_wording():
+    """R190: each lever keeps its kind and facts, so the conversation can word it for the
+    founder's sector without searching again."""
+    r, _ = _run(idea=NURSE)
+    combine = r["levers"][0]
+    assert combine["facts"] == {"a": "brain waves", "b": "nurse call", "papers": 15}
+    r, _ = _run(scan=LOCAL_NONE)
+    localise = next(lv for lv in r["levers"] if lv["kind"] == "localise")
+    assert localise["facts"]["tn_scope"] == SCOPE and localise["facts"]["india_papers"] == 52
+
+
+def test_the_cost_lever_follows_the_one_matched_domain():
+    """R044: banana chips matched banana_value_added (a cost pack) in the scan, so the cost
+    lever is offered even when no related domain shares its words; a related domain with
+    a pack is not the idea's own."""
+    banana = "banana chips for export"
+    scan = {"matched_domain": "banana_value_added", "local": {"registry_domains": []}}
+    r, _ = _run(idea=banana, scan=scan, count=lambda q, india: 800)
+    cost = next(lv for lv in r["levers"] if lv["kind"] == "cost-down")
+    assert cost["facts"] == {"domain": "banana_value_added"}
+    assert "banana value-added products" in cost["text"]
+
+    related = {
+        "matched_domain": None,
+        "local": {"registry_domains": [{"id": "banana_value_added", "label": "Banana"}]},
+    }
+    r, _ = _run(idea=banana, scan=related, count=lambda q, india: 800)
+    assert all(lv["kind"] != "cost-down" for lv in r["levers"])
+
+
+def test_without_a_scan_the_domain_is_matched_the_same_way():
+    from app.research.scan import domain_id, matched_domain
+
+    banana = "banana chips and banana flour unit"
+    assert domain_id(banana, None) == matched_domain(banana)["id"] == "banana_value_added"
+    assert domain_id(banana, {"matched_domain": None}) is None
+
+
+def test_the_regulatory_lever_needs_a_medical_product():
+    """R139: trials found and the word 'medical' do not make a loan a medical device; a
+    device or clinical word, or a physical health product by the founder's answers, does."""
+    from app.research.terms import is_health_product
+
+    trials = {"trials": {"total": 5}}
+    emi = "hospital bill instalment loans for medical treatment"
+    assert not is_health_product(emi, trials)
+    assert not is_health_product(emi, trials, {"sector": "health", "product_form": "software"})
+    assert is_health_product(IDEA, None)
+    assert is_health_product("a home kit for elderly people", None, {"sector": "health",
+                             "product_form": "physical"})  # fmt: skip
+    assert not is_health_product("mint and hibiscus tea infusions", trials | {"x": 1})
+    assert not is_health_product("a wearable step counter for runners", None)  # no health word
+
+    r, _ = _run(idea="a nurse call system for hospital wards", scan=trials)
+    assert all(lv["kind"] != "regulatory route" for lv in r["levers"])
+    r, _ = _run(scan=trials)
+    reg = next(lv for lv in r["levers"] if lv["kind"] == "regulatory route")
+    assert reg["facts"] == {"trials": 5} and "5 clinical trials came up" in reg["because"]
