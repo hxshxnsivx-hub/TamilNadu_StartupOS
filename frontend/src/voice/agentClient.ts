@@ -12,7 +12,7 @@ import { STAGES, type Stage } from "../lib/stages";
 const BASE = "/api/v1/ideation/agent/sessions";
 
 export interface Action {
-  kind: "ask" | "confirm" | "generate" | "done";
+  kind: "ask" | "confirm" | "choose" | "generate" | "done";
   slot: string | null;
   question: string | null;
   objective: string | null;
