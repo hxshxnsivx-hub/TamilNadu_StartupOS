@@ -213,25 +213,25 @@ licences and risks (S8), streamed fact-checked replies, private sessions, the jo
 
 ### 1.2 Evidence and novelty
 
-#### 1.2.1 `[ ]` Fix the relevance faults the quality set shows
+#### 1.2.1 `[x]` Fix the relevance faults the quality set shows
 - **Why:** current replays still name irrelevant papers and startups, ask off-domain "things to think through", and treat generic words as novelty elements; this undermines trust.
 - **Where:** `research/scan.py`, `research/sources.py`, `research/terms.py`, `research/novelty.py`.
 - **How:** choose discussion points from the matched domain and pack; name a closest paper only when its overlap with the query is strong; tighten local-startup matching by sector and terms; exclude beneficiary and generic words from novelty elements; treat a zero count on a single hyphenated word as "not searched well".
 - **When:** now; in the research job.
 - **What for:** credible evidence (transcripts in docs/eval/report.md and a replay of current code; IDEATION §3.6 r2).
-- `1.2.1.1` Discussion points from the matched domain.
-- `1.2.1.2` Closest-paper relevance threshold.
-- `1.2.1.3` Local startup matching by sector and terms.
-- `1.2.1.4` Generic and beneficiary words out of the element list.
-- `1.2.1.5` Hyphen normalisation and the zero-count rule.
-- `1.2.1.6` Find why the medical-EMI idea gets no novelty statement; say "unclear" honestly when that is the cause.
-- `1.2.1.7` Eval assertions for each fix.
-- `1.2.1.8` `[ ]` [R023](arena/details-p1.md#r023) (weight 84) Failed local-startup lookup reported as 'no Tamil Nadu startup does this'. Fix: Scoped wording plus a 'local' coverage row.
-- `1.2.1.9` `[ ]` [R045](arena/details-p2.md#r045) (weight 84) One source's network error fails the whole evidence scan, not just that source. Fix: Catch httpx.TransportError in _get_json and return a status.
-- `1.2.1.10` `[ ]` [R030](arena/details-p1.md#r030) (weight 84) 'Combinations are well studied' is said when no combination was counted. Fix: Coverage-aware statement.
-- `1.2.1.11` `[ ]` [R035](arena/details-p1.md#r035) (weight 84) Clinical gate covers questions but not categories; tea idea weighted as a medical device. Fix: Apply the clinical gate to categories and make idea_type use founder slots first, paper categories only as a fallback.
-- `1.2.1.12` `[ ]` [R093](arena/details-p1.md#r093) (weight 74) Generic words from registry prose take query slots ('banana small chips'). Fix: Document-frequency filter over the registry.
-- `1.2.1.13` `[ ]` `_idea_text` joins problem and solution even when both came from one sentence, so the search text repeats itself ('I want to make banana chips make banana chips'; found in the 1.1.5 review). Fix: skip the solution when the problem already contains it.
+- `1.2.1.1` `[x]` Discussion points from the matched domain.
+- `1.2.1.2` `[x]` Closest-paper relevance threshold.
+- `1.2.1.3` `[x]` Local startup matching by sector and terms.
+- `1.2.1.4` `[x]` Generic and beneficiary words out of the element list.
+- `1.2.1.5` `[x]` Hyphen normalisation and the zero-count rule.
+- `1.2.1.6` `[x]` Find why the medical-EMI idea gets no novelty statement; say "unclear" honestly when that is the cause.
+- `1.2.1.7` `[x]` Eval assertions for each fix.
+- `1.2.1.8` `[x]` [R023](arena/details-p1.md#r023) (weight 84) Failed local-startup lookup reported as 'no Tamil Nadu startup does this'. Fix: Scoped wording plus a 'local' coverage row.
+- `1.2.1.9` `[x]` [R045](arena/details-p2.md#r045) (weight 84) One source's network error fails the whole evidence scan, not just that source. Fix: Catch httpx.TransportError in _get_json and return a status.
+- `1.2.1.10` `[x]` [R030](arena/details-p1.md#r030) (weight 84) 'Combinations are well studied' is said when no combination was counted. Fix: Coverage-aware statement.
+- `1.2.1.11` `[x]` [R035](arena/details-p1.md#r035) (weight 84) Clinical gate covers questions but not categories; tea idea weighted as a medical device. Fix: Apply the clinical gate to categories and make idea_type use founder slots first, paper categories only as a fallback.
+- `1.2.1.12` `[x]` [R093](arena/details-p1.md#r093) (weight 74) Generic words from registry prose take query slots ('banana small chips'). Fix: Document-frequency filter over the registry.
+- `1.2.1.13` `[x]` `_idea_text` joins problem and solution even when both came from one sentence, so the search text repeats itself ('I want to make banana chips make banana chips'; found in the 1.1.5 review). Fix: skip the solution when the problem already contains it.
 
 #### 1.2.2 `[ ]` Levers worded for the founder's domain
 - **Why:** the localise lever says "local hospital or market routines" for banana chips and t-shirts.
