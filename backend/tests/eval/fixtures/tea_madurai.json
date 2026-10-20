@@ -1,7 +1,7 @@
 {
  "id": "tea_madurai",
  "idea": "I want to sell mint hibiscus and lemon tea infusions as a brand from Madurai",
- "recorded": "2026-10-10",
+ "recorded": "2026-10-20",
  "coverage": [
   {
    "source": "papers",
@@ -18,6 +18,10 @@
   {
    "source": "trials",
    "status": "skipped"
+  },
+  {
+   "source": "local startups",
+   "status": "ok"
   }
  ],
  "scan": {
@@ -34,15 +38,15 @@
    "domains": [
     {
      "name": "Life Sciences",
-     "share_pct": 50
-    },
-    {
-     "name": "Health Sciences",
-     "share_pct": 25
+     "share_pct": 54
     },
     {
      "name": "Physical Sciences",
      "share_pct": 25
+    },
+    {
+     "name": "Health Sciences",
+     "share_pct": 21
     }
    ],
    "fields": [
@@ -52,15 +56,15 @@
     },
     {
      "name": "Pharmacology, Toxicology and Pharmaceutics",
-     "share_pct": 20
-    },
-    {
-     "name": "Medicine",
-     "share_pct": 20
+     "share_pct": 24
     },
     {
      "name": "Chemistry",
      "share_pct": 17
+    },
+    {
+     "name": "Medicine",
+     "share_pct": 16
     },
     {
      "name": "Environmental Science",
@@ -82,7 +86,7 @@
    "subfields": [
     {
      "name": "Pharmacology",
-     "share_pct": 23
+     "share_pct": 27
     },
     {
      "name": "Analytical Chemistry",
@@ -94,11 +98,11 @@
     },
     {
      "name": "Plant Science",
-     "share_pct": 11
+     "share_pct": 9
     },
     {
      "name": "Biochemistry",
-     "share_pct": 8
+     "share_pct": 9
     },
     {
      "name": "Pollution",
@@ -109,14 +113,14 @@
      "share_pct": 3
     },
     {
-     "name": "Reproductive Medicine",
+     "name": "Mechanical Engineering",
      "share_pct": 3
     }
    ],
    "topics": [
     {
      "name": "Hibiscus Plant Research Studies",
-     "share_pct": 20
+     "share_pct": 24
     },
     {
      "name": "Heavy Metals in Plants",
@@ -124,15 +128,11 @@
     },
     {
      "name": "Phytochemicals and Antioxidant Activities",
-     "share_pct": 8
+     "share_pct": 9
     },
     {
      "name": "Food and Agricultural Sciences",
      "share_pct": 7
-    },
-    {
-     "name": "Medicinal Plant Research",
-     "share_pct": 6
     },
     {
      "name": "Heavy metals in environment",
@@ -140,6 +140,10 @@
     },
     {
      "name": "Essential Oils and Antimicrobial Activity",
+     "share_pct": 5
+    },
+    {
+     "name": "Medicinal Plant Research",
      "share_pct": 5
     },
     {
@@ -151,20 +155,50 @@
   "vanigam_categories": [
    "agriculture",
    "climate",
-   "electrical",
-   "health_bio"
+   "electrical"
   ],
+  "matched_domain": "tea_infusions",
   "papers": {
-   "total": 551,
+   "total": 556,
+   "closest": {
+    "title": "An Herbal Tea Blend of Hibiscus sabdariffa, Zingiber officinale, and Mentha spicata: A Potent Source of Antioxidant and Anti-Obesity Properties",
+    "year": 2024,
+    "cited_by": 3,
+    "venue": "European Journal of Medical and Health Research",
+    "url": "https://doi.org/10.59324/ejmhr.2024.2(1).10",
+    "topics": [
+     {
+      "topic": "Hibiscus Plant Research Studies",
+      "subfield": "Pharmacology",
+      "field": "Pharmacology, Toxicology and Pharmaceutics",
+      "domain": "Life Sciences",
+      "score": 0.9643999934196472
+     },
+     {
+      "topic": "Natural Antidiabetic Agents Studies",
+      "subfield": "Endocrinology, Diabetes and Metabolism",
+      "field": "Medicine",
+      "domain": "Health Sciences",
+      "score": 0.01119999960064888
+     },
+     {
+      "topic": "Pharmacology and Obesity Treatment",
+      "subfield": "Pharmacology",
+      "field": "Medicine",
+      "domain": "Health Sciences",
+      "score": 0.00570000009611249
+     }
+    ]
+   },
    "by_year": {
     "2022": 85,
     "2023": 80,
-    "2025": 79,
-    "2021": 59,
+    "2025": 80,
+    "2021": 58,
     "2024": 56,
-    "2026": 44,
+    "2026": 48,
     "2020": 39,
-    "2019": 18,
+    "2019": 19,
     "2014": 16,
     "2018": 15,
     "2015": 12,
@@ -428,7 +462,7 @@
     {
      "title": "Therapeutic Potential of Phenolic Compounds in Medicinal Plants—Natural Health Products for Human Health",
      "year": 2023,
-     "cited_by": 792,
+     "cited_by": 798,
      "venue": "Molecules",
      "url": "https://doi.org/10.3390/molecules28041845",
      "topics": [
@@ -458,7 +492,7 @@
     {
      "title": "Phytochemicals for human disease: An update on plant-derived compounds antibacterial activity",
      "year": 2016,
-     "cited_by": 670,
+     "cited_by": 669,
      "venue": "Microbiological Research",
      "url": "https://doi.org/10.1016/j.micres.2016.12.003",
      "topics": [
@@ -488,7 +522,7 @@
     {
      "title": "Influence of the extraction method on the recovery of bioactive phenolic compounds from food industry by-products",
      "year": 2021,
-     "cited_by": 634,
+     "cited_by": 640,
      "venue": "Food Chemistry",
      "url": "https://doi.org/10.1016/j.foodchem.2021.131918",
      "topics": [
@@ -518,7 +552,7 @@
     {
      "title": "Extraction of Flavonoids From Natural Sources Using Modern Techniques",
      "year": 2020,
-     "cited_by": 629,
+     "cited_by": 630,
      "venue": "Frontiers in Chemistry",
      "url": "https://doi.org/10.3389/fchem.2020.507887",
      "topics": [
@@ -548,7 +582,7 @@
     {
      "title": "Recent Advances in Supercritical Fluid Extraction of Natural Bioactive Compounds from Natural Plant Materials",
      "year": 2020,
-     "cited_by": 625,
+     "cited_by": 629,
      "venue": "Molecules",
      "url": "https://doi.org/10.3390/molecules25173847",
      "topics": [
@@ -587,31 +621,44 @@
   },
   "patents": {
    "total": 0,
-   "items": []
+   "items": [],
+   "india": null
   },
   "local": {
+   "status": "ok",
    "startups": [],
-   "registry_domains": []
+   "registry_domains": [
+    {
+     "id": "tea_infusions",
+     "label": "Flavoured tea and herbal infusions"
+    }
+   ],
+   "searched": 654,
+   "districts": [
+    "Chennai",
+    "Coimbatore",
+    "Madurai"
+   ],
+   "scope": "the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai",
+   "sectors": [
+    "agritech",
+    "consumer",
+    "food"
+   ]
   },
   "elements": [],
   "discuss": [
    {
+    "field": "Flavoured tea and herbal infusions",
+    "questions": [
+     "Which buyer comes first (home buyers, gifting and cafés and hotels), and what do they use today?",
+     "Which of these do you need before the first sale: FSSAI registration or licence, Legal Metrology declarations and Tea Board registration?"
+    ]
+   },
+   {
     "field": "Agricultural and Biological Sciences",
     "questions": [
      "Which crop or animal, which season, and which FPO or farmers will pilot it?"
-    ]
-   },
-   {
-    "field": "Environmental Science",
-    "questions": [
-     "What is measured, by whom, and who pays for the improvement?"
-    ]
-   },
-   {
-    "field": "Engineering",
-    "questions": [
-     "Which sensors and hardware, at what unit cost, and how durable in Indian conditions?",
-     "What certification does the hardware need before sale?"
     ]
    },
    {
@@ -627,7 +674,7 @@
    {
     "source": "papers",
     "status": "ok",
-    "found": 551,
+    "found": 556,
     "note": ""
    },
    {
@@ -640,13 +687,19 @@
     "source": "patents",
     "status": "no_key",
     "found": 0,
-    "note": "Patents not searched: add a free PatentsView key (PATENTSVIEW_API_KEY)"
+    "note": "Patents not searched: register free with the EPO (EPO_OPS_KEY and EPO_OPS_SECRET) for worldwide and Indian patents"
    },
    {
     "source": "trials",
     "status": "skipped",
     "found": 0,
     "note": "Not a health idea, so clinical trials were not searched"
+   },
+   {
+    "source": "local startups",
+    "status": "ok",
+    "found": 0,
+    "note": "Only the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai"
    }
   ],
   "caveat": "Counts come from the sources listed in coverage. 'Nothing found' means nothing in those sources, not that the idea is new; have a patent attorney search before filing."
@@ -656,19 +709,19 @@
    {
     "element": "tea infusions",
     "query": "\"herbal tea\"",
-    "papers": 33346,
+    "papers": 33461,
     "label": "crowded"
    },
    {
     "element": "hibiscus",
     "query": "\"Hibiscus sabdariffa\"",
-    "papers": 31295,
+    "papers": 31454,
     "label": "crowded"
    },
    {
     "element": "mint",
     "query": "Mentha",
-    "papers": 90096,
+    "papers": 90347,
     "label": "crowded"
    }
   ],
@@ -676,45 +729,55 @@
    {
     "a": "tea infusions",
     "b": "hibiscus",
-    "a_papers": 33346,
-    "b_papers": 31295,
-    "papers": 1228,
-    "share_pct": 3.92,
+    "a_papers": 33461,
+    "b_papers": 31454,
+    "papers": 1231,
+    "share_pct": 3.91,
     "gap": false
    },
    {
     "a": "hibiscus",
     "b": "mint",
-    "a_papers": 31295,
-    "b_papers": 90096,
-    "papers": 1822,
-    "share_pct": 5.82,
+    "a_papers": 31454,
+    "b_papers": 90347,
+    "papers": 1829,
+    "share_pct": 5.81,
     "gap": false
    },
    {
     "a": "tea infusions",
     "b": "mint",
-    "a_papers": 33346,
-    "b_papers": 90096,
-    "papers": 2840,
-    "share_pct": 8.52,
+    "a_papers": 33461,
+    "b_papers": 90347,
+    "papers": 2856,
+    "share_pct": 8.54,
     "gap": false
    }
   ],
   "context": {
    "query": "Mentha \"herbal tea\"",
    "searched": true,
-   "world_papers": 2840,
-   "india_papers": 183,
+   "world_papers": 2856,
+   "india_papers": 182,
    "india_share_pct": 6.4,
    "tn_startups": 0,
+   "tn_scope": "the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai",
    "gap": false
+  },
+  "coverage": {
+   "pairs_expected": 3,
+   "pairs_counted": 3
   },
   "statement": {
    "type": "crowded",
    "text": "Each part is well studied, and so are their combinations. The edge has to come from who you serve, the cost, or how you deliver it."
   },
   "levers": [
+   {
+    "kind": "cost-down",
+    "text": "Compete on cost, using the costing for this domain to see where to cut.",
+    "because": "a Vanigam cost pack exists for this domain"
+   },
    {
     "kind": "business model",
     "text": "Compete on how it is delivered, as a service, a rental, or a scheme-backed rollout rather than a product sale.",
