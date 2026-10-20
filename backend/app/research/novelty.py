@@ -22,11 +22,12 @@ from itertools import combinations
 import httpx
 
 from app.core.config import get_settings
-from app.research import sources
+from app.research import levers, sources
+from app.research.scan import domain_id
 from app.research.terms import (
     BENEFICIARY,
     element_query,
-    is_health,
+    is_health_product,
     or_query,
     public_vocabulary,
     term_groups,
@@ -95,10 +96,12 @@ async def check(
     elements: list[str] | None = None,
     scan: dict | None = None,
     beneficiary: str | None = None,
+    slots: dict | None = None,
     client: httpx.AsyncClient | None = None,
     private: bool = False,
 ) -> dict:
-    """The novelty map, one statement, and the levers the gaps support."""
+    """The novelty map, one statement, and the levers the gaps support. `slots`: what
+    the founder has said so far, for the health-product rule (R139)."""
     parts = _parts(idea, elements)
     if private:
         return _unclear(parts, "Private mode: nothing was searched outside Vanigam.", "private")
@@ -182,7 +185,14 @@ async def check(
         "coverage": {"pairs_expected": expected, "pairs_counted": len(pair_rows)},
         "statement": statement,
         "levers": _levers(
-            searched, pair_rows, context, retarget, scan, statement, _is_health(idea, scan)
+            searched,
+            pair_rows,
+            context,
+            retarget,
+            scan,
+            statement,
+            is_health_product(idea, scan, slots),
+            domain_id(idea, scan),
         ),
         "thresholds": {
             "active_papers": ACTIVE,
@@ -333,87 +343,41 @@ def _few(n: int, one: str, many: str, none: str = "") -> str:
     return f"only 1 {one}" if n == 1 else f"only {n:,} {many}"
 
 
-def _is_health(idea: str, scan: dict | None) -> bool:
-    """A health product by its own words, or trials actually found; papers that merely
-    touch medicine do not count (herbal tea papers list Medicine as a field)."""
-    return is_health(idea) or bool((scan or {}).get("trials", {}).get("total"))
+def _has_pack(domain_id: str | None) -> bool:
+    from app.planner import registry
+
+    return bool(domain_id and registry.load()["domains"].get(domain_id, {}).get("pack"))
 
 
-def _levers(parts, pairs, context, retarget, scan, statement, health=False) -> list[dict]:
-    """Ways to stand out. Each is offered only with the gap that justifies it."""
+def _levers(parts, pairs, context, retarget, scan, statement, health, domain_id) -> list[dict]:
+    """Ways to stand out. Each is offered only with the gap that justifies it, and kept
+    as its kind and facts; levers.render words it for the domain and sector (R190)."""
     out: list[dict] = []
     for g in [p for p in pairs if p["gap"]][:2]:
-        out.append(
-            {
-                "kind": "combine",
-                "text": f"Build your version around joining {g['a']} with {g['b']}.",
-                "because": f"{_few(g['papers'], 'paper covers', 'papers cover')} both",
-            }
-        )
+        out.append({"kind": "combine", "facts": {"a": g["a"], "b": g["b"], "papers": g["papers"]}})
     if context.get("gap"):
         out.append(
             {
                 "kind": "localise",
-                "text": (
-                    "Make it fit Tamil Nadu, with the Tamil language, local hospital or market"
-                    " routines, and a local price."
-                ),
-                "because": (
-                    f"{context['india_papers']:,} of {context['world_papers']:,} papers are from"
-                    f" India, and none of {context['tn_scope']} does it"
-                ),
+                "facts": {
+                    "india_papers": context["india_papers"],
+                    "world_papers": context["world_papers"],
+                    "tn_scope": context["tn_scope"],
+                },
             }
         )
     if retarget and retarget["papers"] < PAIR_RARE_COUNT:
-        out.append(
-            {
-                "kind": "re-target",
-                "text": f"Design it specifically for {retarget['who']}.",
-                "because": f"{_few(retarget['papers'], 'paper focuses', 'papers focus')} on them",
-            }
-        )
+        out.append({"kind": "re-target", "facts": dict(retarget)})
     if health:
-        trials = (scan or {}).get("trials", {}).get("total", 0)
-        out.append(
-            {
-                "kind": "regulatory route",
-                "text": (
-                    "Check whether a first version can avoid medical-device claims, for example"
-                    " as a communication aid, and add clinical claims after a validation study."
-                ),
-                "because": f"the idea sits in medicine, with {trials} clinical trials found",
-            }
-        )
-    if _has_pack(scan):
-        out.append(
-            {
-                "kind": "cost-down",
-                "text": "Compete on cost, using the costing for this domain to see where to cut.",
-                "because": "a Vanigam cost pack exists for this domain",
-            }
-        )
+        trials = (scan or {}).get("trials", {}).get("total") or 0
+        out.append({"kind": "regulatory route", "facts": {"trials": trials}})
+    if _has_pack(domain_id):
+        out.append({"kind": "cost-down", "facts": {"domain": domain_id}})
     if statement["type"] == "crowded":
-        out.append(
-            {
-                "kind": "business model",
-                "text": (
-                    "Compete on how it is delivered, as a service, a rental, or a"
-                    " scheme-backed rollout rather than a product sale."
-                ),
-                "because": "every part and combination is crowded",
-            }
-        )
-    return out
-
-
-def _has_pack(scan: dict | None) -> bool:
-    from app.planner import registry
-
-    doms = registry.load()["domains"]
-    return any(
-        doms.get(d["id"], {}).get("pack")
-        for d in (scan or {}).get("local", {}).get("registry_domains", [])
-    )
+        out.append({"kind": "business model", "facts": {}})
+    # Search-time words for readers without a session (the API, the panel's evidence);
+    # the conversation rewords them from the founder's current sector when it says them.
+    return [levers.render(lv, domain_id=domain_id) for lv in out]
 
 
 def _unclear(parts: list[dict], why: str, status: str, keep_counts: bool = False) -> dict:
