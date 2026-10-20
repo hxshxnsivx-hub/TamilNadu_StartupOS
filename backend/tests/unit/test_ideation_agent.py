@@ -487,3 +487,41 @@ def test_offline_replies_say_they_are_english():
 
 async def _collect(s, text, client, language="ta-IN"):
     return [ev async for ev in agent.turn_stream(s, text, client=client, language=language)]
+
+
+# ---- 1.2.1: relevance faults the quality set showed --------------------------------
+
+
+def test_a_paper_is_named_only_when_it_is_close():
+    """1.2.1.2: without a close paper the count is given and no title is named."""
+    near = {**SCAN, "papers": {**SCAN["papers"], "closest": SCAN["papers"]["most_relevant"][0]}}
+    assert 'the closest being "P300 speller" (2023)' in agent._fallback_reply(near, None)
+    far = {**SCAN, "papers": {**SCAN["papers"], "closest": None}}
+    said = agent._fallback_reply(far, None)
+    assert "P300 speller" not in said and "About 420 research papers came up" in said
+
+
+def test_an_unclear_novelty_statement_is_said_with_its_reason():
+    """1.2.1.6: 'I can't judge novelty yet' is honest, so it is said, not skipped."""
+    s = _new()
+    s.novelty = {
+        "statement": {"type": "unclear", "text": "I couldn't split it. I can't judge novelty yet."},
+        "levers": [],
+        "status": "skipped",
+    }
+    assert agent._next_novelty_point(s) == "I couldn't split it. I can't judge novelty yet."
+    quiet = _new()
+    quiet.novelty = {**s.novelty, "status": "private"}  # private mode was said already
+    assert agent._next_novelty_point(quiet) is None
+
+
+def test_the_search_text_does_not_repeat_itself():
+    """1.2.1.13: problem and solution read from one sentence are said once."""
+    from app.elicitation.session import Source
+
+    s, src = _new(), Source.ANSWER
+    s.elicitation.put("problem", "I want to make banana chips", 0.9, src)
+    s.elicitation.put("solution", "make banana chips", 0.9, src)
+    assert agent._idea_text(s) == "I want to make banana chips"
+    s.elicitation.put("solution", "fry them in coconut oil", 0.9, src)
+    assert agent._idea_text(s) == "I want to make banana chips fry them in coconut oil"
