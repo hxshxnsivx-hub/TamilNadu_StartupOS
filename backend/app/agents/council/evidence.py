@@ -15,7 +15,9 @@ import re
 from dataclasses import dataclass, field
 
 from app.planner import registry
-from app.research.terms import is_health
+from app.research import levers
+from app.research.scan import domain_id as scan_domain
+from app.research.terms import is_health_product
 
 
 def _slug(s: str) -> str:
@@ -26,8 +28,9 @@ def _slug(s: str) -> str:
 class EvidencePack:
     items: dict[str, dict] = field(default_factory=dict)
     domain_id: str | None = None
-    # A health idea by its own words, or trials actually found. Papers that merely touch
-    # medicine do not count: "tea infusions" once read as a medical device.
+    # A medical device or clinical product (terms.is_health_product, R139). Papers that
+    # merely touch medicine do not count ("tea infusions" once read as a medical device),
+    # and neither does a loan that names a hospital.
     health: bool = False
 
     def add(self, id_: str, kind: str, text: str, **extra) -> None:
@@ -49,10 +52,19 @@ class EvidencePack:
         return [(i, it) for i, it in self.items.items() if it["kind"] in kinds]
 
 
-def build(idea: str, scan: dict | None, novelty: dict | None, district: str | None) -> EvidencePack:
+def build(
+    idea: str,
+    scan: dict | None,
+    novelty: dict | None,
+    district: str | None,
+    slots: dict | None = None,
+) -> EvidencePack:
+    """`slots`: what the founder has said, for the health rule and the levers' sector."""
     pack = EvidencePack()
     s = scan or {}
-    pack.health = is_health(idea) or bool(s.get("trials", {}).get("total"))
+    slots = slots or {}
+    pack.health = is_health_product(idea, s, slots)
+    domain_id = scan_domain(idea, s)
 
     for f in s.get("associated_domains", {}).get("fields", [])[:6]:
         share = f" ({f['share_pct']}% of matching papers)" if f.get("share_pct") else ""
@@ -119,8 +131,8 @@ def build(idea: str, scan: dict | None, novelty: dict | None, district: str | No
                 f"{c['source']} not searched ({c['status']}): {c.get('note', '')}",
             )
 
-    _add_novelty(pack, novelty)
-    _add_registry(pack, idea, s, district)
+    _add_novelty(pack, levers.worded(novelty, domain_id=domain_id, sector=slots.get("sector")))
+    _add_registry(pack, domain_id, district)
     return pack
 
 
@@ -157,13 +169,9 @@ def _add_novelty(pack: EvidencePack, novelty: dict | None) -> None:
         pack.add(f"novelty:lever:{i}", "novelty", f"Way to stand out ({lv['kind']}): {lv['text']}")
 
 
-def _add_registry(pack: EvidencePack, idea: str, scan: dict, district: str | None) -> None:
+def _add_registry(pack: EvidencePack, domain_id: str | None, district: str | None) -> None:
     doms = registry.load()["domains"]
-    ids = [registry.detect_domain(idea)] + [
-        d["id"] for d in scan.get("local", {}).get("registry_domains", [])
-    ]
-    domain_id = next((i for i in ids if i and i in doms), None)
-    if domain_id is None:
+    if domain_id not in doms:
         return
     pack.domain_id = domain_id
     card = registry.card(doms[domain_id], district)
