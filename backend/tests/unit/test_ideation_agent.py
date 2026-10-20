@@ -84,8 +84,8 @@ def _env(monkeypatch):
         calls.append({"text": text, "elements": elements, "queries": queries, "private": private})
         return SCAN
 
-    async def fake_novelty(idea, *, elements=None, scan=None, beneficiary=None, client=None,
-                           private=False):  # fmt: skip
+    async def fake_novelty(idea, *, elements=None, scan=None, beneficiary=None, slots=None,
+                           client=None, private=False):  # fmt: skip
         calls.append({"novelty": idea, "elements": elements, "private": private})
         return NOVELTY
 
@@ -525,3 +525,60 @@ def test_the_search_text_does_not_repeat_itself():
     assert agent._idea_text(s) == "I want to make banana chips"
     s.elicitation.put("solution", "fry them in coconut oil", 0.9, src)
     assert agent._idea_text(s) == "I want to make banana chips fry them in coconut oil"
+
+
+def test_levers_are_worded_for_the_sector_when_said():
+    """R190: the lever stored by the search is worded when it is said, from the founder's
+    sector as it stands then; a corrected sector rewords it with no new search."""
+    from app.elicitation.session import Source
+
+    s = _new()
+    scope = "the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai"
+    s.novelty = {
+        "statement": {"type": "context", "text": "Work on this is active worldwide."},
+        "levers": [
+            {
+                "kind": "localise",
+                "facts": {"india_papers": 25, "world_papers": 2335, "tn_scope": scope},
+            }
+        ],
+    }
+    s.scan = {"matched_domain": "knitwear_small_batch"}
+    s.narrated = ["statement"]
+    said = agent._next_novelty_point(s)
+    assert "job-work units" in said and "hospital" not in said  # the domain's sector
+    assert "because 25 of 2,335 papers are from India" in said
+
+    s.narrated = ["statement"]
+    s.elicitation.put("sector", Sector.FOOD, 0.95, Source.ANSWER)
+    said = agent._next_novelty_point(s)
+    assert "local tastes and shop routines" in said  # the founder's own sector wins
+    assert s.novelty["levers"][0].get("text") is None  # the stored lever is unchanged
+
+
+def test_the_roadmap_uses_the_scans_domain():
+    """R044: one domain for the scan, the levers, the panel and the roadmap; words the
+    planner would match elsewhere do not pick a second one."""
+    state = {"last_scan": {"matched_domain": "banana_value_added"}}
+    _run(tools.run_tool("build_roadmap", {"idea": "a small unit"}, _new().elicitation, state))
+    assert (state["roadmap"]["domain"] or {}).get("id") == "banana_value_added"
+
+
+def test_the_model_hears_levers_worded_for_the_sector(monkeypatch):
+    from app.elicitation.session import Source
+
+    stored = {
+        "statement": {"type": "crowded", "text": "Each part is well studied."},
+        "levers": [{"kind": "business model", "facts": {}}],
+    }
+
+    async def fake(*_a, **_k):
+        return stored
+
+    monkeypatch.setattr("app.research.novelty.check", fake)
+    s = _new()
+    s.elicitation.put("sector", Sector.FOOD, 0.95, Source.ANSWER)
+    state = {"last_scan": {"matched_domain": None}}
+    out = _run(tools.run_tool("check_novelty", {"idea": "tea"}, s.elicitation, state))
+    assert "subscriptions" in out["levers"][0]["text"]
+    assert state["novelty"] is stored  # the session keeps the facts, not the words
