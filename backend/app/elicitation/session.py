@@ -48,6 +48,9 @@ class SessionState(str, Enum):
     ELICITING = "eliciting"
     AWAITING_ANSWER = "awaiting_answer"
     CONFIRMING = "confirming"
+    # The experience conversation, after its restatement: the founder picks one
+    # of the offered opportunities, or none (R066). A pick fills the idea slots.
+    CHOOSING = "choosing"
     GENERATING = "generating"
     COMPLETE = "complete"
     FAILED = "failed"
@@ -62,11 +65,13 @@ class Source(str, Enum):
     EXTRACTED = "extracted"  # inferred from free text
     DOCUMENT = "document"  # parsed from an upload
     DEFAULT = "default"
+    CHOSEN = "chosen"  # from an opportunity card the founder picked (task 1.1.5.5)
 
 
 # Founder-given values (R025): an inference never replaces one, however
 # confident it is. Rank before confidence, so no future cue constant can undo it.
-FOUNDER_GIVEN = frozenset({Source.PROFILE, Source.ANSWER})
+# A card the founder picked is their choice, not our guess.
+FOUNDER_GIVEN = frozenset({Source.PROFILE, Source.ANSWER, Source.CHOSEN})
 
 
 class SlotValue(BaseModel):
