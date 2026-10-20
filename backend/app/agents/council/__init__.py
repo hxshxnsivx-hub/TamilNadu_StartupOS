@@ -42,7 +42,7 @@ async def convene(
     `use_model=False` forces rules (spend cap reached, or the model is down)."""
     started = time.monotonic()
     district = slots.get("district")
-    pack = evidence_mod.build(idea, scan, novelty, str(district) if district else None)
+    pack = evidence_mod.build(idea, scan, novelty, str(district) if district else None, slots)
     judge = providers.judge()
     if use_model is None:
         use_model = judge is not None
