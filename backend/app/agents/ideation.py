@@ -53,7 +53,7 @@ from app.elicitation.slots import BY_KEY, EntryMode
 from app.models.enums import EntryMode as Door
 from app.models.enums import RegSubtype
 from app.planner import opportunities
-from app.research import novelty
+from app.research import levers, novelty
 from app.voice.phrasebook import translation
 
 log = get_logger("ideation_agent")
@@ -634,7 +634,7 @@ def _research_work(s: AgentSession, args: dict | None = None):
     args = args or {}
     idea = args.get("idea") or _idea_text(s)
     elements, queries = args.get("elements"), args.get("queries")
-    private, who = s.private, _slot_text(s, "beneficiary")
+    private, who, said = s.private, _slot_text(s, "beneficiary"), dict(s.elicitation.kept())
 
     async def work() -> dict:
         from app.research.scan import scan
@@ -647,7 +647,13 @@ def _research_work(s: AgentSession, args: dict | None = None):
             else:
                 found = await scan(idea, client=c, private=private)
             nov = await novelty.check(
-                idea, elements=elements, scan=found, beneficiary=who, client=c, private=private
+                idea,
+                elements=elements,
+                scan=found,
+                beneficiary=who,
+                slots=said,
+                client=c,
+                private=private,
             )
         return {"scan": found, "novelty": nov}
 
@@ -833,6 +839,17 @@ def _slot_text(s: AgentSession, key: str) -> str | None:
     return _plain(v.value) if v else None
 
 
+def _domain_id(s: AgentSession) -> str | None:
+    """The session's one registry domain (R044): the card the scan matched, which the
+    levers, the panel and the roadmap all use."""
+    return (s.scan or {}).get("matched_domain")
+
+
+def _kept(s: AgentSession, key: str) -> Any:
+    """A slot's plain value, only when the restatement keeps it (not disputed or unknown)."""
+    return s.elicitation.kept().get(key)
+
+
 def _next_novelty_point(s: AgentSession) -> str | None:
     """One novelty point per turn: the statement first, then each way to stand out."""
     if not s.novelty:
@@ -853,6 +870,8 @@ def _next_novelty_point(s: AgentSession) -> str | None:
         if f"lever:{i}" not in s.narrated:
             s.narrated.append(f"lever:{i}")
             first = "One way to stand out" if i == 0 else "Another way to stand out"
+            # Worded now, from the founder's current sector: no new search (R190).
+            lever = levers.render(lever, domain_id=_domain_id(s), sector=_kept(s, "sector"))
             text = lever["text"].rstrip(".")
             return f"{first}: {text[:1].lower()}{text[1:]}, because {lever['because']}."
     return None
@@ -964,7 +983,7 @@ async def _offline_stream(
         if s.roadmap is None:
             if s.council is None and await _convene(s) is not None:
                 out["tools"].append("ask_council")
-            state: dict = {"council": s.council}
+            state: dict = {"council": s.council, "last_scan": s.scan}
             await run_tool("build_roadmap", {"idea": idea}, s.elicitation, state)
             s.roadmap = state["roadmap"]
             out["tools"].append("build_roadmap")
