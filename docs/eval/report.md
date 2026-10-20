@@ -1,22 +1,22 @@
 # Quality test set report
 
-Generated 2026-10-20 04:13 UTC by `scripts/eval_report.py`.
+Generated 2026-10-20 04:36 UTC by `scripts/eval_report.py`.
 Offline conversations: no model, no Redis, research replayed from recordings.
 
-**10 of 10 ideas pass; 236 of 236 checks hold.**
+**10 of 10 ideas pass; 247 of 247 checks hold.**
 
 | Idea | Result | Checks | Questions asked | Research recorded |
 |---|---|---|---|---|
 | `bci_medication` | pass | 23/23 | 7 | 2026-10-20 |
-| `banana_trichy` | pass | 28/28 | 7 | 2026-10-20 |
-| `tea_madurai` | pass | 23/23 | 7 | 2026-10-20 |
-| `jasmine_export` | pass | 24/24 | 7 | 2026-10-20 |
-| `coconut_vco` | pass | 23/23 | 7 | 2026-10-20 |
-| `knitwear_tiruppur` | pass | 25/25 | 7 | 2026-10-20 |
-| `pump_controller` | pass | 23/23 | 7 | 2026-10-20 |
-| `yarn_marketplace` | pass | 25/25 | 7 | 2026-10-20 |
-| `medical_emi` | pass | 21/21 | 7 | 2026-10-20 |
-| `inverter_repair` | pass | 21/21 | 7 | 2026-10-20 |
+| `banana_trichy` | pass | 29/29 | 7 | 2026-10-20 |
+| `tea_madurai` | pass | 25/25 | 7 | 2026-10-20 |
+| `jasmine_export` | pass | 25/25 | 7 | 2026-10-20 |
+| `coconut_vco` | pass | 24/24 | 7 | 2026-10-20 |
+| `knitwear_tiruppur` | pass | 26/26 | 7 | 2026-10-20 |
+| `pump_controller` | pass | 24/24 | 7 | 2026-10-20 |
+| `yarn_marketplace` | pass | 26/26 | 7 | 2026-10-20 |
+| `medical_emi` | pass | 23/23 | 7 | 2026-10-20 |
+| `inverter_repair` | pass | 22/22 | 7 | 2026-10-20 |
 
 ## Failed checks
 
@@ -71,11 +71,11 @@ Idea: developing a project for communication with physically challenged patients
 
 **Founder:** 5 lakh
 
-**Vanigam:** One way to stand out: make it fit Tamil Nadu, with the Tamil language, local hospital or market routines, and a local price, because 52 of 1,125 papers are from India, and none of the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai does it. How do you expect to fund it — your own money, a loan, a grant, investors?
+**Vanigam:** One way to stand out: make it fit Tamil Nadu, with the Tamil language, local hospital and clinic routines, and a local price, because 52 of 1,125 papers are from India, and none of the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai does it. How do you expect to fund it — your own money, a loan, a grant, investors?
 
 **Founder:** grant
 
-**Vanigam:** Another way to stand out: check whether a first version can avoid medical-device claims, for example as a communication aid, and add clinical claims after a validation study, because the idea sits in medicine, with 24 clinical trials found. Is this software, a physical product, a service, or a mix?
+**Vanigam:** Another way to stand out: check whether a first version can be sold without medical-device claims, and add clinical claims after a validation study, because the idea sits in medicine, with 24 clinical trials found. Is this software, a physical product, a service, or a mix?
 
 **Founder:** hybrid
 
@@ -122,6 +122,7 @@ Idea: I want to start a banana chips and banana flour unit in Tiruchirappalli us
 | never says 'Which sensors and hardware' | yes |  |
 | never says 'What is measured' | yes |  |
 | never says 'and so are their combinations' | yes |  |
+| never says 'local hospital' | yes |  |
 | proper nouns keep their capitals | yes |  |
 | counts agree with nouns | yes |  |
 | numbers are readable | yes |  |
@@ -147,7 +148,7 @@ Idea: I want to start a banana chips and banana flour unit in Tiruchirappalli us
 
 **Founder:** debt
 
-**Vanigam:** One way to stand out: compete on cost, using the costing for this domain to see where to cut, because a Vanigam cost pack exists for this domain. Who pays for it, or benefits from it?
+**Vanigam:** One way to stand out: compete on cost, using Vanigam's costing for banana value-added products to see where to cut, because a Vanigam cost pack exists for this domain. Who pays for it, or benefits from it?
 
 **Founder:** banana farmers
 
@@ -193,6 +194,8 @@ Idea: I want to sell mint hibiscus and lemon tea infusions as a brand from Madur
 | never says 'medical-device' | yes |  |
 | never says 'which patients' | yes |  |
 | never says 'What is measured' | yes |  |
+| never says 'local hospital' | yes |  |
+| never says 'a rental' | yes |  |
 | proper nouns keep their capitals | yes |  |
 | counts agree with nouns | yes |  |
 | numbers are readable | yes |  |
@@ -218,11 +221,11 @@ Idea: I want to sell mint hibiscus and lemon tea infusions as a brand from Madur
 
 **Founder:** idea
 
-**Vanigam:** One way to stand out: compete on cost, using the costing for this domain to see where to cut, because a Vanigam cost pack exists for this domain. Roughly how much can you put in to start?
+**Vanigam:** One way to stand out: compete on cost, using Vanigam's costing for flavoured tea and herbal infusions to see where to cut, because a Vanigam cost pack exists for this domain. Roughly how much can you put in to start?
 
 **Founder:** 5 lakh
 
-**Vanigam:** Another way to stand out: compete on how it is delivered, as a service, a rental, or a scheme-backed rollout rather than a product sale, because every part and combination is crowded. How do you expect to fund it — your own money, a loan, a grant, investors?
+**Vanigam:** Another way to stand out: compete on how it is delivered, through subscriptions, gift and bulk orders, or supplying cafés and hotels, rather than shelf sales alone, because every part and combination is crowded. How do you expect to fund it — your own money, a loan, a grant, investors?
 
 **Founder:** self
 
@@ -265,6 +268,7 @@ Idea: I want to export fresh Madurai malli jasmine flowers to Singapore and the 
 | never says 'medical-device' | yes |  |
 | never says 'which patients' | yes |  |
 | never says 'and so are their combinations' | yes |  |
+| never says 'local hospital' | yes |  |
 | proper nouns keep their capitals | yes |  |
 | counts agree with nouns | yes |  |
 | numbers are readable | yes |  |
@@ -290,7 +294,7 @@ Idea: I want to export fresh Madurai malli jasmine flowers to Singapore and the 
 
 **Founder:** idea
 
-**Vanigam:** One way to stand out: compete on cost, using the costing for this domain to see where to cut, because a Vanigam cost pack exists for this domain. Roughly how much can you put in to start?
+**Vanigam:** One way to stand out: compete on cost, using Vanigam's costing for jasmine and flower post-harvest to see where to cut, because a Vanigam cost pack exists for this domain. Roughly how much can you put in to start?
 
 **Founder:** 25 lakh
 
@@ -336,6 +340,7 @@ Idea: virgin coconut oil and desiccated coconut unit in Pollachi buying nuts dir
 | never says 'medical-device' | yes |  |
 | never says 'which patients' | yes |  |
 | never says 'and so are their combinations' | yes |  |
+| never says 'local hospital' | yes |  |
 | proper nouns keep their capitals | yes |  |
 | counts agree with nouns | yes |  |
 | numbers are readable | yes |  |
@@ -361,7 +366,7 @@ Idea: virgin coconut oil and desiccated coconut unit in Pollachi buying nuts dir
 
 **Founder:** 30 lakh
 
-**Vanigam:** One way to stand out: compete on cost, using the costing for this domain to see where to cut, because a Vanigam cost pack exists for this domain. How do you expect to fund it — your own money, a loan, a grant, investors?
+**Vanigam:** One way to stand out: compete on cost, using Vanigam's costing for coconut value chain products to see where to cut, because a Vanigam cost pack exists for this domain. How do you expect to fund it — your own money, a loan, a grant, investors?
 
 **Founder:** debt
 
@@ -409,6 +414,7 @@ Idea: I want to start a printed t-shirt brand made through job work units in Tir
 | never says 'which patients' | yes |  |
 | never says 'What is measured' | yes |  |
 | never says 'and so are their combinations' | yes |  |
+| never says 'local hospital' | yes |  |
 | proper nouns keep their capitals | yes |  |
 | counts agree with nouns | yes |  |
 | numbers are readable | yes |  |
@@ -434,11 +440,11 @@ Idea: I want to start a printed t-shirt brand made through job work units in Tir
 
 **Founder:** 10 lakh
 
-**Vanigam:** One way to stand out: make it fit Tamil Nadu, with the Tamil language, local hospital or market routines, and a local price, because 25 of 2,335 papers are from India, and none of the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai does it. How do you expect to fund it — your own money, a loan, a grant, investors?
+**Vanigam:** One way to stand out: make it fit Tamil Nadu, with the Tamil language, the way local mills, job-work units and buyers work, and a local price, because 25 of 2,335 papers are from India, and none of the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai does it. How do you expect to fund it — your own money, a loan, a grant, investors?
 
 **Founder:** self
 
-**Vanigam:** Another way to stand out: compete on cost, using the costing for this domain to see where to cut, because a Vanigam cost pack exists for this domain. Who pays for it, or benefits from it?
+**Vanigam:** Another way to stand out: compete on cost, using Vanigam's costing for small-batch knitwear manufacturing to see where to cut, because a Vanigam cost pack exists for this domain. Who pays for it, or benefits from it?
 
 **Founder:** skip
 
@@ -480,6 +486,7 @@ Idea: a dry-run protection starter for farm pump motors made in Coimbatore with 
 | never says 'dry-run: no papers' | yes |  |
 | never says 'dry run: no papers' | yes |  |
 | never says 'and so are their combinations' | yes |  |
+| never says 'local hospital' | yes |  |
 | proper nouns keep their capitals | yes |  |
 | counts agree with nouns | yes |  |
 | numbers are readable | yes |  |
@@ -505,7 +512,7 @@ Idea: a dry-run protection starter for farm pump motors made in Coimbatore with 
 
 **Founder:** 15 lakh
 
-**Vanigam:** One way to stand out: compete on cost, using the costing for this domain to see where to cut, because a Vanigam cost pack exists for this domain. How do you expect to fund it — your own money, a loan, a grant, investors?
+**Vanigam:** One way to stand out: compete on cost, using Vanigam's costing for smart pump and motor controllers to see where to cut, because a Vanigam cost pack exists for this domain. How do you expect to fund it — your own money, a loan, a grant, investors?
 
 **Founder:** grant
 
@@ -553,6 +560,7 @@ Idea: a yarn price marketplace app where small knitting units in Tiruppur buy fr
 | never says 'Yubi' | yes |  |
 | never says 'What is measured' | yes |  |
 | never says 'and so are their combinations' | yes |  |
+| never says 'local hospital' | yes |  |
 | proper nouns keep their capitals | yes |  |
 | counts agree with nouns | yes |  |
 | numbers are readable | yes |  |
@@ -574,11 +582,11 @@ Idea: a yarn price marketplace app where small knitting units in Tiruppur buy fr
 
 **Founder:** skip
 
-**Vanigam:** Looking at it from seven angles, the picture is mixed. On what makes it different, it looks good: there is a gap in what exists. Work on this is active worldwide (3,456 papers), but only 108 come from Indian institutions, and none of the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai does it. The weakest point is who needs it and pays for it: the closest Vanigam domain names its usual buyers. One option the panel suggests: make it fit Tamil Nadu, with the Tamil language, local hospital or market routines, and a local price. Roughly how much can you put in to start?
+**Vanigam:** Looking at it from seven angles, the picture is mixed. On what makes it different, it looks good: there is a gap in what exists. Work on this is active worldwide (3,456 papers), but only 108 come from Indian institutions, and none of the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai does it. The weakest point is who needs it and pays for it: the closest Vanigam domain names its usual buyers. One option the panel suggests: make it fit Tamil Nadu, with the Tamil language, the way local mills, job-work units and buyers work, and a local price. Roughly how much can you put in to start?
 
 **Founder:** 10 lakh
 
-**Vanigam:** One way to stand out: make it fit Tamil Nadu, with the Tamil language, local hospital or market routines, and a local price, because 108 of 3,456 papers are from India, and none of the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai does it. What will you actually make or do to solve it?
+**Vanigam:** One way to stand out: make it fit Tamil Nadu, with the Tamil language, the way local mills, job-work units and buyers work, and a local price, because 108 of 3,456 papers are from India, and none of the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai does it. What will you actually make or do to solve it?
 
 **Founder:** skip
 
@@ -622,6 +630,8 @@ Idea: instalment plans for medical treatment offered at hospital billing desks i
 | mentions 'can't judge novelty yet' | yes |  |
 | never says 'Agarwal' | yes |  |
 | never says 'Wabag' | yes |  |
+| never says 'local hospital' | yes |  |
+| never says 'communication aid' | yes |  |
 | proper nouns keep their capitals | yes |  |
 | counts agree with nouns | yes |  |
 | numbers are readable | yes |  |
@@ -643,7 +653,7 @@ Idea: instalment plans for medical treatment offered at hospital billing desks i
 
 **Founder:** skip
 
-**Vanigam:** Looking at it from seven angles, there are serious concerns to work through. The weakest point is the approvals it needs: this sits in medicine, where similar products went through clinical trials; expect a medical-device classification check and a validation study before sale. One option the panel suggests: start as a communication aid without medical claims, then validate. Roughly how much can you put in to start?
+**Vanigam:** Looking at it from seven angles, the picture is mixed. The weakest point is who needs it and pays for it: the closest Vanigam domain names its usual buyers. Roughly how much can you put in to start?
 
 **Founder:** 50 lakh
 
@@ -691,6 +701,7 @@ Idea: board-level repair of solar inverters out of warranty for farm and rooftop
 | never says 'medical-device' | yes |  |
 | never says 'which patients' | yes |  |
 | never says 'and so are their combinations' | yes |  |
+| never says 'local hospital' | yes |  |
 | proper nouns keep their capitals | yes |  |
 | counts agree with nouns | yes |  |
 | numbers are readable | yes |  |
