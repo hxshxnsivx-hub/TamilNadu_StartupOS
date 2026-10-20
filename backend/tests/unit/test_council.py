@@ -21,7 +21,12 @@ SCAN = {
     "trials": {"total": 23, "items": [{"id": "NCT01234567", "title": "BCI speech"}]},
     "projects": {"total": 702, "items": [{"name": "lab/eeg-bci", "stars": 169}]},
     "patents": {"total": 0, "items": []},
-    "local": {"startups": [], "registry_domains": []},
+    "local": {
+        "status": "ok",
+        "scope": "the 654 startups on the Tamil Nadu Startup Map in Chennai and Madurai",
+        "startups": [],
+        "registry_domains": [],
+    },
     "coverage": [{"source": "patents", "status": "no_key", "note": "add key"}],
 }
 NOVELTY = {
@@ -77,6 +82,12 @@ def test_devil_cannot_support():
 def test_weights_follow_the_idea_type_and_the_founder():
     assert idea_type(["health_bio"], {}) == "health_device"
     assert idea_type([], {"product_form": "software"}) == "software"
+    # R035: the founder's sector and form come before categories read off papers
+    assert idea_type(["health_bio", "agriculture"], {"sector": "food"}) == "food"
+    assert idea_type(["saas"], {"sector": "textile", "product_form": "physical"}) == "hardware"
+    assert idea_type(["saas"], {"product_form": "physical"}) == "hardware"
+    assert idea_type(["agriculture"], {"sector": "other"}) == "agri"  # 'other' says nothing
+    assert idea_type(["saas"], {"sector": "education"}) == "software"  # not a goods sector
     w, why = weights_for("hardware", {"capital_band": "under_2L", "founder_skills": ["sales"]})
     assert round(sum(w.values())) == 100 and len(why) == 2
     w2, _ = weights_for("hardware", {"founder_skills": ["electronics engineer"]})
