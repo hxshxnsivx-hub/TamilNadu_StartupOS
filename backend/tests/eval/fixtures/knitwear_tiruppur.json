@@ -1,7 +1,7 @@
 {
  "id": "knitwear_tiruppur",
  "idea": "I want to start a printed t-shirt brand made through job work units in Tiruppur and sell online",
- "recorded": "2026-10-10",
+ "recorded": "2026-10-20",
  "coverage": [
   {
    "source": "papers",
@@ -18,49 +18,57 @@
   {
    "source": "trials",
    "status": "skipped"
+  },
+  {
+   "source": "local startups",
+   "status": "ok"
   }
  ],
  "scan": {
   "idea": "I want to start a printed t-shirt brand made through job work units in Tiruppur and sell online",
   "queries": {
-   "papers": "knitted apparel printed work",
+   "papers": "knitted apparel printed",
    "trials": "knitted apparel",
    "projects": "knitted apparel",
-   "patents": "knitted apparel printed work",
-   "local": "printed work units online knitted apparel"
+   "patents": "knitted apparel printed",
+   "local": "printed knitted apparel"
   },
   "associated_domains": {
    "basis": "papers",
    "domains": [
     {
-     "name": "Social Sciences",
-     "share_pct": 61
+     "name": "Physical Sciences",
+     "share_pct": 50
     },
     {
-     "name": "Physical Sciences",
-     "share_pct": 38
+     "name": "Social Sciences",
+     "share_pct": 49
     },
     {
      "name": "Life Sciences",
      "share_pct": 1
+    },
+    {
+     "name": "Health Sciences",
+     "share_pct": 0
     }
    ],
    "fields": [
     {
-     "name": "Arts and Humanities",
-     "share_pct": 29
+     "name": "Materials Science",
+     "share_pct": 25
     },
     {
      "name": "Engineering",
-     "share_pct": 17
-    },
-    {
-     "name": "Materials Science",
-     "share_pct": 16
+     "share_pct": 20
     },
     {
      "name": "Business, Management and Accounting",
-     "share_pct": 15
+     "share_pct": 18
+    },
+    {
+     "name": "Arts and Humanities",
+     "share_pct": 17
     },
     {
      "name": "Social Sciences",
@@ -68,67 +76,63 @@
     },
     {
      "name": "Environmental Science",
-     "share_pct": 4
-    },
-    {
-     "name": "Decision Sciences",
-     "share_pct": 4
+     "share_pct": 3
     },
     {
      "name": "Computer Science",
+     "share_pct": 3
+    },
+    {
+     "name": "Agricultural and Biological Sciences",
      "share_pct": 1
     }
    ],
    "subfields": [
     {
      "name": "Polymers and Plastics",
-     "share_pct": 16
-    },
-    {
-     "name": "Museology",
-     "share_pct": 15
-    },
-    {
-     "name": "Visual Arts and Performing Arts",
-     "share_pct": 14
+     "share_pct": 25
     },
     {
      "name": "Development",
      "share_pct": 13
     },
     {
+     "name": "Visual Arts and Performing Arts",
+     "share_pct": 11
+    },
+    {
+     "name": "Marketing",
+     "share_pct": 10
+    },
+    {
      "name": "Mechanical Engineering",
      "share_pct": 8
     },
     {
-     "name": "Marketing",
-     "share_pct": 8
+     "name": "Museology",
+     "share_pct": 7
     },
     {
      "name": "Strategy and Management",
      "share_pct": 5
     },
     {
-     "name": "Statistics, Probability and Uncertainty",
-     "share_pct": 4
+     "name": "Building and Construction",
+     "share_pct": 5
     }
    ],
    "topics": [
     {
      "name": "Textile materials and evaluations",
-     "share_pct": 16
-    },
-    {
-     "name": "Cultural and Historical Studies",
-     "share_pct": 14
+     "share_pct": 25
     },
     {
      "name": "Software Engineering and Design Patterns",
      "share_pct": 13
     },
     {
-     "name": "Fashion and Cultural Textiles",
-     "share_pct": 12
+     "name": "Cultural and Historical Studies",
+     "share_pct": 11
     },
     {
      "name": "Environmental Sustainability in Business",
@@ -139,119 +143,170 @@
      "share_pct": 5
     },
     {
+     "name": "Dyeing and Modifying Textile Fibers",
+     "share_pct": 5
+    },
+    {
      "name": "Advanced Materials and Mechanics",
      "share_pct": 4
     },
     {
-     "name": "Advanced Statistical Process Monitoring",
+     "name": "Design Education and Practice",
      "share_pct": 4
     }
    ]
   },
   "vanigam_categories": [
+   "agriculture",
    "ai_ml",
    "climate",
    "electrical",
-   "saas"
+   "saas",
+   "textile"
   ],
+  "matched_domain": "knitwear_small_batch",
   "papers": {
-   "total": 3856,
+   "total": 4466,
+   "closest": {
+    "title": "Environmental Sustainability Evaluation of Apparel Product: A Case Study on Knitted T-Shirt",
+    "year": 2014,
+    "cited_by": 34,
+    "venue": "Journal of Textiles",
+    "url": "https://doi.org/10.1155/2014/643080",
+    "topics": [
+     {
+      "topic": "Environmental Sustainability in Business",
+      "subfield": "Marketing",
+      "field": "Business, Management and Accounting",
+      "domain": "Social Sciences",
+      "score": 0.5669000148773193
+     },
+     {
+      "topic": "Environmental Impact and Sustainability",
+      "subfield": "Environmental Engineering",
+      "field": "Environmental Science",
+      "domain": "Physical Sciences",
+      "score": 0.1492999941110611
+     },
+     {
+      "topic": "Sustainable Supply Chain Management",
+      "subfield": "Strategy and Management",
+      "field": "Business, Management and Accounting",
+      "domain": "Social Sciences",
+      "score": 0.09359999746084213
+     }
+    ]
+   },
    "by_year": {
-    "2023": 251,
-    "2025": 227,
-    "2024": 211,
-    "2026": 191,
-    "2019": 189,
-    "2022": 179,
-    "2021": 174,
-    "2017": 167,
-    "2016": 163,
-    "2020": 161,
-    "2018": 138,
-    "2014": 137,
-    "2015": 130,
-    "2013": 120,
-    "2012": 115,
-    "2011": 109,
-    "2010": 83,
-    "2009": 77,
-    "2008": 63,
-    "2007": 54,
-    "2003": 49,
-    "2004": 41,
-    "2006": 41,
-    "2005": 36,
-    "2002": 32,
-    "1949": 25,
+    "2023": 300,
+    "2025": 282,
+    "2024": 259,
+    "2026": 239,
+    "2022": 213,
+    "2019": 212,
+    "2021": 207,
+    "2020": 194,
+    "2017": 187,
+    "2016": 176,
+    "2018": 162,
+    "2014": 148,
+    "2015": 148,
+    "2013": 133,
+    "2011": 121,
+    "2012": 119,
+    "2010": 87,
+    "2009": 82,
+    "2008": 67,
+    "2007": 58,
+    "2003": 53,
+    "2006": 47,
+    "2004": 43,
+    "2002": 38,
+    "2005": 38,
+    "1949": 29,
+    "2001": 24,
+    "1980": 23,
     "1995": 23,
-    "2001": 22,
-    "1980": 21,
+    "1979": 20,
     "1973": 19,
-    "1979": 17,
+    "1978": 18,
+    "2000": 18,
     "1990": 17,
-    "2000": 17,
+    "1946": 16,
+    "1947": 16,
     "1994": 16,
-    "1978": 15,
+    "1950": 15,
+    "1951": 15,
     "1998": 15,
-    "1947": 14,
+    "1981": 14,
+    "1987": 14,
     "1996": 14,
-    "1950": 12,
-    "1975": 12,
-    "1999": 12,
+    "1948": 13,
+    "1975": 13,
+    "1999": 13,
+    "1997": 12,
     "1962": 11,
+    "1988": 11,
     "1993": 11,
-    "1997": 11,
-    "1948": 10,
-    "1951": 10,
-    "1981": 10,
+    "1970": 10,
+    "1974": 10,
     "1986": 10,
-    "1987": 10,
     "1989": 10,
-    "1946": 9,
-    "1974": 9,
-    "1988": 9,
-    "1982": 8,
-    "1992": 8,
+    "1992": 10,
+    "1982": 9,
+    "1923": 8,
+    "1964": 8,
+    "1971": 8,
+    "1977": 8,
+    "1933": 7,
+    "1938": 7,
+    "1939": 7,
     "1961": 7,
-    "1964": 7,
+    "1966": 7,
     "1967": 7,
-    "1970": 7,
-    "1971": 7,
     "1972": 7,
-    "1977": 7,
+    "1991": 7,
     "1904": 6,
-    "1923": 6,
-    "1966": 6,
+    "1927": 6,
+    "1930": 6,
+    "1932": 6,
+    "1936": 6,
+    "1940": 6,
+    "1944": 6,
+    "1954": 6,
     "1969": 6,
     "1976": 6,
     "1984": 6,
-    "1991": 6,
     "1917": 5,
+    "1918": 5,
+    "1919": 5,
     "1922": 5,
     "1924": 5,
+    "1945": 5,
+    "1953": 5,
     "1955": 5,
+    "1957": 5,
     "1960": 5,
+    "1965": 5,
+    "1985": 5,
     "1906": 4,
+    "1908": 4,
     "1916": 4,
-    "1919": 4,
-    "1939": 4,
+    "1925": 4,
+    "1926": 4,
+    "1928": 4,
+    "1929": 4,
+    "1931": 4,
     "1952": 4,
-    "1953": 4,
-    "1954": 4,
     "1959": 4,
     "1968": 4,
-    "1985": 4,
     "1875": 3,
     "1905": 3,
-    "1908": 3,
     "1909": 3,
-    "1918": 3,
     "1920": 3,
-    "1925": 3,
-    "1932": 3,
-    "1938": 3,
     "1956": 3,
-    "1965": 3,
+    "1958": 3,
+    "1963": 3,
     "1824": 2,
     "1856": 2,
     "1881": 2,
@@ -262,19 +317,11 @@
     "1900": 2,
     "1911": 2,
     "1921": 2,
-    "1926": 2,
-    "1927": 2,
-    "1928": 2,
-    "1929": 2,
-    "1930": 2,
-    "1940": 2,
+    "1934": 2,
     "1941": 2,
     "1942": 2,
-    "1944": 2,
-    "1945": 2,
-    "1957": 2,
-    "1958": 2,
-    "1963": 2,
+    "1943": 2,
+    "1983": 2,
     "1833": 1,
     "1838": 1,
     "1840": 1,
@@ -305,43 +352,10 @@
     "1913": 1,
     "1914": 1,
     "1915": 1,
-    "1931": 1,
-    "1933": 1,
-    "1936": 1,
-    "1943": 1,
-    "1983": 1
+    "1935": 1,
+    "1937": 1
    },
    "most_relevant": [
-    {
-     "title": "Materials and manufacturing environmental sustainability evaluation of apparel product: knitted T-shirt case study",
-     "year": 2015,
-     "cited_by": 74,
-     "venue": "Textiles and Clothing Sustainability",
-     "url": "https://doi.org/10.1186/s40689-015-0008-8",
-     "topics": [
-      {
-       "topic": "Environmental Sustainability in Business",
-       "subfield": "Marketing",
-       "field": "Business, Management and Accounting",
-       "domain": "Social Sciences",
-       "score": 0.5830000042915344
-      },
-      {
-       "topic": "Sustainable Supply Chain Management",
-       "subfield": "Strategy and Management",
-       "field": "Business, Management and Accounting",
-       "domain": "Social Sciences",
-       "score": 0.09009999781847
-      },
-      {
-       "topic": "Environmental Impact and Sustainability",
-       "subfield": "Environmental Engineering",
-       "field": "Environmental Science",
-       "domain": "Physical Sciences",
-       "score": 0.08749999850988388
-      }
-     ]
-    },
     {
      "title": "Environmental Sustainability Evaluation of Apparel Product: A Case Study on Knitted T-Shirt",
      "year": 2014,
@@ -373,6 +387,36 @@
      ]
     },
     {
+     "title": "Materials and manufacturing environmental sustainability evaluation of apparel product: knitted T-shirt case study",
+     "year": 2015,
+     "cited_by": 75,
+     "venue": "Textiles and Clothing Sustainability",
+     "url": "https://doi.org/10.1186/s40689-015-0008-8",
+     "topics": [
+      {
+       "topic": "Environmental Sustainability in Business",
+       "subfield": "Marketing",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.5830000042915344
+      },
+      {
+       "topic": "Sustainable Supply Chain Management",
+       "subfield": "Strategy and Management",
+       "field": "Business, Management and Accounting",
+       "domain": "Social Sciences",
+       "score": 0.09009999781847
+      },
+      {
+       "topic": "Environmental Impact and Sustainability",
+       "subfield": "Environmental Engineering",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 0.08749999850988388
+      }
+     ]
+    },
+    {
      "title": "\"Body measurements for the sizing of boys' apparel (knit underwear, shirts, and trousers)\"",
      "year": 1950,
      "cited_by": 0,
@@ -399,6 +443,36 @@
        "field": "Social Sciences",
        "domain": "Social Sciences",
        "score": 0.004900000058114529
+      }
+     ]
+    },
+    {
+     "title": "An Effectual Study on Process and Production Dissipate in the Knit Apparel Industry of Bangladesh",
+     "year": 2015,
+     "cited_by": 0,
+     "venue": "Journals & Books Hosting (International Knowledge Sharing Platform)",
+     "url": "https://openalex.org/W2207004891",
+     "topics": [
+      {
+       "topic": "Municipal Solid Waste Management",
+       "subfield": "Waste Management and Disposal",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 0.3813000023365021
+      },
+      {
+       "topic": "Software Engineering and Design Patterns",
+       "subfield": "Development",
+       "field": "Social Sciences",
+       "domain": "Social Sciences",
+       "score": 0.2476000040769577
+      },
+      {
+       "topic": "Waste Management and Recycling",
+       "subfield": "Waste Management and Disposal",
+       "field": "Environmental Science",
+       "domain": "Physical Sciences",
+       "score": 0.09000000357627869
       }
      ]
     },
@@ -463,92 +537,62 @@
      ]
     },
     {
-     "title": "An Integrated Printed Textile Design and Apparel Product Development Process",
-     "year": 2004,
-     "cited_by": 0,
-     "venue": "NCSU Libraries Repository (North Carolina State University Libraries)",
-     "url": "https://openalex.org/W2522016464",
+     "title": "Digital interlooping: 3D printing of weft-knitted textile-based tubular structures using selective laser sintering of nylon powder",
+     "year": 2019,
+     "cited_by": 58,
+     "venue": "International Journal of Fashion Design Technology and Education",
+     "url": "https://doi.org/10.1080/17543266.2019.1573269",
      "topics": [
       {
-       "topic": "Product Development and Customization",
-       "subfield": "Management of Technology and Innovation",
-       "field": "Business, Management and Accounting",
-       "domain": "Social Sciences",
-       "score": 0.4950999915599823
-      },
-      {
-       "topic": "Cultural and Historical Studies",
-       "subfield": "Visual Arts and Performing Arts",
-       "field": "Arts and Humanities",
-       "domain": "Social Sciences",
-       "score": 0.3522999882698059
-      },
-      {
-       "topic": "Fashion and Cultural Textiles",
-       "subfield": "Museology",
-       "field": "Arts and Humanities",
-       "domain": "Social Sciences",
-       "score": 0.06599999964237213
-      }
-     ]
-    },
-    {
-     "title": "Effect of Applying Circular Economy Concept on The Printed Apparel Industry",
-     "year": 2023,
-     "cited_by": 1,
-     "venue": "Journal of Design Sciences and Applied Arts/Journal of Design Sciences and Applied Arts ",
-     "url": "https://doi.org/10.21608/jdsaa.2023.185934.1245",
-     "topics": [
-      {
-       "topic": "Sustainable Supply Chain Management",
-       "subfield": "Strategy and Management",
-       "field": "Business, Management and Accounting",
-       "domain": "Social Sciences",
-       "score": 0.9297000169754028
-      },
-      {
-       "topic": "Environmental Sustainability in Business",
-       "subfield": "Marketing",
-       "field": "Business, Management and Accounting",
-       "domain": "Social Sciences",
-       "score": 0.021900000050663948
-      },
-      {
-       "topic": "Cultural and Historical Studies",
-       "subfield": "Visual Arts and Performing Arts",
-       "field": "Arts and Humanities",
-       "domain": "Social Sciences",
-       "score": 0.017899999395012856
-      }
-     ]
-    },
-    {
-     "title": "Designing Coordinated Separates: Use of Inspirational Sources in Apparel Classes",
-     "year": 2016,
-     "cited_by": 0,
-     "venue": null,
-     "url": "https://doi.org/10.31274/itaa_proceedings-180814-1528",
-     "topics": [
-      {
-       "topic": "Cultural and Historical Studies",
-       "subfield": "Visual Arts and Performing Arts",
-       "field": "Arts and Humanities",
-       "domain": "Social Sciences",
-       "score": 0.9624000191688538
-      },
-      {
-       "topic": "Fashion and Cultural Textiles",
-       "subfield": "Museology",
-       "field": "Arts and Humanities",
-       "domain": "Social Sciences",
-       "score": 0.03020000085234642
-      },
-      {
-       "topic": "Design Education and Practice",
-       "subfield": "Mechanical Engineering",
+       "topic": "Additive Manufacturing and 3D Printing Technologies",
+       "subfield": "Automotive Engineering",
        "field": "Engineering",
        "domain": "Physical Sciences",
-       "score": 0.004699999932199717
+       "score": 0.6161999702453613
+      },
+      {
+       "topic": "Cultural and Historical Studies",
+       "subfield": "Visual Arts and Performing Arts",
+       "field": "Arts and Humanities",
+       "domain": "Social Sciences",
+       "score": 0.2815000116825104
+      },
+      {
+       "topic": "Textile materials and evaluations",
+       "subfield": "Polymers and Plastics",
+       "field": "Materials Science",
+       "domain": "Physical Sciences",
+       "score": 0.029899999499320984
+      }
+     ]
+    },
+    {
+     "title": "Research into the effects of pigment printing parameters on sensorial comfort to guide garment designers in the apparel industry",
+     "year": 2023,
+     "cited_by": 5,
+     "venue": "Industria Textila",
+     "url": "https://doi.org/10.35530/it.074.03.2022131",
+     "topics": [
+      {
+       "topic": "Textile materials and evaluations",
+       "subfield": "Polymers and Plastics",
+       "field": "Materials Science",
+       "domain": "Physical Sciences",
+       "score": 0.95169997215271
+      },
+      {
+       "topic": "Dyeing and Modifying Textile Fibers",
+       "subfield": "Building and Construction",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 0.044199999421834946
+      },
+      {
+       "topic": "Crafts, Textile, and Design",
+       "subfield": "Museology",
+       "field": "Arts and Humanities",
+       "domain": "Social Sciences",
+       "score": 0.0010999999940395355
       }
      ]
     }
@@ -557,7 +601,7 @@
     {
      "title": "Wearable Electronics and Smart Textiles: A Critical Review",
      "year": 2014,
-     "cited_by": 2104,
+     "cited_by": 2101,
      "venue": "Sensors",
      "url": "https://doi.org/10.3390/s140711957",
      "topics": [
@@ -587,7 +631,7 @@
     {
      "title": "Geographic Concentration in U.S. Manufacturing Industries: A Dartboard Approach",
      "year": 1994,
-     "cited_by": 1428,
+     "cited_by": 1413,
      "venue": "National Bureau of Economic Research",
      "url": "https://doi.org/10.3386/w4840",
      "topics": [
@@ -617,7 +661,7 @@
     {
      "title": "Smart fabric sensors and e-textile technologies: a review",
      "year": 2014,
-     "cited_by": 795,
+     "cited_by": 796,
      "venue": "Smart Materials and Structures",
      "url": "https://doi.org/10.1088/0964-1726/23/5/053001",
      "topics": [
@@ -647,7 +691,7 @@
     {
      "title": "A review of stimuli-responsive polymers for smart textile applications",
      "year": 2012,
-     "cited_by": 638,
+     "cited_by": 639,
      "venue": "Smart Materials and Structures",
      "url": "https://doi.org/10.1088/0964-1726/21/5/053001",
      "topics": [
@@ -675,32 +719,32 @@
      ]
     },
     {
-     "title": "Product Market Synergies and Competition in Mergers and Acquisitions: A Text-Based Analysis",
-     "year": 2008,
-     "cited_by": 548,
-     "venue": "SSRN Electronic Journal",
-     "url": "https://doi.org/10.2139/ssrn.1181022",
+     "title": "Emerging flexible and wearable physical sensing platforms for healthcare and biomedical applications",
+     "year": 2016,
+     "cited_by": 545,
+     "venue": "Microsystems & Nanoengineering",
+     "url": "https://doi.org/10.1038/micronano.2016.43",
      "topics": [
       {
-       "topic": "Corporate Finance and Governance",
-       "subfield": "Accounting",
-       "field": "Business, Management and Accounting",
-       "domain": "Social Sciences",
-       "score": 0.9711999893188477
+       "topic": "Advanced Sensor and Energy Harvesting Materials",
+       "subfield": "Biomedical Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 1.0
       },
       {
-       "topic": "Merger and Competition Analysis",
-       "subfield": "Economics and Econometrics",
-       "field": "Economics, Econometrics and Finance",
-       "domain": "Social Sciences",
-       "score": 0.02419999986886978
+       "topic": "Non-Invasive Vital Sign Monitoring",
+       "subfield": "Biomedical Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 9.999999747378752e-05
       },
       {
-       "topic": "Financial Markets and Investment Strategies",
-       "subfield": "Finance",
-       "field": "Economics, Econometrics and Finance",
-       "domain": "Social Sciences",
-       "score": 0.0013000000035390258
+       "topic": "Nanomaterials and Printing Technologies",
+       "subfield": "Electrical and Electronic Engineering",
+       "field": "Engineering",
+       "domain": "Physical Sciences",
+       "score": 9.999999747378752e-05
       }
      ]
     }
@@ -749,7 +793,7 @@
      "name": "loveseweater/yzr-sweaters",
      "description": "YZR Sweaters — knitwear manufacturer & OEM/ODM supplier in Dongguan, China. Sweaters, cardigans, knitted dresses, polos and accessories from BSCI/SEDEX/Oeko-Tex certified factories.",
      "stars": 0,
-     "updated": "2026-10-10T03:24:19Z",
+     "updated": "2026-10-19T15:10:46Z",
      "license": null,
      "url": "https://github.com/loveseweater/yzr-sweaters"
     },
@@ -765,7 +809,7 @@
      "name": "api-evangelist/rothys",
      "description": "Rothys — independent third-party profile of a public API surface, by API Evangelist. Rothy's is a San Francisco-based direct-to-consumer footwear and accessories brand founded in 2012, known for washable shoes and bags 3D-knitted from recycled materials such as post-consumer plastic water bottles and marine plastics.",
      "stars": 0,
-     "updated": "2026-10-09T19:01:01Z",
+     "updated": "2026-10-16T20:33:25Z",
      "license": null,
      "url": "https://github.com/api-evangelist/rothys"
     },
@@ -773,7 +817,7 @@
      "name": "api-evangelist/bailey44",
      "description": "Bailey44 — independent third-party profile of a public API surface, by API Evangelist. Bailey 44 (stylized Bailey/44) is a contemporary womenswear brand selling direct-to-consumer through a Shopify storefront at bailey44.com. The label offers women's apparel — dresses, tops, knits, and separates — around a brand voice of optimism and self-expressio",
      "stars": 0,
-     "updated": "2026-10-04T17:20:27Z",
+     "updated": "2026-10-16T19:29:59Z",
      "license": null,
      "url": "https://github.com/api-evangelist/bailey44"
     },
@@ -789,32 +833,38 @@
   },
   "patents": {
    "total": 0,
-   "items": []
+   "items": [],
+   "india": null
   },
   "local": {
+   "status": "ok",
    "startups": [],
-   "registry_domains": []
+   "registry_domains": [
+    {
+     "id": "knitwear_small_batch",
+     "label": "Small-batch knitwear manufacturing"
+    }
+   ],
+   "searched": 654,
+   "districts": [
+    "Chennai",
+    "Coimbatore",
+    "Madurai"
+   ],
+   "scope": "the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai",
+   "sectors": [
+    "consumer",
+    "manufacturing",
+    "textiles"
+   ]
   },
   "elements": [],
   "discuss": [
    {
-    "field": "Engineering",
+    "field": "Small-batch knitwear manufacturing",
     "questions": [
-     "Which sensors and hardware, at what unit cost, and how durable in Indian conditions?",
-     "What certification does the hardware need before sale?"
-    ]
-   },
-   {
-    "field": "Environmental Science",
-    "questions": [
-     "What is measured, by whom, and who pays for the improvement?"
-    ]
-   },
-   {
-    "field": "Computer Science",
-    "questions": [
-     "What data trains the model, who owns it, and what accuracy is good enough to act on?",
-     "Does it run on the device or in the cloud, and what happens offline?"
+     "Which buyer comes first (D2C apparel brands and export buying houses), and what do they use today?",
+     "Which of these do you need before the first sale: TNPCB consent to establish and operate?"
     ]
    },
    {
@@ -830,7 +880,7 @@
    {
     "source": "papers",
     "status": "ok",
-    "found": 3856,
+    "found": 4466,
     "note": ""
    },
    {
@@ -843,13 +893,19 @@
     "source": "patents",
     "status": "no_key",
     "found": 0,
-    "note": "Patents not searched: add a free PatentsView key (PATENTSVIEW_API_KEY)"
+    "note": "Patents not searched: register free with the EPO (EPO_OPS_KEY and EPO_OPS_SECRET) for worldwide and Indian patents"
    },
    {
     "source": "trials",
     "status": "skipped",
     "found": 0,
     "note": "Not a health idea, so clinical trials were not searched"
+   },
+   {
+    "source": "local startups",
+    "status": "ok",
+    "found": 0,
+    "note": "Only the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai"
    }
   ],
   "caveat": "Counts come from the sources listed in coverage. 'Nothing found' means nothing in those sources, not that the idea is new; have a patent attorney search before filing."
@@ -859,7 +915,7 @@
    {
     "element": "t-shirt",
     "query": "\"knitted apparel\"",
-    "papers": 2330,
+    "papers": 2335,
     "label": "active"
    }
   ],
@@ -867,21 +923,31 @@
   "context": {
    "query": "\"knitted apparel\"",
    "searched": true,
-   "world_papers": 2330,
+   "world_papers": 2335,
    "india_papers": 25,
    "india_share_pct": 1.1,
    "tn_startups": 0,
+   "tn_scope": "the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai",
    "gap": true
+  },
+  "coverage": {
+   "pairs_expected": 0,
+   "pairs_counted": 0
   },
   "statement": {
    "type": "context",
-   "text": "Work on this is active worldwide (2,330 papers), but only 25 come from Indian institutions, and I found no Tamil Nadu startup doing it."
+   "text": "Work on this is active worldwide (2,335 papers), but only 25 come from Indian institutions, and none of the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai does it."
   },
   "levers": [
    {
     "kind": "localise",
     "text": "Make it fit Tamil Nadu, with the Tamil language, local hospital or market routines, and a local price.",
-    "because": "25 of 2,330 papers are from India, and no Tamil Nadu startup was found"
+    "because": "25 of 2,335 papers are from India, and none of the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai does it"
+   },
+   {
+    "kind": "cost-down",
+    "text": "Compete on cost, using the costing for this domain to see where to cut.",
+    "because": "a Vanigam cost pack exists for this domain"
    }
   ],
   "thresholds": {
