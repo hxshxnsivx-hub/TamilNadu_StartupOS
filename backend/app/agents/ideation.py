@@ -532,8 +532,16 @@ def _research_open(s: AgentSession) -> bool:
 
 
 def _idea_text(s: AgentSession) -> str:
+    """Problem and solution as one search text; one already inside the other (both read
+    from the same sentence) is said once, not twice (1.2.1.13)."""
     slots = s.elicitation.slots
     parts = [_plain(slots[k].value) for k in ("problem", "solution") if k in slots]
+    if len(parts) == 2:
+        a, b = (" ".join(p.lower().strip(" .").split()) for p in parts)
+        if b in a:
+            parts = parts[:1]
+        elif a in b:
+            parts = parts[1:]
     return " ".join(parts) or s.idea
 
 
@@ -832,7 +840,11 @@ def _next_novelty_point(s: AgentSession) -> str | None:
     if "statement" not in s.narrated:
         s.narrated.append("statement")
         st = s.novelty["statement"]
-        if st["type"] != "unclear":  # "I can't judge novelty yet" is not worth a turn
+        # An unclear statement is said too, with its reason (1.2.1.6); private mode was
+        # already said in the greeting.
+        if s.novelty.get("status") != "private":
+            if st["type"] == "unclear":
+                return st["text"]
             return st["text"] + " That is only what I found in the sources I searched."
     if s.council and (key := f"council:{s.council['at']}") not in s.narrated:
         s.narrated.append(key)
@@ -878,11 +890,12 @@ def _fallback_reply(scan: dict | None, question: str | None, lead: str | None = 
                 f" {g['name']}."
             )
         if c["papers"]["total"]:
-            p = c["papers"]["most_relevant"][0]
-            parts.append(
-                f"About {_count(c['papers']['total'], 'research paper')}, the closest being"
-                f" \"{p['title']}\" ({p['year']})."
-            )
+            line = f"About {_count(c['papers']['total'], 'research paper')}"
+            # A paper is named only when it is close to the idea (1.2.1.2).
+            if p := c["papers"].get("closest"):
+                parts.append(f"{line}, the closest being \"{p['title']}\" ({p['year']}).")
+            else:
+                parts.append(f"{line} came up, none of them close enough to name.")
         if c["patents"]["total"]:
             line = f"{_count(c['patents']['total'], 'related patent')} came up"
             india = c["patents"].get("india")
