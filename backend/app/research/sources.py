@@ -108,6 +108,9 @@ _SOURCE_BY_HOST = {
     "ops.epo.org": "epo",
 }
 MAX_PAUSE_S = 86400
+# Pseudo-status for a request that never got an answer. Each source maps any status but
+# 200 to an 'error' result, so one unreachable source no longer fails the whole scan.
+NETWORK_ERROR = 599
 _local_pause: dict[str, float] = {}  # source -> monotonic time the pause ends
 _local_count: dict[str, int] = {}  # "source:date" -> requests sent
 
@@ -172,7 +175,10 @@ async def _get_json(
         return 429, f"{source} asked us to wait; paused"
     if await _over_budget(source):
         return 429, f"daily request limit for {source} reached"
-    r = await client.get(url, **kw)
+    try:
+        r = await client.get(url, **kw)
+    except httpx.TransportError as e:  # timeout, refused, reset: this source only, not cached
+        return NETWORK_ERROR, f"{source} could not be reached ({type(e).__name__})"
     if r.status_code == 200:
         data = r.json()
         if cache:
@@ -181,6 +187,13 @@ async def _get_json(
     if r.status_code == 429:
         await _pause(source, r.headers.get("Retry-After"))
     return r.status_code, r.text[:300]
+
+
+def _why(name: str, status: int) -> str:
+    """The note for a failed request: what the source said, or that it was unreachable."""
+    if status == NETWORK_ERROR:
+        return f"{name} could not be reached this time"
+    return f"{name} returned {status}"
 
 
 def _work(w: dict) -> dict:
@@ -218,7 +231,7 @@ async def papers(client: httpx.AsyncClient, query: str, cache: Cache | None = No
             note="OpenAlex daily budget used up for this network; add OPENALEX_API_KEY",
         )
     if status != 200:
-        return SourceResult("papers", "error", note=f"OpenAlex returned {status}")
+        return SourceResult("papers", "error", note=_why("OpenAlex", status))
     _, cited = await _get_json(
         client,
         cache,
@@ -268,7 +281,7 @@ async def paper_count(
             note="OpenAlex daily budget used up for this network; add OPENALEX_API_KEY",
         )
     if status != 200:
-        return SourceResult("papers", "error", note=f"OpenAlex returned {status}")
+        return SourceResult("papers", "error", note=_why("OpenAlex", status))
     return SourceResult("papers", "ok", total=data.get("meta", {}).get("count", 0))
 
 
@@ -277,7 +290,7 @@ async def trials(client: httpx.AsyncClient, query: str, cache: Cache | None = No
         client, cache, CTGOV, params={"query.term": query, "pageSize": 10, "countTotal": "true"}
     )
     if status != 200:
-        return SourceResult("trials", "error", note=f"ClinicalTrials.gov returned {status}")
+        return SourceResult("trials", "error", note=_why("ClinicalTrials.gov", status))
     items = []
     for s in data.get("studies", []):
         p = s.get("protocolSection", {})
@@ -317,7 +330,7 @@ async def projects(
             "projects", "budget_exhausted", note="GitHub rate limit; add GITHUB_TOKEN"
         )
     if status != 200:
-        return SourceResult("projects", "error", note=f"GitHub returned {status}")
+        return SourceResult("projects", "error", note=_why("GitHub", status))
     items = [
         {
             "name": g.get("full_name"),
@@ -354,7 +367,10 @@ async def patents(
         "o": {"size": 10},
         "s": [{"patent_date": "desc"}],
     }
-    r = await client.post(PATENTSVIEW, json=body, headers={"X-Api-Key": key, "User-Agent": UA})
+    try:
+        r = await client.post(PATENTSVIEW, json=body, headers={"X-Api-Key": key, "User-Agent": UA})
+    except httpx.TransportError:
+        return SourceResult("patents", "error", note="PatentsView could not be reached")
     if r.status_code != 200:
         return SourceResult("patents", "error", note=f"PatentsView returned {r.status_code}")
     data = r.json()
@@ -395,12 +411,15 @@ async def _epo_auth(client: httpx.AsyncClient) -> str | None:
     if _epo_token and _epo_token[1] > time.monotonic():
         return _epo_token[0]
     st = get_settings()
-    r = await client.post(
-        EPO_TOKEN,
-        auth=(st.epo_ops_key, st.epo_ops_secret),
-        data={"grant_type": "client_credentials"},
-        headers={"User-Agent": UA},
-    )
+    try:
+        r = await client.post(
+            EPO_TOKEN,
+            auth=(st.epo_ops_key, st.epo_ops_secret),
+            data={"grant_type": "client_credentials"},
+            headers={"User-Agent": UA},
+        )
+    except httpx.TransportError:
+        return None
     if r.status_code != 200:
         return None
     data = r.json()
@@ -489,7 +508,7 @@ async def epo_patents(
         elif scope == "world":
             if status == 429:
                 return SourceResult("patents", "budget_exhausted", note="EPO asked us to wait")
-            return SourceResult("patents", "error", note=f"EPO returned {status}")
+            return SourceResult("patents", "error", note=_why("EPO", status))
         else:
             found[scope] = (0, [])  # India is a refinement: the world result still stands
     world_total, world_items = found["world"]
