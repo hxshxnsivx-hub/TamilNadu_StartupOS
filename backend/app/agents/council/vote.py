@@ -29,28 +29,32 @@ def weights_table() -> dict:
     return json.loads(WEIGHTS_FILE.read_text(encoding="utf8"))
 
 
+SECTOR_TYPE = {"health": "health_device", "food": "food", "agri": "agri"}
+SOFTWARE_CATEGORIES = {"ai_ml", "saas", "fintech", "it"}
+# Sectors of physical goods; others (education, retail) fall through to form, then categories.
+PHYSICAL_SECTORS = {"textile", "manufacturing", "auto", "electronics"}
+
+
 def idea_type(categories: list[str], slots: dict) -> str:
+    """The founder's sector and product form first; categories inferred from papers only
+    fill what the founder has not said (R035): a tea brand whose papers touch medicine
+    is still food, and a physical textile product is not software."""
     sector = str(slots.get("sector") or "")
+    sector = "" if sector == "other" else sector
     form = str(slots.get("product_form") or "")
-    if "health_bio" in categories or sector == "health":
-        return "health_device"
-    if sector == "food":
-        return "food"
-    if "agriculture" in categories or sector == "agri":
-        return "agri"
+    if sector in SECTOR_TYPE:
+        return SECTOR_TYPE[sector]
     if form == "service":
         return "service"
-    if (
-        form == "software"
-        or sector == "it_services"
-        or {
-            "ai_ml",
-            "saas",
-            "fintech",
-            "it",
-        }
-        & set(categories)
-    ):
+    if form == "software" or sector in ("it_services", "finance"):
+        return "software"
+    if sector in PHYSICAL_SECTORS:
+        return "hardware"
+    if "health_bio" in categories:
+        return "health_device"
+    if "agriculture" in categories:
+        return "agri"
+    if form not in ("physical", "hybrid") and SOFTWARE_CATEGORIES & set(categories):
         return "software"
     return "hardware"
 
