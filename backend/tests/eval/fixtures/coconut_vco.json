@@ -1,7 +1,7 @@
 {
  "id": "coconut_vco",
  "idea": "virgin coconut oil and desiccated coconut unit in Pollachi buying nuts directly from farmers",
- "recorded": "2026-10-10",
+ "recorded": "2026-10-20",
  "coverage": [
   {
    "source": "papers",
@@ -18,6 +18,10 @@
   {
    "source": "trials",
    "status": "skipped"
+  },
+  {
+   "source": "local startups",
+   "status": "ok"
   }
  ],
  "scan": {
@@ -34,11 +38,11 @@
    "domains": [
     {
      "name": "Physical Sciences",
-     "share_pct": 61
+     "share_pct": 58
     },
     {
      "name": "Life Sciences",
-     "share_pct": 22
+     "share_pct": 25
     },
     {
      "name": "Social Sciences",
@@ -52,11 +56,11 @@
    "fields": [
     {
      "name": "Chemistry",
-     "share_pct": 55
+     "share_pct": 53
     },
     {
      "name": "Agricultural and Biological Sciences",
-     "share_pct": 18
+     "share_pct": 21
     },
     {
      "name": "Economics, Econometrics and Finance",
@@ -86,11 +90,11 @@
    "subfields": [
     {
      "name": "Inorganic Chemistry",
-     "share_pct": 55
+     "share_pct": 53
     },
     {
      "name": "General Agricultural and Biological Sciences",
-     "share_pct": 13
+     "share_pct": 16
     },
     {
      "name": "Economics and Econometrics",
@@ -120,7 +124,7 @@
    "topics": [
     {
      "name": "Coconut Research and Applications",
-     "share_pct": 55
+     "share_pct": 53
     },
     {
      "name": "Economics of Agriculture and Food Markets",
@@ -129,6 +133,10 @@
     {
      "name": "Agriculture and Agroindustry Studies",
      "share_pct": 7
+    },
+    {
+     "name": "Agricultural Economics and Practices",
+     "share_pct": 6
     },
     {
      "name": "Oil Palm Production and Sustainability",
@@ -145,10 +153,6 @@
     {
      "name": "Global Trade and Competitiveness",
      "share_pct": 4
-    },
-    {
-     "name": "Agricultural Innovations and Practices",
-     "share_pct": 3
     }
    ]
   },
@@ -156,14 +160,44 @@
    "agriculture",
    "climate",
    "fintech",
-   "health_bio",
    "saas"
   ],
+  "matched_domain": "coconut_products",
   "papers": {
    "total": 81,
+   "closest": {
+    "title": "Nature-based solutions in agriculture: A review of the coconut (Cocos nucifera L.)-based farming systems in Kerala, “the Land of Coconut Trees”",
+    "year": 2022,
+    "cited_by": 70,
+    "venue": "Nature-Based Solutions",
+    "url": "https://doi.org/10.1016/j.nbsj.2022.100012",
+    "topics": [
+     {
+      "topic": "Coconut Research and Applications",
+      "subfield": "Inorganic Chemistry",
+      "field": "Chemistry",
+      "domain": "Physical Sciences",
+      "score": 0.5313000082969666
+     },
+     {
+      "topic": "Agroforestry and silvopastoral systems",
+      "subfield": "Forestry",
+      "field": "Agricultural and Biological Sciences",
+      "domain": "Life Sciences",
+      "score": 0.3107999861240387
+     },
+     {
+      "topic": "Agronomic Practices and Intercropping Systems",
+      "subfield": "Agronomy and Crop Science",
+      "field": "Agricultural and Biological Sciences",
+      "domain": "Life Sciences",
+      "score": 0.038100000470876694
+     }
+    ]
+   },
    "by_year": {
+    "2026": 12,
     "2025": 11,
-    "2026": 11,
     "2024": 10,
     "2020": 6,
     "2023": 6,
@@ -172,12 +206,12 @@
     "2015": 4,
     "2014": 3,
     "2021": 3,
-    "1988": 2,
     "2005": 2,
     "2012": 2,
     "2013": 2,
     "2017": 2,
     "2018": 2,
+    "1988": 1,
     "1990": 1,
     "2006": 1,
     "2009": 1,
@@ -247,7 +281,7 @@
     {
      "title": "The Coconut Industry: A Review of Price Forecasting Modelling in Major Coconut Producing Countries",
      "year": 2020,
-     "cited_by": 33,
+     "cited_by": 32,
      "venue": "CORD",
      "url": "https://doi.org/10.37833/cord.v36i.422",
      "topics": [
@@ -277,7 +311,7 @@
     {
      "title": "Coconut water preservation and processing: a review",
      "year": 2012,
-     "cited_by": 91,
+     "cited_by": 89,
      "venue": "Fruits",
      "url": "https://doi.org/10.1051/fruits/2012009",
      "topics": [
@@ -489,7 +523,7 @@
     {
      "title": "Coconut water preservation and processing: a review",
      "year": 2012,
-     "cited_by": 91,
+     "cited_by": 89,
      "venue": "Fruits",
      "url": "https://doi.org/10.1051/fruits/2012009",
      "topics": [
@@ -669,35 +703,55 @@
   },
   "patents": {
    "total": 0,
-   "items": []
+   "items": [],
+   "india": null
   },
   "local": {
-   "startups": [],
+   "status": "ok",
+   "startups": [
+    {
+     "name": "Anaimalais Coco",
+     "district": "coimbatore",
+     "description": "M/s ANAIMALAIS COCO company, we’re committed to becoming a trusted household name by offering high-quality coconut oil and groundnut oil that not only meet, but exceed your expectations. We’re dedicated to recognizing market needs and providing our customers with value-added products that improve their overall well-being.",
+     "url": "https://anaimalaiscoco.com/"
+    }
+   ],
    "registry_domains": [
     {
      "id": "coconut_products",
      "label": "Coconut value chain products"
+    },
+    {
+     "id": "cold_pressed_oils",
+     "label": "Cold-pressed (marachekku) edible oils"
     }
+   ],
+   "searched": 654,
+   "districts": [
+    "Chennai",
+    "Coimbatore",
+    "Madurai"
+   ],
+   "scope": "the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai",
+   "sectors": [
+    "agritech",
+    "consumer",
+    "food"
    ]
   },
   "elements": [],
   "discuss": [
    {
+    "field": "Coconut value chain products",
+    "questions": [
+     "Which buyer comes first (retail shoppers, bakeries and food makers and exporters), and what do they use today?",
+     "Which of these do you need before the first sale: FSSAI registration or licence, Legal Metrology declarations and APEDA registration for agri exports?"
+    ]
+   },
+   {
     "field": "Agricultural and Biological Sciences",
     "questions": [
      "Which crop or animal, which season, and which FPO or farmers will pilot it?"
-    ]
-   },
-   {
-    "field": "Economics, Econometrics and Finance",
-    "questions": [
-     "Which regulated entity (bank, NBFC, insurer) do you partner with?"
-    ]
-   },
-   {
-    "field": "Environmental Science",
-    "questions": [
-     "What is measured, by whom, and who pays for the improvement?"
     ]
    },
    {
@@ -726,13 +780,19 @@
     "source": "patents",
     "status": "no_key",
     "found": 0,
-    "note": "Patents not searched: add a free PatentsView key (PATENTSVIEW_API_KEY)"
+    "note": "Patents not searched: register free with the EPO (EPO_OPS_KEY and EPO_OPS_SECRET) for worldwide and Indian patents"
    },
    {
     "source": "trials",
     "status": "skipped",
     "found": 0,
     "note": "Not a health idea, so clinical trials were not searched"
+   },
+   {
+    "source": "local startups",
+    "status": "ok",
+    "found": 1,
+    "note": "Only the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai"
    }
   ],
   "caveat": "Counts come from the sources listed in coverage. 'Nothing found' means nothing in those sources, not that the idea is new; have a patent attorney search before filing."
@@ -742,70 +802,30 @@
    {
     "element": "virgin coconut oil",
     "query": "\"virgin coconut oil\"",
-    "papers": 13338,
-    "label": "crowded"
-   },
-   {
-    "element": "coconut",
-    "query": "coconut",
-    "papers": 287036,
-    "label": "crowded"
-   },
-   {
-    "element": "farmers",
-    "query": "\"smallholder agriculture\"",
-    "papers": 60031,
+    "papers": 13456,
     "label": "crowded"
    }
   ],
-  "pairs": [
-   {
-    "a": "virgin coconut oil",
-    "b": "farmers",
-    "a_papers": 13338,
-    "b_papers": 60031,
-    "papers": 28,
-    "share_pct": 0.21,
-    "gap": true
-   },
-   {
-    "a": "coconut",
-    "b": "farmers",
-    "a_papers": 287036,
-    "b_papers": 60031,
-    "papers": 1207,
-    "share_pct": 2.01,
-    "gap": false
-   },
-   {
-    "a": "virgin coconut oil",
-    "b": "coconut",
-    "a_papers": 13338,
-    "b_papers": 287036,
-    "papers": 13137,
-    "share_pct": 98.49,
-    "gap": false
-   }
-  ],
+  "pairs": [],
   "context": {
-   "query": "coconut \"smallholder agriculture\"",
+   "query": "\"virgin coconut oil\"",
    "searched": true,
-   "world_papers": 1207,
-   "india_papers": 76,
-   "india_share_pct": 6.3,
-   "tn_startups": 0,
+   "world_papers": 13456,
+   "india_papers": 710,
+   "india_share_pct": 5.3,
+   "tn_startups": 1,
+   "tn_scope": "the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai",
    "gap": false
   },
+  "coverage": {
+   "pairs_expected": 0,
+   "pairs_counted": 0
+  },
   "statement": {
-   "type": "combination",
-   "text": "Both parts are well studied on their own: virgin coconut oil (13,338 papers) and farmers (60,031). Together, I found only 28."
+   "type": "unclear",
+   "text": "I could search only one part on its own, virgin coconut oil (13,456 papers), so I can't say how new the idea is as a whole."
   },
   "levers": [
-   {
-    "kind": "combine",
-    "text": "Build your version around joining virgin coconut oil with farmers.",
-    "because": "only 28 papers cover both"
-   },
    {
     "kind": "cost-down",
     "text": "Compete on cost, using the costing for this domain to see where to cut.",
