@@ -237,10 +237,52 @@ STOP = {
     "without",
     "would",
 }
+# Lexicon phrases that name who is served, not what is built. They are not parts of an
+# idea for the novelty check: "farmers" in a banana-chips idea is the supplier, and
+# the founder's user group has its own lever (re-target).
+BENEFICIARY = {
+    "farmers",
+    "elderly",
+    "old people",
+    "physically challenged",
+    "disabled",
+    "bedridden",
+    "paralysed",
+    "paralyzed",
+    "blind",
+    "deaf",
+}
+# Filler that the registry's prose brings into the public vocabulary. Words found in
+# more than DF_SHARE of the domain summaries are dropped automatically (filler());
+# FILLER lists the rarer ones a reviewer caught, and FILLER_KEEP the frequent words
+# that still name a thing.
+DF_SHARE = 0.03
+FILLER = {
+    "building",
+    "cheap",
+    "first",
+    "people",
+    "plans",
+    "offered",
+    "unit",
+    "units",
+    "village",
+    "villages",
+    "work",
+}
+FILLER_KEEP = {"crop", "sensors", "waste", "water"}
 
 
 def _words(text: str) -> list[str]:
     return re.findall(r"[a-z][a-z\-]+", text.lower())
+
+
+@lru_cache
+def _phrase(phrase: str) -> re.Pattern[str]:
+    """A lexicon phrase as a whole-word pattern in which a hyphen and a space are the
+    same, so "dry-run" and "dry run", "t-shirt" and "t shirt" find one entry."""
+    words = re.split(r"[\s-]+", phrase.lower().strip())
+    return re.compile(r"\b" + r"[\s-]+".join(map(re.escape, words)) + r"\b")
 
 
 def expand(text: str) -> tuple[list[str], list[str]]:
@@ -248,11 +290,11 @@ def expand(text: str) -> tuple[list[str], list[str]]:
     low = f" {text.lower()} "
     technical: list[str] = []
     for phrase in sorted(LEXICON, key=len, reverse=True):
-        if re.search(rf"\b{re.escape(phrase)}\b", low):
+        if _phrase(phrase).search(low):
             for t in LEXICON[phrase]:
                 if t not in technical:
                     technical.append(t)
-            low = re.sub(rf"\b{re.escape(phrase)}\b", " ", low)
+            low = _phrase(phrase).sub(" ", low)
     rest = [w for w in _words(low) if w not in STOP and len(w) > 3]
     seen: set[str] = set()
     content = [w for w in rest if not (w in seen or seen.add(w))]
@@ -289,10 +331,38 @@ def public_vocabulary() -> frozenset[str]:
             words |= set(_words(c["label"].lower()))
     except Exception:  # the registry is optional here; the lexicon still applies
         pass
-    return frozenset(w for w in words if len(w) > 2 and w not in STOP and not _is_place(w))
+    return frozenset(w for w in words if len(w) > 2 and w not in STOP and not is_place(w))
 
 
-def _is_place(word: str) -> bool:
+@lru_cache
+def filler() -> frozenset[str]:
+    """Vocabulary words too common to spend a query slot on ("banana small chips").
+
+    A word in more than DF_SHARE of the registry's domain summaries says little about
+    any one idea, so it is filler; lexicon and field words never are. The set grows
+    and shrinks with the registry, with FILLER and FILLER_KEEP as reviewed exceptions.
+    """
+    named: set[str] = set()
+    for phrase, terms in LEXICON.items():
+        named |= set(_words(phrase)) | {w for t in terms for w in _words(t.lower())}
+    for fields in TERM_FIELDS.values():
+        named |= {w for f in fields for w in _words(f.lower())}
+    common: set[str] = set()
+    try:
+        from app.planner import registry
+
+        doms = registry.load()["domains"].values()
+        df: dict[str, int] = {}
+        for d in doms:
+            for w in set(_words(f"{d['label']}. {d['summary']}".lower())):
+                df[w] = df.get(w, 0) + 1
+        common = {w for w, n in df.items() if n > DF_SHARE * len(doms)}
+    except Exception:  # the registry is optional here; the reviewed list still applies
+        pass
+    return frozenset((common - named - FILLER_KEEP) | FILLER)
+
+
+def is_place(word: str) -> bool:
     from app.elicitation.places import find_district
 
     return find_district(word) is not None
@@ -309,7 +379,7 @@ def scrub(query: str, founder_text: str = "") -> str:
     keep = []
     for w in re.findall(r"[A-Za-z][A-Za-z0-9-]*", query):
         low = w.lower()
-        if _is_place(low) or (low in said and low not in vocab):
+        if is_place(low) or (low in said and low not in vocab):
             continue
         keep.append(w)
     return " ".join(keep[:8])
@@ -323,8 +393,8 @@ def build_queries(text: str) -> dict[str, str]:
     is reported as not searched rather than sent the idea text.
     """
     technical, content = expand(text)
-    vocab = public_vocabulary()
-    content = [w for w in content if w in vocab]
+    vocab, common = public_vocabulary(), filler()
+    content = [w for w in content if w in vocab and w not in common]
     specific = [t for t in technical if t in SPECIFIC]
     broad = [t for t in technical if t not in SPECIFIC]
     papers = " ".join(specific[:3] + broad[:2] + content[:2])
@@ -350,12 +420,12 @@ def term_groups(text: str) -> list[tuple[str, list[str]]]:
     groups: list[tuple[str, list[str]]] = []
     seen: set[tuple[str, ...]] = set()
     for phrase in sorted(LEXICON, key=len, reverse=True):
-        if re.search(rf"\b{re.escape(phrase)}\b", low):
+        if _phrase(phrase).search(low):
             terms = LEXICON[phrase]
             if tuple(terms) not in seen:
                 seen.add(tuple(terms))
                 groups.append((phrase, list(terms)))
-            low = re.sub(rf"\b{re.escape(phrase)}\b", " ", low)
+            low = _phrase(phrase).sub(" ", low)
     return groups
 
 
@@ -370,8 +440,8 @@ def element_query(text: str) -> str:
     technical, content = expand(text)
     if technical:
         return or_query(technical[:4])
-    vocab = public_vocabulary()
-    return " ".join([w for w in content if w in vocab][:3])
+    vocab, common = public_vocabulary(), filler()
+    return " ".join([w for w in content if w in vocab and w not in common][:3])
 
 
 def fields_from_terms(text: str) -> list[str]:
