@@ -1,7 +1,7 @@
 {
  "id": "yarn_marketplace",
  "idea": "a yarn price marketplace app where small knitting units in Tiruppur buy from spinning mills on credit",
- "recorded": "2026-10-10",
+ "recorded": "2026-10-20",
  "coverage": [
   {
    "source": "papers",
@@ -18,6 +18,10 @@
   {
    "source": "trials",
    "status": "skipped"
+  },
+  {
+   "source": "local startups",
+   "status": "ok"
   }
  ],
  "scan": {
@@ -27,14 +31,14 @@
    "trials": "yarn spinning",
    "projects": "yarn spinning yarn price",
    "patents": "yarn spinning yarn price marketplace",
-   "local": "price marketplace where small knitting units credit yarn spinning yarn"
+   "local": "price marketplace where knitting credit yarn spinning yarn"
   },
   "associated_domains": {
    "basis": "papers",
    "domains": [
     {
      "name": "Social Sciences",
-     "share_pct": 77
+     "share_pct": 76
     },
     {
      "name": "Physical Sciences",
@@ -48,23 +52,23 @@
    "fields": [
     {
      "name": "Business, Management and Accounting",
-     "share_pct": 23
+     "share_pct": 27
     },
     {
      "name": "Economics, Econometrics and Finance",
      "share_pct": 21
     },
     {
-     "name": "Social Sciences",
-     "share_pct": 19
+     "name": "Materials Science",
+     "share_pct": 16
     },
     {
-     "name": "Materials Science",
-     "share_pct": 15
+     "name": "Social Sciences",
+     "share_pct": 14
     },
     {
      "name": "Arts and Humanities",
-     "share_pct": 11
+     "share_pct": 12
     },
     {
      "name": "Agricultural and Biological Sciences",
@@ -81,12 +85,12 @@
    ],
    "subfields": [
     {
-     "name": "Polymers and Plastics",
-     "share_pct": 15
+     "name": "Strategy and Management",
+     "share_pct": 18
     },
     {
-     "name": "Strategy and Management",
-     "share_pct": 15
+     "name": "Polymers and Plastics",
+     "share_pct": 16
     },
     {
      "name": "Economics and Econometrics",
@@ -109,14 +113,14 @@
      "share_pct": 4
     },
     {
-     "name": "Demography",
+     "name": "Finance",
      "share_pct": 4
     }
    ],
    "topics": [
     {
      "name": "Textile materials and evaluations",
-     "share_pct": 13
+     "share_pct": 14
     },
     {
      "name": "Crafts, Textile, and Design",
@@ -139,11 +143,11 @@
      "share_pct": 4
     },
     {
-     "name": "SMEs Development and Digital Marketing",
+     "name": "Financial Risk and Volatility Modeling",
      "share_pct": 4
     },
     {
-     "name": "Financial Risk and Volatility Modeling",
+     "name": "Colonial History and Postcolonial Studies",
      "share_pct": 4
     }
    ]
@@ -153,27 +157,59 @@
    "climate",
    "electrical",
    "fintech",
-   "saas"
+   "saas",
+   "textile"
   ],
+  "matched_domain": "yarn_b2b_marketplace",
   "papers": {
-   "total": 763,
+   "total": 772,
+   "closest": {
+    "title": "Spinners and the Law: Regulating Yarn Standards in the English Worsted Industries, 1550–1800",
+    "year": 2013,
+    "cited_by": 23,
+    "venue": "Textile History",
+    "url": "https://doi.org/10.1179/0040496913z.00000000026",
+    "topics": [
+     {
+      "topic": "Historical Economic and Social Studies",
+      "subfield": "Economics and Econometrics",
+      "field": "Economics, Econometrics and Finance",
+      "domain": "Social Sciences",
+      "score": 0.9883000254631042
+     },
+     {
+      "topic": "Medieval and Early Modern Justice",
+      "subfield": "Political Science and International Relations",
+      "field": "Social Sciences",
+      "domain": "Social Sciences",
+      "score": 0.007300000172108412
+     },
+     {
+      "topic": "Historical Legal Studies and Society",
+      "subfield": "Political Science and International Relations",
+      "field": "Social Sciences",
+      "domain": "Social Sciences",
+      "score": 0.0017999999690800905
+     }
+    ]
+   },
    "by_year": {
     "2023": 56,
-    "2025": 47,
+    "2025": 50,
     "2014": 43,
-    "2019": 41,
-    "2024": 36,
-    "2020": 35,
+    "2019": 42,
+    "2024": 37,
+    "2013": 35,
     "2021": 35,
-    "2022": 35,
-    "2013": 34,
     "2016": 34,
+    "2020": 34,
+    "2022": 34,
+    "2026": 34,
     "2018": 31,
-    "2026": 31,
     "2008": 29,
+    "2012": 29,
     "2015": 28,
     "2010": 27,
-    "2012": 27,
     "2017": 26,
     "2011": 22,
     "2009": 19,
@@ -453,7 +489,7 @@
     {
      "title": "COMPETITIVE GROUPS AS COGNITIVE COMMUNITIES: THE CASE OF SCOTTISH KNITWEAR MANUFACTURERS*",
      "year": 1989,
-     "cited_by": 1386,
+     "cited_by": 1371,
      "venue": "Journal of Management Studies",
      "url": "https://doi.org/10.1111/j.1467-6486.1989.tb00736.x",
      "topics": [
@@ -513,7 +549,7 @@
     {
      "title": "Semiconductor Gas Sensors: Materials, Technology, Design, and Application",
      "year": 2020,
-     "cited_by": 591,
+     "cited_by": 593,
      "venue": "Sensors",
      "url": "https://doi.org/10.3390/s20226694",
      "topics": [
@@ -543,7 +579,7 @@
     {
      "title": "Industrial Hemp in North America: Production, Politics and Potential",
      "year": 2016,
-     "cited_by": 328,
+     "cited_by": 327,
      "venue": "Agronomy",
      "url": "https://doi.org/10.3390/agronomy6040058",
      "topics": [
@@ -612,86 +648,39 @@
   },
   "patents": {
    "total": 0,
-   "items": []
+   "items": [],
+   "india": null
   },
   "local": {
-   "startups": [
-    {
-     "name": "BankBazaar.com",
-     "district": "chennai",
-     "description": "BankBazaar is a fintech marketplace offering credit scores, personalized financial-product recommendations, and lending and investment solutions such as home loans, personal loans and mutual funds.",
-     "url": "https://www.bankbazaar.com"
-    },
-    {
-     "name": "Kaleidofin Private Limited",
-     "district": "chennai",
-     "description": "Kaleidofin builds financial-inclusion products, including tailored investment and credit tools, for underserved individuals and small enterprises across India.",
-     "url": "https://www.kaleidofin.com"
-    },
-    {
-     "name": "Yubi (CredAvenue Private Limited)",
-     "district": "chennai",
-     "description": "Yubi (formerly CredAvenue) operates a debt marketplace and credit-infrastructure platform connecting borrowers, lenders and investors across securitisation, co-lending and bond issuance.",
-     "url": "https://www.go-yubi.com"
-    }
-   ],
+   "status": "ok",
+   "startups": [],
    "registry_domains": [
-    {
-     "id": "fodder_feed",
-     "label": "Fodder and cattle feed"
-    },
-    {
-     "id": "msme_last_mile",
-     "label": "Shared logistics for MSME clusters"
-    },
-    {
-     "id": "msme_energy_monitors",
-     "label": "Energy monitors for MSMEs"
-    },
-    {
-     "id": "msme_alt_credit",
-     "label": "Credit scoring for small businesses from their records"
-    },
     {
      "id": "yarn_b2b_marketplace",
      "label": "Yarn buying platform for knitters"
-    },
-    {
-     "id": "truck_repair_marketplace",
-     "label": "Truck repair and maintenance marketplace"
-    },
-    {
-     "id": "solar_microgrids",
-     "label": "Solar microgrids for remote hamlets"
-    },
-    {
-     "id": "upi_merchant_credit",
-     "label": "Credit lines for UPI merchants"
-    },
-    {
-     "id": "mandi_price_forecasting",
-     "label": "Crop price forecasts for farmers"
     }
+   ],
+   "searched": 654,
+   "districts": [
+    "Chennai",
+    "Coimbatore",
+    "Madurai"
+   ],
+   "scope": "the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai",
+   "sectors": [
+    "consumer",
+    "manufacturing",
+    "saas",
+    "textiles"
    ]
   },
   "elements": [],
   "discuss": [
    {
-    "field": "Economics, Econometrics and Finance",
+    "field": "Yarn buying platform for knitters",
     "questions": [
-     "Which regulated entity (bank, NBFC, insurer) do you partner with?"
-    ]
-   },
-   {
-    "field": "Agricultural and Biological Sciences",
-    "questions": [
-     "Which crop or animal, which season, and which FPO or farmers will pilot it?"
-    ]
-   },
-   {
-    "field": "Environmental Science",
-    "questions": [
-     "What is measured, by whom, and who pays for the improvement?"
+     "Which buyer comes first (small knitting units and spinning mills), and what do they use today?",
+     "Which of these do you need before the first sale: Digital Personal Data Protection Act?"
     ]
    },
    {
@@ -707,7 +696,7 @@
    {
     "source": "papers",
     "status": "ok",
-    "found": 763,
+    "found": 772,
     "note": ""
    },
    {
@@ -720,13 +709,19 @@
     "source": "patents",
     "status": "no_key",
     "found": 0,
-    "note": "Patents not searched: add a free PatentsView key (PATENTSVIEW_API_KEY)"
+    "note": "Patents not searched: register free with the EPO (EPO_OPS_KEY and EPO_OPS_SECRET) for worldwide and Indian patents"
    },
    {
     "source": "trials",
     "status": "skipped",
     "found": 0,
     "note": "Not a health idea, so clinical trials were not searched"
+   },
+   {
+    "source": "local startups",
+    "status": "ok",
+    "found": 0,
+    "note": "Only the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai"
    }
   ],
   "caveat": "Counts come from the sources listed in coverage. 'Nothing found' means nothing in those sources, not that the idea is new; have a patent attorney search before filing."
@@ -736,45 +731,34 @@
    {
     "element": "spinning mills",
     "query": "\"yarn spinning\"",
-    "papers": 3454,
+    "papers": 3456,
     "label": "active"
-   },
-   {
-    "element": "yarn",
-    "query": "yarn",
-    "papers": 165867,
-    "label": "crowded"
    }
   ],
-  "pairs": [
-   {
-    "a": "spinning mills",
-    "b": "yarn",
-    "a_papers": 3454,
-    "b_papers": 165867,
-    "papers": 2882,
-    "share_pct": 83.44,
-    "gap": false
-   }
-  ],
+  "pairs": [],
   "context": {
-   "query": "yarn \"yarn spinning\"",
+   "query": "\"yarn spinning\"",
    "searched": true,
-   "world_papers": 2882,
-   "india_papers": 107,
-   "india_share_pct": 3.7,
-   "tn_startups": 3,
-   "gap": false
+   "world_papers": 3456,
+   "india_papers": 108,
+   "india_share_pct": 3.1,
+   "tn_startups": 0,
+   "tn_scope": "the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai",
+   "gap": true
+  },
+  "coverage": {
+   "pairs_expected": 0,
+   "pairs_counted": 0
   },
   "statement": {
-   "type": "crowded",
-   "text": "Each part is well studied, and so are their combinations. The edge has to come from who you serve, the cost, or how you deliver it."
+   "type": "context",
+   "text": "Work on this is active worldwide (3,456 papers), but only 108 come from Indian institutions, and none of the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai does it."
   },
   "levers": [
    {
-    "kind": "business model",
-    "text": "Compete on how it is delivered, as a service, a rental, or a scheme-backed rollout rather than a product sale.",
-    "because": "every part and combination is crowded"
+    "kind": "localise",
+    "text": "Make it fit Tamil Nadu, with the Tamil language, local hospital or market routines, and a local price.",
+    "because": "108 of 3,456 papers are from India, and none of the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai does it"
    }
   ],
   "thresholds": {
