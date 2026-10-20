@@ -27,12 +27,16 @@ import httpx
 from app.core.config import get_settings
 from app.research import sources
 from app.research.terms import (
-    SPECIFIC,
+    BENEFICIARY,
+    STOP,
     build_queries,
     expand,
     fields_from_terms,
+    filler,
     is_health,
+    is_place,
     scrub,
+    term_groups,
 )
 
 # OpenAlex fields -> Vanigam registry categories (for schemes, incubators, packs).
@@ -114,6 +118,45 @@ GENERIC = {
     "technology",
 }
 CLINICAL_FIELDS = {"Medicine", "Nursing", "Health Professions"}
+# Words inside lexicon terms ("augmentative and alternative communication", "water use
+# efficiency") and company names that say nothing about a product: never an anchor.
+FUNCTION_WORDS = {"and", "the", "for", "with", "use", "via", "pvt", "ltd"}
+# The research fields that fit each registry category: once the idea matches a registry
+# domain, only these fields raise discussion points ("which sensors and hardware?" is
+# no question for a banana-chips unit, though its papers touch Engineering).
+CATEGORY_FIELDS = {
+    "agriculture": {"Agricultural and Biological Sciences"},
+    "textile": {"Materials Science"},
+    "health_bio": {
+        "Medicine",
+        "Neuroscience",
+        "Health Professions",
+        "Nursing",
+        "Psychology",
+        "Pharmacology, Toxicology and Pharmaceutics",
+        "Biochemistry, Genetics and Molecular Biology",
+    },
+    "logistics": {"Engineering", "Computer Science"},
+    "electrical": {"Engineering", "Energy", "Computer Science"},
+    "renewable": {"Energy", "Engineering"},
+    "climate": {"Environmental Science", "Energy"},
+    "fintech": {"Economics, Econometrics and Finance"},
+    "it": {"Computer Science"},
+    "iot": {"Engineering", "Computer Science"},
+    "ai_ml": {"Computer Science"},
+    "saas": {"Computer Science", "Business, Management and Accounting"},
+}
+# Startup-map sectors that sit next to a domain's own: a banana-chips brand may be
+# listed as food, agritech or consumer.
+RELATED_SECTORS = {
+    "food": {"consumer", "agritech"},
+    "agritech": {"food"},
+    "textiles": {"consumer", "manufacturing"},
+}
+LOCAL_SOURCE = "Tamil Nadu Startup Map"
+# A paper is named as the closest only when its title shares this share of the query's
+# words (and at least two of them, one naming the product).
+CLOSEST_SHARE = 1 / 3
 GENERAL_QUESTIONS = [
     "Who is the first buyer, and what do they use today instead?",
     "What exactly is new compared with the closest prior art found?",
@@ -147,24 +190,84 @@ def associated_domains(works: list[dict], top: int = 8) -> dict:
     }
 
 
-def _local(text: str) -> dict:
-    """Tamil Nadu startups and Vanigam registry domains that share the idea's words."""
-    technical, content = expand(text)
-    anchors = {
-        w for t in technical if t in SPECIFIC for w in re.findall(r"[a-z]{3,}", t.lower())
-    } - GENERIC
-    words = ({w for w in content if len(w) > 3} | anchors) - GENERIC
-    out: dict = {"startups": [], "registry_domains": []}
+def matched_domain(text: str) -> dict | None:
+    """The registry card the roadmap would use for these words: a deep pack's cue
+    words first, then word overlap (the same order as build_plan)."""
+    from app.planner import registry
+    from app.planner.packs import detect_pack
+
+    doms = registry.load()["domains"]
+    pack = detect_pack(text)
+    card = next((d for d in doms.values() if pack and d.get("pack") == pack), None)
+    if card is None and (found := registry.detect_domain(text)):
+        card = doms.get(found)
+    return card
+
+
+def _sectors(domain: dict | None) -> set[str]:
+    """Startup-map sectors that fit the matched domain; empty means no sector filter."""
+    if not domain:
+        return set()
+    from app.planner import registry
+
+    cat = registry.load()["categories"].get(domain["category"], {})
+    own = {domain.get("sector"), cat.get("sector")} - {None}
+    return own | {r for s in own for r in RELATED_SECTORS.get(s, set())}
+
+
+def _anchors(text: str) -> set[str]:
+    """Words of the lexicon terms for what is built (not for who is served)."""
+    return {
+        w
+        for phrase, terms in term_groups(text)
+        if phrase not in BENEFICIARY
+        for t in terms
+        for w in re.findall(r"[a-z]{3,}", t.lower())
+    } - (GENERIC | STOP | FUNCTION_WORDS | filler())
+
+
+def _join(names: list[str]) -> str:
+    return names[0] if len(names) == 1 else f"{', '.join(names[:-1])} and {names[-1]}"
+
+
+def _local(text: str, domain: dict | None = None) -> dict:
+    """Tamil Nadu startups and Vanigam registry domains that share the idea's words.
+
+    A startup must share two of the idea's words (places and filler do not count), one
+    of them naming the product when the lexicon knows it, and sit in a sector that fits
+    the matched domain (1.2.1.3): a wrong name costs more trust than a missed one. The
+    result says what was searched, so "none found" never reads as "none exist" (R023).
+    """
+    _, content = expand(text)
+    anchors = _anchors(text)
+    words = {w for w in content if len(w) > 3 and not is_place(w)} | anchors
+    words -= GENERIC | STOP | FUNCTION_WORDS | filler()
+    sectors = _sectors(domain)
+    out: dict = {"status": "ok", "startups": [], "registry_domains": []}
     try:
         from app.ecosystem.index import get_ecosystem
         from app.planner import registry
 
         eco = get_ecosystem()
-        if eco:
+        if eco is None:
+            out.update(status="error", note="Tamil Nadu startup data is not installed")
+        else:
+            districts = [d.title() for d in eco.meta.get("districts", [])]
+            out.update(
+                searched=len(eco.startups),
+                districts=districts,
+                scope=(
+                    f"the {len(eco.startups):,} startups on the {LOCAL_SOURCE} in"
+                    f" {_join(districts)}"
+                ),
+                sectors=sorted(sectors),
+            )
             scored = []
             for s in eco.startups:
+                if sectors and not sectors & set(s.get("sectors") or []):
+                    continue
                 vocab = set(
-                    re.findall(r"[a-z]{4,}", f"{s.get('name')} {s.get('description')}".lower())
+                    re.findall(r"[a-z]{3,}", f"{s.get('name')} {s.get('description')}".lower())
                 )
                 hit = len(words & vocab)
                 if hit >= 2 and (not anchors or anchors & vocab):
@@ -175,12 +278,78 @@ def _local(text: str) -> dict:
                  "url": s.get("website") or s.get("source_url")}
                 for _, s in scored[:5]
             ]  # fmt: skip
+        if domain:
+            out["registry_domains"].append({"id": domain["id"], "label": domain["label"]})
         for d in registry.load()["domains"].values():
-            vocab = set(re.findall(r"[a-z]{4,}", f"{d['label']} {d['summary']}".lower()))
+            if domain and d["id"] == domain["id"]:
+                continue
+            vocab = set(re.findall(r"[a-z]{3,}", f"{d['label']} {d['summary']}".lower()))
             if len(words & vocab) >= 2 and (not anchors or anchors & vocab):
                 out["registry_domains"].append({"id": d["id"], "label": d["label"]})
-    except Exception:  # local data is a bonus; never fail the scan over it
-        pass
+    except Exception as e:  # local data is a bonus; never fail the scan over it
+        out.update(status="error", note=f"Tamil Nadu startup data could not be read ({e})")
+    return out
+
+
+def _stem(w: str) -> str:
+    """Light ending match for titles: interfaces/interface, inverters/inverter/invert."""
+    if w.endswith("s") and not w.endswith("ss") and len(w) > 4:
+        w = w[:-1]
+    for suffix in ("ing", "er"):
+        if w.endswith(suffix) and len(w) - len(suffix) >= 4:
+            return w[: -len(suffix)]
+    return w
+
+
+def _query_words(text: str) -> set[str]:
+    """Words of a query or title; hyphens and dashes split ("brain–computer", "EEG-based")."""
+    return {_stem(w) for w in re.findall(r"[a-z]{3,}", text.lower()) if w not in STOP | filler()}
+
+
+def closest_paper(items: list[dict], query: str, idea: str) -> dict | None:
+    """The paper to name as the closest, or None when none is close enough (1.2.1.2).
+
+    The title must share at least two of the query's words and a third of them, one
+    of them naming the product; among those, the one sharing most wins, search rank
+    breaking ties. "Solomon Islands Smallholder Agriculture Study" is not the closest
+    paper to a banana-chips unit, however the search ranked it.
+    """
+    want = _query_words(query)
+    if not want:
+        return None
+    anchors = ({_stem(w) for w in _anchors(idea)} & want) or want
+    best, best_n = None, 0
+    for p in items:
+        title = _query_words(p.get("title") or "")
+        n = len(want & title)
+        if n >= 2 and n >= CLOSEST_SHARE * len(want) and anchors & title and n > best_n:
+            best, best_n = p, n
+    return best
+
+
+def _discuss(fields: list[str], domain: dict | None, clinical_ok: bool) -> list[dict]:
+    """What to think through: the matched domain's own points first, then the questions
+    of the research fields that fit it (every field when no domain matched)."""
+    out: list[dict] = []
+    allowed = CATEGORY_FIELDS.get(domain["category"]) if domain else None
+    if domain:
+        from app.planner import registry
+
+        regs = registry.load()["regulatory"]
+        points = []
+        if buyers := domain.get("buyers"):
+            points.append(f"Which buyer comes first ({_join(buyers)}), and what do they use today?")
+        if titles := [regs[r]["title"] for r in domain.get("regulatory", []) if r in regs]:
+            points.append(f"Which of these do you need before the first sale: {_join(titles)}?")
+        if points:
+            out.append({"field": domain["label"], "questions": points})
+    out += [
+        {"field": f, "questions": FIELD_QUESTIONS[f]}
+        for f in fields
+        if f in FIELD_QUESTIONS
+        and (allowed is None or f in allowed)
+        and (clinical_ok or f not in CLINICAL_FIELDS)
+    ]
     return out
 
 
@@ -268,26 +437,37 @@ async def scan(
             "fields": [{"name": f, "share_pct": None} for f in guess],
         }
     fields = [f["name"] for f in domains.get("fields", [])]
-    categories = sorted({FIELD_TO_CATEGORY[f] for f in fields if f in FIELD_TO_CATEGORY})
-    # Clinical questions only for health ideas or when trials were found: herbal-tea
-    # papers list Medicine as a field, and "which patients?" is no question for a tea brand.
+    domain = matched_domain(text)
+    # One clinical gate for questions and categories alike (R035): herbal-tea papers list
+    # Medicine as a field, but "which patients?" is no question for a tea brand, and the
+    # tea brand is no health product.
     clinical_ok = health or results["trials"].total > 0
-    questions = [
-        {"field": f, "questions": FIELD_QUESTIONS[f]}
-        for f in fields
-        if f in FIELD_QUESTIONS and (clinical_ok or f not in CLINICAL_FIELDS)
-    ]
+    categories = {FIELD_TO_CATEGORY[f] for f in fields if f in FIELD_TO_CATEGORY}
+    if not clinical_ok:
+        categories.discard("health_bio")
+    if domain:
+        categories.add(domain["category"])
+    local = _local(text, domain)
     coverage = [
         {"source": r.source, "status": r.status, "found": r.total, "note": r.note}
         for r in results.values()
+    ] + [
+        {
+            "source": "local startups",
+            "status": local["status"],
+            "found": len(local["startups"]),
+            "note": f"Only {local['scope']}" if local["status"] == "ok" else local["note"],
+        }
     ]
     return {
         "idea": text,
         "queries": q,
         "associated_domains": domains,
-        "vanigam_categories": categories,
+        "vanigam_categories": sorted(categories),
+        "matched_domain": domain["id"] if domain else None,
         "papers": {
             "total": paper.total,
+            "closest": closest_paper(paper.items[:8], q["papers"], text),
             "by_year": paper.extra.get("by_year", {}),
             "most_relevant": paper.items[:8],
             "most_cited": paper.extra.get("most_cited", []),
@@ -300,9 +480,10 @@ async def scan(
             # Indian filings among them, when the source can tell (EPO)
             "india": results["patents"].extra.get("india"),
         },
-        "local": _local(text),
+        "local": local,
         "elements": element_rows,
-        "discuss": questions + [{"field": "Any idea", "questions": GENERAL_QUESTIONS}],
+        "discuss": _discuss(fields, domain, clinical_ok)
+        + [{"field": "Any idea", "questions": GENERAL_QUESTIONS}],
         "coverage": coverage,
         "caveat": (
             "Counts come from the sources listed in coverage. 'Nothing found' means nothing in"
