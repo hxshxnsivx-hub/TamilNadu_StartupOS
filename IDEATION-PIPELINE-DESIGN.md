@@ -149,7 +149,14 @@ it; a lever with no supporting gap is not offered.
 | **Re-target** | papers name one user group, the founder's beneficiary is another | ICU patients instead of ALS patients at home |
 | **Cost-down** | a deep pack or costing shows a lever | consumer EEG instead of clinical-grade, with the accuracy trade-off stated |
 | **Business model** | crowded technology, sparse delivery | a service for hospitals rather than a device sale; scheme-backed rollout |
-| **Regulatory route** | the clinical or regulatory field is present | start as a communication aid, then a medical device |
+| **Regulatory route** | the idea is a medical device or clinical product: a health word or trials, plus a device or clinical signal (`terms.is_health_product`, shared with the panel) | start as a communication aid, then a medical device |
+
+The novelty check keeps each lever as its kind and the facts behind it (the pair and its count,
+the India share, who is served, the trials, the domain with a cost pack). The words are chosen
+when the lever is said (`research/levers.py`), from the founder's sector and the one matched
+registry domain that the scan, the panel and the roadmap share: a food brand hears "local tastes
+and shop routines", a health device "hospital and clinic routines". A sector answered after the
+search rewords the lever with no new search; the numbers still come only from the facts.
 
 The council's prior-art and customer seats rank the levers (Phase 2). Until then they are
 ranked by gap strength. The founder chooses; a chosen lever becomes a new idea version.
