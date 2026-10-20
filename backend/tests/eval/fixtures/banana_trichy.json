@@ -1,7 +1,7 @@
 {
  "id": "banana_trichy",
  "idea": "I want to start a banana chips and banana flour unit in Tiruchirappalli using B-grade fruit from Thottiyam farmers",
- "recorded": "2026-10-10",
+ "recorded": "2026-10-20",
  "coverage": [
   {
    "source": "papers",
@@ -18,6 +18,10 @@
   {
    "source": "trials",
    "status": "skipped"
+  },
+  {
+   "source": "local startups",
+   "status": "ok"
   }
  ],
  "scan": {
@@ -157,27 +161,57 @@
    "climate",
    "electrical",
    "fintech",
-   "health_bio",
    "renewable",
    "saas"
   ],
+  "matched_domain": "banana_value_added",
   "papers": {
-   "total": 535,
+   "total": 541,
+   "closest": {
+    "title": "Development and Characterization of Fortified Ready‐to‐Eat Banana Porridge Flour: A Multi‐Age Nutritional Intervention",
+    "year": 2026,
+    "cited_by": 0,
+    "venue": "Journal of Food Processing and Preservation",
+    "url": "https://doi.org/10.1155/jfpp/9211449",
+    "topics": [
+     {
+      "topic": "Food and Agricultural Sciences",
+      "subfield": "Food Science",
+      "field": "Agricultural and Biological Sciences",
+      "domain": "Life Sciences",
+      "score": 0.3799000084400177
+     },
+     {
+      "topic": "Child Nutrition and Water Access",
+      "subfield": "Nutrition and Dietetics",
+      "field": "Nursing",
+      "domain": "Health Sciences",
+      "score": 0.2184000015258789
+     },
+     {
+      "topic": "Moringa oleifera research and applications",
+      "subfield": "Plant Science",
+      "field": "Agricultural and Biological Sciences",
+      "domain": "Life Sciences",
+      "score": 0.1378999948501587
+     }
+    ]
+   },
    "by_year": {
-    "2025": 64,
+    "2025": 65,
+    "2026": 46,
     "2019": 44,
+    "2021": 44,
     "2022": 43,
-    "2026": 43,
     "2020": 42,
-    "2021": 42,
     "2023": 39,
-    "2017": 28,
     "2024": 28,
+    "2017": 27,
     "2018": 26,
     "2013": 18,
     "2012": 16,
+    "2016": 15,
     "2014": 14,
-    "2016": 14,
     "2015": 12,
     "2011": 11,
     "2001": 6,
@@ -236,7 +270,7 @@
     {
      "title": "Banana and plantain in West Africa: Production and marketing",
      "year": 2020,
-     "cited_by": 51,
+     "cited_by": 49,
      "venue": "African Journal of Food Agriculture Nutrition and Development",
      "url": "https://doi.org/10.18697/ajfand.90.18365",
      "topics": [
@@ -416,7 +450,7 @@
     {
      "title": "Biomass waste-to-energy valorisation technologies: a review case for banana processing in Uganda",
      "year": 2017,
-     "cited_by": 214,
+     "cited_by": 213,
      "venue": "Biotechnology for Biofuels",
      "url": "https://doi.org/10.1186/s13068-016-0689-5",
      "topics": [
@@ -448,7 +482,7 @@
     {
      "title": "An ecological future for weed science to sustain crop production and the environment. A review",
      "year": 2020,
-     "cited_by": 348,
+     "cited_by": 350,
      "venue": "Agronomy for Sustainable Development",
      "url": "https://doi.org/10.1007/s13593-020-00631-6",
      "topics": [
@@ -538,7 +572,7 @@
     {
      "title": "Biomass waste-to-energy valorisation technologies: a review case for banana processing in Uganda",
      "year": 2017,
-     "cited_by": 214,
+     "cited_by": 213,
      "venue": "Biotechnology for Biofuels",
      "url": "https://doi.org/10.1186/s13068-016-0689-5",
      "topics": [
@@ -568,7 +602,7 @@
     {
      "title": "Application of Agri-Food By-Products in the Food Industry",
      "year": 2023,
-     "cited_by": 191,
+     "cited_by": 190,
      "venue": "Agriculture",
      "url": "https://doi.org/10.3390/agriculture13081559",
      "topics": [
@@ -607,48 +641,44 @@
   },
   "patents": {
    "total": 0,
-   "items": []
+   "items": [],
+   "india": null
   },
   "local": {
+   "status": "ok",
    "startups": [],
    "registry_domains": [
     {
      "id": "banana_value_added",
      "label": "Banana value-added products"
     }
+   ],
+   "searched": 654,
+   "districts": [
+    "Chennai",
+    "Coimbatore",
+    "Madurai"
+   ],
+   "scope": "the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai",
+   "sectors": [
+    "agritech",
+    "consumer",
+    "food"
    ]
   },
   "elements": [],
   "discuss": [
    {
+    "field": "Banana value-added products",
+    "questions": [
+     "Which buyer comes first (retail shoppers, food processors and craft and fibre buyers), and what do they use today?",
+     "Which of these do you need before the first sale: FSSAI registration or licence and Legal Metrology declarations?"
+    ]
+   },
+   {
     "field": "Agricultural and Biological Sciences",
     "questions": [
      "Which crop or animal, which season, and which FPO or farmers will pilot it?"
-    ]
-   },
-   {
-    "field": "Engineering",
-    "questions": [
-     "Which sensors and hardware, at what unit cost, and how durable in Indian conditions?",
-     "What certification does the hardware need before sale?"
-    ]
-   },
-   {
-    "field": "Environmental Science",
-    "questions": [
-     "What is measured, by whom, and who pays for the improvement?"
-    ]
-   },
-   {
-    "field": "Energy",
-    "questions": [
-     "What does it cost per unit of energy saved or produced, and who finances it?"
-    ]
-   },
-   {
-    "field": "Economics, Econometrics and Finance",
-    "questions": [
-     "Which regulated entity (bank, NBFC, insurer) do you partner with?"
     ]
    },
    {
@@ -664,7 +694,7 @@
    {
     "source": "papers",
     "status": "ok",
-    "found": 535,
+    "found": 541,
     "note": ""
    },
    {
@@ -677,13 +707,19 @@
     "source": "patents",
     "status": "no_key",
     "found": 0,
-    "note": "Patents not searched: add a free PatentsView key (PATENTSVIEW_API_KEY)"
+    "note": "Patents not searched: register free with the EPO (EPO_OPS_KEY and EPO_OPS_SECRET) for worldwide and Indian patents"
    },
    {
     "source": "trials",
     "status": "skipped",
     "found": 0,
     "note": "Not a health idea, so clinical trials were not searched"
+   },
+   {
+    "source": "local startups",
+    "status": "ok",
+    "found": 0,
+    "note": "Only the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai"
    }
   ],
   "caveat": "Counts come from the sources listed in coverage. 'Nothing found' means nothing in those sources, not that the idea is new; have a patent attorney search before filing."
@@ -691,48 +727,32 @@
  "novelty": {
   "elements": [
    {
-    "element": "farmers",
-    "query": "\"smallholder agriculture\"",
-    "papers": 60031,
-    "label": "crowded"
-   },
-   {
     "element": "banana",
     "query": "banana",
-    "papers": 463604,
+    "papers": 464548,
     "label": "crowded"
    }
   ],
-  "pairs": [
-   {
-    "a": "farmers",
-    "b": "banana",
-    "a_papers": 60031,
-    "b_papers": 463604,
-    "papers": 4428,
-    "share_pct": 7.38,
-    "gap": false
-   }
-  ],
+  "pairs": [],
   "context": {
-   "query": "banana \"smallholder agriculture\"",
+   "query": "banana",
    "searched": true,
-   "world_papers": 4428,
-   "india_papers": 170,
-   "india_share_pct": 3.8,
+   "world_papers": 464548,
+   "india_papers": 27697,
+   "india_share_pct": 6.0,
    "tn_startups": 0,
-   "gap": true
+   "tn_scope": "the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai",
+   "gap": false
+  },
+  "coverage": {
+   "pairs_expected": 0,
+   "pairs_counted": 0
   },
   "statement": {
-   "type": "context",
-   "text": "Work on this is active worldwide (4,428 papers), but only 170 come from Indian institutions, and I found no Tamil Nadu startup doing it."
+   "type": "unclear",
+   "text": "I could search only one part on its own, banana (464,548 papers), so I can't say how new the idea is as a whole."
   },
   "levers": [
-   {
-    "kind": "localise",
-    "text": "Make it fit Tamil Nadu, with the Tamil language, local hospital or market routines, and a local price.",
-    "because": "170 of 4,428 papers are from India, and no Tamil Nadu startup was found"
-   },
    {
     "kind": "cost-down",
     "text": "Compete on cost, using the costing for this domain to see where to cut.",
