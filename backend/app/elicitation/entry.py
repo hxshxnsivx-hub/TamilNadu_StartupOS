@@ -16,7 +16,8 @@ each invent a reading:
 
   * a subtype says whether the startup is registered, its legal structure when
     that follows (nothing registered means no structure), the lowest stage it
-    can be at, and how the conversation opens;
+    can be at, and how the idea conversation opens (the experience
+    conversation always opens on what the founder can do);
   * an entry mode says which conversation runs (EntryMode in slots.py). A
     domain_only founder's domain is the profile's sector, sent with it.
 
@@ -85,10 +86,11 @@ REGISTRATION: dict[RegSubtype, Registration] = {
     ),
 }
 
-# Which conversation each entry mode runs. The experience conversation's own
-# questions, ranking and research gate are task 1.1.5 (R089, R048, R118); until
-# 1.1.5.2 switches this on, every session runs the idea conversation and keeps
-# the entry mode for it.
+# Which conversation each entry mode runs (agents/ideation.new_session, task
+# 1.1.5.1). The experience conversation asks about the founder in its own words
+# (slots.Slot.by_mode, R089), searches nothing until an idea exists (R118) and
+# ends in a choice among cited opportunity cards (R066); the ranking that fills
+# that choice is task 1.1.5.3 (planner/opportunities.py).
 CONVERSATION_MODE: dict[Door, EntryMode] = {
     Door.IDEA: EntryMode.IDEA,
     Door.DOMAIN_ONLY: EntryMode.EXPERIENCE,
