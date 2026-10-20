@@ -1,7 +1,7 @@
 {
  "id": "bci_medication",
  "idea": "developing a project for communication with physically challenged patients through brain waves for change in medication",
- "recorded": "2026-10-10",
+ "recorded": "2026-10-20",
  "coverage": [
   {
    "source": "papers",
@@ -17,6 +17,10 @@
   },
   {
    "source": "trials",
+   "status": "ok"
+  },
+  {
+   "source": "local startups",
    "status": "ok"
   }
  ],
@@ -34,7 +38,7 @@
    "domains": [
     {
      "name": "Life Sciences",
-     "share_pct": 79
+     "share_pct": 80
     },
     {
      "name": "Physical Sciences",
@@ -42,7 +46,7 @@
     },
     {
      "name": "Health Sciences",
-     "share_pct": 8
+     "share_pct": 7
     },
     {
      "name": "Social Sciences",
@@ -52,7 +56,7 @@
    "fields": [
     {
      "name": "Neuroscience",
-     "share_pct": 79
+     "share_pct": 80
     },
     {
      "name": "Computer Science",
@@ -60,7 +64,7 @@
     },
     {
      "name": "Medicine",
-     "share_pct": 8
+     "share_pct": 7
     },
     {
      "name": "Psychology",
@@ -82,11 +86,11 @@
     },
     {
      "name": "Cellular and Molecular Neuroscience",
-     "share_pct": 7
+     "share_pct": 8
     },
     {
      "name": "Epidemiology",
-     "share_pct": 6
+     "share_pct": 4
     },
     {
      "name": "Neurology",
@@ -116,11 +120,11 @@
     },
     {
      "name": "Neuroscience and Neural Engineering",
-     "share_pct": 7
+     "share_pct": 8
     },
     {
      "name": "Traumatic Brain Injury Research",
-     "share_pct": 6
+     "share_pct": 4
     },
     {
      "name": "Emotion and Mood Recognition",
@@ -144,14 +148,45 @@
    "ai_ml",
    "health_bio"
   ],
+  "matched_domain": null,
   "papers": {
-   "total": 219,
+   "total": 221,
+   "closest": {
+    "title": "On the feasibility of using motor imagery EEG-based brain–computer interface in chronic tetraplegics for assistive robotic arm control: a clinical test and long-term post-trial follow-up",
+    "year": 2012,
+    "cited_by": 168,
+    "venue": "Spinal Cord",
+    "url": "https://doi.org/10.1038/sc.2012.14",
+    "topics": [
+     {
+      "topic": "EEG and Brain-Computer Interfaces",
+      "subfield": "Cognitive Neuroscience",
+      "field": "Neuroscience",
+      "domain": "Life Sciences",
+      "score": 0.9994999766349792
+     },
+     {
+      "topic": "Stroke Rehabilitation and Recovery",
+      "subfield": "Rehabilitation",
+      "field": "Medicine",
+      "domain": "Health Sciences",
+      "score": 0.0003000000142492354
+     },
+     {
+      "topic": "Spinal Cord Injury Research",
+      "subfield": "Pathology and Forensic Medicine",
+      "field": "Medicine",
+      "domain": "Health Sciences",
+      "score": 9.999999747378752e-05
+     }
+    ]
+   },
    "by_year": {
-    "2024": 30,
+    "2024": 29,
     "2025": 28,
     "2022": 24,
     "2023": 20,
-    "2026": 17,
+    "2026": 18,
     "2018": 14,
     "2017": 13,
     "2019": 11,
@@ -159,10 +194,10 @@
     "2012": 7,
     "2015": 6,
     "2016": 6,
-    "2020": 6,
     "2013": 5,
+    "2014": 5,
+    "2020": 5,
     "2006": 4,
-    "2014": 4,
     "2009": 3,
     "2010": 3,
     "1996": 2,
@@ -206,36 +241,6 @@
      ]
     },
     {
-     "title": "Brain-Computer Interface: Advancement and Challenges",
-     "year": 2021,
-     "cited_by": 264,
-     "venue": "Sensors",
-     "url": "https://doi.org/10.3390/s21175746",
-     "topics": [
-      {
-       "topic": "EEG and Brain-Computer Interfaces",
-       "subfield": "Cognitive Neuroscience",
-       "field": "Neuroscience",
-       "domain": "Life Sciences",
-       "score": 1.0
-      },
-      {
-       "topic": "Gaze Tracking and Assistive Technology",
-       "subfield": "Human-Computer Interaction",
-       "field": "Computer Science",
-       "domain": "Physical Sciences",
-       "score": 0.0
-      },
-      {
-       "topic": "Emotion and Mood Recognition",
-       "subfield": "Experimental and Cognitive Psychology",
-       "field": "Psychology",
-       "domain": "Social Sciences",
-       "score": 0.0
-      }
-     ]
-    },
-    {
      "title": "On the feasibility of using motor imagery EEG-based brain–computer interface in chronic tetraplegics for assistive robotic arm control: a clinical test and long-term post-trial follow-up",
      "year": 2012,
      "cited_by": 168,
@@ -262,6 +267,36 @@
        "field": "Medicine",
        "domain": "Health Sciences",
        "score": 9.999999747378752e-05
+      }
+     ]
+    },
+    {
+     "title": "Brain-Computer Interface: Advancement and Challenges",
+     "year": 2021,
+     "cited_by": 263,
+     "venue": "Sensors",
+     "url": "https://doi.org/10.3390/s21175746",
+     "topics": [
+      {
+       "topic": "EEG and Brain-Computer Interfaces",
+       "subfield": "Cognitive Neuroscience",
+       "field": "Neuroscience",
+       "domain": "Life Sciences",
+       "score": 1.0
+      },
+      {
+       "topic": "Gaze Tracking and Assistive Technology",
+       "subfield": "Human-Computer Interaction",
+       "field": "Computer Science",
+       "domain": "Physical Sciences",
+       "score": 0.0
+      },
+      {
+       "topic": "Emotion and Mood Recognition",
+       "subfield": "Experimental and Cognitive Psychology",
+       "field": "Psychology",
+       "domain": "Social Sciences",
+       "score": 0.0
       }
      ]
     },
@@ -298,7 +333,7 @@
     {
      "title": "Brain–computer interfaces: the innovative key to unlocking neurological conditions",
      "year": 2024,
-     "cited_by": 169,
+     "cited_by": 170,
      "venue": "International Journal of Surgery",
      "url": "https://doi.org/10.1097/js9.0000000000002022",
      "topics": [
@@ -420,7 +455,7 @@
     {
      "title": "Functional neurological disorder: new subtypes and shared mechanisms",
      "year": 2022,
-     "cited_by": 535,
+     "cited_by": 532,
      "venue": "The Lancet Neurology",
      "url": "https://doi.org/10.1016/s1474-4422(21)00422-1",
      "topics": [
@@ -480,7 +515,7 @@
     {
      "title": "BCI for stroke rehabilitation: motor and beyond",
      "year": 2020,
-     "cited_by": 468,
+     "cited_by": 467,
      "venue": "Journal of Neural Engineering",
      "url": "https://doi.org/10.1088/1741-2552/aba162",
      "topics": [
@@ -510,7 +545,7 @@
     {
      "title": "A Survey of Robots in Healthcare",
      "year": 2021,
-     "cited_by": 384,
+     "cited_by": 389,
      "venue": "Technologies",
      "url": "https://doi.org/10.3390/technologies9010008",
      "topics": [
@@ -573,70 +608,6 @@
    "total": 24,
    "items": [
     {
-     "id": "NCT00718458",
-     "title": "EEG-Based Brain-Computer Interface Project for Individuals With Amyotrophic Lateral Sclerosis (ALS)",
-     "status": "COMPLETED",
-     "phases": null,
-     "sponsor": "Drexel University College of Medicine",
-     "start": "2007-08",
-     "url": "https://clinicaltrials.gov/study/NCT00718458"
-    },
-    {
-     "id": "NCT04612426",
-     "title": "the Effectiveness of Brain-computer Interface-pedaling Training System on the Rehabilitation of Stroke",
-     "status": "COMPLETED",
-     "phases": [
-      "NA"
-     ],
-     "sponsor": "First Affiliated Hospital Xi'an Jiaotong University",
-     "start": "2020-11-01",
-     "url": "https://clinicaltrials.gov/study/NCT04612426"
-    },
-    {
-     "id": "NCT03827187",
-     "title": "Awareness Detection and Communication in Disorders of Consciousness",
-     "status": "RECRUITING",
-     "phases": [
-      "NA"
-     ],
-     "sponsor": "University of Ulster",
-     "start": "2022-02-08",
-     "url": "https://clinicaltrials.gov/study/NCT03827187"
-    },
-    {
-     "id": "NCT06179745",
-     "title": "BCI Driving FES and Hand Orthosis for Upper Limb Rehabilitation in Chronic Stroke",
-     "status": "UNKNOWN",
-     "phases": [
-      "NA"
-     ],
-     "sponsor": "University of Essex",
-     "start": "2022-03-14",
-     "url": "https://clinicaltrials.gov/study/NCT06179745"
-    },
-    {
-     "id": "NCT04380649",
-     "title": "Development and Test of a Headset for BCI Until Obtaining an Efficient and Comfortable System That Can be Used in Daily Practice by ALS People",
-     "status": "ACTIVE_NOT_RECRUITING",
-     "phases": [
-      "NA"
-     ],
-     "sponsor": "Centre Hospitalier Universitaire de Nice",
-     "start": "2023-02-13",
-     "url": "https://clinicaltrials.gov/study/NCT04380649"
-    },
-    {
-     "id": "NCT06538506",
-     "title": "ANIMATOR - RehUP BCI Controlled Robotic Therapy vs. an Attention-based Control",
-     "status": "NOT_YET_RECRUITING",
-     "phases": [
-      "PHASE2"
-     ],
-     "sponsor": "University of Calgary",
-     "start": "2024-08",
-     "url": "https://clinicaltrials.gov/study/NCT06538506"
-    },
-    {
      "id": "NCT02567201",
      "title": "Electrophysiological Evaluation of Voluntary Attention",
      "status": "COMPLETED",
@@ -646,6 +617,72 @@
      "sponsor": "Hospices Civils de Lyon",
      "start": "2015-10-16",
      "url": "https://clinicaltrials.gov/study/NCT02567201"
+    },
+    {
+     "id": "NCT04353297",
+     "title": "BCI-assisted MI Intervention in Subacute Stroke",
+     "status": "COMPLETED",
+     "phases": [
+      "NA"
+     ],
+     "sponsor": "I.R.C.C.S. Fondazione Santa Lucia",
+     "start": "2021-01-28",
+     "url": "https://clinicaltrials.gov/study/NCT04353297"
+    },
+    {
+     "id": "NCT04050696",
+     "title": "The Use of Electromagnetic Field (EMF) Treatment in Chronic Spinal Cord Injury (SCI) Patients",
+     "status": "UNKNOWN",
+     "phases": [
+      "NA"
+     ],
+     "sponsor": "BrainQ Technologies Ltd.",
+     "start": "2019-09-18",
+     "url": "https://clinicaltrials.gov/study/NCT04050696"
+    },
+    {
+     "id": "NCT06951035",
+     "title": "Impact of rTMS on BCI Control in Upper Limb Motor Rehabilitation of Patients With Chronic Stroke",
+     "status": "RECRUITING",
+     "phases": [
+      "NA"
+     ],
+     "sponsor": "Institut National de la Santé Et de la Recherche Médicale, France",
+     "start": "2025-04-25",
+     "url": "https://clinicaltrials.gov/study/NCT06951035"
+    },
+    {
+     "id": "NCT07525609",
+     "title": "Neurofeedback-Guided BCI Motor Imagery for Upper-Limb Recovery in Chronic Stroke",
+     "status": "COMPLETED",
+     "phases": [
+      "NA"
+     ],
+     "sponsor": "CESPU-Escola Superior de Tecnologias da Saúde de Tâmega e Sousa",
+     "start": "2012-03",
+     "url": "https://clinicaltrials.gov/study/NCT07525609"
+    },
+    {
+     "id": "NCT07858006",
+     "title": "Brain-computer Interface (BCI)-Guided Upper Limb Neurorehabilitation for Acute Stroke With the recoveriX System",
+     "status": "NOT_YET_RECRUITING",
+     "phases": [
+      "NA"
+     ],
+     "sponsor": "Tan Tock Seng Hospital",
+     "start": "2026-10-01",
+     "url": "https://clinicaltrials.gov/study/NCT07858006"
+    },
+    {
+     "id": "NCT03508037",
+     "title": "Therapy to Improve Reaching Movement in Upper Limb",
+     "status": "UNKNOWN",
+     "phases": [
+      "NA"
+     ],
+     "sponsor": "Cajal Institute of the Spanish National Research Council",
+     "start": "2018-03-12",
+     "url": "https://clinicaltrials.gov/study/NCT03508037"
     },
     {
      "id": "NCT06240299",
@@ -659,31 +696,31 @@
      "url": "https://clinicaltrials.gov/study/NCT06240299"
     },
     {
-     "id": "NCT01897025",
-     "title": "Combined Transcranial Direct Current Stimulation and Motor Imagery-based Robotic Arm Training for Stroke Rehabilitation",
-     "status": "COMPLETED",
-     "phases": [
-      "PHASE2"
-     ],
-     "sponsor": "National University Hospital, Singapore",
-     "start": "2011-01",
-     "url": "https://clinicaltrials.gov/study/NCT01897025"
-    },
-    {
-     "id": "NCT07784920",
-     "title": "Lifescapes System in Post-stroke Hand Recovery",
-     "status": "NOT_YET_RECRUITING",
+     "id": "NCT06160453",
+     "title": "HEROES: Human Extremity Robotic Rehabilitation and Outcome Enhancement for Stroke",
+     "status": "UNKNOWN",
      "phases": [
       "NA"
      ],
-     "sponsor": "National University Hospital, Singapore",
-     "start": "2026-10-01",
-     "url": "https://clinicaltrials.gov/study/NCT07784920"
+     "sponsor": "Aristotle University Of Thessaloniki",
+     "start": "2024-12-01",
+     "url": "https://clinicaltrials.gov/study/NCT06160453"
+    },
+    {
+     "id": "NCT03827187",
+     "title": "Awareness Detection and Communication in Disorders of Consciousness",
+     "status": "RECRUITING",
+     "phases": [
+      "NA"
+     ],
+     "sponsor": "University of Ulster",
+     "start": "2022-02-08",
+     "url": "https://clinicaltrials.gov/study/NCT03827187"
     }
    ]
   },
   "projects": {
-   "total": 704,
+   "total": 713,
    "items": [
     {
      "name": "pieeg-club/ironbci",
@@ -696,7 +733,7 @@
     {
      "name": "aliasvishnu/EEGNet",
      "description": "[Old version] PyTorch implementation of EEGNet: A Compact Convolutional Network for EEG-based Brain-Computer Interfaces - https://arxiv.org/pdf/1611.08024.pdf",
-     "stars": 385,
+     "stars": 386,
      "updated": "2019-07-10T22:35:35Z",
      "license": "MIT",
      "url": "https://github.com/aliasvishnu/EEGNet"
@@ -704,10 +741,18 @@
     {
      "name": "xiangzhang1015/Deep-Learning-for-BCI",
      "description": "Resources for Book: Deep Learning for EEG-based Brain-Computer Interface: Representations, Algorithms and Applications",
-     "stars": 300,
+     "stars": 303,
      "updated": "2026-08-14T15:32:17Z",
      "license": "NOASSERTION",
      "url": "https://github.com/xiangzhang1015/Deep-Learning-for-BCI"
+    },
+    {
+     "name": "Cerelog-ESP-EEG/ESP-EEG",
+     "description": "Cerelog ESP-EEG High-precision 8-channel biosensing board designed for EEG, EMG, ECG, and Brain Computer Interface (BCI) research applications.",
+     "stars": 170,
+     "updated": "2026-09-11T16:56:34Z",
+     "license": "NOASSERTION",
+     "url": "https://github.com/Cerelog-ESP-EEG/ESP-EEG"
     },
     {
      "name": "RonanB96/Low-Cost-EEG-Based-BCI",
@@ -718,17 +763,9 @@
      "url": "https://github.com/RonanB96/Low-Cost-EEG-Based-BCI"
     },
     {
-     "name": "Cerelog-ESP-EEG/ESP-EEG",
-     "description": "Cerelog ESP-EEG High-precision 8-channel biosensing board designed for EEG, EMG, ECG, and Brain Computer Interface (BCI) research applications.",
-     "stars": 168,
-     "updated": "2026-09-11T16:56:34Z",
-     "license": "NOASSERTION",
-     "url": "https://github.com/Cerelog-ESP-EEG/ESP-EEG"
-    },
-    {
      "name": "CAMBI-tech/BciPy",
      "description": "Python Brain-Computer Interface Software",
-     "stars": 157,
+     "stars": 158,
      "updated": "2026-07-30T15:47:34Z",
      "license": "BSD-3-Clause",
      "url": "https://github.com/CAMBI-tech/BciPy"
@@ -744,8 +781,8 @@
     {
      "name": "NeuroSkill-com/skill",
      "description": "NeuroSkill™ — State of Mind Brain-Computer Interface system",
-     "stars": 103,
-     "updated": "2026-10-05T06:12:46Z",
+     "stars": 105,
+     "updated": "2026-10-12T02:44:50Z",
      "license": "GPL-3.0",
      "url": "https://github.com/NeuroSkill-com/skill"
     },
@@ -769,11 +806,21 @@
   },
   "patents": {
    "total": 0,
-   "items": []
+   "items": [],
+   "india": null
   },
   "local": {
+   "status": "ok",
    "startups": [],
-   "registry_domains": []
+   "registry_domains": [],
+   "searched": 654,
+   "districts": [
+    "Chennai",
+    "Coimbatore",
+    "Madurai"
+   ],
+   "scope": "the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai",
+   "sectors": []
   },
   "elements": [],
   "discuss": [
@@ -824,26 +871,32 @@
    {
     "source": "papers",
     "status": "ok",
-    "found": 219,
+    "found": 221,
     "note": ""
    },
    {
     "source": "projects",
     "status": "ok",
-    "found": 704,
+    "found": 713,
     "note": ""
    },
    {
     "source": "patents",
     "status": "no_key",
     "found": 0,
-    "note": "Patents not searched: add a free PatentsView key (PATENTSVIEW_API_KEY)"
+    "note": "Patents not searched: register free with the EPO (EPO_OPS_KEY and EPO_OPS_SECRET) for worldwide and Indian patents"
    },
    {
     "source": "trials",
     "status": "ok",
     "found": 24,
     "note": ""
+   },
+   {
+    "source": "local startups",
+    "status": "ok",
+    "found": 0,
+    "note": "Only the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai"
    }
   ],
   "caveat": "Counts come from the sources listed in coverage. 'Nothing found' means nothing in those sources, not that the idea is new; have a patent attorney search before filing."
@@ -851,21 +904,15 @@
  "novelty": {
   "elements": [
    {
-    "element": "physically challenged",
-    "query": "(\"motor disability\" OR paralysis OR \"assistive technology\")",
-    "papers": 746306,
-    "label": "crowded"
-   },
-   {
     "element": "brain waves",
     "query": "(EEG OR \"brain-computer interface\")",
-    "papers": 760623,
+    "papers": 757103,
     "label": "crowded"
    },
    {
     "element": "medication",
     "query": "\"medication management\"",
-    "papers": 73947,
+    "papers": 74170,
     "label": "crowded"
    }
   ],
@@ -873,49 +920,36 @@
    {
     "a": "brain waves",
     "b": "medication",
-    "a_papers": 760623,
-    "b_papers": 73947,
-    "papers": 1118,
-    "share_pct": 1.51,
-    "gap": false
-   },
-   {
-    "a": "physically challenged",
-    "b": "medication",
-    "a_papers": 746306,
-    "b_papers": 73947,
-    "papers": 2404,
-    "share_pct": 3.25,
-    "gap": false
-   },
-   {
-    "a": "physically challenged",
-    "b": "brain waves",
-    "a_papers": 746306,
-    "b_papers": 760623,
-    "papers": 35047,
-    "share_pct": 4.7,
+    "a_papers": 757103,
+    "b_papers": 74170,
+    "papers": 1125,
+    "share_pct": 1.52,
     "gap": false
    }
   ],
   "context": {
-   "query": "(EEG OR \"brain-computer interface\") (\"motor disability\" OR paralysis OR \"assistive technology\")",
+   "query": "(EEG OR \"brain-computer interface\") \"medication management\"",
    "searched": true,
-   "world_papers": 35047,
-   "india_papers": 1667,
-   "india_share_pct": 4.8,
+   "world_papers": 1125,
+   "india_papers": 52,
+   "india_share_pct": 4.6,
    "tn_startups": 0,
+   "tn_scope": "the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai",
    "gap": true
+  },
+  "coverage": {
+   "pairs_expected": 1,
+   "pairs_counted": 1
   },
   "statement": {
    "type": "context",
-   "text": "Work on this is active worldwide (35,047 papers), but only 1,667 come from Indian institutions, and I found no Tamil Nadu startup doing it."
+   "text": "Work on this is active worldwide (1,125 papers), but only 52 come from Indian institutions, and none of the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai does it."
   },
   "levers": [
    {
     "kind": "localise",
     "text": "Make it fit Tamil Nadu, with the Tamil language, local hospital or market routines, and a local price.",
-    "because": "1,667 of 35,047 papers are from India, and no Tamil Nadu startup was found"
+    "because": "52 of 1,125 papers are from India, and none of the 654 startups on the Tamil Nadu Startup Map in Chennai, Coimbatore and Madurai does it"
    },
    {
     "kind": "regulatory route",
