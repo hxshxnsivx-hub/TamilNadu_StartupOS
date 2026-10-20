@@ -22,7 +22,7 @@ from app.elicitation.session import ElicitationSession, Outcome, Source
 from app.elicitation.slots import ASKABLE_BY_MODE, BY_KEY, SLOTS
 from app.planner import registry
 from app.planner.plan import build_plan
-from app.research import novelty
+from app.research import levers, novelty
 from app.research import scan as research
 
 _FACT_KEYS = [s.key for s in SLOTS if not s.sensitive]
@@ -223,7 +223,8 @@ def _domain_row(d: dict) -> dict:
 def _find_domains(idea: str) -> dict:
     doms = registry.load()["domains"]
     rows = []
-    if best := registry.detect_domain(idea):
+    best = (research.matched_domain(idea) or {}).get("id")  # as the scan and roadmap match
+    if best:
         rows.append(_domain_row(doms[best]))
     rows += [
         _domain_row(doms[x["id"]])
@@ -384,19 +385,26 @@ async def run_tool(name: str, args: dict, session: ElicitationSession, state: di
             return compact_scan(r)
         if name == "check_novelty":
             beneficiary = session.slots.get("beneficiary")
+            scan = state.get("last_scan")
             r = await novelty.check(
                 args["idea"],
                 elements=args.get("elements"),
-                scan=state.get("last_scan"),
+                scan=scan,
                 beneficiary=(
                     str(getattr(beneficiary.value, "value", beneficiary.value))
                     if beneficiary
                     else None
                 ),
+                slots=session.kept(),
                 private=state.get("private", False),
             )
             state["novelty"] = r
-            return r
+            # the model hears the levers worded for the founder's sector as it stands now
+            return levers.worded(
+                r,
+                domain_id=(scan or {}).get("matched_domain"),
+                sector=session.kept().get("sector"),
+            )
         if name == "find_domains":
             return _find_domains(args["idea"])
         if name == "support_for":
@@ -411,7 +419,11 @@ async def run_tool(name: str, args: dict, session: ElicitationSession, state: di
                 }
             return council_brief(r)
         if name == "build_roadmap":
-            r = _roadmap(args["idea"], args.get("domain_id"), session, state.get("council"))
+            # the scan's domain unless the model names one: one domain everywhere (R044)
+            domain_id = args.get("domain_id") or (state.get("last_scan") or {}).get(
+                "matched_domain"
+            )
+            r = _roadmap(args["idea"], domain_id, session, state.get("council"))
             state["roadmap"] = r
             return r
         if name == "note_fact":
