@@ -66,8 +66,11 @@ export default function Start() {
   function finish() {
     saveJourney({ ...j, terrain_confirmed: true });
     // where the founder lands depends on how they arrived — that is the whole
-    // point of asking. An idea goes to be tested; no idea goes to discovery.
-    nav(j.entry_mode === "idea" ? "/ideate" : "/schemes");
+    // point of asking. An idea goes to be tested; no idea (domain_only,
+    // intent_only) goes to the conversation, which starts from the founder's
+    // experience instead of an idea (task 1.1.5.2). The Talk page sends the
+    // entry mode with the new conversation (agentClient.entryForConversation).
+    nav(j.entry_mode === "idea" ? "/ideate" : "/talk");
   }
 
   const terrainMeta = TERRAINS.find((x) => x.id === j.terrain);
