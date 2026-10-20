@@ -154,6 +154,14 @@ HEALTH_TERMS = re.compile(
     r"cardiac|diabetes|elderly|older adults|surgery|drug|nurse|rehab",
     re.I,
 )
+# A device or clinical use: what makes a health idea a medical product (R139). Words of
+# care settings ("hospital", "medical", "treatment") are not here: a loan names them too.
+CLINICAL_TERMS = re.compile(
+    r"\b(?:device|sensor|wearable|implant|prosthe|monitor|diagnos|therap|rehab|assistive|eeg|"
+    r"ecg|emg|brain|neuro|cardiac|clinical|drug|medication|dose|dosage|surg|wheelchair|"
+    r"hearing aid|insulin|glucose|ventilator|test kit)",
+    re.I,
+)
 STOP = {
     "made",
     "buying",
@@ -456,3 +464,25 @@ def fields_from_terms(text: str) -> list[str]:
 
 def is_health(text: str) -> bool:
     return bool(HEALTH_TERMS.search(text))
+
+
+def is_health_product(idea: str, scan: dict | None = None, slots: dict | None = None) -> bool:
+    """A medical device or clinical product, not just an idea that names medicine (R139).
+
+    Health words or trials found only say the idea sits near medicine: "instalment loans
+    for medical treatment at hospital billing desks" has both and is a loan. It takes a
+    device or clinical signal as well: such a word in the founder's idea or solution, or
+    a physical product in the health sector by the founder's own answers. One rule for
+    the novelty levers and the review panel, so medical advice has one door.
+    """
+
+    def slot(key: str) -> str:
+        v = (slots or {}).get(key)
+        return str(getattr(v, "value", v) or "")
+
+    text = f"{idea} {slot('solution')}"
+    near = is_health(text) or bool((scan or {}).get("trials", {}).get("total"))
+    device = bool(CLINICAL_TERMS.search(text)) or (
+        slot("sector") == "health" and slot("product_form") in ("physical", "hybrid")
+    )
+    return near and device
