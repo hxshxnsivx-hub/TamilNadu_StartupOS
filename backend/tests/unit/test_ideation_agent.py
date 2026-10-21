@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 
 import httpx
 import pytest
@@ -270,7 +271,8 @@ def test_model_tool_loop_streams_and_cites(monkeypatch, _env):
     ]
     done = evs[-1]["data"]
     assert done["tools_used"] == ["scan_prior_art"] and done["dropped"] == 0
-    assert _env[0]["queries"] == {"papers": "P300 BCI nurse call"}
+    scanned = next(c for c in _env if "text" in c)  # the part counts run beside it (R158)
+    assert scanned["queries"] == {"papers": "P300 BCI nurse call"}
     first = sent[0]
     assert first["stream"] is True and first["messages"][0]["role"] == "user"
     assert "Arun" in first["system"] and {t["name"] for t in first["tools"]} >= {
@@ -360,8 +362,13 @@ def test_novelty_is_narrated_one_point_per_turn():
     assert "because only 19 papers cover both" in fourth
     fifth = _run(agent.turn(s, "skip"))["reply"]
     assert fifth.startswith("Another way to stand out: make it fit Tamil Nadu")
-    assert s.narrated[0] == "statement" and s.narrated[1].startswith("council:")
-    assert s.narrated[2:] == ["lever:0", "lever:1"]
+    # each point is also remembered by its content, so a re-run that finds the same
+    # is not said again (task 1.2.3)
+    in_order = [
+        n for n in s.narrated if not re.match(r"(evidence|statement|lever):[0-9a-f]{12}$", n)
+    ]
+    assert in_order[0] == "statement" and in_order[1].startswith("council:")
+    assert in_order[2:] == ["lever:0", "lever:1"]
 
 
 def test_reask_names_the_stage_the_reply_gave():
