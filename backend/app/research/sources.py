@@ -14,6 +14,7 @@ caps requests per source per day (0: no cap).
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import hashlib
 import json
@@ -232,14 +233,15 @@ async def papers(client: httpx.AsyncClient, query: str, cache: Cache | None = No
         )
     if status != 200:
         return SourceResult("papers", "error", note=_why("OpenAlex", status))
-    _, cited = await _get_json(
-        client,
-        cache,
-        OPENALEX,
-        params={**base, "per_page": 5, "select": select, "sort": "cited_by_count:desc"},
-    )
-    _, years = await _get_json(
-        client, cache, OPENALEX, params={**base, "group_by": "publication_year"}
+    # the most cited and the counts by year side by side, once the budget is known (R158)
+    (_, cited), (_, years) = await asyncio.gather(
+        _get_json(
+            client,
+            cache,
+            OPENALEX,
+            params={**base, "per_page": 5, "select": select, "sort": "cited_by_count:desc"},
+        ),
+        _get_json(client, cache, OPENALEX, params={**base, "group_by": "publication_year"}),
     )
     by_year = {}
     if isinstance(years, dict):
