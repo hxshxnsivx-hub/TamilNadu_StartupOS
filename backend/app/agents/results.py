@@ -1,7 +1,8 @@
 """Results of background work, kept apart from the conversation document.
 
 Evidence, novelty and council results are written by jobs while the founder
-keeps talking. Storing them in their own rows, keyed by session, idea version
+keeps talking. Storing them in their own rows, keyed by session, version (the
+research key: what the search would send, ideation.research_key, task 1.2.3)
 and kind, means a job never collides with a turn saving the session (no
 version conflicts), and a resumed session finds the results for its idea.
 
