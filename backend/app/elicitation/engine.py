@@ -48,7 +48,7 @@ from app.elicitation.confirmation import (
     polarity,
     strip_negated,
 )
-from app.elicitation.extract import extract
+from app.elicitation.extract import PROBLEM_GUESS, extract
 from app.elicitation.selector import (
     Q_MAX,
     is_objective_clear,
@@ -222,7 +222,8 @@ def observe(session: ElicitationSession, text: str, *, answering: str | None = N
 
     A reply that answered a free-text question fills no other free-text slot:
     the founder's words about who it is for are not a new problem (the 1.1.2
-    review). A reply with a correction word ("sorry, actually I am in Salem")
+    review), and no reply to a named question is read as the problem by its
+    position alone (R033). A reply with a correction word ("sorry, actually I am in Salem")
     states the founder's answer for each fact it changes (R063).
 
     A conversation that asks only some slots (slots.ASKABLE_BY_MODE) takes only
@@ -233,17 +234,19 @@ def observe(session: ElicitationSession, text: str, *, answering: str | None = N
     session.state = SessionState.EXTRACTING
     allowed = ASKABLE_BY_MODE.get(session.mode)
     session.learned = []
-    answered_text = False
+    answered = answered_text = False
 
     if answering and answering.startswith(DYN) and text.strip():
         for d in session.dynamic:  # free text: the founder's own answer, kept as said
             if d["key"] == answering:
                 d["answer"] = text.strip()
+                answered = True
     elif answering and answering in BY_KEY and text.strip():
         value = validate(answering, text)
         if value is not None:
             session.put(answering, value, 0.90, Source.ANSWER)
             session.reask = None
+            answered = True
             answered_text = BY_KEY[answering].kind == "text"
         else:
             # Not an answer to this question ("Chennai" for the stage). Never
@@ -258,6 +261,10 @@ def observe(session: ElicitationSession, text: str, *, answering: str | None = N
     for e in extract(strip_negated(text) if correcting else text):
         # Never let an extraction overwrite the direct answer we just stored.
         if e.key == answering or (answered_text and BY_KEY[e.key].kind == "text"):
+            continue
+        # A reply to a named question is that answer: its first sentence is not
+        # the problem (R033). Only a cue ("the problem is ...") still names one.
+        if answered and e.key == "problem" and e.confidence <= PROBLEM_GUESS:
             continue
         if allowed is not None and e.key not in allowed:
             continue
