@@ -309,6 +309,11 @@ _MONEY = re.compile(
     re.I,
 )
 
+# The loose positional guess: any long reply's first sentence read as the problem.
+# It is meant for an opening description; a reply to a named question is that
+# answer, not the problem (engine.observe, R033).
+PROBLEM_GUESS = 0.55
+
 # Sentence-bounded, deliberately. An unbounded `.{12,160}` runs straight
 # through the full stop and swallows the next sentence, so "The problem is X.
 # I want to build Y with 15 lakh" captured the funding plan as the problem and
@@ -400,7 +405,7 @@ def extract(text: str) -> list[Extraction]:
         # Loose positional guess at 0.55, deliberately BELOW TAU_FILL so it is
         # confirmed at the restatement rather than assumed. First sentence only.
         first = re.split(r"[.!?\n]", text.strip(), maxsplit=1)[0]
-        out.append(Extraction("problem", _clean(first)[:200], 0.55))
+        out.append(Extraction("problem", _clean(first)[:200], PROBLEM_GUESS))
 
     if (m := _SOLUTION_CUE.search(text)) is not None:
         out.append(Extraction("solution", _clean(m.group(1)), 0.70))
