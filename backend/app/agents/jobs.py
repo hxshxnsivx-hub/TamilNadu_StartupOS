@@ -10,9 +10,15 @@ waits for it only briefly:
                                                       result enters a later turn
 
 A job works on a snapshot (idea text, known facts, privacy), never on the live
-session, so it cannot collide with a turn saving the session. Its latest result
-is kept by session and kind; the next turn takes it in. The search runs once
-per conversation, as before; the panel runs again when asked.
+session, so it cannot collide with a turn saving the session. Jobs and results
+are kept by session, version and kind (R040): the version is the session's
+research key, a hash of what the search would send (ideation.research_key), so
+the board hands back a finished job only for the same inputs, a new version
+never waits behind an old one, and a late result for an old version is stored
+under its own key, where no turn reads it. Starting a new version cancels the
+old version's running job of that kind (its results would never be used, and
+the free search budget is small). The search runs again only when its inputs
+change (R014); the panel runs again when asked.
 
 Listeners (the Talk screen) get a notice when a job finishes, so the panels
 fill in before the next turn.
@@ -49,6 +55,7 @@ class Job:
     session_id: str
     kind: str
     task: asyncio.Future
+    version: str = LATEST
     started: datetime = field(default_factory=lambda: datetime.now(UTC))
     finished: datetime | None = None
 
@@ -61,7 +68,9 @@ class Job:
 
 class Board:
     def __init__(self) -> None:
-        self.jobs: dict[tuple[str, str], Job] = {}  # (session, kind) -> the latest job
+        # (session, version, kind) -> the latest job for that version
+        self.jobs: dict[tuple[str, str, str], Job] = {}
+        self.current: dict[tuple[str, str], str] = {}  # (session, kind) -> newest version
         self.results = MemoryResults()
         self.listeners: dict[str, set[asyncio.Queue]] = {}
 
@@ -71,9 +80,12 @@ class Board:
         kind: str,
         work: Callable[[], Awaitable[dict]],
         reuse_done: bool = False,
+        version: str = LATEST,
     ) -> Job:
-        """Start `work`, unless a job of this kind is already running for the session
-        (or, with `reuse_done`, has already finished): that job is returned instead.
+        """Start `work` for this version, unless a job of this kind is already
+        running for the session and version (or, with `reuse_done`, has already
+        finished): that job is returned instead. A running job of another version
+        is cancelled: it was for inputs the conversation has moved on from.
 
         For a deleted conversation nothing runs: the job returned has already
         failed, so a caller waiting on it carries on without a result."""
@@ -81,23 +93,29 @@ class Board:
         if self.results.forgotten(session_id):
             refused = loop.create_future()
             refused.cancel()
-            return Job(session_id, kind, refused)
+            return Job(session_id, kind, refused, version)
         self._prune()
-        current = self.jobs.get((session_id, kind))
+        self.current[(session_id, kind)] = version
+        current = self.jobs.get((session_id, version, kind))
         if current and (current.state == RUNNING or (reuse_done and current.state == DONE)):
             return current
+        for (sid, v, k), old in list(self.jobs.items()):
+            if sid == session_id and k == kind and v != version and old.state == RUNNING:
+                old.task.cancel()
+                log.info("job.superseded", kind=kind, session=session_id)
 
         async def run() -> dict:
             payload = await work()
             if not self.results.forgotten(session_id):
-                await self.results.put(session_id, LATEST, kind, payload)
-                self.notify(session_id, kind, payload)
+                await self.results.put(session_id, version, kind, payload)
+                if self.current.get((session_id, kind)) == version:  # not a stale version
+                    self.notify(session_id, kind, payload)
             return payload
 
         task = loop.create_task(run(), name=f"{kind}:{session_id}")
-        job = Job(session_id, kind, task)
+        job = Job(session_id, kind, task, version)
         task.add_done_callback(lambda t: _finished(job, t))
-        self.jobs[(session_id, kind)] = job
+        self.jobs[(session_id, version, kind)] = job
         log.info("job.started", kind=kind, session=session_id)
         return job
 
@@ -107,6 +125,9 @@ class Board:
         old = [k for k, j in self.jobs.items() if j.finished and now - j.finished > KEEP]
         for key in old:
             del self.jobs[key]
+        live = {sid for sid, _, _ in self.jobs}
+        for key in [k for k in self.current if k[0] not in live]:
+            del self.current[key]
 
     async def wait(self, job: Job, seconds: float) -> bool:
         """True when the job finished (successfully) within `seconds`."""
@@ -114,13 +135,33 @@ class Board:
             await asyncio.wait({job.task}, timeout=seconds)
         return job.state == DONE
 
-    def running(self, session_id: str, kind: str) -> Job | None:
-        job = self.jobs.get((session_id, kind))
+    def running(self, session_id: str, kind: str, version: str = LATEST) -> Job | None:
+        job = self.jobs.get((session_id, version, kind))
         return job if job and job.state == RUNNING else None
 
-    async def take(self, session_id: str, kind: str) -> dict | None:
-        """The latest finished result of this kind, if there is one."""
-        return await self.results.get(session_id, LATEST, kind)
+    def retire(self, session_id: str, version: str) -> None:
+        """The session's inputs are now `version`, for every kind: running jobs of
+        other versions are cancelled, and a result one of them still delivers is
+        stored apart and never announced (the research key changed, task 1.2.3)."""
+        if self.results.forgotten(session_id):
+            return
+        for kind in KINDS:
+            self.current[(session_id, kind)] = version
+        for (sid, v, k), job in list(self.jobs.items()):
+            if sid == session_id and v != version and job.state == RUNNING:
+                job.task.cancel()
+                log.info("job.superseded", kind=k, session=session_id)
+
+    def superseded(self, session_id: str, kind: str, version: str) -> bool:
+        """A job of this kind is still running for another version of the session."""
+        return any(
+            sid == session_id and k == kind and v != version and j.state == RUNNING
+            for (sid, v, k), j in self.jobs.items()
+        )
+
+    async def take(self, session_id: str, kind: str, version: str = LATEST) -> dict | None:
+        """The finished result of this kind for this version, if there is one."""
+        return await self.results.get(session_id, version, kind)
 
     # ---- notices for the screen ------------------------------------------------
 
@@ -141,10 +182,12 @@ class Board:
         """The conversation was deleted: stop its jobs, drop its results, refuse
         any later start or result for it, and end its notice streams."""
         await self.results.delete_session(session_id)  # first: refuses from here on
-        for kind in KINDS:
-            job = self.jobs.pop((session_id, kind), None)
-            if job and job.state == RUNNING:
+        for key in [k for k in self.jobs if k[0] == session_id]:
+            job = self.jobs.pop(key)
+            if job.state == RUNNING:
                 job.task.cancel()
+        for kind in KINDS:
+            self.current.pop((session_id, kind), None)
         for q in self.listeners.pop(session_id, ()):
             if q.full():  # the end notice matters more than an old one
                 q.get_nowait()
