@@ -403,21 +403,7 @@ async def scan(
                 )
             return await fn(client, query, cache)
 
-        tasks = [
-            search("papers", sources.papers, q["papers"]),
-            search("projects", sources.projects, q["projects"]),
-            search("patents", sources.patents, q["patents"]),
-        ]
-        if health:
-            tasks.append(search("trials", sources.trials, q["trials"]))
-        results = {r.source: r for r in await asyncio.gather(*tasks)}
-        if not health:
-            results["trials"] = sources.SourceResult(
-                "trials", "skipped", note="Not a health idea, so clinical trials were not searched"
-            )
-
-        element_rows = []
-        for el in elements or []:
+        async def element_row(el: str) -> dict:
             eq = build_queries(el)
             p, g = await asyncio.gather(
                 search("papers", sources.papers, eq["papers"]),
@@ -425,14 +411,33 @@ async def scan(
             )
             pt = p.total if p.status == "ok" else None
             gt = g.total if g.status == "ok" else None
-            element_rows.append({
+            return {
                 "element": el,
                 "query": eq["papers"],
                 "papers": pt,
                 "projects": gt,
                 "label": _label(pt, gt),
                 "closest": (p.items[:1] or g.items[:1] or [None])[0],
-            })  # fmt: skip
+            }
+
+        tasks = [
+            search("papers", sources.papers, q["papers"]),
+            search("projects", sources.projects, q["projects"]),
+            search("patents", sources.patents, q["patents"]),
+        ]
+        if health:
+            tasks.append(search("trials", sources.trials, q["trials"]))
+        # The sources and the parts are independent searches: all side by side, the
+        # parts kept in their order (R158).
+        found, element_rows = await asyncio.gather(
+            asyncio.gather(*tasks), asyncio.gather(*(element_row(el) for el in elements or []))
+        )
+        results = {r.source: r for r in found}
+        if not health:
+            results["trials"] = sources.SourceResult(
+                "trials", "skipped", note="Not a health idea, so clinical trials were not searched"
+            )
+        element_rows = list(element_rows)
     finally:
         if own:
             await client.aclose()
