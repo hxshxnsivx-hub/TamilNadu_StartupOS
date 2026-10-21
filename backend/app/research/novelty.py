@@ -17,6 +17,8 @@ where to look, not what is true.
 from __future__ import annotations
 
 import asyncio
+import inspect
+from collections.abc import Awaitable
 from itertools import combinations
 
 import httpx
@@ -94,14 +96,17 @@ async def check(
     idea: str,
     *,
     elements: list[str] | None = None,
-    scan: dict | None = None,
+    scan: dict | Awaitable[dict | None] | None = None,
     beneficiary: str | None = None,
     slots: dict | None = None,
     client: httpx.AsyncClient | None = None,
     private: bool = False,
 ) -> dict:
     """The novelty map, one statement, and the levers the gaps support. `slots`: what
-    the founder has said so far, for the health-product rule (R139)."""
+    the founder has said so far, for the health-product rule (R139).
+
+    `scan` may still be running (an awaitable): the part counts do not need it, so
+    they are sent while it finishes (R158); only the context and levers wait for it."""
     parts = _parts(idea, elements)
     if private:
         return _unclear(parts, "Private mode: nothing was searched outside Vanigam.", "private")
@@ -113,9 +118,8 @@ async def check(
     own = client is None
     client = client or httpx.AsyncClient(timeout=60, headers={"User-Agent": sources.UA})
     try:
-        counts = await asyncio.gather(
-            *(sources.paper_count(client, p["query"], cache) for p in parts)
-        )
+        counting = asyncio.gather(*(sources.paper_count(client, p["query"], cache) for p in parts))
+        counts, scan = await asyncio.gather(counting, _ready(scan))
         statuses = {c.status for c in counts}
         for p, c in zip(parts, counts, strict=True):
             p["papers"] = c.total if c.status == "ok" else None
@@ -170,8 +174,10 @@ async def check(
                 }
             )
 
-        context = await _context(client, cache, searched, scan)
-        retarget = await _retarget(client, cache, searched, beneficiary)
+        context, retarget = await asyncio.gather(
+            _context(client, cache, searched, scan),
+            _retarget(client, cache, searched, beneficiary),
+        )
     finally:
         if own:
             await client.aclose()
@@ -203,6 +209,11 @@ async def check(
         },
         "caveat": CAVEAT,
     }
+
+
+async def _ready(scan: dict | Awaitable[dict | None] | None) -> dict | None:
+    """The scan, once it has finished."""
+    return await scan if inspect.isawaitable(scan) else scan
 
 
 def _core_query(parts: list[dict]) -> str:
@@ -247,11 +258,15 @@ async def _context(client, cache, parts: list[dict], scan: dict | None) -> dict:
     }
 
 
+def who_words(beneficiary: str | None) -> list[str]:
+    """The words of who is served that the re-target search may send (public ones, two
+    at most); the research key hashes the same words (R014)."""
+    return [w for w in (beneficiary or "").lower().split() if w in public_vocabulary()][:2]
+
+
 async def _retarget(client, cache, parts: list[dict], beneficiary: str | None) -> dict | None:
     """Is the founder's user group rare in the work on this idea?"""
-    if not beneficiary:
-        return None
-    words = [w for w in beneficiary.lower().split() if w in public_vocabulary()][:2]
+    words = who_words(beneficiary)
     if not words:
         return None
     core = _core_query(parts)
