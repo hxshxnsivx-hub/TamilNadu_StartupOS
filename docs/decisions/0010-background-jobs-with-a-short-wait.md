@@ -25,6 +25,11 @@ to be the slow lane (decision 0001), but until now they ran inside the turn (dec
 - **The screen hears first:** `GET /ideation/agent/sessions/{id}/notices` streams `evidence`,
   `novelty` and `council` the moment a job finishes; the Talk page fills its panels from it.
 - **Deleting a conversation** cancels its jobs and drops their results.
+- **Update 2026-10-21 (task 1.2.3):** jobs and results are kept by session, research key and
+  kind. The research key is a hash of what the search would send (public terms, queries,
+  registry domain, the public words of who it is for, the health signals, private mode), so the
+  search runs again only when that changes, not on every new slot; a job for older inputs is
+  cancelled, and its result, if it lands, is never read or spoken.
 
 ## Options considered
 
