@@ -393,6 +393,15 @@ def scrub(query: str, founder_text: str = "") -> str:
     return " ".join(keep[:8])
 
 
+def public_terms(text: str) -> list[str]:
+    """The idea's words that a search may use: its technical terms and its
+    public-vocabulary words, sorted. What a search sends is built from these alone,
+    so two texts with the same public terms search the same (R014)."""
+    technical, content = expand(text)
+    vocab = public_vocabulary()
+    return sorted(set(technical) | {w for w in content if w in vocab})
+
+
 def build_queries(text: str) -> dict[str, str]:
     """Short, specific queries: search engines rank better on a few precise terms.
 
