@@ -245,20 +245,20 @@ licences and risks (S8), streamed fact-checked replies, private sessions, the jo
 - `1.2.2.4` `[x]` [R139](arena/details-p1.md#r139) (weight 68) Novelty's medical 'regulatory route' lever is 1.3.3's twin, missing from its scope. Fix: One shared is_health_product(idea, scan, slots) requiring a device or clinical signal, used by novelty and council.
 - `1.2.2.5` `[x]` [R190](arena/details-p1.md#r190) (weight 57) Lever text is fixed at search time; rewording by sector would force a new search. Fix: Return structured levers (kind, numbers, pair) from novelty; render wording at narration from session slots with per-sector phrase tables.
 
-#### 1.2.3 `[ ]` Results tied to the idea version
+#### 1.2.3 `[x]` Results tied to the idea version
 - **Why:** research runs once per conversation and is never re-run when the idea changes, so an old verdict can be spoken (decision 0001 requires the opposite).
 - **Where:** `agents/jobs.py`, `agents/results.py`, `agents/ideation.py` (`_absorb`).
 - **How:** key results by `idea_version` instead of `LATEST`; when the core slots change, start a new research job and discard results for the old version.
 - **When:** before 1.2.4.
 - **What for:** evidence that matches the idea being discussed.
-- `1.2.3.1` Key results by idea version.
-- `1.2.3.2` Re-run research when the version changes.
-- `1.2.3.3` Test: a stale result is never narrated.
-- `1.2.3.4` `[ ]` [R014](arena/details-p1.md#r014) (weight 90) idea_version changes on almost every early answer, so 're-run on change' over-fires. Fix: Research key = hash of the research inputs (public terms + beneficiary).
-- `1.2.3.5` `[ ]` [R033](arena/details-p1.md#r033) (weight 84) Any long answer to another question overwrites 'problem' with that answer. Fix: Suppress the positional 'problem' guess when the utterance answers a slot.
-- `1.2.3.6` `[ ]` [R040](arena/details-p1.md#r040) (weight 84) Jobs are keyed by session and kind: an old version's job is reused or blocks the new. Fix: Key jobs by (session, version, kind) and tag payloads with their version.
-- `1.2.3.7` `[ ]` [R158](arena/details-p1.md#r158) (weight 63) Research job runs its source calls in serial waves. Fix: asyncio.gather the independent calls.
-- `1.2.3.8` `[ ]` [R171](arena/details-p1.md#r171) (weight 61) No rule for results produced before any version exists (idea_version None). Fix: Derive the key from research inputs, never None.
+- `1.2.3.1` `[x]` Key results by idea version. *Keyed by the research key (R014), not `idea_version`: `ideation.research_key`; the board keeps jobs and results by (session, key, kind); snapshot and notices read only the current key's results (`ideation.latest`).*
+- `1.2.3.2` `[x]` Re-run research when the version changes. *`_retire_stale` at the start of each turn: when the key changes, the scan, novelty map and panel view are put aside and the search starts for the new inputs; what was said is remembered by content, so a re-run that finds the same is not said again. The roadmap is left to 1.2.4.6.*
+- `1.2.3.3` `[x]` Test: a stale result is never narrated. *`tests/unit/test_research_version.py`.*
+- `1.2.3.4` `[x]` [R014](arena/details-p1.md#r014) (weight 90) idea_version changes on almost every early answer, so 're-run on change' over-fires. Fix: Research key = hash of the research inputs (public terms + beneficiary).
+- `1.2.3.5` `[x]` [R033](arena/details-p1.md#r033) (weight 84) Any long answer to another question overwrites 'problem' with that answer. Fix: Suppress the positional 'problem' guess when the utterance answers a slot.
+- `1.2.3.6` `[x]` [R040](arena/details-p1.md#r040) (weight 84) Jobs are keyed by session and kind: an old version's job is reused or blocks the new. Fix: Key jobs by (session, version, kind) and tag payloads with their version.
+- `1.2.3.7` `[x]` [R158](arena/details-p1.md#r158) (weight 63) Research job runs its source calls in serial waves. Fix: asyncio.gather the independent calls.
+- `1.2.3.8` `[x]` [R171](arena/details-p1.md#r171) (weight 61) No rule for results produced before any version exists (idea_version None). Fix: Derive the key from research inputs, never None.
 
 #### 1.2.4 `[ ]` The founder chooses a lever, and it becomes a new idea version
 - **Why:** levers are listed read-only; the idea cannot evolve inside the conversation.
