@@ -18,10 +18,16 @@ Gemini tier, else Ollama on this machine; each failure moves the turn to the nex
 Ollama rewords the reply the code built instead of calling tools (too slow and
 unreliable on a CPU). With no model at all the same turn runs offline: the scan
 runs once the idea is clear, and a templated reply summarises it.
+
+Background results belong to the research inputs they were made from
+(`research_key`, task 1.2.3): when a turn changes what the search would send,
+the old scan, novelty map and panel view are put aside, never spoken again, and
+the search runs for the new inputs.
 """
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import dataclasses
 import functools
@@ -40,7 +46,7 @@ from pydantic import BaseModel, Field
 from app.agents import council, providers
 from app.agents.council.seats import CRITERION_WORDS
 from app.agents.grounding import NOVELTY_LINE, SentenceSplitter, facts_from, gate, problems
-from app.agents.jobs import board
+from app.agents.jobs import KINDS, board
 from app.agents.tools import TOOLS, compact_scan, council_brief, run_tool
 from app.core.config import get_settings
 from app.core.logging import get_logger
@@ -54,6 +60,8 @@ from app.models.enums import EntryMode as Door
 from app.models.enums import RegSubtype
 from app.planner import opportunities
 from app.research import levers, novelty
+from app.research import scan as research_scan
+from app.research.terms import build_queries, is_health, is_health_product, public_terms
 from app.voice.phrasebook import translation
 
 log = get_logger("ideation_agent")
@@ -182,6 +190,8 @@ class AgentSession:
     messages: list[dict] = field(default_factory=list)
     idea: str = ""
     scan: dict | None = None
+    # the research key the scan and novelty map were made for (task 1.2.3)
+    research_key: str | None = None
     roadmap: dict | None = None
     novelty: dict | None = None
     council: dict | None = None  # the latest review-panel run
@@ -226,6 +236,7 @@ class AgentSession:
             "messages": self.messages,
             "idea": self.idea,
             "scan": self.scan,
+            "research_key": self.research_key,
             "roadmap": self.roadmap,
             "novelty": self.novelty,
             "council": self.council,
@@ -261,6 +272,7 @@ class AgentSession:
             messages=d.get("messages", []),
             idea=d.get("idea", ""),
             scan=d.get("scan"),
+            research_key=d.get("research_key"),
             roadmap=d.get("roadmap"),
             novelty=d.get("novelty"),
             council=d.get("council"),
@@ -278,10 +290,98 @@ class AgentSession:
             version=d.get("version", 0),
             updated_at=datetime.fromisoformat(d["updated_at"]),
         )
+        # a document saved before research keys: its scan is taken as made for the
+        # idea as it stands, as it was then (no search is spent to re-check it)
+        if s.scan is not None and s.research_key is None:
+            s.research_key = research_key(s)
         # a document saved before `pending` existed: rebuild it from what it kept
         pending = d["pending"] if "pending" in d else _derive_pending(s)
         s.pending = PendingAction.model_validate(pending).model_dump() if pending else None
         return s
+
+
+def research_key(s: AgentSession) -> str:
+    """What the search would send and match on, as a short hash (R014): the public
+    terms of the idea text and the queries built from them, the registry domain,
+    the public words of who it is for, the health signals that pick the sources
+    and the levers (R139), and private mode.
+
+    `idea_version` changes whenever a core slot is filled; this changes only when
+    the search would come out differently. Filling the sector or the product form
+    is not a new search; a new problem, solution or beneficiary that changes the
+    terms is. Never None (R171): before any slot is filled it is made from the
+    founder's first words, the same text the first search uses."""
+    idea = _idea_text(s)
+    queries = build_queries(idea)
+    inputs = {
+        "terms": public_terms(idea),
+        "queries": queries,
+        "domain": (research_scan.matched_domain(idea) or {}).get("id"),
+        "who": novelty.who_words(_slot_text(s, "beneficiary")),
+        "health": is_health(f"{idea} {queries['papers']}"),
+        "health_product": is_health_product(idea, None, s.elicitation.kept()),
+        "private": s.private,
+    }
+    return _digest(inputs)
+
+
+def _digest(value: Any) -> str:
+    """A short, stable hash of a JSON-able value."""
+    return hashlib.sha1(json.dumps(value, sort_keys=True, default=str).encode()).hexdigest()[:12]
+
+
+def _view(council_run: dict) -> dict:
+    """What the panel concluded, without when: two runs with the same view say the same."""
+    v = council_run["vote"]
+    return {
+        "band": v["band"],
+        "stances": v["stances"],
+        "blockers": v["blockers"],
+        "variants": [x["text"] for x in v["variants"]],
+    }
+
+
+def _retire_stale(s: AgentSession) -> None:
+    """The research inputs changed since the scan was made (task 1.2.3): the scan,
+    the novelty map and the panel's view were for the old ones. They are put aside,
+    so none of them is spoken again, and the search starts for the new inputs (the
+    turn waits for it as for a first search). What was already said is remembered
+    by content: a re-run that finds the same is not said twice. The roadmap is
+    left as it is (task 1.2.4.6).
+
+    Every job still running for older inputs (search or panel) is stopped, and
+    whatever it delivers is never announced to the screen. With no scan yet, a
+    search for older inputs is replaced by one for these: its result would never
+    be read, and the free budget is small."""
+    key = research_key(s)
+    stale_search = board.superseded(s.id, "research", key)
+    board.retire(s.id, key)
+    if s.scan is None:
+        if stale_search and _can_search(s):
+            board.start(s.id, "research", _research_work(s), reuse_done=True, version=key)
+        return
+    if s.research_key is None:  # made by a path that did not record its key
+        s.research_key = key
+    if s.research_key == key:
+        return
+    said = [f"evidence:{_digest(compact_scan(s.scan))}"]
+    st = (s.novelty or {}).get("statement")
+    if st and "statement" in s.narrated:
+        said.append(f"statement:{_digest(st['text'])}")
+    for i, lever in enumerate((s.novelty or {}).get("levers", [])):
+        if f"lever:{i}" in s.narrated:
+            said.append(f"lever:{_digest(lever)}")
+    if s.council and f"council:{s.council['at']}" in s.narrated:
+        said.append(f"view:{_digest(_view(s.council))}")
+    # what was said by position or by run is for the old inputs only; what was
+    # said by content (evidence:, statement:, lever:<hash>, view:) stays
+    positional = re.compile(r"statement|searching|lever:\d{1,3}|council:.*")
+    s.narrated = [n for n in s.narrated if not positional.fullmatch(n)]
+    s.narrated += [n for n in said if n not in s.narrated]
+    log.info("research.stale", session=s.id, was=s.research_key, now=key)
+    s.scan = s.novelty = s.council = s.research_key = None
+    if _can_search(s):
+        board.start(s.id, "research", _research_work(s), reuse_done=True, version=key)
 
 
 def _derive_pending(s: AgentSession) -> dict | None:
@@ -471,6 +571,14 @@ def snapshot(s: AgentSession, latest: dict | None = None) -> dict:
     }
 
 
+async def latest(s: AgentSession) -> dict:
+    """The board's finished results for the idea as it stands, by kind: what
+    `snapshot` and a resubscribing screen show. A result made for other research
+    inputs is not among them (task 1.2.3)."""
+    key = research_key(s)
+    return {kind: r for kind in KINDS if (r := await board.take(s.id, kind, key))}
+
+
 def _resume_line(s: AgentSession, last_question: str | None, fresh: list[str]) -> str | None:
     """After a long gap: welcome back, what finished meanwhile, then the pending
     question again (task 1.1.4.3). It is the question already asked, so it spends
@@ -529,6 +637,11 @@ def _research_open(s: AgentSession) -> bool:
     own idea moves the session to the idea conversation, and research starts
     then, on the idea."""
     return s.elicitation.mode is EntryMode.IDEA
+
+
+def _can_search(s: AgentSession) -> bool:
+    """An idea, described well enough to search for."""
+    return _research_open(s) and len(_idea_text(s)) >= 20
 
 
 def _idea_text(s: AgentSession) -> str:
@@ -630,32 +743,37 @@ def _council_work(s: AgentSession):
 def _research_work(s: AgentSession, args: dict | None = None):
     """The prior-art search and novelty check, on a snapshot. `args` are a model's
     own search terms (its scan_prior_art call); without them, the founder's words.
-    The job has its own HTTP client: the turn's closes when the turn ends."""
+    The job has its own HTTP client: the turn's closes when the turn ends.
+
+    The payload carries the research key it was made for: a late result is
+    checked against the idea as it stands before it is taken in (R040). The
+    novelty map's part counts run beside the scan; they do not need it (R158)."""
     args = args or {}
     idea = args.get("idea") or _idea_text(s)
     elements, queries = args.get("elements"), args.get("queries")
     private, who, said = s.private, _slot_text(s, "beneficiary"), dict(s.elicitation.kept())
+    key = research_key(s)
 
     async def work() -> dict:
         from app.research.scan import scan
 
         async with httpx.AsyncClient(timeout=60) as c:
-            if elements or queries:
-                found = await scan(
-                    idea, elements=elements, queries=queries, client=c, private=private
+            own = {"elements": elements, "queries": queries} if elements or queries else {}
+            searching = asyncio.ensure_future(scan(idea, client=c, private=private, **own))
+            try:  # the part counts are sent while the scan runs (R158)
+                nov = await novelty.check(
+                    idea,
+                    elements=elements,
+                    scan=searching,
+                    beneficiary=who,
+                    slots=said,
+                    client=c,
+                    private=private,
                 )
-            else:
-                found = await scan(idea, client=c, private=private)
-            nov = await novelty.check(
-                idea,
-                elements=elements,
-                scan=found,
-                beneficiary=who,
-                slots=said,
-                client=c,
-                private=private,
-            )
-        return {"scan": found, "novelty": nov}
+                found = await searching
+            finally:
+                searching.cancel()  # nothing once it has finished; stops it if the check failed
+        return {"scan": found, "novelty": nov, "research_key": key}
 
     return work
 
@@ -663,7 +781,9 @@ def _research_work(s: AgentSession, args: dict | None = None):
 async def _search(s: AgentSession, args: dict) -> dict | None:
     """A model's scan_prior_art call, on the job board: the result if it finishes
     within the turn's wait, else None (it enters a later turn)."""
-    job = board.start(s.id, "research", _research_work(s, args), reuse_done=True)
+    job = board.start(
+        s.id, "research", _research_work(s, args), reuse_done=True, version=research_key(s)
+    )
     if not await board.wait(job, get_settings().research_wait_s):
         s.narrated.append("searching")
         return None
@@ -682,7 +802,10 @@ async def _convene(s: AgentSession, wait: float | None = None) -> dict | None:
     founder asked, or the roadmap needs it). None if it is still deliberating:
     its view then enters a later turn."""
     wait = get_settings().opinion_wait_s if wait is None else wait
-    job = board.running(s.id, "council") or board.start(s.id, "council", _council_work(s))
+    key = research_key(s)
+    job = board.running(s.id, "council", key) or board.start(
+        s.id, "council", _council_work(s), version=key
+    )
     if not await board.wait(job, wait):
         return None
     r = job.task.result()
@@ -691,20 +814,37 @@ async def _convene(s: AgentSession, wait: float | None = None) -> dict | None:
     return s.council
 
 
+def _council_said(s: AgentSession) -> None:
+    """A panel run whose view was already spoken (before the research inputs
+    changed) is not spoken again."""
+    if not s.council or f"view:{_digest(_view(s.council))}" not in s.narrated:
+        return
+    if (key := f"council:{s.council['at']}") not in s.narrated:
+        s.narrated.append(key)
+
+
 async def _absorb(s: AgentSession, out: dict) -> list[dict]:
     """Take in background results that finished since the last turn (or within
-    this turn's wait): research first, then the panel. Returns the events."""
+    this turn's wait): research first, then the panel. Returns the events.
+
+    Only results for the idea as it stands are taken: the board keeps them by
+    research key, and a result made for other inputs is never read (task 1.2.3)."""
     evs: list[dict] = []
-    if s.scan is None and (r := await board.take(s.id, "research")):
-        s.scan, s.novelty = r["scan"], r["novelty"]
-        out["fresh"] = s.scan
+    key = research_key(s)
+    r = await board.take(s.id, "research", key) if s.scan is None else None
+    if r and r.get("research_key", key) == key:
+        s.scan, s.novelty, s.research_key = r["scan"], r["novelty"], key
         out["tools"] += ["scan_prior_art", "check_novelty"]
-        out.setdefault("news", []).append(
-            "The prior-art search you started has finished: "
-            + json.dumps(compact_scan(s.scan), default=str)
-            + " Novelty: "
-            + json.dumps(s.novelty.get("statement"), default=str)
-        )
+        seen = f"evidence:{_digest(compact_scan(s.scan))}"
+        if seen not in s.narrated:  # a re-run that found the same is not said again
+            s.narrated.append(seen)
+            out["fresh"] = s.scan
+            out.setdefault("news", []).append(
+                "The prior-art search you started has finished: "
+                + json.dumps(compact_scan(s.scan), default=str)
+                + " Novelty: "
+                + json.dumps(s.novelty.get("statement"), default=str)
+            )
         evs += [
             _event("tool", {"name": "scan_prior_art", "status": "done"}),
             _event("evidence", compact_scan(s.scan)),
@@ -712,16 +852,19 @@ async def _absorb(s: AgentSession, out: dict) -> list[dict]:
             _event("novelty", s.novelty),
         ]
         # the panel follows on its own; rule seats finish within the wait
-        job = board.start(s.id, "council", _council_work(s))
+        job = board.start(s.id, "council", _council_work(s), version=key)
         await board.wait(job, get_settings().council_wait_s)
-    c = await board.take(s.id, "council")
+    c = await board.take(s.id, "council", key)
     if c and s.scan is not None and (not s.council or s.council.get("at") != c.get("at")):
         _apply_council(s, c)
         out["tools"].append("ask_council")
         evs.append(_event("council", council_brief(s.council)))
-        out.setdefault("news", []).append(
-            "The review panel has finished: " + json.dumps(council_brief(s.council), default=str)
-        )
+        _council_said(s)
+        if f"council:{s.council['at']}" not in s.narrated:
+            out.setdefault("news", []).append(
+                "The review panel has finished: "
+                + json.dumps(council_brief(s.council), default=str)
+            )
     return evs
 
 
@@ -812,7 +955,7 @@ async def _llm_stream(
             )
         s.messages.append({"role": "user", "content": results})
         if "scan" in state:
-            s.scan = state.pop("scan")
+            s.scan, s.research_key = state.pop("scan"), research_key(s)
             yield _event("evidence", compact_scan(s.scan))
         if "roadmap" in state:
             s.roadmap = state.pop("roadmap")
@@ -854,21 +997,24 @@ def _next_novelty_point(s: AgentSession) -> str | None:
     """One novelty point per turn: the statement first, then each way to stand out."""
     if not s.novelty:
         return None
-    if "statement" not in s.narrated:
-        s.narrated.append("statement")
-        st = s.novelty["statement"]
+    st = s.novelty["statement"]
+    said = f"statement:{_digest(st['text'])}"  # the same statement after a re-run
+    if "statement" not in s.narrated and said not in s.narrated:
+        s.narrated += ["statement", said]
         # An unclear statement is said too, with its reason (1.2.1.6); private mode was
         # already said in the greeting.
         if s.novelty.get("status") != "private":
             if st["type"] == "unclear":
                 return st["text"]
             return st["text"] + " That is only what I found in the sources I searched."
+    _council_said(s)
     if s.council and (key := f"council:{s.council['at']}") not in s.narrated:
         s.narrated.append(key)
         return " ".join(s.council["synthesis"]["voice_brief"])
     for i, lever in enumerate(s.novelty.get("levers", [])[:3]):
-        if f"lever:{i}" not in s.narrated:
-            s.narrated.append(f"lever:{i}")
+        said = f"lever:{_digest(lever)}"  # the same lever after a re-run
+        if f"lever:{i}" not in s.narrated and said not in s.narrated:
+            s.narrated += [f"lever:{i}", said]
             first = "One way to stand out" if i == 0 else "Another way to stand out"
             # Worded now, from the founder's current sector: no new search (R190).
             lever = levers.render(lever, domain_id=_domain_id(s), sector=_kept(s, "sector"))
@@ -955,8 +1101,10 @@ async def _offline_stream(
 ) -> AsyncIterator[dict]:
     idea = _idea_text(s)
     lead = None
-    if s.scan is None and _research_open(s) and len(idea) >= 20:
-        job = board.start(s.id, "research", _research_work(s), reuse_done=True)
+    if s.scan is None and _can_search(s):
+        job = board.start(
+            s.id, "research", _research_work(s), reuse_done=True, version=research_key(s)
+        )
         if "searching" not in s.narrated:
             yield _event("tool", {"name": "scan_prior_art", "status": "started"})
             yield _event("tool", {"name": "check_novelty", "status": "started"})
@@ -1337,6 +1485,7 @@ async def turn_stream(
     own = client is None
     client = client or httpx.AsyncClient(timeout=120)
     try:
+        _retire_stale(s)  # this turn's words changed what the search would send
         for ev in await _absorb(s, out):  # background work finished since the last turn
             yield ev
         failed = []
@@ -1421,4 +1570,13 @@ async def turn(
     return done
 
 
-__all__ = ["AgentSession", "new_session", "replay", "snapshot", "turn", "turn_stream"]
+__all__ = [
+    "AgentSession",
+    "latest",
+    "new_session",
+    "replay",
+    "research_key",
+    "snapshot",
+    "turn",
+    "turn_stream",
+]
