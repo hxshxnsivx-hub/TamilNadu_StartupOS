@@ -164,7 +164,8 @@ async def test_old_results_and_finished_jobs_are_pruned(monkeypatch):
     await b.wait(old, 1)
     old.finished = datetime.now(UTC) - KEEP - timedelta(minutes=1)
     b.start("sess-new", "council", work)
-    assert ("sess-old", "council") not in b.jobs and ("sess-new", "council") in b.jobs
+    assert ("sess-old", LATEST, "council") not in b.jobs
+    assert ("sess-new", LATEST, "council") in b.jobs
 
 
 async def test_forgotten_sessions_are_remembered_only_for_a_while():
