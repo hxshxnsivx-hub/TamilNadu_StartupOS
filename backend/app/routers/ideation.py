@@ -17,7 +17,7 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
 from app.agents import ideation as agent
 from app.agents import providers
-from app.agents.jobs import GONE, KINDS, board
+from app.agents.jobs import GONE, board
 from app.agents.store import VersionConflict, get_store
 from app.agents.tools import compact_scan, council_brief
 from app.core.stages import Stage
@@ -359,7 +359,7 @@ async def agent_resume(session_id: str = _SESSION_ID) -> dict:
     """Where a conversation stands, to resume it on any device, with the results
     that finished while nobody was listening."""
     s = await _load(session_id)
-    return agent.snapshot(s, {kind: await board.take(session_id, kind) for kind in KINDS})
+    return agent.snapshot(s, await agent.latest(s))
 
 
 @router.delete("/ideation/agent/sessions/{session_id}", status_code=204, response_class=Response)
@@ -451,15 +451,15 @@ async def agent_notices(
     `council`. A comment line every 15 s keeps the connection open. `limit` ends the
     stream after that many notices (0: until the screen closes it).
 
-    A (re)subscribe first sends the latest finished result of each kind, so work
+    A (re)subscribe first sends the finished result of each kind for the idea as
+    it stands (task 1.2.3), so work
     that finished while the connection was down is not lost (R143); the screen
     replaces its panels, so a repeat is harmless. The stream ends when the
     conversation is deleted."""
-    await _load(session_id)  # 404 for an unknown session
+    s = await _load(session_id)  # 404 for an unknown session
     q = board.subscribe(session_id)
-    missed = [
-        {"kind": kind, "payload": r} for kind in KINDS if (r := await board.take(session_id, kind))
-    ]
+    # the results for the idea as it stands, not for research inputs it moved on from
+    missed = [{"kind": kind, "payload": r} for kind, r in (await agent.latest(s)).items()]
 
     async def events():
         sent = 0
