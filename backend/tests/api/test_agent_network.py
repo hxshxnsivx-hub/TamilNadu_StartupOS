@@ -244,7 +244,8 @@ async def test_a_resume_after_a_long_gap_repeats_the_question_for_free(client, o
 async def test_results_finished_offline_are_in_the_snapshot_and_the_notices(client, offline):
     base = await _start(client)
     sid = base.rsplit("/", 1)[1]
-    await board.results.put(sid, LATEST, "research", {"scan": SCAN, "novelty": NOVELTY})
+    key = agent.research_key(await offline.get(sid))  # results are kept by research key
+    await board.results.put(sid, key, "research", {"scan": SCAN, "novelty": NOVELTY})
     try:
         _age(offline, base, timedelta(hours=1))
         snap = (await client.get(base)).json()
@@ -255,6 +256,20 @@ async def test_results_finished_offline_are_in_the_snapshot_and_the_notices(clie
         async with client.stream("GET", f"{base}/notices", params={"limit": 1}) as r:
             lines = [ln async for ln in r.aiter_lines() if ln.startswith("event:")]
         assert lines == ["event: evidence", "event: novelty"]
+    finally:
+        await board.forget(sid)
+
+
+async def test_results_for_other_research_inputs_are_not_shown(client, offline):
+    """Task 1.2.3: a result made for research inputs the idea has moved on from is
+    in neither the snapshot nor the notices replayed on subscribe."""
+    base = await _start(client)
+    sid = base.rsplit("/", 1)[1]
+    await board.results.put(sid, "an-old-key", "research", {"scan": SCAN, "novelty": NOVELTY})
+    await board.results.put(sid, LATEST, "research", {"scan": SCAN, "novelty": NOVELTY})
+    try:
+        snap = (await client.get(base)).json()
+        assert snap["evidence"] is None and snap["novelty"] is None
     finally:
         await board.forget(sid)
 
