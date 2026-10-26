@@ -244,3 +244,33 @@ def test_the_regulatory_lever_needs_a_medical_product():
     r, _ = _run(scan=trials)
     reg = next(lv for lv in r["levers"] if lv["kind"] == "regulatory route")
     assert reg["facts"] == {"trials": 5} and "5 clinical trials came up" in reg["because"]
+
+
+def test_a_known_sector_other_than_health_vetoes_the_health_rule():
+    """1.3.3.3: 'disease' and 'diagnosis' name crops and herds too. A founder whose sector
+    is known and is not health is not told about medical devices for a farm app; only
+    words of human care (patients, hospitals, the elderly) keep the rule for a device
+    the sector extractor filed elsewhere ("diabetic farmers" reads as agri)."""
+    from app.research.terms import is_health_product
+
+    trials = {"trials": {"total": 3}}
+    crop = "an app that diagnoses crop disease from leaf photos"
+    assert is_health_product(crop, trials)  # nothing known of the founder: words decide
+    assert not is_health_product(crop, trials, {"sector": "agri", "product_form": "software"})
+    cows = "a sensor that diagnoses mastitis disease in dairy cows"
+    assert not is_health_product(cows, None, {"sector": "agri"})
+    assert is_health_product("a wearable glucose monitor for diabetic farmers", None,
+                             {"sector": "agri"})  # fmt: skip
+    assert is_health_product("an EEG headset for stroke patients", None,
+                             {"sector": "electronics"})  # fmt: skip
+    assert is_health_product(crop, trials, {"sector": "other"})  # 'other' says nothing
+    # the veto only narrows: knowing the sector never makes an idea count as health
+    assert not is_health_product("a surge protector device for farm pumps", None,
+                                 {"sector": "agri"})  # fmt: skip
+    assert not is_health_product("a soil moisture sensor for plant nurseries", None,
+                                 {"sector": "agri"})  # fmt: skip
+    assert not is_health_product("a stroke rate sensor for rowing and swimming coaches", None,
+                                 {"sector": "electronics"})  # fmt: skip
+
+    r, _ = _run(idea=crop, scan=trials, slots={"sector": "agri"})
+    assert all(lv["kind"] != "regulatory route" for lv in r["levers"])
