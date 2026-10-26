@@ -14,6 +14,7 @@ from app.agents.grounding import NOVELTY_LINE
 from app.agents.store import MemoryStore, VersionConflict
 from app.core.config import get_settings
 from app.elicitation.slots import Sector
+from app.research import levers
 
 BCI = (
     "I want to build a device so paralysed patients can ask nurses for a change in medication"
@@ -357,18 +358,20 @@ def test_novelty_is_narrated_one_point_per_turn():
     assert "only what I found in the sources I searched" in second
     third = _run(agent.turn(s, "prototype"))["reply"]
     assert third.startswith("Looking at it from seven angles")  # turn 3: the panel's view
+    # the ways to stand out follow the panel's order (task 1.3.1), not the list's
+    order = s.council["vote"]["lever_order"]
+    kinds = {levers.lever_id(lv): lv["kind"] for lv in s.novelty["levers"]}
+    assert [kinds[i] for i in order] == ["localise", "combine"], s.council["vote"]["lever_scores"]
     fourth = _run(agent.turn(s, "skip"))["reply"]
-    assert fourth.startswith("One way to stand out: build your version around joining")
-    assert "because only 19 papers cover both" in fourth
+    assert fourth.startswith("One way to stand out: make it fit Tamil Nadu")
     fifth = _run(agent.turn(s, "skip"))["reply"]
-    assert fifth.startswith("Another way to stand out: make it fit Tamil Nadu")
-    # each point is also remembered by its content, so a re-run that finds the same
-    # is not said again (task 1.2.3)
-    in_order = [
-        n for n in s.narrated if not re.match(r"(evidence|statement|lever):[0-9a-f]{12}$", n)
-    ]
+    assert fifth.startswith("Another way to stand out: build your version around joining")
+    assert "because only 19 papers cover both" in fifth
+    # each point is remembered by its content: the statement by its words, a lever by
+    # its stable id (R041), so a re-run or a reorder neither repeats nor skips one
+    in_order = [n for n in s.narrated if not re.match(r"(evidence|statement):[0-9a-f]{12}$", n)]
     assert in_order[0] == "statement" and in_order[1].startswith("council:")
-    assert in_order[2:] == ["lever:0", "lever:1"]
+    assert in_order[2:] == [f"lever:{i}" for i in order]
 
 
 def test_reask_names_the_stage_the_reply_gave():
