@@ -53,6 +53,12 @@ def _repeats(text: str, n: int = 3) -> str | None:
     return None
 
 
+def _words(opinion: dict) -> str:
+    """What a panel seat says (claims, blocker, variant), without the evidence IDs it cites."""
+    claims = opinion.get("claims", []) + [opinion.get("blocker") or {}]
+    return " ".join([c.get("text", "") for c in claims] + [opinion.get("variant") or ""])
+
+
 def load_ideas() -> list[dict]:
     return json.loads((EVAL / "ideas.json").read_text(encoding="utf8"))["ideas"]
 
@@ -186,6 +192,20 @@ async def run_idea(idea: dict) -> Result:
     if "idea_type" in exp:  # R035: the founder's sector beats categories read off papers
         got = ((s.council or {}).get("vote") or {}).get("idea_type")
         add(Check("idea type", got == exp["idea_type"], f"expected {exp['idea_type']}, got {got}"))
+
+    if "medical_advice" in exp:  # 1.3.3: only a medical product hears medical-device advice
+        told = sorted(
+            o["seat"]
+            for o in (s.council or {}).get("opinions", [])
+            if "medical" in _words(o).lower()
+        )
+        add(
+            Check(
+                "medical advice",
+                bool(told) == exp["medical_advice"],
+                f"seats speaking of medicine: {told}",
+            )
+        )
 
     # 1.2.1.13: the search text says each part once
     twice = _repeats(idea_text)
