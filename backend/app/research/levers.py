@@ -13,9 +13,16 @@ corrected after the search rewords a lever with no new search:
 
 Only the facts are numbers or names, and they come from the novelty result and the
 registry, so a worded lever says nothing the evidence does not hold (decision 0005).
+
+Each lever has a stable `id`, a hash of its kind and facts (R041): the panel scores it
+by that id, the narrator remembers it by that id, and neither moves when the panel
+reorders the list or the words change with the founder's sector.
 """
 
 from __future__ import annotations
+
+import hashlib
+import json
 
 # The founder's sector (elicitation Sector) -> phrase key.
 SECTOR_KEY = {
@@ -88,6 +95,18 @@ DELIVERY = {
 DEFAULT_DELIVERY = DELIVERY["hardware"]
 
 
+def lever_id(lever: dict) -> str:
+    """The lever's stable id: its own, else a hash of its kind and facts (a lever saved
+    before levers carried facts hashes its search-time words instead)."""
+    if lever.get("id"):
+        return str(lever["id"])
+    basis = lever.get("facts")
+    if basis is None:
+        basis = lever.get("text", "")
+    raw = json.dumps({"kind": lever.get("kind"), "facts": basis}, sort_keys=True, default=str)
+    return hashlib.sha1(raw.encode()).hexdigest()[:12]
+
+
 def phrase_key(domain_id: str | None = None, sector: str | None = None) -> str | None:
     """The founder's own sector first (the rule idea_type follows, R035), then the sector
     of the matched registry domain; None when neither says."""
@@ -151,7 +170,7 @@ def render(lever: dict, *, domain_id: str | None = None, sector: str | None = No
         text = f"Compete on cost, using {what} to see where to cut."
     elif kind == "business model":
         text = f"Compete on how it is delivered, {DELIVERY.get(key or '', DEFAULT_DELIVERY)}."
-    return {**lever, "text": text, "because": because}
+    return {**lever, "id": lever_id(lever), "text": text, "because": because}
 
 
 def _lower(label: str) -> str:
