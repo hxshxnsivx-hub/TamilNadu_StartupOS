@@ -151,7 +151,7 @@ TERM_FIELDS = {
 }
 HEALTH_TERMS = re.compile(
     r"patient|medic|health|hospital|clinic|disab|paraly|disease|therapy|diagnos|eeg|brain|"
-    r"cardiac|diabetes|elderly|older adults|surgery|drug|nurse|rehab",
+    r"cardiac|diabet|elderly|older adults|surgery|drug|nurse|rehab",
     re.I,
 )
 # A device or clinical use: what makes a health idea a medical product (R139). Words of
@@ -160,6 +160,16 @@ CLINICAL_TERMS = re.compile(
     r"\b(?:device|sensor|wearable|implant|prosthe|monitor|diagnos|therap|rehab|assistive|eeg|"
     r"ecg|emg|brain|neuro|cardiac|clinical|drug|medication|dose|dosage|surg|wheelchair|"
     r"hearing aid|insulin|glucose|ventilator|test kit)",
+    re.I,
+)
+# Words of human care, as whole words. "Disease", "diagnosis", "health" and "therapy" also
+# name crops and herds; these do not, so they keep the health rule when the founder's
+# sector is not health (1.3.3): "a glucose monitor for diabetic farmers" is filed under
+# agri. Only ever checked beside HEALTH_TERMS, so the veto narrows and never widens.
+HUMAN_CARE_TERMS = re.compile(
+    r"\b(?:patients?|medic(?:al|ine|ines|ation|ations)|hospitals?|clinics?|disab(?:led|ility)|"
+    r"paraly[sz](?:ed|is)|diabet(?:es|ic|ics)|cardiac|elderly|older adults|"
+    r"surg(?:ery|eries|ical|eon|eons)|nurs(?:e|es|ing)|rehab(?:ilitation)?|eeg|brain)\b",
     re.I,
 )
 STOP = {
@@ -481,8 +491,10 @@ def is_health_product(idea: str, scan: dict | None = None, slots: dict | None = 
     Health words or trials found only say the idea sits near medicine: "instalment loans
     for medical treatment at hospital billing desks" has both and is a loan. It takes a
     device or clinical signal as well: such a word in the founder's idea or solution, or
-    a physical product in the health sector by the founder's own answers. One rule for
-    the novelty levers and the review panel, so medical advice has one door.
+    a physical product in the health sector by the founder's own answers. A founder
+    whose sector is known and is not health is near medicine only by words of human
+    care. One rule for the novelty levers and the review panel, so medical advice has
+    one door.
     """
 
     def slot(key: str) -> str:
@@ -490,7 +502,13 @@ def is_health_product(idea: str, scan: dict | None = None, slots: dict | None = 
         return str(getattr(v, "value", v) or "")
 
     text = f"{idea} {slot('solution')}"
-    near = is_health(text) or bool((scan or {}).get("trials", {}).get("total"))
+    sector = slot("sector")
+    if sector and sector not in ("health", "other"):
+        # A known sector other than health vetoes the shared words and the trials they
+        # found (1.3.3): a crop-disease diagnosis app is no medical product.
+        near = is_health(text) and bool(HUMAN_CARE_TERMS.search(text))
+    else:
+        near = is_health(text) or bool((scan or {}).get("trials", {}).get("total"))
     device = bool(CLINICAL_TERMS.search(text)) or (
         slot("sector") == "health" and slot("product_form") in ("physical", "hybrid")
     )
