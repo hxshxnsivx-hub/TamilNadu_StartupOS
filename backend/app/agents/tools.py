@@ -285,6 +285,12 @@ def council_brief(r: dict) -> dict:
         "variants": [x["text"] for x in v["variants"]],
         "stances": v["stances"],
         "basis": r["basis"],
+        # the three best ways to stand out, in the panel's order (task 1.3.1)
+        "levers": [
+            r["evidence"][f"novelty:lever:{lid}"]["text"]
+            for lid in (v.get("lever_order") or [])[:3]
+            if f"novelty:lever:{lid}" in (r.get("evidence") or {})
+        ],
     }
 
 
@@ -410,6 +416,13 @@ async def run_tool(name: str, args: dict, session: ElicitationSession, state: di
         if name == "support_for":
             return _support_for(args["domain_id"], args.get("district"))
         if name == "ask_council":
+            if state.get("last_scan") is None:  # no evidence yet, so no verdict (R068)
+                return {
+                    "status": "waiting for the search",
+                    "note": "The review panel judges the evidence, and the search for what"
+                    " already exists has not finished. Tell the founder you will give the"
+                    " panel's view once it has; then ask your question.",
+                }
             r = await state["convene"](args["idea"])
             if r is None:  # the panel runs on in the background
                 return {
