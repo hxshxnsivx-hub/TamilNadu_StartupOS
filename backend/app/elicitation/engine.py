@@ -532,23 +532,38 @@ DYN = "dyn:"
 MAX_DYNAMIC = 3
 
 
-def add_dynamic(session: ElicitationSession, question: str, source: str) -> str | None:
-    """Queue a question specific to this idea; at most three per session, never twice."""
+def add_dynamic(
+    session: ElicitationSession, question: str, source: str, covers: str | None = None
+) -> str | None:
+    """Queue a question specific to this idea; at most three per session, never twice.
+
+    `covers` names the slot the question would ask again (R056): it is not queued
+    when that slot is known, and not asked if the slot is filled before its turn."""
     q = question.strip()
     if not q or any(d["question"].lower() == q.lower() for d in session.dynamic):
+        return None
+    if covers and covers in session.filled:
         return None
     if len(session.dynamic) >= MAX_DYNAMIC:
         return None
     key = f"{DYN}{hashlib.sha1(q.lower().encode()).hexdigest()[:8]}"
-    session.dynamic.append(
-        {"key": key, "question": q, "source": source, "asked": False, "answer": None}
-    )
+    row = {"key": key, "question": q, "source": source, "asked": False, "answer": None}
+    if covers:
+        row["covers"] = covers
+    session.dynamic.append(row)
     return key
 
 
 def _pending_dynamic(session: ElicitationSession) -> dict | None:
     return next(
-        (d for d in session.dynamic if not d["asked"] and d["key"] not in session.skipped), None
+        (
+            d
+            for d in session.dynamic
+            if not d["asked"]
+            and d["key"] not in session.skipped
+            and not (d.get("covers") and d["covers"] in session.filled)
+        ),
+        None,
     )
 
 
