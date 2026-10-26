@@ -89,7 +89,7 @@ def regulatory(pack: EvidencePack, slots: dict) -> dict:
                         " clinical trials; expect a medical-device classification check and a"
                         " validation study before sale.", "evidence": cites}],  # fmt: skip
             "ask_founder": "Which hospital or clinician would run your first validation study?",
-            "variant": "Start as a communication aid without medical claims, then validate",
+            "variant": "Start with a version that makes no medical claims, then validate",
         }
     if regs:
         return {
