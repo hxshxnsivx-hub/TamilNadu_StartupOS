@@ -5,8 +5,17 @@
     band            = strong (≥ 3.8) · mixed (≥ 2.8) · weak; any cited blocker → weak
 
 The criterion the seats disagree on most (spread > 1.0) becomes the next
-question for the founder. Weights come from council_weights.json by idea
+question for the founder; when nobody disagrees, the question comes from the
+weakest criterion's low seat (R056). A question that would ask a slot the founder
+already answered is never chosen. Weights come from council_weights.json by idea
 type, adjusted for the founder, and every verdict records the weights version.
+
+The ways to stand out are ranked the same way (task 1.3.1):
+
+    lever score = Σ seat weight × confidence × score / Σ seat weight × confidence
+
+over the seats that scored it; levers no seat scored come last, and the novelty
+check's order breaks ties. The narrator speaks the top three of `lever_order`.
 """
 
 from __future__ import annotations
@@ -21,7 +30,11 @@ WEIGHTS_FILE = Path(__file__).parent / "data" / "council_weights.json"
 STRONG, MIXED = 3.8, 2.8
 DISAGREE = 1.0
 SMALL_CAPITAL = {"under_2L", "2L_10L"}
-TECH_SKILLS = ("software", "engineer", "electronic", "hardware", "coding", "programming", "tech")
+# Substrings of a stated skill that make it technical; the list grows by review (R156).
+TECH_SKILLS = (
+    "software", "engineer", "electronic", "electric", "hardware", "coding", "programming",
+    "programmer", "developer", "python", "java", "embedded", "tech",
+)  # fmt: skip
 
 
 @lru_cache
@@ -64,12 +77,16 @@ def weights_for(kind: str, slots: dict) -> tuple[dict[str, float], list[str]]:
     t = weights_table()
     w = dict(zip(t["seats"], t["types"][kind], strict=True))
     why = []
-    skills = " ".join(map(str, slots.get("founder_skills") or [])).lower()
-    if kind in ("health_device", "hardware", "software") and not any(
-        k in skills for k in TECH_SKILLS
+    # Three states (R156): skills not recorded say nothing, so only skills the founder
+    # named, none of them technical, raise the technical seat.
+    skills = " ".join(map(str, slots.get("founder_skills") or [])).lower().strip()
+    if (
+        kind in ("health_device", "hardware", "software")
+        and skills
+        and not any(k in skills for k in TECH_SKILLS)
     ):
         w["technical"] += 5
-        why.append("no technical skill recorded for the founder: technical +5")
+        why.append("none of the founder's stated skills is technical: technical +5")
     if str(slots.get("capital_band") or "") in SMALL_CAPITAL:
         w["funding"] += 5
         w["cost"] += 5
@@ -80,7 +97,10 @@ def weights_for(kind: str, slots: dict) -> tuple[dict[str, float], list[str]]:
     return {k: round(100 * v / total, 1) for k, v in w.items()}, why
 
 
-def vote(opinions: list[Opinion], kind: str, slots: dict) -> dict:
+def vote(
+    opinions: list[Opinion], kind: str, slots: dict, lever_ids: list[str] | tuple = ()
+) -> dict:
+    """`lever_ids`: every way to stand out in the pack, in the novelty check's order."""
     w, why = weights_for(kind, slots)
     per: dict[str, dict] = {}
     for c in CRITERIA:
@@ -107,10 +127,21 @@ def vote(opinions: list[Opinion], kind: str, slots: dict) -> dict:
     ask_about = max(per, key=lambda c: per[c]["spread"]) if per else None
     if ask_about and per[ask_about]["spread"] <= DISAGREE:
         ask_about = None
-    asker = next(
-        (o for o in opinions if ask_about and o.seat == per[ask_about]["low"] and o.ask_founder),
-        None,
-    ) or next((o for o in opinions if o.ask_founder), None)
+    # a question whose slot the founder already answered is not asked again (R056)
+    askers = [
+        o for o in opinions if o.ask_founder and not (o.ask_covers and slots.get(o.ask_covers))
+    ]
+    weakest = min(per, key=lambda c: per[c]["score"]) if per else None
+    focus = ask_about or weakest
+    asker = (
+        next(
+            (o for o in askers if focus and o.seat == per[focus]["low"]),
+            None,
+        )
+        or next((o for o in askers if focus and focus in o.scores), None)
+        or (askers[0] if askers else None)
+    )
+    order, scores = _rank_levers(opinions, w, list(lever_ids))
 
     return {
         "band": band,
@@ -120,7 +151,10 @@ def vote(opinions: list[Opinion], kind: str, slots: dict) -> dict:
         "ask_about": ask_about,
         "question": asker.ask_founder if asker else None,
         "question_from": asker.seat if asker else None,
+        "question_covers": asker.ask_covers if asker else None,
         "variants": _variants(opinions, w),
+        "lever_order": order,
+        "lever_scores": scores,
         "weights": w,
         "weights_why": why,
         "weights_version": weights_table()["version"],
@@ -128,6 +162,22 @@ def vote(opinions: list[Opinion], kind: str, slots: dict) -> dict:
         "stances": {o.seat: o.stance for o in opinions},
         "missing_seats": sorted(set(BY_ID) - {o.seat for o in opinions}),
     }
+
+
+def _rank_levers(
+    opinions: list[Opinion], w: dict[str, float], ids: list[str]
+) -> tuple[list[str], dict[str, dict]]:
+    """Every lever in the pack, best first, with its weighted score and who scored it."""
+    scores: dict[str, dict] = {}
+    for lid in ids:
+        pts = [(w[o.seat] * o.confidence, o.levers[lid], o.seat) for o in opinions
+               if lid in o.levers]  # fmt: skip
+        total = sum(k for k, _, _ in pts)
+        if total:
+            mean = sum(k * s for k, s, _ in pts) / total
+            scores[lid] = {"score": round(mean, 2), "seats": [p[2] for p in pts]}
+    order = sorted(ids, key=lambda i: (-scores[i]["score"] if i in scores else 0, ids.index(i)))
+    return order, scores
 
 
 def _variants(opinions: list[Opinion], w: dict[str, float]) -> list[dict]:
