@@ -295,6 +295,7 @@ licences and risks (S8), streamed fact-checked replies, private sessions, the jo
 - `1.2.6.1` Weak-search log event with no idea text.
 - `1.2.6.2` Review step in the runbook.
 - `1.2.6.3` `[ ]` [R016](arena/details-p1.md#r016) (weight 88) scrub() lets brand-name variants leave: any model word the founder didn't say verbatim. Fix: Allowlist plus a public technical-term list (OpenAlex topics/keywords dump).
+- `1.2.6.4` `[ ]` Health word list has no word boundaries: with no sector, 'plant nurseries' matches 'nurse' and counts as health; with a non-health sector, whole words like 'nursing' (nursing homes) are missed because they must also match a HEALTH_TERMS stem (found in the 1.3.3 review). Fix: whole-word health terms with explicit forms.
 
 #### 1.2.7 `[w]` Patents in every search
 - **Waiting on:** owner registering free EPO OPS keys (`EPO_OPS_KEY`, `EPO_OPS_SECRET`).
@@ -328,15 +329,15 @@ licences and risks (S8), streamed fact-checked replies, private sessions, the jo
 - `1.3.2.1` Per-lever objection.
 - `1.3.2.2` Test.
 
-#### 1.3.3 `[ ]` Stop medical advice for non-medical ideas
+#### 1.3.3 `[x]` Stop medical advice for non-medical ideas
 - **Why:** a hospital-instalment fintech idea is told to "start as a communication aid without medical claims".
 - **Where:** `agents/council/evidence.py` (`pack.health = is_health(idea) or trials`), `research/terms.py` (`HEALTH_TERMS`), `agents/council/rules.py`.
 - **How:** the health flag fires on any health keyword (the word "medical" is enough); require a device or clinical signal before the health variant.
 - **When:** now.
 - **What for:** correct variants (docs/eval/report.md, medical_emi).
-- `1.3.3.1` Tighten the trigger.
-- `1.3.3.2` Eval assertion.
-- `1.3.3.3` `[ ]` `is_health_product` still counts a crop-disease diagnosis app as a health product ('disease' + 'diagnos'), so a farm app hears the medical-device lever and the panel treats it as health (found in the 1.2.2 review). Fix: a known founder sector other than health vetoes the health rule.
+- `1.3.3.1` `[x]` Tighten the trigger. *Done in 1.2.2.4 (R139): `terms.is_health_product` needs a device or clinical signal, for novelty and council. The regulatory seat's variant no longer says "communication aid" for every medical product.*
+- `1.3.3.2` `[x]` Eval assertion. *`medical_advice` in `tests/eval/ideas.json`: no seat speaks of medicine for medical_emi; the BCI idea still hears it.*
+- `1.3.3.3` `[x]` `is_health_product` still counts a crop-disease diagnosis app as a health product ('disease' + 'diagnos'), so a farm app hears the medical-device lever and the panel treats it as health (found in the 1.2.2 review). Fix: a known founder sector other than health vetoes the health rule. *A known sector other than health (or other) vetoes the shared words (disease, diagnosis, health, therapy) and trials found; words of human care (patients, hospital, diabetic, elderly) still count, since the sector extractor files "a glucose monitor for diabetic farmers" under agri.*
 
 ### 1.4 Roadmap
 
