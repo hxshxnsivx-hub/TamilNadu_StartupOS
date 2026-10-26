@@ -6,6 +6,7 @@ it (build spec 7.2). IDs are readable so a founder can follow a claim back:
     paper:3  trial:NCT01234567  repo:lab/eeg-bci  startup:acme-health
     scheme:pmegp  reg:fssai  incubator:aic_au  risk:regulatory  pack:banana_value_added
     novelty:statement  novelty:pair:0  novelty:context  field:neuroscience
+    novelty:lever:3fa2c19b0e7d  (every way to stand out, by its stable id: R041, R110)
     coverage:patents  (a source that was not searched, so "nothing" is never claimed)
 """
 
@@ -18,6 +19,8 @@ from app.planner import registry
 from app.research import levers
 from app.research.scan import domain_id as scan_domain
 from app.research.terms import is_health_product
+
+LEVER = "novelty:lever:"
 
 
 def _slug(s: str) -> str:
@@ -32,6 +35,9 @@ class EvidencePack:
     # merely touch medicine do not count ("tea infusions" once read as a medical device),
     # and neither does a loan that names a hospital.
     health: bool = False
+    # Every way to stand out, worded, in the novelty check's order; the seats score
+    # each by its id and the vote ranks them (task 1.3.1).
+    levers: list[dict] = field(default_factory=list)
 
     def add(self, id_: str, kind: str, text: str, **extra) -> None:
         self.items[id_] = {"kind": kind, "text": text, **extra}
@@ -165,8 +171,10 @@ def _add_novelty(pack: EvidencePack, novelty: dict | None) -> None:
                 else "; Tamil Nadu startups not searched"
             ),
         )
-    for i, lv in enumerate(novelty.get("levers", [])[:4]):
-        pack.add(f"novelty:lever:{i}", "novelty", f"Way to stand out ({lv['kind']}): {lv['text']}")
+    for lv in novelty.get("levers", []):  # all of them: the panel ranks the full set (R110)
+        lv = {**lv, "id": levers.lever_id(lv)}
+        pack.levers.append(lv)
+        pack.add(f"{LEVER}{lv['id']}", "novelty", f"Way to stand out ({lv['kind']}): {lv['text']}")
 
 
 def _add_registry(pack: EvidencePack, domain_id: str | None, district: str | None) -> None:
