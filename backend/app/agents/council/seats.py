@@ -1,8 +1,13 @@
 """The seven seats and the opinion each must return (build spec 7.1, 7.2).
 
 Seats differ by construction, not by name alone: each answers one question,
-sees its own slice of the evidence, and must cite it. The devil's advocate is
+focuses on its own kinds of evidence, and must cite it. The devil's advocate is
 not allowed to support.
+
+Each claim names the criterion it is about (R106), so the synthesis never quotes a
+claim about patents as the reason for a cost score. Each seat may score the ways to
+stand out by their stable ids (task 1.3.1); the vote ranks them. A seat's question
+names the slot it would repeat (R056), so it is not asked once that slot is known.
 """
 
 from __future__ import annotations
@@ -95,6 +100,7 @@ BY_ID = {s.id: s for s in SEATS}
 class Claim(BaseModel):
     text: str = Field(min_length=3, max_length=400)
     evidence: list[str] = Field(default_factory=list, max_length=6)
+    criterion: str | None = None  # one of CRITERIA; None for context that judges nothing
 
 
 class Opinion(BaseModel):
@@ -105,13 +111,30 @@ class Opinion(BaseModel):
     claims: list[Claim] = Field(default_factory=list, max_length=4)
     blocker: Claim | None = None
     ask_founder: str | None = Field(default=None, max_length=300)
+    ask_covers: str | None = None  # the slot the question would ask again
+    levers: dict[str, int] = Field(default_factory=dict)  # lever id -> 1..5
     variant: str | None = Field(default=None, max_length=300)
     basis: Literal["model", "rules"] = "rules"
     dropped_claims: int = 0
 
 
+LEVER = "novelty:lever:"
+
+
+def _lever_scores(raw: object, evidence_ids: set[str]) -> dict[str, int]:
+    """Scores for levers in the pack only, by id (a model may send the evidence ID)."""
+    out: dict[str, int] = {}
+    for k, v in (raw if isinstance(raw, dict) else {}).items():
+        lid = str(k).removeprefix(LEVER)
+        if f"{LEVER}{lid}" in evidence_ids and isinstance(v, int | float):
+            out[lid] = max(1, min(5, int(v)))
+    return out
+
+
 def validate(raw: dict, seat: Seat, evidence_ids: set[str], basis: str) -> Opinion | None:
-    """Check an opinion against the pack: uncited claims go, a blocker needs a citation."""
+    """Check an opinion against the pack: uncited claims go, a blocker needs a citation,
+    a criterion must be one of CRITERIA, and lever scores must name levers in the pack."""
+    raw = {**raw, "levers": _lever_scores(raw.get("levers"), evidence_ids)}
     try:
         op = Opinion.model_validate({**raw, "seat": seat.id, "basis": basis})
     except ValidationError:
@@ -122,6 +145,8 @@ def validate(raw: dict, seat: Seat, evidence_ids: set[str], basis: str) -> Opini
     kept = []
     for c in op.claims:
         c.evidence = [e for e in c.evidence if e in evidence_ids]
+        if c.criterion not in CRITERIA:
+            c.criterion = None
         if c.evidence:
             kept.append(c)
     op.dropped_claims = len(op.claims) - len(kept)
