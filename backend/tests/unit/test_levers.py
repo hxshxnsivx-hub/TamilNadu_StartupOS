@@ -89,7 +89,8 @@ def test_a_lever_saved_before_facts_keeps_its_own_counts():
     r = levers.render(old, domain_id="knitwear_small_batch")
     assert "hospital" not in r["text"] and r["because"] == old["because"]
     combine = {"kind": "combine", "text": "Join a with b.", "because": "only 3 papers cover both"}
-    assert levers.render(combine, sector="food") == combine
+    # its words stay; it gains only its stable id, from its kind and words (R041)
+    assert levers.render(combine, sector="food") == {**combine, "id": levers.lever_id(combine)}
 
 
 def test_worded_leaves_the_stored_result_alone():
