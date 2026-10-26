@@ -186,6 +186,21 @@ def test_a_loan_that_names_a_hospital_is_no_health_product():
     assert _pack().health  # brain waves and medication: a clinical product
 
 
+def test_a_farm_app_gets_no_medical_advice_from_the_panel():
+    """1.3.3: a crop-disease app by a founder in agriculture is no medical product, so no
+    seat speaks of medical devices; a real one hears a variant fit for any medical
+    product, not the communication aid that suited one brain-wave idea."""
+    from app.agents.council import rules
+
+    crop = "an app that diagnoses crop disease from leaf photos"
+    pack = ev.build(crop, SCAN, None, None, {"sector": "agri", "product_form": "software"})
+    assert not pack.health
+    for seat in (rules.regulatory, rules.devil):
+        assert "medical" not in json.dumps(seat(pack, {"sector": "agri"})).lower()
+    reg = rules.regulatory(_pack(), {})
+    assert "communication aid" not in reg["variant"] and "medical claims" in reg["variant"]
+
+
 def test_the_panel_hears_levers_worded_for_the_founder():
     nov = {**NOVELTY, "levers": [{"kind": "business model", "facts": {}}]}
     pack = ev.build(IDEA, SCAN, nov, None, {"sector": "food"})
