@@ -137,32 +137,201 @@ def test_partial_rerun_keeps_the_other_seats():
     assert len(again["opinions"]) == 7 and again["fallback_seats"] == ["cost"]
 
 
-def test_model_seats_share_a_cached_prefix_and_fall_back_on_failure(monkeypatch):
+def _reply(opinions: list[dict]) -> httpx.Response:
+    text = json.dumps({"opinions": opinions})
+    return httpx.Response(200, json={"content": [{"type": "text", "text": text}],
+                                     "usage": {"input_tokens": 10}})  # fmt: skip
+
+
+def test_one_model_call_answers_for_every_seat(monkeypatch):
+    """R175: one request per panel run, not seven; a seat the reply leaves out falls
+    back to its rules, and the shared evidence is still marked for caching."""
     monkeypatch.setattr(get_settings(), "anthropic_api_key", "k")
     sent = []
 
     def handle(req: httpx.Request) -> httpx.Response:
-        body = json.loads(req.content)
-        sent.append(body)
-        if "Technical" in body["messages"][0]["content"]:
-            return httpx.Response(529, json={"error": "overloaded"})
-        reply = {"stance": "support", "scores": {"need": 4}, "confidence": 0.9,
-                 "claims": [{"text": "23 trials.", "evidence": ["trials:total"]}]}  # fmt: skip
-        return httpx.Response(200, json={"content": [{"type": "text", "text": json.dumps(reply)}],
-                                         "usage": {"input_tokens": 10}})  # fmt: skip
+        sent.append(json.loads(req.content))
+        op = {"stance": "support", "scores": {"need": 4}, "confidence": 0.9,
+              "claims": [{"text": "23 trials.", "evidence": ["trials:total"],
+                          "criterion": "compliance"}]}  # fmt: skip
+        return _reply([{**op, "seat": s} for s in BY_ID if s != "technical"])
 
     async def go():
         async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as c:
             return await convene(IDEA, {}, scan=SCAN, novelty=NOVELTY, client=c)
 
     r = asyncio.run(go())
-    assert len(sent) == 7 and r["basis"] == "model" and r["fallback_seats"] == ["technical"]
-    systems = {json.dumps(b["system"]) for b in sent}
-    assert len(systems) == 1  # identical prefix for every seat
+    assert len(sent) == 1 and r["basis"] == "model" and r["fallback_seats"] == ["technical"]
     assert sent[0]["system"][-1]["cache_control"] == {"type": "ephemeral"}
-    assert r["usage"]["input_tokens"] == 60
+    assert all(seat in sent[0]["messages"][0]["content"] for seat in BY_ID)
+    assert r["usage"]["input_tokens"] == 10
     basis = {o["seat"]: o["basis"] for o in r["opinions"]}
     assert basis["technical"] == "rules" and basis["customer"] == "model"
+
+
+def test_a_failed_panel_call_falls_back_to_rules_and_trips_the_breaker(monkeypatch):
+    """R175: a quota error is recorded on the provider's breaker, so a spent quota
+    stops costing a wait on every panel run."""
+    from app.agents import providers
+
+    monkeypatch.setattr(get_settings(), "anthropic_api_key", "k")
+    breaker = providers.PROVIDERS["anthropic"].breaker
+    monkeypatch.setattr(breaker, "failures", type(breaker.failures)())
+    monkeypatch.setattr(breaker, "open_until", 0.0)
+
+    async def go():
+        transport = httpx.MockTransport(lambda req: httpx.Response(429, json={}))
+        async with httpx.AsyncClient(transport=transport) as c:
+            return await convene(IDEA, {}, scan=SCAN, novelty=NOVELTY, client=c)
+
+    r = asyncio.run(go())
+    assert r["basis"] == "rules" and len(r["opinions"]) == 7
+    assert len(breaker.failures) == 1
+    breaker.succeed()
+
+
+LEVERS = [
+    {"kind": "combine", "facts": {"a": "brain waves", "b": "nurse call", "papers": 19}},
+    {"kind": "combine", "facts": {"a": "brain waves", "b": "speech", "papers": 0}},
+    {
+        "kind": "localise",
+        "facts": {"india_papers": 52, "world_papers": 1118, "tn_scope": "the 654 startups"},
+    },  # fmt: skip
+    {"kind": "re-target", "facts": {"who": "elderly", "papers": 3}},
+    {"kind": "regulatory route", "facts": {"trials": 23}},
+    {"kind": "business model", "facts": {}},
+]
+
+
+def test_every_lever_reaches_the_panel_with_a_stable_id():
+    """R110, R041: no cap of four, and each lever's id is a hash of its kind and
+    facts, the same whatever its place or wording."""
+    from app.research import levers
+
+    pack = ev.build(IDEA, SCAN, {**NOVELTY, "levers": LEVERS}, None)
+    assert len(pack.levers) == len(LEVERS)
+    ids = [lv["id"] for lv in pack.levers]
+    assert len(set(ids)) == len(ids) and all(f"novelty:lever:{i}" in pack.ids for i in ids)
+    reworded = {**LEVERS[5], "text": "something else"}
+    assert levers.lever_id(reworded) == levers.lever_id(LEVERS[5]) == ids[5]
+    again = ev.build(IDEA, SCAN, {**NOVELTY, "levers": LEVERS[::-1]}, None)
+    assert [lv["id"] for lv in again.levers] == ids[::-1]
+
+
+def test_the_seats_score_the_levers_and_the_vote_orders_them():
+    """1.3.1: the regulatory route for a medical product and the pair no paper covers
+    rank above the levers in front of them; the prior-art variant is its best lever,
+    not lever 0."""
+    r = asyncio.run(
+        convene(IDEA, {"sector": "health"}, scan=SCAN, novelty={**NOVELTY, "levers": LEVERS})
+    )
+    order, scores = r["vote"]["lever_order"], r["vote"]["lever_scores"]
+    kinds = {lv["id"]: (lv["kind"], (lv["facts"] or {}).get("papers")) for lv in
+             ev.build(IDEA, SCAN, {**NOVELTY, "levers": LEVERS}, None).levers}  # fmt: skip
+    assert len(order) == len(LEVERS) and set(order) == set(kinds)
+    assert kinds[order[0]] == ("regulatory route", None)
+    assert order.index(_id(kinds, "combine", 0)) < order.index(_id(kinds, "combine", 19))
+    assert {"prior_art", "customer"} <= set(scores[_id(kinds, "combine", 0)]["seats"])
+    prior = next(o for o in r["opinions"] if o["seat"] == "prior_art")
+    assert "brain waves with speech" in prior["variant"]
+
+
+def _id(kinds: dict, kind: str, papers) -> str:
+    return next(i for i, k in kinds.items() if k == (kind, papers))
+
+
+def test_a_lever_no_seat_scored_comes_last_in_its_place():
+    ops = [
+        Opinion(seat="customer", stance="support", scores={"need": 4}, confidence=0.5,
+                levers={"b": 4, "c": 5}),
+        Opinion(seat="prior_art", stance="support", scores={"differentiation": 4},
+                confidence=0.5, levers={"b": 2}),
+    ]  # fmt: skip
+    v = vote(ops, "hardware", {}, ["a", "b", "c", "d"])
+    assert v["lever_order"] == ["c", "b", "a", "d"]
+    assert set(v["lever_scores"]) == {"b", "c"}
+
+
+def test_lever_scores_must_name_levers_in_the_pack():
+    pack = ev.build(IDEA, SCAN, {**NOVELTY, "levers": LEVERS[:2]}, None)
+    lid = pack.levers[0]["id"]
+    raw = {"stance": "support", "scores": {"need": 4}, "confidence": 0.5,
+           "levers": {f"novelty:lever:{lid}": 9, "made-up": 3}}  # fmt: skip
+    assert validate(raw, BY_ID["customer"], pack.ids, "model").levers == {lid: 5}
+
+
+def test_a_seat_question_is_not_asked_once_its_slot_is_known():
+    """R056: offline, the customer seat's 'who pays' repeated the beneficiary question.
+    With the beneficiary known, the panel asks about its weakest point instead."""
+    ops = [
+        Opinion(seat="customer", stance="conditional", scores={"need": 2}, confidence=0.5,
+                ask_founder="Who exactly would pay?", ask_covers="beneficiary"),
+        Opinion(seat="devil", stance="conditional", scores={"need": 2}, confidence=0.5,
+                ask_founder="Has anyone told you they would pay?"),
+        Opinion(seat="technical", stance="support", scores={"feasibility": 4}, confidence=0.5,
+                ask_founder="What have you built?", ask_covers="stage"),
+    ]  # fmt: skip
+    v = vote(ops, "hardware", {})
+    assert v["ask_about"] is None  # nobody disagrees: the weakest criterion's low seat asks
+    assert v["question_from"] == "customer" and v["question_covers"] == "beneficiary"
+    v = vote(ops, "hardware", {"beneficiary": "coconut farmers"})
+    assert v["question"] == "Has anyone told you they would pay?"  # still about the need
+    rules = asyncio.run(convene(IDEA, {"beneficiary": "paralysed patients"}, scan=SCAN,
+                                novelty=NOVELTY))  # fmt: skip
+    assert rules["vote"]["question_from"] != "customer"
+
+
+def test_add_dynamic_skips_a_question_whose_slot_is_filled():
+    from app.elicitation import engine
+    from app.elicitation.session import ElicitationSession, Source
+
+    el = ElicitationSession(user_id="u")
+    assert engine.add_dynamic(el, "Who pays?", "review panel", covers="beneficiary")
+    assert engine._pending_dynamic(el) is not None
+    el.put("beneficiary", "farmers", 0.9, Source.ANSWER)
+    assert engine._pending_dynamic(el) is None  # filled before its turn: not asked
+    assert engine.add_dynamic(el, "Who uses it?", "review panel", covers="beneficiary") is None
+
+
+def test_the_synthesis_quotes_only_a_claim_about_that_criterion():
+    """R106: the weakest point was given the domain's neutral 'names its usual buyers'
+    as its reason; a claim about another criterion is never the reason either."""
+    r = asyncio.run(convene("solar dryer for copra farmers", {}, scan=SCAN, novelty=None))
+    assert not any("names its usual buyers" in line for line in r["synthesis"]["voice_brief"])
+    ops = [
+        Opinion(seat="customer", stance="oppose", scores={"need": 1}, confidence=0.8,
+                claims=[{"text": "Patents exist.", "evidence": ["a"], "criterion": "compliance"}]),
+        Opinion(seat="technical", stance="support", scores={"feasibility": 5}, confidence=0.8,
+                claims=[{"text": "Open code exists.", "evidence": ["a"],
+                         "criterion": "feasibility"}]),
+    ]  # fmt: skip
+    from app.agents.council.synthesis import synthesise
+
+    pack = ev.EvidencePack()
+    pack.add("a", "field", "Patents exist. Open code exists.")
+    lines = synthesise(vote(ops, "hardware", {}), ops, pack)["voice_brief"]
+    assert any("open code exists" in line for line in lines)
+    assert not any("patents exist" in line.lower() for line in lines)
+
+
+def test_a_claim_criterion_outside_criteria_is_cleared():
+    raw = {
+        "stance": "support",
+        "scores": {"need": 4},
+        "confidence": 0.5,
+        "claims": [{"text": "23 trials.", "evidence": ["trials:total"], "criterion": "vibes"}],
+    }
+    op = validate(raw, BY_ID["customer"], _pack().ids, "model")
+    assert op.claims[0].criterion is None
+
+
+def test_no_technical_bump_for_unknown_or_technical_skills():
+    """R156: unknown skills are not 'no technical skill', and a Python developer has one."""
+    for slots in ({}, {"founder_skills": []}, {"founder_skills": ["python developer"]}):
+        _, why = weights_for("software", slots)
+        assert not any("technical" in w for w in why), slots
+    _, why = weights_for("software", {"founder_skills": ["sales", "accounts"]})
+    assert why == ["none of the founder's stated skills is technical: technical +5"]
 
 
 def test_the_pack_uses_the_scans_one_domain():
@@ -204,4 +373,5 @@ def test_a_farm_app_gets_no_medical_advice_from_the_panel():
 def test_the_panel_hears_levers_worded_for_the_founder():
     nov = {**NOVELTY, "levers": [{"kind": "business model", "facts": {}}]}
     pack = ev.build(IDEA, SCAN, nov, None, {"sector": "food"})
-    assert "subscriptions" in pack.items["novelty:lever:0"]["text"]
+    lid = pack.levers[0]["id"]
+    assert "subscriptions" in pack.items[f"novelty:lever:{lid}"]["text"]
