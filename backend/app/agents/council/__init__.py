@@ -1,8 +1,9 @@
 """The advocate council (architecture dashboard properties 7–9, build spec §7–9).
 
-    evidence pack (one ID per fact) → seven seats in parallel (model or rules)
+    evidence pack (one ID per fact) → seven seats (one model call, or rules)
     → opinions validated (uncited claims dropped) → weighted vote (code)
     → synthesis (what the founder hears) + one question
+    → the ways to stand out, ranked by the seats' scores (task 1.3.1)
 """
 
 from __future__ import annotations
@@ -15,15 +16,23 @@ import httpx
 
 from app.agents import providers
 from app.agents.council import evidence as evidence_mod
-from app.agents.council.model import ask_seat
+from app.agents.council.model import ask_panel
 from app.agents.council.rules import RULES
 from app.agents.council.seats import SEATS, Opinion, validate
 from app.agents.council.synthesis import synthesise
 from app.agents.council.vote import idea_type, vote
+from app.core.config import get_settings
 from app.core.logging import get_logger
 
 log = get_logger("council")
-SEAT_TIMEOUT_S = 8.0
+
+
+def _timeout() -> float:
+    """How long the one panel call may take. One call answers for every seat (R175),
+    which is more to write than one seat's reply, but it must still land inside the
+    wait of the turn that asked for a view (`opinion_wait_s`): a panel the founder
+    asked for and that arrives later is heard a turn late."""
+    return get_settings().opinion_wait_s
 
 
 async def convene(
@@ -54,30 +63,28 @@ async def convene(
 
     if use_model:
         own = client is None
-        client = client or httpx.AsyncClient(timeout=SEAT_TIMEOUT_S + 2)
+        timeout = _timeout()
+        client = client or httpx.AsyncClient(timeout=timeout + 2)
+        raws: dict[str, dict] = {}
         try:
-            tasks = {
-                s.id: asyncio.create_task(ask_seat(client, s, pack, idea, slots, judge))
-                for s in wanted
-            }
-            done, pending = await asyncio.wait(tasks.values(), timeout=SEAT_TIMEOUT_S)
-            for t in pending:
-                t.cancel()
-            for s in wanted:
-                t = tasks[s.id]
-                if t in done and not t.exception():
-                    raw, use = t.result()
-                    for k, v in use.items():
-                        if isinstance(v, int):
-                            usage[k] = usage.get(k, 0) + v
-                    op = validate(raw or {}, s, pack.ids, "model") if raw else None
-                    if op:
-                        opinions[s.id] = op
-                        continue
-                fallback.append(s.id)
+            raws, use = await asyncio.wait_for(
+                ask_panel(client, wanted, pack, idea, slots, judge), timeout
+            )
+            usage = {k: v for k, v in use.items() if isinstance(v, int)}
+        except TimeoutError:
+            judge.breaker.fail("review panel: no reply in time")
+            log.info("council.model_failed", error="timeout")
+        except (providers.ModelError, httpx.HTTPError) as e:  # on the breaker already
+            log.info("council.model_failed", error=str(e)[:200])
         finally:
             if own:
                 await client.aclose()
+        for s in wanted:
+            op = validate(raws[s.id], s, pack.ids, "model") if s.id in raws else None
+            if op:
+                opinions[s.id] = op
+            else:
+                fallback.append(s.id)
     else:
         fallback = [s.id for s in wanted]
 
@@ -93,7 +100,7 @@ async def convene(
 
     ops = list(opinions.values())
     kind = idea_type((scan or {}).get("vanigam_categories", []), slots)
-    result = vote(ops, kind, slots)
+    result = vote(ops, kind, slots, [lv["id"] for lv in pack.levers])
     brief = synthesise(result, ops, pack)
     took = round(time.monotonic() - started, 2)
     log.info("council.done", seats=len(ops), fallback=fallback, band=result["band"], seconds=took)
