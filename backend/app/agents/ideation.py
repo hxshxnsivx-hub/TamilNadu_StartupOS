@@ -195,7 +195,8 @@ class AgentSession:
     roadmap: dict | None = None
     novelty: dict | None = None
     council: dict | None = None  # the latest review-panel run
-    # points already said: "evidence", "statement", "council:<at>", "lever:0", ...
+    # points already said: "evidence:<hash>", "statement", "council:<at>",
+    # "lever:<id>" (a lever's stable id, R041), ...
     narrated: list[str] = field(default_factory=list)
     usage: dict = field(default_factory=dict)  # model tokens spent in this session
     language: str | None = None  # ta-IN | en-IN | hi-IN: the founder's last spoken language
@@ -294,10 +295,26 @@ class AgentSession:
         # idea as it stands, as it was then (no search is spent to re-check it)
         if s.scan is not None and s.research_key is None:
             s.research_key = research_key(s)
+        _upgrade_narrated(s)
         # a document saved before `pending` existed: rebuild it from what it kept
         pending = d["pending"] if "pending" in d else _derive_pending(s)
         s.pending = PendingAction.model_validate(pending).model_dump() if pending else None
         return s
+
+
+def _upgrade_narrated(s: AgentSession) -> None:
+    """A document saved when levers were remembered by their place in the list
+    ("lever:0"): each becomes the stable id of the lever that was there (R041), so a
+    reordered or re-run list neither repeats nor skips one."""
+    rows = (s.novelty or {}).get("levers", [])
+    out = []
+    for n in s.narrated:
+        m = re.fullmatch(r"lever:(\d{1,3})", n)
+        if m is None:
+            out.append(n)
+        elif int(m.group(1)) < len(rows):
+            out.append(f"lever:{levers.lever_id(rows[int(m.group(1))])}")
+    s.narrated = list(dict.fromkeys(out))
 
 
 def research_key(s: AgentSession) -> str:
@@ -368,13 +385,10 @@ def _retire_stale(s: AgentSession) -> None:
     st = (s.novelty or {}).get("statement")
     if st and "statement" in s.narrated:
         said.append(f"statement:{_digest(st['text'])}")
-    for i, lever in enumerate((s.novelty or {}).get("levers", [])):
-        if f"lever:{i}" in s.narrated:
-            said.append(f"lever:{_digest(lever)}")
     if s.council and f"council:{s.council['at']}" in s.narrated:
         said.append(f"view:{_digest(_view(s.council))}")
     # what was said by position or by run is for the old inputs only; what was
-    # said by content (evidence:, statement:, lever:<hash>, view:) stays
+    # said by content (evidence:, statement:, lever:<id>, view:) stays
     positional = re.compile(r"statement|searching|lever:\d{1,3}|council:.*")
     s.narrated = [n for n in s.narrated if not positional.fullmatch(n)]
     s.narrated += [n for n in said if n not in s.narrated]
@@ -730,9 +744,10 @@ def _model_allowed(s: AgentSession) -> bool:
 
 
 def _council_work(s: AgentSession):
-    """The panel's work on a snapshot of the session (a job never touches it)."""
+    """The panel's work on a snapshot of the session (a job never touches it). A
+    private session's idea goes to no model (decision 0004): rule seats judge it."""
     idea, known, scan, nov = _idea_text(s), _known_dict(s), s.scan, s.novelty
-    use_model = _budget_left(s) and providers.judge() is not None
+    use_model = not s.private and _budget_left(s) and providers.judge() is not None
 
     async def work() -> dict:
         return await council.convene(idea, known, scan=scan, novelty=nov, use_model=use_model)
@@ -794,13 +809,17 @@ def _apply_council(s: AgentSession, r: dict) -> None:
     s.council = r
     _add_usage(s.usage, r.get("usage"))
     if q := r["synthesis"].get("question"):
-        engine.add_dynamic(s.elicitation, q, "review panel")
+        covers = r["vote"].get("question_covers")
+        engine.add_dynamic(s.elicitation, q, "review panel", covers=covers)
 
 
 async def _convene(s: AgentSession, wait: float | None = None) -> dict | None:
     """Run the review panel and wait for it up to `wait` seconds (default: the
     founder asked, or the roadmap needs it). None if it is still deliberating:
-    its view then enters a later turn."""
+    its view then enters a later turn. None, and no panel, before the search has
+    finished (R068): a verdict with no evidence would judge only the lack of it."""
+    if s.scan is None:
+        return None
     wait = get_settings().opinion_wait_s if wait is None else wait
     key = research_key(s)
     job = board.running(s.id, "council", key) or board.start(
@@ -870,6 +889,9 @@ async def _absorb(s: AgentSession, out: dict) -> list[dict]:
 
 SEARCHING = "Let me look up what already exists for this; I will tell you what I find."
 PANEL_BUSY = "The review panel is still looking at it; I will share its view next."
+PANEL_AFTER_SEARCH = (
+    "I will give the review panel's view once the search for what already exists finishes."
+)
 
 
 def _event(kind: str, data: Any) -> dict:
@@ -921,7 +943,7 @@ async def _llm_stream(
         "private": s.private,
         "last_scan": s.scan,
         "council": s.council,
-        "convene": lambda idea: _convene(s),  # None while it is still deliberating
+        "convene": lambda idea: _convene(s),  # None while it deliberates or awaits the search
         "search": lambda args: _search(s, args),  # None while it is still searching
     }
     had_council = s.council
@@ -993,8 +1015,29 @@ def _kept(s: AgentSession, key: str) -> Any:
     return s.elicitation.kept().get(key)
 
 
+LEVERS_SPOKEN = 3  # ways to stand out said per research result, best first
+
+
+def _ranked_levers(s: AgentSession) -> list[dict]:
+    """The ways to stand out in the panel's order (task 1.3.1), once it has voted on
+    them; before that, in the novelty check's order. The panel's run and the novelty
+    map are put aside together (1.2.3), so the order is always for these levers."""
+    rows = list((s.novelty or {}).get("levers", []))
+    order = ((s.council or {}).get("vote") or {}).get("lever_order") or []
+    place = {lid: i for i, lid in enumerate(order)}
+    return sorted(rows, key=lambda lv: place.get(levers.lever_id(lv), len(place)))
+
+
+def _lever_said(s: AgentSession, lever: dict) -> bool:
+    """Said, by its stable id or by the content hash a 1.2.3 session kept."""
+    return (
+        f"lever:{levers.lever_id(lever)}" in s.narrated or f"lever:{_digest(lever)}" in s.narrated
+    )
+
+
 def _next_novelty_point(s: AgentSession) -> str | None:
-    """One novelty point per turn: the statement first, then each way to stand out."""
+    """One novelty point per turn: the statement first, the panel's view, then the
+    three best ways to stand out, in the panel's order."""
     if not s.novelty:
         return None
     st = s.novelty["statement"]
@@ -1011,11 +1054,14 @@ def _next_novelty_point(s: AgentSession) -> str | None:
     if s.council and (key := f"council:{s.council['at']}") not in s.narrated:
         s.narrated.append(key)
         return " ".join(s.council["synthesis"]["voice_brief"])
-    for i, lever in enumerate(s.novelty.get("levers", [])[:3]):
-        said = f"lever:{_digest(lever)}"  # the same lever after a re-run
-        if f"lever:{i}" not in s.narrated and said not in s.narrated:
-            s.narrated += [f"lever:{i}", said]
-            first = "One way to stand out" if i == 0 else "Another way to stand out"
+    ranked = _ranked_levers(s)
+    heard = [lv for lv in ranked if _lever_said(s, lv)]
+    if len(heard) >= LEVERS_SPOKEN:  # some said before the panel reordered: three at most
+        return None
+    for lever in ranked[:LEVERS_SPOKEN]:
+        if not _lever_said(s, lever):
+            s.narrated.append(f"lever:{levers.lever_id(lever)}")
+            first = "Another way to stand out" if heard else "One way to stand out"
             # Worded now, from the founder's current sector: no new search (R190).
             lever = levers.render(lever, domain_id=_domain_id(s), sector=_kept(s, "sector"))
             text = lever["text"].rstrip(".")
@@ -1117,7 +1163,9 @@ async def _offline_stream(
     fresh = out.get("fresh")
     if out.get("wants_opinion") and fresh is None and _research_open(s):
         before = s.council
-        if await _convene(s) is None:  # asked for: worth a wait, but not forever
+        if s.scan is None:  # no evidence yet, so no verdict (R068)
+            lead = PANEL_AFTER_SEARCH
+        elif await _convene(s) is None:  # asked for: worth a wait, but not forever
             lead = PANEL_BUSY
         else:
             out["tools"].append("ask_council")
