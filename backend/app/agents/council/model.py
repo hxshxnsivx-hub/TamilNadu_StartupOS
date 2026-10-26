@@ -1,9 +1,14 @@
-"""Seats backed by the model: one short call each, in parallel, on a shared prefix.
+"""Seats backed by the model: one call for the whole panel (R175).
 
-The system prompt is the same for every seat and every turn of the council:
-instructions first, then the evidence pack marked for prompt caching. Only the
-seat's own brief goes in the user message, so seven calls share one cached
-prefix (SYSTEM-DESIGN.md §3.3).
+Every seat judged the same evidence pack, so seven separate calls bought no real
+diversity and spent seven requests of a small free-tier quota on every panel run.
+One call now returns every seat's opinion as a JSON array; each opinion is still
+validated on its own, and a seat the reply leaves out or gets wrong falls back to
+its rules. A failed call is recorded on the provider's breaker, so a quota that is
+gone stops costing the full wait on every panel.
+
+The system prompt is instructions first, then the evidence pack marked for prompt
+caching; the seats' briefs, the idea and the levers to score go in the user message.
 """
 
 from __future__ import annotations
@@ -14,29 +19,41 @@ import re
 import httpx
 
 from app.agents import providers
-from app.agents.council.evidence import EvidencePack
+from app.agents.council.evidence import LEVER, EvidencePack
 from app.agents.council.seats import CRITERIA, Seat
 from app.agents.providers import Provider
 
 INSTRUCTIONS = (
-    """You are one seat on Vanigam's review panel for a Tamil Nadu founder's idea.
+    """You are Vanigam's review panel for a Tamil Nadu founder's idea. You speak for each
+seat listed in the user message, separately, from that seat's point of view.
 Judge only from the evidence listed below; every claim must cite evidence IDs from the list.
 A claim without a valid ID is discarded. Never say the idea is new or unique.
 Scores run 1 (poor) to 5 (strong) on these criteria: """
     + ", ".join(CRITERIA)
     + """.
-Score only the criteria your seat can judge.
+Each seat scores only the criteria it can judge, and names the criterion each claim is about.
+Each seat may also score the ways to stand out (evidence IDs starting """
+    + LEVER
+    + """) that its question
+can judge, 1 (weak) to 5 (best), by the part of the ID after that prefix.
 
 Reply with one JSON object and nothing else:
-{"stance": "support" | "conditional" | "oppose",
- "scores": {"<criterion>": 1-5},
- "confidence": 0.0-1.0,
- "claims": [{"text": "...", "evidence": ["<id>", ...]}],   (at most 3)
- "blocker": null | {"text": "...", "evidence": ["<id>"]},   (only for a reason it cannot work)
- "ask_founder": "one question for the founder" | null,
- "variant": "one concrete change to the idea" | null}
+{"opinions": [
+ {"seat": "<seat id>",
+  "stance": "support" | "conditional" | "oppose",
+  "scores": {"<criterion>": 1-5},
+  "confidence": 0.0-1.0,
+  "claims": [{"text": "...", "evidence": ["<id>", ...], "criterion": "<criterion>"}],
+  "blocker": null | {"text": "...", "evidence": ["<id>"]},
+  "ask_founder": "one question for the founder" | null,
+  "variant": "one concrete change to the idea" | null,
+  "levers": {"<lever id>": 1-5}}
+]}
+At most 3 claims per seat; a blocker only for a reason it cannot work.
 """
 )
+# Seven opinions in one reply need room; still far below seven separate calls.
+MAX_TOKENS = 2400
 
 
 def _system(pack: EvidencePack) -> list[dict]:
@@ -50,13 +67,14 @@ def _system(pack: EvidencePack) -> list[dict]:
     ]
 
 
-def _user(seat: Seat, idea: str, slots: dict) -> str:
+def _user(seats: list[Seat], idea: str, slots: dict) -> str:
     known = ", ".join(f"{k}={v}" for k, v in sorted(slots.items())) or "nothing yet"
-    focus = ", ".join(sorted(seat.kinds))
-    return (
-        f"Your seat: {seat.name}. {seat.brief}\nYour question: {seat.question}\n"
-        f"Focus on evidence of these kinds: {focus}.\n\nThe idea: {idea}\nKnown: {known}"
+    rows = "\n".join(
+        f"- {s.id} ({s.name}): {s.brief} Question: {s.question}"
+        f" Focus on evidence of these kinds: {', '.join(sorted(s.kinds))}."
+        for s in seats
     )
+    return f"The seats:\n{rows}\n\nThe idea: {idea}\nKnown: {known}"
 
 
 def _json(text: str) -> dict | None:
@@ -69,15 +87,16 @@ def _json(text: str) -> dict | None:
         return None
 
 
-async def ask_seat(
+async def ask_panel(
     client: httpx.AsyncClient,
-    seat: Seat,
+    seats: list[Seat],
     pack: EvidencePack,
     idea: str,
     slots: dict,
     provider: Provider | None = None,
-) -> tuple[dict | None, dict]:
-    """(the raw opinion or None, token usage), from the first provider fit to judge."""
+) -> tuple[dict[str, dict], dict]:
+    """(seat id -> raw opinion, token usage) from one call to the first provider fit to
+    judge. A failure is recorded on that provider's breaker and raised."""
     provider = provider or providers.judge()
     if provider is None:
         raise providers.ModelError("no model available for the review panel")
@@ -85,5 +104,16 @@ async def ask_seat(
     system: list[dict] | str = _system(pack)
     if provider.name != "anthropic":
         system = "\n\n".join(b["text"] for b in system)
-    text, usage = await provider.complete(client, system, _user(seat, idea, slots), 700)
-    return _json(text), usage
+    try:
+        text, usage = await provider.complete(client, system, _user(seats, idea, slots), MAX_TOKENS)
+    except (providers.ModelError, httpx.HTTPError) as e:
+        provider.breaker.fail(f"review panel: {e}")
+        raise
+    provider.breaker.succeed()
+    wanted = {s.id for s in seats}
+    rows = (_json(text) or {}).get("opinions")
+    out: dict[str, dict] = {}
+    for row in rows if isinstance(rows, list) else []:
+        if isinstance(row, dict) and row.get("seat") in wanted and row["seat"] not in out:
+            out[row["seat"]] = row
+    return out, usage
