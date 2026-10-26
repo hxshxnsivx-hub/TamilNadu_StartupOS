@@ -45,6 +45,7 @@
      "regulatory"
     ],
     "max_questions": 7,
+    "medical_advice": true,
     "must_not_mention": [],
     "elements_exclude": [
      "physically challenged"
@@ -331,6 +332,7 @@
     "roadmap_must_include": [],
     "risks_must_include": [],
     "max_questions": 7,
+    "medical_advice": false,
     "must_not_mention": [
      "Agarwal",
      "Wabag",
