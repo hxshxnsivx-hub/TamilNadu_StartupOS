@@ -304,21 +304,21 @@ licences and risks (S8), streamed fact-checked replies, private sessions, the jo
 
 ### 1.3 Review panel
 
-#### 1.3.1 `[ ]` The panel ranks the levers
+#### 1.3.1 `[x]` The panel ranks the levers
 - **Why:** levers are ordered only by gap size; the design asks the prior-art and customer seats to rank them.
 - **Where:** `agents/council/`, `research/novelty.py`, narration in `agents/ideation.py`.
 - **How:** seats score each lever; the vote orders them before narration.
 - **When:** after the panel job; before 1.2.4.
 - **What for:** best lever first (IDEATION §2.3, Phase 2).
-- `1.3.1.1` Lever scoring in the seats.
-- `1.3.1.2` Narration uses the panel's order.
-- `1.3.1.3` `[ ]` [R041](arena/details-p1.md#r041) (weight 84) Levers are tracked by list position, so reranking or a new version skips them. Fix: Stable lever ids (hash of kind and text) scoped by idea_version: narrated keys become 'lever:{version}:{id}' and 'statement:{version}'.
-- `1.3.1.4` `[ ]` [R056](arena/details-p1.md#r056) (weight 80) Offline panel question is always the customer seat's, repeating the beneficiary question. Fix: Tag each seat question with the slot it duplicates and skip it when filled.
-- `1.3.1.5` `[ ]` [R068](arena/details-p1.md#r068) (weight 78) Panel gives a verdict ('serious concerns') before any evidence exists. Fix: Gate the panel on finished research.
-- `1.3.1.6` `[ ]` [R106](arena/details-p1.md#r106) (weight 74) Synthesis quotes a seat's first claim whatever criterion it was about. Fix: Criterion field on each claim, validated against CRITERIA.
-- `1.3.1.7` `[ ]` [R110](arena/details-p1.md#r110) (weight 74) The panel sees only the first 4 levers, and their order is fixed by kind. Fix: Pass every lever to the panel with stable ids; seats score each; the vote orders them; the narrator speaks the top 3 of that order.
-- `1.3.1.8` `[ ]` [R156](arena/details-p1.md#r156) (weight 64) 'No technical skill' weight bump fires for a Python developer and for unknown skills. Fix: Three-state rule: known technical / known non-technical / unknown (no bump).
-- `1.3.1.9` `[ ]` [R175](arena/details-p1.md#r175) (weight 61) Seven separate model calls per panel run; every seat sees the whole pack anyway. Fix: One call returning all seven opinions as a JSON array.
+- `1.3.1.1` `[x]` Lever scoring in the seats. *`Opinion.levers` (lever id -> 1..5), validated against the pack; rule seats score from each lever's facts (prior art by how rare the gap is, customer by how directly it reaches who pays; technical, regulatory and cost only their own kind); `vote` ranks them by weight x confidence into `lever_order`.*
+- `1.3.1.2` `[x]` Narration uses the panel's order. *`_next_novelty_point` speaks the top 3 of `lever_order` (the novelty order before the panel votes), three at most per result; `council_brief` gives the model the same top 3. `tests/unit/test_panel_ranks_levers.py`.*
+- `1.3.1.3` `[x]` [R041](arena/details-p1.md#r041) (weight 84) Levers are tracked by list position, so reranking or a new version skips them. Fix: Stable lever ids (hash of kind and text) scoped by idea_version: narrated keys become 'lever:{version}:{id}' and 'statement:{version}'. *Built as `levers.lever_id` (hash of kind and facts, not text: the text is reworded per sector, R190) and the key `lever:{id}`, not scoped by idea_version: 1.2.3 remembers what was said by content so a re-run finding the same lever is not said again, and idea_version changes on most early answers (R014). Saved `lever:<n>` marks are upgraded on read. The statement keeps its content key from 1.2.3.*
+- `1.3.1.4` `[x]` [R056](arena/details-p1.md#r056) (weight 80) Offline panel question is always the customer seat's, repeating the beneficiary question. Fix: Tag each seat question with the slot it duplicates and skip it when filled. *`ask_covers` (customer: beneficiary, technical: stage, funding: funding_route); the vote skips a covered question, falls back to the weakest criterion's low seat when nobody disagrees, and `add_dynamic`/`_pending_dynamic` drop it once the slot is filled.*
+- `1.3.1.5` `[x]` [R068](arena/details-p1.md#r068) (weight 78) Panel gives a verdict ('serious concerns') before any evidence exists. Fix: Gate the panel on finished research. *`_convene` returns None with no scan; offline the founder hears PANEL_AFTER_SEARCH; the model's ask_council gets 'waiting for the search'.*
+- `1.3.1.6` `[x]` [R106](arena/details-p1.md#r106) (weight 74) Synthesis quotes a seat's first claim whatever criterion it was about. Fix: Criterion field on each claim, validated against CRITERIA.
+- `1.3.1.7` `[x]` [R110](arena/details-p1.md#r110) (weight 74) The panel sees only the first 4 levers, and their order is fixed by kind. Fix: Pass every lever to the panel with stable ids; seats score each; the vote orders them; the narrator speaks the top 3 of that order. *The prior-art variant is its best-scored lever, not lever 0. The novelty check still offers at most 2 combine levers.*
+- `1.3.1.8` `[x]` [R156](arena/details-p1.md#r156) (weight 64) 'No technical skill' weight bump fires for a Python developer and for unknown skills. Fix: Three-state rule: known technical / known non-technical / unknown (no bump).
+- `1.3.1.9` `[x]` [R175](arena/details-p1.md#r175) (weight 61) Seven separate model calls per panel run; every seat sees the whole pack anyway. Fix: One call returning all seven opinions as a JSON array. *`model.ask_panel`; a seat missing from the reply falls back to rules; failures and timeouts are recorded on the provider's breaker. A private session's panel uses rule seats only (the panel part of R015, 1.5.4.2).*
 
 #### 1.3.2 `[ ]` The devil's-advocate seat tests each lever
 - **Why:** a founder can read a gap as a guarantee.
@@ -328,6 +328,7 @@ licences and risks (S8), streamed fact-checked replies, private sessions, the jo
 - **What for:** calibrated expectations (IDEATION §3.6 r5).
 - `1.3.2.1` Per-lever objection.
 - `1.3.2.2` Test.
+- `1.3.2.3` `[ ]` The panel's time limit equals `opinion_wait_s` exactly, so a reply landing just under it still misses the turn once the evidence pack, rule seats and vote are added, and the view arrives a turn later (found in the 1.3.1 review). Fix: leave a small margin, e.g. `opinion_wait_s - 1`.
 
 #### 1.3.3 `[x]` Stop medical advice for non-medical ideas
 - **Why:** a hospital-instalment fintech idea is told to "start as a communication aid without medical claims".
