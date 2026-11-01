@@ -1,0 +1,1088 @@
+{
+ "themes": [
+  {
+   "id": "T01",
+   "name": "No single owned vocabulary for stage, sector, category, entry mode and domain",
+   "root_cause": "Stage, sector, BOM category, entry mode, reg subtype and idea domain are re-spelled as string literals in each module (elicitation, planner, readiness, investors, scan, council, b2b), each with its own substring cues. There is no canonical enum with explicit mappings, so values silently fail to match across module boundaries.",
+   "symptoms": "revenue founders scoring 0, sectors not matching registry ids, wrong idea type in the panel, mismatched TS/Python enums, BOM misfires, two health classifiers",
+   "modules": [
+    "backend/app/core/ (new taxonomy/stages module)",
+    "backend/app/elicitation/slots.py",
+    "backend/app/planner/",
+    "backend/app/funding/",
+    "backend/app/research/scan.py",
+    "backend/app/agents/council/vote.py",
+    "backend/app/b2b/decompose.py",
+    "frontend/src/"
+   ],
+   "phases": [
+    "P1",
+    "P4",
+    "P5"
+   ],
+   "depends_on": [],
+   "flags": [
+    "F-A4-015",
+    "F-A5-001",
+    "F-B4-022",
+    "F-B4-002",
+    "F-B4-023",
+    "F-B4-020",
+    "F-A4-011",
+    "F-B1-005",
+    "F-B3-019",
+    "F-B4-007",
+    "F-B4-024",
+    "F-B4-003"
+   ],
+   "flag_count": 12,
+   "total_weight": 927
+  },
+  {
+   "id": "T02",
+   "name": "Reference data provenance, review state and freshness",
+   "root_cause": "Registry cards, packs, catalogue entries and translations carry no per-item source, checked date or reviewer, the code never reads review flags, harvest scripts overwrite good records on failure, and the weekly refresh workflow is fragile.",
+   "symptoms": "unreviewed drafts shown to founders, no freshness rule possible, uncovered districts unacknowledged, red CI from clocks, piled-up data PRs, wasted refetches",
+   "modules": [
+    "backend/app/planner/registry.py",
+    "backend/app/planner/data/",
+    "backend/app/voice/phrasebook.py",
+    "backend/app/ecosystem/",
+    "scripts/check_*.py",
+    "scripts/build_domain_signals.py",
+    ".github/workflows/weekly-checks.yml"
+   ],
+   "phases": [
+    "P1",
+    "P5"
+   ],
+   "depends_on": [],
+   "flags": [
+    "F-A5-034",
+    "F-A5-010",
+    "F-A5-035",
+    "F-B5-024",
+    "F-A5-012",
+    "F-A5-014",
+    "F-A5-011",
+    "F-A5-013",
+    "F-A5-015",
+    "F-A5-016",
+    "F-A5-037",
+    "F-A5-036",
+    "F-A5-038"
+   ],
+   "flag_count": 13,
+   "total_weight": 866
+  },
+  {
+   "id": "T03",
+   "name": "Untyped fact store with no source precedence",
+   "root_cause": "ElicitationSession.put accepts any value from any source (profile, extraction, model note) with a bare confidence number: no per-slot type validation, no source rank, no outcome returned, and no mapping from browser or server profile shapes onto slots. Bad or stale values lock in and crash consumers.",
+   "symptoms": "TypeErrors in the planner, raw strings at 0.95, extractions overwriting direct answers, 'recorded' when dropped, profile keys not matching slots, two confidence thresholds",
+   "modules": [
+    "backend/app/elicitation/session.py",
+    "backend/app/elicitation/answers.py",
+    "backend/app/elicitation/engine.py",
+    "backend/app/routers/ideation.py",
+    "backend/app/agents/tools.py",
+    "frontend/src/voice/agentClient.ts"
+   ],
+   "phases": [
+    "P1",
+    "P3",
+    "P5"
+   ],
+   "depends_on": [
+    "T01"
+   ],
+   "flags": [
+    "F-B4-011",
+    "F-B4-014",
+    "F-B4-012",
+    "F-B1-031",
+    "F-A1-007",
+    "F-B3-016",
+    "F-B3-017",
+    "F-B2-015",
+    "F-A1-026",
+    "F-B1-016",
+    "F-A1-009"
+   ],
+   "flag_count": 11,
+   "total_weight": 846
+  },
+  {
+   "id": "T04",
+   "name": "Scheme eligibility lacks three-valued logic, a typed profile and live status",
+   "root_cause": "Rules treat an unknown field as a failure, seed rules and catalogue inputs use different field names with no typed founder-facts contract, scheme status and money fields are flattened, and /talk picks schemes from the domain card rather than the founder.",
+   "symptoms": "'not known' shown as 'not eligible', closed schemes ranked eligible, TANSEED called non-dilutive, mixed amounts compared, unencoded criteria hidden",
+   "modules": [
+    "backend/app/schemes/rules.py",
+    "backend/app/schemes/engine.py",
+    "backend/app/schemes/models.py",
+    "backend/app/schemes/seed.py",
+    "backend/app/schemes/annotate.py",
+    "backend/app/agents/tools.py",
+    "frontend/src/pages/Schemes.tsx"
+   ],
+   "phases": [
+    "P1",
+    "P4"
+   ],
+   "depends_on": [
+    "T01",
+    "T03"
+   ],
+   "flags": [
+    "F-A4-001",
+    "F-B4-008",
+    "F-A4-003",
+    "F-B4-009",
+    "F-B4-010",
+    "F-A4-006",
+    "F-B2-025",
+    "F-A4-002",
+    "F-A4-005",
+    "F-A4-007",
+    "F-A4-004"
+   ],
+   "flag_count": 11,
+   "total_weight": 908
+  },
+  {
+   "id": "T05",
+   "name": "Question policy: budget, required set and value of asking",
+   "root_cause": "The selector treats turns as questions, required slots exceed the budget, the WHY finger has no required slot, dynamic scan/panel questions bypass the selector, and slot value is a static consumer count. No single policy decides what is worth asking, what was skipped and what gets restated as an assumption.",
+   "symptoms": "required slots never asked, dynamic questions eating the budget, skipped slots vanishing from the restatement, duplicate panel questions, CP-SAT doing nothing",
+   "modules": [
+    "backend/app/elicitation/selector.py",
+    "backend/app/elicitation/slots.py",
+    "backend/app/elicitation/engine.py",
+    "backend/app/agents/council/vote.py"
+   ],
+   "phases": [
+    "P1"
+   ],
+   "depends_on": [
+    "T03"
+   ],
+   "flags": [
+    "F-A1-002",
+    "F-B4-017",
+    "F-A1-003",
+    "F-A1-019",
+    "F-B4-018",
+    "F-B4-019",
+    "F-A1-008",
+    "F-A1-010",
+    "F-B4-016",
+    "F-B4-013"
+   ],
+   "flag_count": 10,
+   "total_weight": 769
+  },
+  {
+   "id": "T06",
+   "name": "Idea version is not a stable key for derived artefacts",
+   "root_cause": "idea_version hashes every slot so it changes on almost every answer, levers carry no slot patch and are tracked by list position, and jobs, narration keys and artefacts are not tagged with the version they were built from. Nothing defines which inputs a result depends on.",
+   "symptoms": "re-runs over-firing, a new version's verdict never spoken, stale roadmap/panel after a lever choice, levers skipped on rerank, old jobs reused",
+   "modules": [
+    "backend/app/agents/ideation.py",
+    "backend/app/agents/jobs.py",
+    "backend/app/research/novelty.py",
+    "backend/app/agents/council/evidence.py"
+   ],
+   "phases": [
+    "P1"
+   ],
+   "depends_on": [
+    "T03"
+   ],
+   "flags": [
+    "F-B1-018",
+    "F-B1-013",
+    "F-B1-020",
+    "F-B3-020",
+    "F-B1-014",
+    "F-B3-021",
+    "F-B1-015",
+    "F-B1-021",
+    "F-B4-025"
+   ],
+   "flag_count": 9,
+   "total_weight": 683
+  },
+  {
+   "id": "T07",
+   "name": "Session store durability, expiry and fallback semantics",
+   "root_cause": "The store stack (Memory, Sql, Cached/Redis) has no explicit contract for durability, idle expiry versus retention, version-guarded writes or database outage. Callers infer behaviour from store names, and the live-session read path is reused for analytics.",
+   "symptoms": "deleted sessions resurrected, 500s on DB outage, sessions idle over 6 h vanishing from programmes, resume-then-404, 'saved' hiding expiry, one-by-one loads",
+   "modules": [
+    "backend/app/agents/store.py",
+    "backend/app/routers/ideation.py",
+    "backend/app/routers/cohort.py"
+   ],
+   "phases": [
+    "P2",
+    "P3",
+    "P5"
+   ],
+   "depends_on": [],
+   "flags": [
+    "F-B5-017",
+    "F-B2-005",
+    "F-A2-002",
+    "F-B2-028",
+    "F-A2-001",
+    "F-B3-004",
+    "F-A2-003",
+    "F-B2-012",
+    "F-B2-029",
+    "F-A3-019"
+   ],
+   "flag_count": 10,
+   "total_weight": 673
+  },
+  {
+   "id": "T08",
+   "name": "Outbound research cache semantics",
+   "root_cause": "The source cache keys on raw query strings including credentials, writes non-atomically, re-extends TTL on promotion, never caches empty answers and has single-flight only via a short Redis lock; warming cannot hit founder keys and dataset caches are cleared independently.",
+   "symptoms": "cache emptied on key rotation, stale data twice as long, truncated files raising, stampedes, repeated empty EPO searches, useless warming",
+   "modules": [
+    "backend/app/research/sources.py",
+    "backend/app/core/redis.py",
+    "scripts/ (warming)"
+   ],
+   "phases": [
+    "P2",
+    "P5"
+   ],
+   "depends_on": [],
+   "flags": [
+    "F-B5-006",
+    "F-A2-007",
+    "F-B5-003",
+    "F-B5-009",
+    "F-A2-009",
+    "F-B5-010",
+    "F-A2-008",
+    "F-B5-005",
+    "F-B5-008",
+    "F-B5-007",
+    "F-A2-010"
+   ],
+   "flag_count": 11,
+   "total_weight": 671
+  },
+  {
+   "id": "T09",
+   "name": "Supply map and order allocation not grounded in the real directory",
+   "root_cause": "/supply still matches invented seed suppliers, the cluster map lives uncited in the frontend, directory coverage (3 districts) is hidden behind an A-Z fallback, and the allocation objective mixes price scales and lets an expensive item go unbought.",
+   "symptoms": "fake matches and missing gaps, Chennai first for Tiruppur, items over Rs 1 lakh unbought, 2.5x dearer suppliers picked, duplicate ids dropping units",
+   "modules": [
+    "backend/app/b2b/decompose.py",
+    "backend/app/b2b/directory.py",
+    "backend/app/b2b/allocate.py",
+    "backend/app/routers/b2b.py",
+    "frontend/src/pages/Supply.tsx"
+   ],
+   "phases": [
+    "P4"
+   ],
+   "depends_on": [
+    "T01"
+   ],
+   "flags": [
+    "F-A4-010",
+    "F-A4-012",
+    "F-B4-006",
+    "F-B4-005",
+    "F-A4-008",
+    "F-A4-009",
+    "F-B4-004",
+    "F-A4-013",
+    "F-A4-014"
+   ],
+   "flag_count": 9,
+   "total_weight": 670
+  },
+  {
+   "id": "T10",
+   "name": "Utterance understanding without word boundaries, negation or correction",
+   "root_cause": "Founder replies are parsed with bare substring and set-membership checks: no word boundaries, no negation window, no notion of a correction or of position in the sentence, and no gazetteer for places. Every downstream fact inherits these misreadings.",
+   "symptoms": "'not right' read as yes, 'no customers' stored as revenue, 'app' inside Tiruchirappalli, 'Salem not Madurai' gives Madurai, towns unrecognised, long answers overwrite problem",
+   "modules": [
+    "backend/app/elicitation/extract.py",
+    "backend/app/elicitation/answers.py",
+    "backend/app/elicitation/places.py",
+    "backend/app/elicitation/engine.py",
+    "backend/app/agents/ideation.py"
+   ],
+   "phases": [
+    "P1",
+    "P4",
+    "P5"
+   ],
+   "depends_on": [
+    "T01"
+   ],
+   "flags": [
+    "F-A1-001",
+    "F-B4-015",
+    "F-A5-002",
+    "F-B4-001",
+    "F-B1-019",
+    "F-A1-004",
+    "F-A1-005",
+    "F-A1-006"
+   ],
+   "flag_count": 8,
+   "total_weight": 660
+  },
+  {
+   "id": "T11",
+   "name": "One message list serves as transcript, model context and fact source",
+   "root_cause": "AgentSession.messages is at once the resume transcript, the LLM context window and the grounding fact pool, with no turn boundaries and founder data placed in the system prompt. Trimming, caching, summarising and fact checking all fight over one structure.",
+   "symptoms": "orphaned tool results on trim, uncacheable prompts, prompt injection via name/profile, weaker fact check as memory grows, duplicated tool results",
+   "modules": [
+    "backend/app/agents/ideation.py",
+    "backend/app/agents/providers.py",
+    "backend/app/agents/grounding.py",
+    "backend/app/agents/results.py"
+   ],
+   "phases": [
+    "P1",
+    "P5"
+   ],
+   "depends_on": [],
+   "flags": [
+    "F-A1-030",
+    "F-B1-023",
+    "F-B1-022",
+    "F-B1-025",
+    "F-B1-032",
+    "F-A1-031",
+    "F-B1-024",
+    "F-A1-032",
+    "F-B1-026"
+   ],
+   "flag_count": 9,
+   "total_weight": 623
+  },
+  {
+   "id": "T12",
+   "name": "Unbounded in-process state: jobs, results and locks",
+   "root_cause": "The job board, result store, memory store and per-session turn locks are process-local dicts with no lifecycle: no TTL, no failed state, no concurrency limit, and no tie to session delete. They grow forever and race with deletion.",
+   "symptoms": "memory growth, idea text outliving the session, failed jobs narrated as 'still searching', results recreated after delete",
+   "modules": [
+    "backend/app/agents/jobs.py",
+    "backend/app/agents/results.py",
+    "backend/app/agents/store.py",
+    "backend/app/routers/ideation.py"
+   ],
+   "phases": [
+    "P1",
+    "P2",
+    "P5"
+   ],
+   "depends_on": [
+    "T07"
+   ],
+   "flags": [
+    "F-A2-011",
+    "F-B5-012",
+    "F-A1-015",
+    "F-A2-012",
+    "F-A5-029",
+    "F-B3-012",
+    "F-A2-004",
+    "F-B5-019",
+    "F-A1-011"
+   ],
+   "flag_count": 9,
+   "total_weight": 599
+  },
+  {
+   "id": "T13",
+   "name": "Research evidence relevance and honesty",
+   "root_cause": "Novelty statements are worded without checking what was actually searched: a failed or tiny local lookup becomes 'no TN startup', uncounted combinations are 'well studied', generic registry words take query slots, brand variants leak through scrub, and two matchers disagree about TN startups.",
+   "symptoms": "false 'no TN startup does this', Talk contradicting Cohort, filler-word matches, brand names leaving the device",
+   "modules": [
+    "backend/app/research/novelty.py",
+    "backend/app/research/scan.py",
+    "backend/app/research/terms.py",
+    "backend/app/cohort/reference.py"
+   ],
+   "phases": [
+    "P1",
+    "P5"
+   ],
+   "depends_on": [
+    "T01"
+   ],
+   "flags": [
+    "F-A1-012",
+    "F-A1-014",
+    "F-A1-013",
+    "F-A5-031",
+    "F-B4-021",
+    "F-A1-016",
+    "F-A5-032"
+   ],
+   "flag_count": 7,
+   "total_weight": 556
+  },
+  {
+   "id": "T14",
+   "name": "Authentication hardening and identity-aware rate limiting",
+   "root_cause": "Auth was built as a demo: a default signing secret, unused refresh tokens with no revocation, user enumeration, and a rate limiter that sees only per-process client IPs, never the signed-in user or session.",
+   "symptoms": "forgeable tokens, 30-min logouts, account enumeration, shared carrier-IP buckets, TTS calls triggering 429s, unbounded limiter keys",
+   "modules": [
+    "backend/app/core/config.py",
+    "backend/app/core/middleware.py",
+    "backend/app/services/auth_service.py",
+    "backend/app/routers/auth.py",
+    "frontend/src/auth.tsx"
+   ],
+   "phases": [
+    "P2",
+    "P3",
+    "P5"
+   ],
+   "depends_on": [],
+   "flags": [
+    "F-A3-003",
+    "F-A5-021",
+    "F-A3-004",
+    "F-B1-030",
+    "F-A5-008",
+    "F-A3-011",
+    "F-A2-017",
+    "F-A3-010"
+   ],
+   "flag_count": 8,
+   "total_weight": 541
+  },
+  {
+   "id": "T15",
+   "name": "External call governance: per-source status, limits and provider budgets",
+   "root_cause": "Calls to research sources and model providers share one daily cap and one undifferentiated failure, run serially, and record usage without provider split or concurrency limits, so one network error fails the scan and every exhaustion reads 'add an API key'.",
+   "symptoms": "whole scan failing on one source, wrong remediation messages, 80% alert with no denominator, Ollama tokens counted against budget, free-tier bursts",
+   "modules": [
+    "backend/app/research/sources.py",
+    "backend/app/core/config.py",
+    "backend/app/agents/providers.py",
+    "backend/app/agents/jobs.py"
+   ],
+   "phases": [
+    "P1",
+    "P2",
+    "P5"
+   ],
+   "depends_on": [
+    "T08"
+   ],
+   "flags": [
+    "F-A2-006",
+    "F-B5-001",
+    "F-B5-002",
+    "F-A5-027",
+    "F-A2-013",
+    "F-A1-017",
+    "F-B5-004"
+   ],
+   "flag_count": 7,
+   "total_weight": 485
+  },
+  {
+   "id": "T16",
+   "name": "Migrations and schema drift",
+   "root_cause": "The Alembic chain is not a frozen, self-contained history: 0001 builds tables from live ORM models, 0003 hard-requires pgvector for a dropped feature, and nothing in CI runs upgrade/downgrade or a drift check against a real database. Schema changes everything else needs (owner FKs, nullable profile columns) cannot land safely until the chain applies everywhere.",
+   "symptoms": "migrations that never apply locally, upgrades broken by model edits, integration tests that skip instead of fail, dead tables needing extensions",
+   "modules": [
+    "backend/app/db/migrations/versions/",
+    "backend/app/models/",
+    "backend/tests/integration/",
+    ".github/workflows/ci.yml"
+   ],
+   "phases": [
+    "P2",
+    "P5"
+   ],
+   "depends_on": [],
+   "flags": [
+    "F-B2-009",
+    "F-B2-010",
+    "F-A2-014",
+    "F-B2-011",
+    "F-A5-039",
+    "F-A5-017"
+   ],
+   "flag_count": 6,
+   "total_weight": 427
+  },
+  {
+   "id": "T17",
+   "name": "Session identity and ownership",
+   "root_cause": "A session id is the only credential, the owner is a free 'anon' string stored in three places without a foreign key, and there is no claim operation or owner check on routes. Who may read, continue, list or delete a conversation is undefined.",
+   "symptoms": "claimed sessions readable by anyone with the id, shared phones handing over sessions, no 'my conversations', programmes holding full keys",
+   "modules": [
+    "backend/app/api/deps.py",
+    "backend/app/routers/ideation.py",
+    "backend/app/agents/store.py",
+    "backend/app/models/agent_session.py",
+    "frontend/src/pages/Talk.tsx"
+   ],
+   "phases": [
+    "P2",
+    "P3",
+    "P5"
+   ],
+   "depends_on": [
+    "T14",
+    "T16",
+    "T07"
+   ],
+   "flags": [
+    "F-A3-001",
+    "F-B5-021",
+    "F-B1-033",
+    "F-B5-020",
+    "F-A3-008",
+    "F-A3-009",
+    "F-A3-002",
+    "F-A2-005",
+    "F-A2-016",
+    "F-B5-022"
+   ],
+   "flag_count": 10,
+   "total_weight": 757
+  },
+  {
+   "id": "T18",
+   "name": "Browser state with no key registry, owner or error policy",
+   "root_cause": "Each page writes its own vanigam_* localStorage keys with its own shape, nothing clears or namespaces them per user, there is no merge rule for syncing to the server, and the Talk page drops the session id on any error.",
+   "symptoms": "two pages overwriting one key, the next user inheriting data, lost conversations after a brief outage, no first-sync conflict rule",
+   "modules": [
+    "frontend/src/auth.tsx",
+    "frontend/src/journeyStore.ts",
+    "frontend/src/pages/Journey.tsx",
+    "frontend/src/pages/Talk.tsx",
+    "frontend/src/voice/agentClient.ts"
+   ],
+   "phases": [
+    "P1",
+    "P2",
+    "P3"
+   ],
+   "depends_on": [
+    "T17"
+   ],
+   "flags": [
+    "F-B3-018",
+    "F-B5-018",
+    "F-A3-005",
+    "F-B2-018",
+    "F-B2-017",
+    "F-B2-027",
+    "F-A3-006",
+    "F-B3-013",
+    "F-B2-019"
+   ],
+   "flag_count": 9,
+   "total_weight": 692
+  },
+  {
+   "id": "T19",
+   "name": "Consent modelled only in the browser and as start-time flags",
+   "root_cause": "Purposes are defined separately in Consent.tsx, the plan and a session boolean; there is no backend purpose registry, no consent record with withdrawal, and protected fields are sent and used without a server-side purpose gate.",
+   "symptoms": "caste sent and ranked by default, purposes promising dropped features, no withdrawal after start, anonymous consent with no record",
+   "modules": [
+    "backend/app/models/ (consent)",
+    "backend/app/routers/ideation.py",
+    "backend/app/routers/schemes.py",
+    "backend/app/schemes/ranking.py",
+    "frontend/src/pages/Consent.tsx",
+    "frontend/src/pages/Schemes.tsx"
+   ],
+   "phases": [
+    "P3",
+    "P5"
+   ],
+   "depends_on": [
+    "T17"
+   ],
+   "flags": [
+    "F-A3-015",
+    "F-B3-005",
+    "F-B3-006",
+    "F-A3-013",
+    "F-B2-020",
+    "F-A3-014",
+    "F-B2-008",
+    "F-B3-007",
+    "F-B3-015"
+   ],
+   "flag_count": 9,
+   "total_weight": 656
+  },
+  {
+   "id": "T20",
+   "name": "Cohort aggregates without membership or disclosure control",
+   "root_cause": "Programme views aggregate over caller-chosen lists of session ids, count sessions rather than founders and apply the minimum-5 rule inconsistently, so differencing reveals individuals; there is no server-owned membership and no interim operator auth.",
+   "symptoms": "one founder exposed by differencing two lists, roadmap counts of 1-4, one founder counted several times, session ids used as programme keys",
+   "modules": [
+    "backend/app/cohort/programme.py",
+    "backend/app/routers/cohort.py",
+    "backend/app/api/deps.py",
+    "frontend/src/pages/Cohort.tsx"
+   ],
+   "phases": [
+    "P3",
+    "P5"
+   ],
+   "depends_on": [
+    "T17",
+    "T19",
+    "T07"
+   ],
+   "flags": [
+    "F-A3-012",
+    "F-B3-001",
+    "F-B3-002",
+    "F-B2-006",
+    "F-B3-014",
+    "F-A5-033",
+    "F-B3-003"
+   ],
+   "flag_count": 7,
+   "total_weight": 478
+  },
+  {
+   "id": "T21",
+   "name": "News board without a corpus, normalisation or honest labelling",
+   "root_cause": "The news board fetches per request with no stored corpus, no date normalisation, no source-attribution guard and keyword-only actionability, and the Intel page labels fixtures as cached and ignores founder context.",
+   "symptoms": "board crashing on one unknown source, past deadlines flagged actionable, recency 0, demo data called cached, robots unchecked",
+   "modules": [
+    "backend/app/news/",
+    "backend/app/routers/news.py",
+    "frontend/src/pages/Intel.tsx"
+   ],
+   "phases": [
+    "P4"
+   ],
+   "depends_on": [],
+   "flags": [
+    "F-A4-021",
+    "F-A4-022",
+    "F-A4-023",
+    "F-A4-025",
+    "F-A4-024",
+    "F-A4-026"
+   ],
+   "flag_count": 6,
+   "total_weight": 415
+  },
+  {
+   "id": "T22",
+   "name": "Docs, config and dead code unchecked by CI",
+   "root_cause": "Docs, .env.example, runbooks and spec references are hand-kept with no check against the code, dead packages and settings linger, and the frontend and scripts have no CI at all.",
+   "symptoms": "specs cited from private artifacts, missing settings, stale log names in runbooks, orphan OpenAI settings, untested scripts",
+   "modules": [
+    "docs/",
+    "backend/.env.example",
+    "backend/app/core/config.py",
+    "backend/app/swarms/",
+    ".github/workflows/ci.yml",
+    "frontend/package.json"
+   ],
+   "phases": [
+    "P5"
+   ],
+   "depends_on": [
+    "T16"
+   ],
+   "flags": [
+    "F-A5-018",
+    "F-A5-041",
+    "F-A5-022",
+    "F-A5-023",
+    "F-A5-024",
+    "F-A5-009",
+    "F-A5-040",
+    "F-A5-042"
+   ],
+   "flag_count": 8,
+   "total_weight": 411
+  },
+  {
+   "id": "T23",
+   "name": "Observability with no store",
+   "root_cause": "Timing, job outcomes and degraded modes are only written as stdout log lines, middleware timing stops at headers for SSE, and logs carry verbatim model sentences and client-chosen ids. There is nowhere to compute p95 or see which fallback is active.",
+   "symptoms": "no p95, invisible breaker/Redis/store state, SSE latency unmeasured, untunable job waits, sensitive text in logs",
+   "modules": [
+    "backend/app/core/metrics.py (new)",
+    "backend/app/core/middleware.py",
+    "backend/app/agents/ideation.py",
+    "backend/app/agents/jobs.py",
+    "backend/app/routers/ (status)"
+   ],
+   "phases": [
+    "P2",
+    "P5"
+   ],
+   "depends_on": [],
+   "flags": [
+    "F-A2-015",
+    "F-B1-027",
+    "F-A5-026",
+    "F-A5-025",
+    "F-B1-029",
+    "F-A5-030"
+   ],
+   "flag_count": 6,
+   "total_weight": 399
+  },
+  {
+   "id": "T24",
+   "name": "Experience mode treated as a reworded idea mode",
+   "root_cause": "Experience (no-idea-yet) mode reuses idea-mode slots, wording and research triggers, and registry cards have no skills/assets fields to rank against. The mode has no first-class flow from self-description to choosing an opportunity card.",
+   "symptoms": "ten required slots under a seven budget, money asked before skills, prior-art run on a self-description, no card-choosing state",
+   "modules": [
+    "backend/app/elicitation/slots.py",
+    "backend/app/elicitation/session.py",
+    "backend/app/agents/ideation.py",
+    "backend/app/planner/registry.py"
+   ],
+   "phases": [
+    "P1"
+   ],
+   "depends_on": [
+    "T05",
+    "T01"
+   ],
+   "flags": [
+    "F-B1-001",
+    "F-B1-006",
+    "F-B1-004",
+    "F-B1-002",
+    "F-B1-003"
+   ],
+   "flag_count": 5,
+   "total_weight": 391
+  },
+  {
+   "id": "T25",
+   "name": "Private mode and third-party data egress not enforced",
+   "root_cause": "Provider chains and voice endpoints ignore the session privacy flag, and the Google notice is keyed to whichever provider happened to answer rather than to configuration, so text and audio reach Gemini, Claude, Sarvam or browser recognition before any notice or despite private mode.",
+   "symptoms": "private conversations sent to Gemini, notices after the fact, TTS called without voice consent, browser STT ignored",
+   "modules": [
+    "backend/app/agents/providers.py",
+    "backend/app/agents/ideation.py",
+    "backend/app/routers/voice.py",
+    "frontend/src/pages/Talk.tsx",
+    "frontend/src/voice/speech.ts"
+   ],
+   "phases": [
+    "P1",
+    "P3"
+   ],
+   "depends_on": [
+    "T19"
+   ],
+   "flags": [
+    "F-B3-008",
+    "F-B3-009",
+    "F-A3-016",
+    "F-A1-022",
+    "F-B3-010"
+   ],
+   "flag_count": 5,
+   "total_weight": 389
+  },
+  {
+   "id": "T26",
+   "name": "Voice and language pipeline",
+   "root_cause": "Speech output calls remote TTS first and caches every sentence (including founder content) forever, and language is a single per-reply tag never set from typed script, with translations not distinguished from model rewording.",
+   "symptoms": "idea audio kept on disk past delete, free recordings unused, Tamil/Hindi switch never firing, mislabelled sentence languages, wrong model counters",
+   "modules": [
+    "backend/app/routers/voice.py",
+    "backend/app/voice/phrasebook.py",
+    "backend/app/agents/ideation.py",
+    "frontend/src/voice/mentorVoice.ts"
+   ],
+   "phases": [
+    "P1",
+    "P3",
+    "P5"
+   ],
+   "depends_on": [
+    "T25"
+   ],
+   "flags": [
+    "F-A1-027",
+    "F-B3-011",
+    "F-A1-029",
+    "F-B5-023",
+    "F-A3-017",
+    "F-A1-028",
+    "F-A5-020",
+    "F-B5-025"
+   ],
+   "flag_count": 8,
+   "total_weight": 581
+  },
+  {
+   "id": "T27",
+   "name": "Conversation has no explicit state machine or typed pending action",
+   "root_cause": "The offline conversation is driven by ad-hoc checks in _advance/_offline_stream instead of explicit states with a typed pending action (ask, confirm, choose card, choose lever, walk roadmap). Steps that need a state (post-roadmap revision, spoken choices, panel only after evidence, an acknowledgement before waiting) have nowhere to live.",
+   "symptoms": "the same line repeated forever after the roadmap, ordinal choices not understood, verdicts before evidence, seconds of silence before the first sentence",
+   "modules": [
+    "backend/app/agents/ideation.py",
+    "backend/app/agents/council/__init__.py",
+    "frontend/src/pages/Talk.tsx"
+   ],
+   "phases": [
+    "P1",
+    "P5"
+   ],
+   "depends_on": [
+    "T03"
+   ],
+   "flags": [
+    "F-A1-024",
+    "F-A1-018",
+    "F-B1-028",
+    "F-B1-017",
+    "F-B1-012"
+   ],
+   "flag_count": 5,
+   "total_weight": 381
+  },
+  {
+   "id": "T28",
+   "name": "Turn streaming protocol has no typed contract",
+   "root_cause": "The SSE turn stream has no typed event union, no done-sentinel check, no idempotency key shared with the non-stream route, no replay of results on subscribe and no client queue, so partial, duplicate or conflicting turns look like normal ones.",
+   "symptoms": "truncated turns treated as done, conflicts arriving after the reply is spoken, dropped utterances, results missing on reconnect, untyped OpenAPI",
+   "modules": [
+    "backend/app/routers/ideation.py",
+    "backend/app/agents/ideation.py",
+    "frontend/src/voice/agentClient.ts",
+    "frontend/src/pages/Talk.tsx"
+   ],
+   "phases": [
+    "P1",
+    "P5"
+   ],
+   "depends_on": [
+    "T27",
+    "T07"
+   ],
+   "flags": [
+    "F-B1-007",
+    "F-B1-009",
+    "F-A5-019",
+    "F-B1-011",
+    "F-B1-010",
+    "F-B1-008"
+   ],
+   "flag_count": 6,
+   "total_weight": 427
+  },
+  {
+   "id": "T29",
+   "name": "Funding readiness and investor matching built on invented inputs",
+   "root_cause": "The Funding screen sends answers the founder never gave, readiness is a hard gate with an invented threshold, unpublished investor criteria count as 'no', gap advice is not derived from the rubric, and pipeline metrics miscount.",
+   "symptoms": "pre-seed founders blocked, fit scores from constants, gap impacts disagreeing with the score, lost deals counted as reaching every stage",
+   "modules": [
+    "backend/app/funding/readiness.py",
+    "backend/app/funding/investor_match.py",
+    "backend/app/funding/gaps.py",
+    "backend/app/funding/pipeline.py",
+    "frontend/src/pages/Funding.tsx"
+   ],
+   "phases": [
+    "P4"
+   ],
+   "depends_on": [
+    "T01"
+   ],
+   "flags": [
+    "F-A4-016",
+    "F-A4-017",
+    "F-A4-019",
+    "F-A4-018",
+    "F-A4-020"
+   ],
+   "flag_count": 5,
+   "total_weight": 380
+  },
+  {
+   "id": "T30",
+   "name": "Founder personal-data model over-collects and mislabels verification",
+   "root_cause": "The founders/startups tables force a full profile as NOT NULL, carry soft delete with unique personal columns, trust client verification flags and have no encryption/blind-index design, so minimisation, erasure and partial sync all fight the schema.",
+   "symptoms": "partial profiles unsyncable, self-typed fields stored as verified tier 100, erasure blocked by soft delete, encryption breaking unique indexes",
+   "modules": [
+    "backend/app/models/founder.py",
+    "backend/app/models/startup.py",
+    "backend/app/services/completeness.py",
+    "backend/app/core/crypto.py (new)"
+   ],
+   "phases": [
+    "P3"
+   ],
+   "depends_on": [
+    "T16"
+   ],
+   "flags": [
+    "F-B2-013",
+    "F-B2-014",
+    "F-A3-007",
+    "F-B2-016",
+    "F-A3-018"
+   ],
+   "flag_count": 5,
+   "total_weight": 358
+  },
+  {
+   "id": "T31",
+   "name": "Roadmap is a transient, ungrounded artefact",
+   "root_cause": "The planner roadmap lives only inside a session that expires in 6 hours, with fixed confidence, milestone ids reused across packs, dependency-blind tracking, silent dropping of milestones with unknown conditions and a grant milestone placed too late.",
+   "symptoms": "nothing to track against, 'I will widen the estimates' never true, tracker collisions, Ideate and Talk roadmaps differing, prototype grants too late",
+   "modules": [
+    "backend/app/planner/",
+    "backend/app/agents/tools.py",
+    "backend/app/planner/data/packs/common.json"
+   ],
+   "phases": [
+    "P1"
+   ],
+   "depends_on": [
+    "T06",
+    "T30",
+    "T04"
+   ],
+   "flags": [
+    "F-B2-024",
+    "F-A1-025",
+    "F-B2-022",
+    "F-B2-026",
+    "F-B2-021",
+    "F-B2-023"
+   ],
+   "flag_count": 6,
+   "total_weight": 445
+  },
+  {
+   "id": "T32",
+   "name": "Erasure, retention and the scheduled maintenance runner",
+   "root_cause": "There is no erasure service mapping a user to all their data (sessions are all 'anon', Redis copies survive), retention rules conflict between consents and data, and nightly work runs as out-of-process scripts with CWD-relative paths, no run lock and no run record.",
+   "symptoms": "erasure leaving Redis copies, consents kept after the data, the wrong cache purged, duplicate or missed nightly runs",
+   "modules": [
+    "backend/app/services/ (erasure)",
+    "scripts/nightly.py",
+    "backend/app/core/config.py",
+    "backend/app/core/redis.py"
+   ],
+   "phases": [
+    "P3",
+    "P5"
+   ],
+   "depends_on": [
+    "T17",
+    "T19",
+    "T30",
+    "T12"
+   ],
+   "flags": [
+    "F-B5-011",
+    "F-B5-015",
+    "F-B5-016",
+    "F-B5-014",
+    "F-A5-028",
+    "F-B5-013"
+   ],
+   "flag_count": 6,
+   "total_weight": 414
+  },
+  {
+   "id": "T33",
+   "name": "Evaluation harness tests replays, not the system",
+   "root_cause": "The eval runner replays finished scans and rebuilt plans, answers 'skip' to unscripted questions, has no degraded-source fixtures and its report cannot be diffed, so the logic it claims to check is never exercised.",
+   "symptoms": "scan logic untested, payer question skipped in all ideas, degraded path never evaluated, report check impossible",
+   "modules": [
+    "backend/tests/eval/",
+    "scripts/record_eval_fixtures.py",
+    "scripts/eval_report.py"
+   ],
+   "phases": [
+    "P5"
+   ],
+   "depends_on": [
+    "T08"
+   ],
+   "flags": [
+    "F-A5-003",
+    "F-A5-004",
+    "F-A5-005",
+    "F-A5-007",
+    "F-A5-006"
+   ],
+   "flag_count": 5,
+   "total_weight": 319
+  },
+  {
+   "id": "T34",
+   "name": "Session document format with no version or upgrade path",
+   "root_cause": "The session JSON has no format number, no central decode, no upgrade step and no queryable format column, so old and new code silently disagree about fields and enum values and one bad document breaks bulk reads.",
+   "symptoms": "one undecodable doc breaking /programme, rollbacks dropping fields, dead enum strings, mixed formats before the table split",
+   "modules": [
+    "backend/app/agents/ideation.py",
+    "backend/app/agents/store.py",
+    "backend/app/db/migrations/",
+    "scripts/"
+   ],
+   "phases": [
+    "P2",
+    "P5"
+   ],
+   "depends_on": [
+    "T01",
+    "T07"
+   ],
+   "flags": [
+    "F-B2-001",
+    "F-B2-002",
+    "F-B2-003",
+    "F-B2-007",
+    "F-B2-004"
+   ],
+   "flag_count": 5,
+   "total_weight": 307
+  },
+  {
+   "id": "T35",
+   "name": "Review panel weighting and synthesis",
+   "root_cause": "Panel seats emit claims without a criterion, weight bumps fire on unknown skills, and each seat is a separate model call over the same pack, so synthesis quotes off-topic claims and bursts provider limits.",
+   "symptoms": "synthesis quoting the wrong criterion, Python developers flagged as non-technical, seven calls per run",
+   "modules": [
+    "backend/app/agents/council/"
+   ],
+   "phases": [
+    "P1"
+   ],
+   "depends_on": [
+    "T01",
+    "T13"
+   ],
+   "flags": [
+    "F-A1-020",
+    "F-A1-021",
+    "F-A1-023"
+   ],
+   "flag_count": 3,
+   "total_weight": 199
+  }
+ ]
+}
