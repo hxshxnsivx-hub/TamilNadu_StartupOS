@@ -1,0 +1,1597 @@
+{
+ "judge": "J3",
+ "verdicts": [
+  {
+   "theme": "T15",
+   "winner": "A",
+   "scores": {
+    "A": {
+     "root_cause": 5,
+     "correctness": 5,
+     "constraints": 5,
+     "simplicity": 4,
+     "plan": 5
+    },
+    "B": {
+     "root_cause": 4,
+     "correctness": 3,
+     "constraints": 4,
+     "simplicity": 4,
+     "plan": 4
+    }
+   },
+   "reasoning": "Both teams reached the same mechanism (one in-house outbound gate with typed outcomes, per-source windows, semaphores, priority reserve and per-provider usage) and rejected the same alternatives for sound reasons. A read the code more closely: patents() (sources.py:357, client.post) and _epo_auth (sources.py:398) call the network outside _get_json, and r.json() on a non-JSON 200 raises ValueError. B's task 1 only catches httpx.TransportError inside _get_json, so a PatentsView timeout or an HTML 200 would still escape asyncio.gather in scan.py:234 and F-A2-006 would stay half open. A also keeps limits honest (0 = count only, defaults only where the code already documents them), while B's example EGRESS_LIMITS ships provider numbers (gemini=15/min, 1500/day, openalex=100000/day) that drift and border on invented data. A states explicitly that a gate refusal is not a Breaker.fail and that refused calls are never counted. B's one useful extra, the POLICY pre-check for T25 inside the gate, is folded in as a hook, which does not change the verdict.",
+   "final": {
+    "chosen": "Single outbound gate module (core/outbound.py) with a per-source limit table, per-source semaphores, an outcome enum and Redis/local counters; GitHub's rate headers read as a refinement inside the gate; plus a policy pre-check hook for T25 private mode",
+    "why_chosen": "The root cause is the absence of one owner for outbound calls, and the gate is that owner. It fixes all seven flags with one mechanism, reuses code and key names already in sources.py and services/breaker.py, needs no dependency, works with Redis off (local counters) and keeps the founder-facing SourceResult.status contract while adding the operator-facing reason. Reading GitHub's X-RateLimit-Remaining inside the gate costs a few lines and makes the GitHub percentage exact without depending on headers for sources that do not send them. The gate also takes an optional policy pre-check so T25 can enforce private mode at the same choke point, whichever T25 design is built.",
+    "approaches": [
+     {
+      "name": "Single outbound gate module (core/outbound.py) with a per-source limit table, per-source semaphores, an outcome enum and Redis/local counters",
+      "advantages": "One place fixes every symptom: per-source denominators for the 80% rule, true reasons, isolation of failures, bounded bursts, and one snapshot for the 5.4.3 page. No new dependency; key names stay budget:{source}:{window}.",
+      "drawbacks": "Per-process semaphores do not bound several workers (Redis counters still do); limits are hand-entered from provider pages and can drift.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "limits library (fixed/moving windows with Redis storage) plus aiolimiter for bursts",
+      "advantages": "Tested window algorithms, a ready 'remaining' query.",
+      "drawbacks": "Two new dependencies for a few counters; a second Redis key scheme next to budget:{source}:{date} in SYSTEM-DESIGN and the runbook; still needs our own outcome enum, error isolation and usage split, which are most of the work.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Read provider rate-limit headers (X-RateLimit-Remaining/Reset, Retry-After) as the budget source",
+      "advantages": "The true remaining budget, no hand-entered numbers.",
+      "drawbacks": "OpenAlex, ClinicalTrials.gov and EPO do not send remaining counts, so it cannot be the whole answer; it says nothing about failure isolation, reasons or token budgets.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Per-call-site fixes: gather(return_exceptions=True) in scan/novelty, a reason string in _get_json, a provider key in s.usage, a semaphore in council",
+      "advantages": "Each change is tiny and local.",
+      "drawbacks": "No owner for limits or concurrency: PatentsView, EPO auth and the coming news fetcher would each need the same fixes again; the 80% alert still has no shared denominator; easy to miss a call site (two are already missed).",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Redis-backed queue with dedicated workers (arq / RQ / Celery) that serialises outbound work",
+      "advantages": "Shared across processes; natural place for retries and priorities.",
+      "drawbacks": "Redis must stay optional (offline baseline), so an in-process path is needed anyway; a queue is the 2.3.1/SYSTEM-DESIGN §7 scaling step, not a rate-limit design; heavy for one small team now.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Prometheus client counters plus alert rules",
+      "advantages": "Labels per provider, a standard exposition format.",
+      "drawbacks": "Needs a Prometheus server to aggregate and alert, which the free no-hosting setup does not have; it observes limits but enforces none.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "aiolimiter plus asyncio semaphores",
+      "advantages": "Tidy async API.",
+      "drawbacks": "Per-process only, with no daily figure and no priority. A dependency for about 20 lines of code.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Retries and per-source circuit breakers (tenacity, pybreaker)",
+      "advantages": "Resilient to short outages.",
+      "drawbacks": "Retries spend the free budget faster and fix none of the shared-cap, reason or provider-split defects. The repo already has a breaker.",
+      "cost": "free/open source"
+     }
+    ],
+    "not_chosen": [
+     {
+      "name": "limits library (fixed/moving windows with Redis storage) plus aiolimiter for bursts",
+      "reason": "Two dependencies and a second Redis key scheme for one INCR per window; the outcome enum, isolation and usage split still have to be written by us."
+     },
+     {
+      "name": "aiolimiter plus asyncio semaphores",
+      "reason": "Per process only, no daily figure and no priority; the bucket is about 20 lines inside the gate."
+     },
+     {
+      "name": "Read provider rate-limit headers (X-RateLimit-Remaining/Reset, Retry-After) as the budget source",
+      "reason": "Only GitHub publishes remaining counts; kept only as a refinement inside the gate (exact pause for GitHub, Retry-After for everyone)."
+     },
+     {
+      "name": "Per-call-site fixes: gather(return_exceptions=True) in scan/novelty, a reason string in _get_json, a provider key in s.usage, a semaphore in council",
+      "reason": "Treats symptoms; PatentsView and EPO auth already escaped _get_json and the news fetcher would be a third; no shared denominator for the 80% rule."
+     },
+     {
+      "name": "Retries and per-source circuit breakers (tenacity, pybreaker)",
+      "reason": "Retries spend the free budget faster and fix none of the shared-cap, reason or provider-split defects; the repo already has a breaker."
+     },
+     {
+      "name": "Redis-backed queue with dedicated workers (arq / RQ / Celery) that serialises outbound work",
+      "reason": "Redis must stay optional, so the in-process path is needed anyway; it is the later scaling step, not the fix for limits and reasons."
+     },
+     {
+      "name": "Prometheus client counters plus alert rules",
+      "reason": "Needs a scraping server the free setup does not have and enforces nothing; T23 stores the counters this gate records."
+     }
+    ],
+    "design": {
+     "components": "1) core/outbound.py: SourcePolicy (name, windows, concurrency, metered), Outcome enum, Gate with async call(), snapshot(); 2) research/sources.py: _get_json becomes a thin wrapper over gate.call that keeps the cache in front (T08 owns the cache); every connector including PatentsView and EPO auth goes through it; SourceResult gains a `reason` field; 3) agents/providers.py: each provider call goes through the gate under source 'model:<name>', with Provider.metered (False for Ollama); usage recorded per provider; 4) agents/jobs.py: per-kind concurrency (research, council) inside Board.run; 5) research/scan.py and novelty.py: independent calls gathered, with the gate's semaphores bounding the burst; 6) a read-only outbound snapshot for the 5.4.3 monitoring page (T23).",
+     "data_model": "Settings: outbound_limits: dict[str, str] parsed from OUTBOUND_LIMITS='openalex=day:0;github=minute:10;epo=minute:10;model:gemini=minute:0,day:0', where 0 means 'count only, no limit known' (never an invented number; the shipped defaults are only the limits the code already documents: GitHub unauthenticated search 10/min, EPO about 10 searches/min), and outbound_concurrency: dict[str,int] (default 4 per research source, 1 for epo, 3 for model:gemini, 1 for model:ollama). research_daily_limit stays as a deprecated alias that fills day:N for every research source. Outcome = StrEnum(ok, cached, capped, paused, upstream_limited, transport_error, http_error, bad_response, no_key). GateResult(outcome, status:int|None, data, retry_at:float|None). SourceResult adds reason: str (an Outcome value) beside status. Redis keys: budget:{source}:{window}:{bucket} (bucket = UTC date or minute index) with EXPIRE of two windows; rs:neg:{source} kept for pauses. Session usage becomes {'by_provider': {'gemini': {'input_tokens','output_tokens','requests'}, 'ollama': {...}}} with a reader that accepts the old flat dict (T34 owns the document version bump).",
+     "algorithm": "gate.call(source, send): if paused(source) -> GateResult(paused). For each window of the policy: read the counter; if limit>0 and used>=limit -> capped (nothing is incremented for refused calls). Acquire the per-source semaphore; INCR each window counter; await send() inside try: httpx.TransportError -> transport_error; JSON/ValueError -> bad_response; 429 (and 403 with X-RateLimit-Remaining: 0 for GitHub) -> pause until Retry-After or the reset header, upstream_limited; other non-2xx -> http_error(status); 2xx -> ok. Record the outcome in a per-source daily counter (outcome:{source}:{date}) for the dashboard. Mapping to SourceResult: ok->ok; capped->budget_exhausted with note 'Vanigam's own limit for <source> reached; resets <time>'; paused->budget_exhausted 'asked us to wait until <time>'; upstream_limited->budget_exhausted with the key hint only when no key is configured; transport_error/http_error/bad_response->error. Models: seat calls use gate.call('model:gemini', ..., priority='bulk'); bulk callers are refused (capped) when the minute window has fewer than reserve (default 2) left, so live turns keep headroom; seats refused by the gate fall back to the rule seat with reason 'rate', and a gate refusal is NOT a Breaker.fail (no call was made). _spent sums only metered providers. Parallelism: papers() gathers its three OpenAlex requests; scan gathers element rows; novelty gathers context and retarget; _research_work runs scan and novelty's part/pair counts concurrently and joins for the context step. Board: asyncio.Semaphore per kind (research 4, council 2 by default) acquired inside run(), so a queued job is RUNNING to wait() and the turn simply narrates 'still looking'. Before the pause check, an optional policy pre-check (registered by T25) may return POLICY; nothing is sent or counted.",
+     "files": [
+      "backend/app/core/outbound.py (new)",
+      "backend/app/core/config.py",
+      "backend/app/research/sources.py",
+      "backend/app/research/scan.py",
+      "backend/app/research/novelty.py",
+      "backend/app/agents/providers.py",
+      "backend/app/agents/ideation.py (_spent, _budget_left, _research_work)",
+      "backend/app/agents/council/__init__.py",
+      "backend/app/agents/jobs.py",
+      "backend/tests/unit/test_outbound.py (new)",
+      "docs/runbooks/research-budget.md",
+      "backend/.env.example"
+     ],
+     "rollout": "1) Land the gate with isolation and the outcome enum behind existing settings (research_daily_limit mapped into day windows), so behaviour is unchanged except that one failing source no longer fails the scan. 2) Switch connectors and the 429 notes to reasons; update the runbook table of reasons -> actions. 3) Add parallel calls once per-source semaphores are in place. 4) Route model providers and the panel through the gate; split usage per provider with a backward-compatible reader. 5) Expose the snapshot to the monitoring work.",
+     "offline": "Redis off: counters and pauses live in process (as today). Network off: every call ends as transport_error, each source reports 'not searched this time', and the conversation continues on local data and the rule path. Ollama is unmetered, so a founder on the local model never hits the session token budget."
+    },
+    "tasks": [
+     {
+      "title": "Outbound gate with failure isolation and outcome reasons",
+      "why": "One timeout fails the whole scan, and three different stops all read 'add OPENALEX_API_KEY'.",
+      "where": "backend/app/core/outbound.py (new), backend/app/research/sources.py (_get_json, papers, paper_count, projects, trials, patents, _epo_auth), docs/runbooks/research-budget.md",
+      "how": "Write Gate.call with the Outcome enum, catching httpx.TransportError and ValueError; make _get_json delegate to it after the cache; route PatentsView's post and the EPO token request through it; add SourceResult.reason and per-reason notes.",
+      "when": "First; coordinate with T08's cache-key change in the same function (T08's cache-key task lands first or in the same PR series).",
+      "what_for": "A slow source costs only its own section, and the operator sees which of 'our cap', 'paused' or 'refused' happened.",
+      "subtasks": [
+       {
+        "text": "Gate.call with Outcome enum; catch TransportError and decode errors; never cache non-ok outcomes",
+        "flags": [
+         "F-A2-006"
+        ]
+       },
+       {
+        "text": "Route patents() PatentsView post and _epo_auth through the gate",
+        "flags": [
+         "F-A2-006"
+        ]
+       },
+       {
+        "text": "SourceResult.reason; per-reason notes in papers/paper_count/projects/epo; key hint only when no key is set; runbook table reason -> action",
+        "flags": [
+         "F-B5-002"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Per-source limit table with windows and honest counters",
+      "why": "The 80% alert needs a denominator per source, and GitHub/EPO limits are per minute, not per day.",
+      "where": "backend/app/core/config.py (outbound_limits, outbound_concurrency), backend/app/core/outbound.py (windows), backend/.env.example",
+      "how": "Parse OUTBOUND_LIMITS into SourcePolicy windows; keep research_daily_limit as an alias; count only sent requests; read GitHub's X-RateLimit-Remaining/Reset to set an exact pause; expose snapshot() with pct null when the limit is 0.",
+      "when": "After task 1.",
+      "what_for": "Each source can say 'used 82% of today's limit' and the dashboard never invents a limit it does not know.",
+      "subtasks": [
+       {
+        "text": "Settings parser for source=window:limit lists, defaults only where the code already states them (GitHub 10/min, EPO 10/min), 0 = count only",
+        "flags": [
+         "F-B5-001",
+         "F-A5-027"
+        ]
+       },
+       {
+        "text": "Count only requests actually sent; refused calls go to a separate 'capped' outcome counter",
+        "flags": [
+         "F-A5-027"
+        ]
+       },
+       {
+        "text": "gate.snapshot() for 5.4.2.2 and the 5.4.3 page (consumed by T23)",
+        "flags": [
+         "F-B5-001",
+         "F-A5-027"
+        ]
+       },
+       {
+        "text": "Gate accepts an optional policy pre-check hook (POLICY outcome) so T25's private-mode egress rule is enforced at the same choke point; no-op until T25 lands",
+        "flags": [
+         "F-B5-001"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Parallel research calls bounded by per-source concurrency",
+      "why": "Serial waves miss the turn's research_wait_s on a cold cache; unbounded parallelism would burst the same sources.",
+      "where": "backend/app/research/sources.py (papers), scan.py (element rows), novelty.py (context/retarget, split counts phase), agents/ideation.py (_research_work)",
+      "how": "asyncio.gather for papers' three requests, element rows, context+retarget; run scan and novelty part/pair counts together and join for context; per-source semaphores from task 2 cap the burst.",
+      "when": "After tasks 1 and 2 (isolation must exist before more parallelism).",
+      "what_for": "Evidence arrives within the turn more often, with no extra requests.",
+      "subtasks": [
+       {
+        "text": "Gather papers' three OpenAlex calls and scan's element rows",
+        "flags": [
+         "F-A1-017"
+        ]
+       },
+       {
+        "text": "Split novelty.check into counts and context phases; run counts alongside scan in _research_work",
+        "flags": [
+         "F-A1-017"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Model providers through the gate: per-provider usage, unmetered local model, rate-limited panel",
+      "why": "Ollama tokens exhaust the session budget, Gemini's free quota is invisible, and panel bursts open the breaker for everyone.",
+      "where": "backend/app/agents/providers.py, agents/ideation.py (_add_usage, _spent, _budget_left), agents/council/__init__.py, agents/jobs.py",
+      "how": "Provider.metered flag; usage recorded by provider; a daily and per-minute window per 'model:<name>'; seats call with priority='bulk' and fall back to rule seats when capped; gate refusals do not call Breaker.fail; Board acquires a per-kind semaphore inside run().",
+      "when": "After task 2; the usage shape change coordinates with T34 (session document version).",
+      "what_for": "Local model use is free of the budget, live turns keep headroom over panel seats, and the free tier's daily use is visible.",
+      "subtasks": [
+       {
+        "text": "Usage keyed by provider with a reader for the old flat dict; _spent counts metered providers only",
+        "flags": [
+         "F-B5-004"
+        ]
+       },
+       {
+        "text": "Daily and per-minute request/token counters per provider in the gate",
+        "flags": [
+         "F-B5-004"
+        ]
+       },
+       {
+        "text": "Bulk priority with a reserve for seats; capped seats fall back to rules with reason 'rate'; gate refusals not counted on the breaker",
+        "flags": [
+         "F-A2-013"
+        ]
+       },
+       {
+        "text": "Per-kind concurrency limit in jobs.Board",
+        "flags": [
+         "F-A2-013"
+        ]
+       }
+      ]
+     }
+    ],
+    "tests": "Unit (httpx.MockTransport, installed with httpx): GitHub raises ReadTimeout while OpenAlex answers 200 -> scan returns papers ok and projects error with reason transport_error, no exception; a 200 with an HTML body -> bad_response; own cap reached -> reason capped and a note without the API-key hint; Retry-After 120 -> paused, second call not sent; counters do not increase for refused calls; minute window resets; snapshot pct null when limit 0. Concurrency: with concurrency 2 and 10 gathered calls, never more than 2 in flight (instrumented fake). Models: Ollama usage leaves _budget_left True; seven seats with a minute limit of 5 and reserve 2 -> 3 model seats and 4 rule seats, breaker stays closed. Board: a third research job waits while two run. Timing: scan with three 100 ms fake sources completes in about one wave, not three. Policy hook: with a pre-check that denies 'github', the call returns POLICY and nothing is sent or counted.",
+    "risks": "Hand-entered limits drift from provider pages (mitigated: 0 = unknown, never guessed; the runbook lists where each limit is published). Per-process semaphores do not bound several workers until the Redis queue step (accepted: one process today; Redis window counters still cap the total). More parallelism raises peak load on OpenAlex; the per-source semaphore default must be conservative."
+   }
+  },
+  {
+   "theme": "T16",
+   "winner": "merge",
+   "scores": {
+    "A": {
+     "root_cause": 5,
+     "correctness": 4,
+     "constraints": 5,
+     "simplicity": 5,
+     "plan": 4
+    },
+    "B": {
+     "root_cause": 5,
+     "correctness": 4,
+     "constraints": 5,
+     "simplicity": 5,
+     "plan": 5
+    }
+   },
+   "reasoning": "Same approach on both sides (freeze 0001 into explicit ops, no-op 0003, forward 0005 drop, migrated test database, CI round trip plus alembic check on stock postgres), same sound rejections. Each has a detail the other would trip on. env.py unconditionally sets sqlalchemy.url from get_settings() (env.py:20), so A's fixture has no way to point alembic at the _test database; B adds the config.attributes/-x url override, which is required. B also adds schema-dump equivalence for the frozen 0001, an offline --sql render in CI, DROP EXTENSION vector, and a runbook note for dev databases built by create_all without alembic_version. Conversely, B makes 0005's downgrade forward-only, but its own CI does downgrade base: 0001's downgrade would then drop a documents table 0005 already removed and the round trip fails; A's 0005 downgrade recreates documents, which keeps the round trip honest. A also notes that env.py calls asyncio.run, so the fixture must be synchronous (outside the test event loop), and adds a single-head test and compare_metadata check. Final: B's plan with A's 0005 downgrade, sync fixture and single-head test.",
+   "final": {
+    "chosen": "Freeze the chain: explicit ops in 0001 (schema-dump verified), 0003 as a no-op, forward 0005 dropping embeddings, documents and the vector extension (downgrade recreates documents), env.py URL override, a synchronous migrated test-database fixture, and a CI job with upgrade/check/downgrade/upgrade/--sql on stock postgres:16",
+    "why_chosen": "It removes both causes (a chain that depends on live models and a dead extension in the main line), after which one schema exists on every machine, so alembic check means the same everywhere. Nothing is deployed, so editing 0001 and 0003 is free now and costly later. The env.py override and a synchronous fixture are what make the migrated test database actually reachable from pytest, and a 0005 downgrade that recreates documents keeps the base-head-base round trip valid. Only alembic, pytest and pytest-asyncio are used.",
+    "approaches": [
+     {
+      "name": "Retire 0003 in place (no-op) plus a forward 0005 that drops embeddings and documents IF EXISTS; freeze 0001 to explicit op.create_table",
+      "advantages": "Every database ends at the same head schema; no pgvector anywhere (the Python dependency can go); a stock postgres image works in CI and locally; history is fixed text.",
+      "drawbacks": "Edits two published migrations; a database that ran the old 0001 has identical tables, so only the text changes, but the PR must say so.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Conditional 0003: create the extension and table only when pg_available_extensions lists vector",
+      "advantages": "No history rewrite; Docker keeps embeddings.",
+      "drawbacks": "Schema differs by machine for a table nothing uses; the Embedding model and pgvector dependency stay; alembic check gives different answers per machine.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Separate Alembic branch (branch_labels='vector') for embeddings",
+      "advantages": "Main head free of pgvector; feature can be opted into.",
+      "drawbacks": "Two heads to manage and test, for a Dropped feature.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Squash into a new baseline and stamp existing databases",
+      "advantages": "Cleanest history.",
+      "drawbacks": "Every existing developer/Docker database must be stamped by hand; loses the per-step history the plan references (0004 in 2.1.1).",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Keep the chain, use a pgvector image everywhere (pgvector/pgvector:pg16 in CI, Docker locally)",
+      "advantages": "No migration edits.",
+      "drawbacks": "Docker is the other blocked path on the owner's machine; Windows pgvector needs MSVC builds; keeps a Dropped feature as a hard dependency of the core one.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "pytest-alembic / testcontainers for migration tests",
+      "advantages": "Ready-made tests, disposable databases.",
+      "drawbacks": "Extra dependencies for three alembic commands; testcontainers needs Docker, which is blocked locally.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Docker-only database (testcontainers or compose with the custom postgis+pgvector image)",
+      "advantages": "Same image everywhere",
+      "drawbacks": "Docker Desktop is the other blocked path on the owner's machine; keeps a dead extension as a requirement",
+      "cost": "free/open source"
+     }
+    ],
+    "not_chosen": [
+     {
+      "name": "Conditional 0003: create the extension and table only when pg_available_extensions lists vector",
+      "reason": "Machine-dependent schema defeats alembic check, and the module-level pgvector import keeps the dependency."
+     },
+     {
+      "name": "Separate Alembic branch (branch_labels='vector') for embeddings",
+      "reason": "Two heads to maintain and test for a Dropped feature."
+     },
+     {
+      "name": "Squash into a new baseline and stamp existing databases",
+      "reason": "Manual stamping on every database for no gain over freezing in place."
+     },
+     {
+      "name": "Keep the chain, use a pgvector image everywhere (pgvector/pgvector:pg16 in CI, Docker locally)",
+      "reason": "Docker is blocked on the owner's machine and the extension serves nothing."
+     },
+     {
+      "name": "pytest-alembic / testcontainers for migration tests",
+      "reason": "New dependencies (and Docker for testcontainers) for three alembic commands and one fixture; pytest-alembic can be adopted later if the suite grows."
+     },
+     {
+      "name": "Docker-only database (testcontainers or compose with the custom postgis+pgvector image)",
+      "reason": "Docker Desktop is blocked locally and keeps a dead extension as a requirement."
+     }
+    ],
+    "design": {
+     "components": "0001_initial.py rewritten as explicit op.create_table/op.create_index for founders, startups, documents, profile_completeness exactly as today's metadata renders them (compiled once on the postgresql dialect, reviewed, equivalence proven by pg_dump --schema-only of fresh databases before/after), plus pgcrypto, no app.models import. 0003_embeddings.py: upgrade/downgrade pass with a docstring citing the Dropped decision; no pgvector import. 0005_drop_dead_tables.py: DROP TABLE IF EXISTS embeddings, documents; DROP EXTENSION IF EXISTS vector; downgrade recreates documents only (so the round trip passes through 0001's downgrade). Delete models/embeddings.py, document.py, schemas.py; drop pgvector from pyproject. env.py: honour config.attributes['url'] or -x url= before falling back to settings. tests/integration/conftest.py: session-scoped synchronous fixture (env.py uses asyncio.run, so it must not run inside the test loop) that derives <db>_test, skips only on connection refused / host not found, creates the database if missing, runs alembic.command downgrade base then upgrade head with the URL in config.attributes, and binds the app session factory to it; any other error fails. tests/integration/test_migrations.py: single head (ScriptDirectory), round trip, compare_metadata empty. CI: migrations job with services postgres:16 and a health check.",
+     "data_model": "No new tables. Head: users, founders, startups, profile_completeness, agent_sessions. founders/startups/Terrain stay for T30 to reshape with its own migrations; T17/T19/T20 add owner_id, consent_events and programme_id after 0005.",
+     "algorithm": "CI: alembic upgrade head; alembic check (compare_type on); alembic downgrade base; alembic upgrade head; alembic upgrade head --sql (offline render); pytest -m integration. Fixture skip rule: ConnectionRefusedError/OSError on connect -> skip with 'no PostgreSQL server reachable'; anything else -> fail.",
+     "files": [
+      "backend/app/db/migrations/versions/0001_initial.py",
+      "backend/app/db/migrations/versions/0003_embeddings.py",
+      "backend/app/db/migrations/versions/0005_drop_dead_tables.py (new)",
+      "backend/app/db/migrations/env.py",
+      "backend/app/models/__init__.py, embeddings.py (delete), document.py (delete), schemas.py (delete)",
+      "backend/pyproject.toml (drop pgvector)",
+      "backend/tests/integration/conftest.py (new), test_agent_store.py, test_auth_api.py, test_migrations.py (new)",
+      ".github/workflows/ci.yml",
+      "backend/docker/Dockerfile.postgres, docker-compose (stock image)",
+      "docs/runbooks/sessions-not-saved.md, docs/specs/TASKS.md 2.1.1 'Waiting on'"
+     ],
+     "rollout": "One branch, one commit per file: freeze 0001 (schema-dump equivalent), no-op 0003 and add 0005, delete dead models and pgvector, env.py override, conftest and test_migrations, CI job. Docker databases at 0004 upgrade to 0005 cleanly; a fresh stock PostgreSQL 18 reaches head. Dev databases built by test create_all without alembic_version are recreated once (runbook).",
+     "offline": "Runs on the owner's local PostgreSQL 18 with no extension and no Docker; with no server, integration tests skip with an explicit message; CI uses the free GitHub Actions postgres service."
+    },
+    "tasks": [
+     {
+      "title": "Freeze 0001 into explicit operations",
+      "why": "0001 builds tables from live models, so the first model change breaks fresh upgrades.",
+      "where": "backend/app/db/migrations/versions/0001_initial.py",
+      "how": "Render CreateTable/CreateIndex for the four tables on the postgresql dialect, translate to op.create_table/op.create_index, drop the Base import, keep pgcrypto; prove equivalence with pg_dump --schema-only of fresh databases before and after.",
+      "when": "First; before any T30/T17/T19/T20 migration.",
+      "what_for": "A history that never changes when models change.",
+      "subtasks": [
+       {
+        "text": "Explicit 0001 with schema-dump equivalence check; no ORM import",
+        "flags": [
+         "F-B2-011",
+         "F-A5-017"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Remove pgvector and dead tables from the main chain",
+      "why": "0003 needs an extension absent on stock PostgreSQL for a Dropped feature and blocks 0004.",
+      "where": "0003_embeddings.py, 0005_drop_dead_tables.py (new), app/models, pyproject.toml, Dockerfile.postgres, docs/runbooks/sessions-not-saved.md, TASKS 2.1.1",
+      "how": "0003 keeps its revision id with empty upgrade/downgrade; 0005 drops embeddings, documents and the vector extension IF EXISTS, downgrade recreates documents; delete the three model modules and the pgvector dependency; update runbook and 2.1.1.",
+      "when": "After task 1.",
+      "what_for": "alembic upgrade head works on the owner's PostgreSQL 18 and in CI with the stock image.",
+      "subtasks": [
+       {
+        "text": "0003 no-op so 0004 applies on stock PostgreSQL; upgrade head creates agent_sessions",
+        "flags": [
+         "F-B2-009",
+         "F-A2-014"
+        ]
+       },
+       {
+        "text": "0005 drop migration with documents-recreating downgrade; delete Embedding/Document models, schemas.py and pgvector; runbook and TASKS text",
+        "flags": [
+         "F-A5-039",
+         "F-A2-014"
+        ]
+       },
+       {
+        "text": "Record for T30: terrain, SoftDeleteMixin and enums.Terrain on founders/startups are reshaped there",
+        "flags": [
+         "F-A5-039"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Integration tests on a dedicated, migrated test database",
+      "why": "Tests use create_all on the developer database and skip on any error, so they never exercise the migrations.",
+      "where": "backend/app/db/migrations/env.py (URL override), backend/tests/integration/conftest.py (new), test_agent_store.py, test_auth_api.py",
+      "how": "env.py honours config.attributes['url']; a synchronous session fixture derives <db>_test, skips only when the server is unreachable, creates the database, runs downgrade base and upgrade head via alembic.command, binds the app session factory; both modules drop create_all.",
+      "when": "After task 2.",
+      "what_for": "2.1.1.2 'the integration test passes' becomes a real signal.",
+      "subtasks": [
+       {
+        "text": "env.py URL override and the synchronous migrated-database fixture with an honest skip",
+        "flags": [
+         "F-B2-010"
+        ]
+       },
+       {
+        "text": "Remove Base.metadata.create_all from both integration modules",
+        "flags": [
+         "F-B2-010"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Migration CI job with round trip and drift check",
+      "why": "Nothing runs the chain against a real database.",
+      "where": ".github/workflows/ci.yml, backend/tests/integration/test_migrations.py (new)",
+      "how": "services postgres:16 with a health check; upgrade head, alembic check, downgrade base, upgrade head, upgrade head --sql, pytest -m integration; test_migrations asserts a single head and an empty compare_metadata.",
+      "when": "After tasks 1-3; this is TASKS 5.2.4; T22 later adds its checks in a separate job.",
+      "what_for": "Every schema change (T17, T19, T20, T30, T31) is proven on each PR.",
+      "subtasks": [
+       {
+        "text": "CI job with stock postgres, round trip, offline SQL render and alembic check",
+        "flags": [
+         "F-A5-017",
+         "F-B2-011"
+        ]
+       },
+       {
+        "text": "test_migrations.py: single head, round trip, compare_metadata empty",
+        "flags": [
+         "F-A5-017",
+         "F-B2-011"
+        ]
+       }
+      ]
+     }
+    ],
+    "tests": "Schema-dump equivalence for the frozen 0001. Upgrade from empty and from a database at 0004 (with and without embeddings) both reach 0005. alembic check clean at head; a deliberate model change without a migration makes it fail (verified once by hand). Round trip base-head-base-head passes (documents recreated by 0005 downgrade). Integration tests fail (not skip) on a broken migration or a wrong password, and skip only with the server stopped.",
+    "risks": "Editing released migrations is safe only because no production database exists; say so in the commit and a decision note and freeze migrations from first deploy. A dev database built by create_all without alembic_version fails at 0001; the runbook says recreate it once or stamp head. alembic check may flag benign server-default/type differences; fix them in the models, do not suppress. The autogenerated 0001 must follow db/base.py's naming convention."
+   }
+  },
+  {
+   "theme": "T17",
+   "winner": "merge",
+   "scores": {
+    "A": {
+     "root_cause": 5,
+     "correctness": 4,
+     "constraints": 5,
+     "simplicity": 5,
+     "plan": 4
+    },
+    "B": {
+     "root_cause": 5,
+     "correctness": 4,
+     "constraints": 5,
+     "simplicity": 3,
+     "plan": 4
+    }
+   },
+   "reasoning": "Both find the cause (the id is the only credential; owner is a free 'anon' string in three places; no claim, no list) and both add a nullable owner_id FK with cascade, get_optional_user, a 404-not-403 owner rule, an atomic conditional claim of several sessions with a titled confirmation, and a my-conversations list. The real disagreement is the anonymous credential. A argues a 128-bit id is enough if it stays on the device, and redacts ids in structlog. But the id sits in the URL path of every route (routers/ideation.py), so uvicorn access logs, hosting proxies and error trackers see it, which A's structlog processor does not cover; and A's claim needs only the id, so anyone who saw an id in a log can claim an anonymous conversation into their own account and lock the founder out. B's per-session key in an X-Session-Key header, stored hashed and required for claim, closes both at the cost of one column and one header. B's separate cohort_ref is superseded: both T20 designs (including B's own) replace programme session ids with join-code membership, so cohort_ref would be a dead third mechanism. Final: B's capability key and keyed claim; A's details (claim ignores the six-hour idle hide but respects retention, column-only listing with a title from JSONB, 401 on an invalid token, id redaction in our logs as defence in depth, and the T19 consent copy inside claim); no cohort_ref, with T20 owning programme access.",
+   "final": {
+    "chosen": "Nullable owner_id FK with cascade as the single owner; per-session capability key (hashed, sent only in X-Session-Key) for anonymous sessions and the owner's token for claimed ones, checked in one session_access dependency; atomic keyed claim of up to 20 sessions after a titled confirmation; my-conversations list; programme access handled by T20 membership, not by session ids or a cohort_ref",
+    "why_chosen": "It closes every hole without forcing sign-up: a claimed session opens only for its owner; an anonymous one needs a secret that never appears in a path or log line; a claim needs that same secret, so a leaked id cannot be used to take a conversation; and the FK makes 'delete my account removes my conversations' true by construction. It costs one hashed column, one header and one dependency on top of the owner check both teams agreed on. Dropping cohort_ref avoids a third credential that T20's join-code membership already makes unnecessary.",
+    "approaches": [
+     {
+      "name": "Typed owner FK plus optional-user dependency, owner check in _load, explicit conditional claim, and a list-by-owner query (id as the anonymous bearer secret)",
+      "advantages": "Small, enforced in one function every route already calls; erasure by account becomes a database guarantee; anonymous start unchanged; claim is atomic and one-way.",
+      "drawbacks": "Anonymous sessions still rely on the id as their only secret (acceptable if the id stays on the device).",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Signed per-session capability token (HMAC/JWT) required on every route",
+      "advantages": "Protects anonymous sessions even if the id leaks in a log.",
+      "drawbacks": "The id is already 128 random bits, so a second secret adds no strength; it helps only where the id leaks and the token does not, yet both live in the same localStorage. Every client call and the resume path change; key rotation invalidates sessions.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Require sign-in for every conversation",
+      "advantages": "Simplest rule.",
+      "drawbacks": "Removes the no-sign-up start the plan wants (rnd-elicitation §5.3) and makes conversations depend on the database.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "PostgreSQL row-level security on agent_sessions",
+      "advantages": "Enforced even if a route forgets the check.",
+      "drawbacks": "Does not cover the Redis copy or the memory store; per-request session state through SQLAlchemy; logic the unit tests never run.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Policy engine (Casbin, Oso)",
+      "advantages": "Ready for roles later.",
+      "drawbacks": "A dependency and a policy language for one owner rule.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Device-id cookie linking all anonymous sessions from a browser",
+      "advantages": "Finds every session from the device server-side.",
+      "drawbacks": "A new tracking identifier to justify and erase under DPDP; on shared phones it claims other people's sessions.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Per-session random capability key (hashed, X-Session-Key header) for anonymous sessions + account ownership after a keyed claim + separate cohort_ref for programmes",
+      "advantages": "Keeps the anonymous start; separates read/write/delete from aggregate access; secrets stay out of paths and logs; claim is explicit and one-way.",
+      "drawbacks": "The client must keep id + key pairs; legacy sessions without a key need a transition rule.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Signed session ids (itsdangerous / JWT) replacing the id",
+      "advantages": "Unforgeable ids.",
+      "drawbacks": "Still one credential for every power, still in the URL path.",
+      "cost": "free/open source"
+     }
+    ],
+    "not_chosen": [
+     {
+      "name": "Typed owner FK plus optional-user dependency, owner check in _load, explicit conditional claim, and a list-by-owner query (id as the anonymous bearer secret)",
+      "reason": "Adopted as the owner half, but the id alone stays a bearer secret that appears in URL paths and proxy/access logs, and claim by id alone lets anyone who saw an id take the conversation."
+     },
+     {
+      "name": "Signed per-session capability token (HMAC/JWT) required on every route",
+      "reason": "A signing secret and rotation for what a random key with a stored hash does; key rotation would invalidate sessions."
+     },
+     {
+      "name": "Signed session ids (itsdangerous / JWT) replacing the id",
+      "reason": "Still one credential for every power and still in the URL path."
+     },
+     {
+      "name": "Require sign-in for every conversation",
+      "reason": "Removes the anonymous start the plan wants and waits on T14 and the database."
+     },
+     {
+      "name": "PostgreSQL row-level security on agent_sessions",
+      "reason": "Blind to the Redis copy, MemoryStore and the job board; per-request settings with async pools are error-prone and invisible to unit tests."
+     },
+     {
+      "name": "Policy engine (Casbin, Oso)",
+      "reason": "A dependency and policy language for two or three rules."
+     },
+     {
+      "name": "Device-id cookie linking all anonymous sessions from a browser",
+      "reason": "A new tracking identifier to justify and erase under DPDP, and wrong on shared phones."
+     },
+     {
+      "name": "Per-session random capability key (hashed, X-Session-Key header) for anonymous sessions + account ownership after a keyed claim + separate cohort_ref for programmes",
+      "reason": "Chosen except the cohort_ref part: T20's server-owned join-code membership removes session ids from the programme flow, so a cohort_ref would be an unused third credential."
+     }
+    ],
+    "design": {
+     "components": "1) Migration 0006_session_owner: agent_sessions.owner_id UUID NULL FK users.user_id ON DELETE CASCADE (indexed), access_hash CHAR(64) NULL; backfill 'anon' -> NULL and parseable UUIDs; drop the string user_id after one release. 2) AgentSession.owner_id replaces user_id; the document and elicitation copies are no longer read (T34 upgrader drops them); the store is the only writer of the owner and SqlStore.save never changes owner_id or access_hash. 3) agent_start returns {session_id, key} once (secrets.token_urlsafe(24)); only sha256(key) is stored; when a user is signed in the session is created owned and no key is issued. 4) api/deps.get_optional_user: None without a token, 401 for an invalid one. session_access(session_id, X-Session-Key, user): owner_id set -> user.user_id must match; owner_id null -> constant-time hash match; legacy rows without access_hash accepted until retention ends them. Mismatch -> 404 'Session not found'. Used by resume, delete, turn, stream and notices. 5) Store protocol: claim(pairs, owner) and list_for_owner(owner, limit=50); CachedStore.claim drops Redis copies; MemoryStore mirrors. 6) Routes: POST /ideation/agent/sessions/claim (signed in, up to 20 {id, key}); GET /ideation/agent/sessions. 7) A structlog processor hashes 32-hex path segments in our own logs (defence in depth). 8) Frontend: agentClient sends X-Session-Key or the bearer token; Talk shows the list when signed in and the titled 'Add these to my account?' dialog after sign-in.",
+     "data_model": "agent_sessions(session_id PK, owner_id UUID NULL FK users ON DELETE CASCADE, access_hash CHAR(64) NULL, version, idea_version, private, last_active, data JSONB). SessionSummary {session_id, title (first 60 chars of the idea core slot or 'Untitled idea', read via a JSONB expression), idea_version, last_active, private}. ClaimIn {sessions: [{id: hex32, key}] max 20}; ClaimOut {claimed, not_claimed: [{id, reason: 'not_found'|'owned'}]} (never says by whom). Browser (T18 registry): talk.sessions = [{id, key, title, started_at, last_seen}] max 10.",
+     "algorithm": "Claim, per pair, in one transaction: UPDATE agent_sessions SET owner_id=:u, access_hash=NULL, data=jsonb_set(data,'{owner_id}',to_jsonb(:u::text)), version=version+1 WHERE session_id=:id AND owner_id IS NULL AND access_hash=:hash RETURNING session_id; reads rows directly so the six-hour idle hide does not apply, but retention (T07/T32) does; T19's consent copy runs inside the same transaction; the key stops working after the claim. Nothing is claimed automatically: the browser sends its list only after the founder confirms the titled conversations. Listing: column-only query by owner_id ORDER BY last_active DESC LIMIT 50.",
+     "files": [
+      "backend/app/db/migrations/versions/0006_session_owner.py (new)",
+      "backend/app/models/agent_session.py",
+      "backend/app/agents/ideation.py (owner_id, new_session issues key)",
+      "backend/app/agents/store.py (claim, list_for_owner, save never writes owner)",
+      "backend/app/elicitation/engine.py, session.py (drop user_id copy)",
+      "backend/app/api/deps.py (get_optional_user, session_access)",
+      "backend/app/routers/ideation.py",
+      "backend/app/core/logging.py (id redaction)",
+      "frontend/src/voice/agentClient.ts",
+      "frontend/src/pages/Talk.tsx",
+      "frontend/src/auth.tsx",
+      "backend/tests/security/test_session_access.py (new)"
+     ],
+     "rollout": "1) Owner field, session_access and keys for new sessions on the memory store (legacy sessions without a hash still open by id until retention). 2) Migration 0006 after T16's CI. 3) Claim and list routes, Talk UI. 4) Programme flow stops accepting session ids when T20 task 2 lands.",
+     "offline": "Works on MemoryStore (owner and key hash on the record); anonymous use needs no database and get_optional_user does nothing without a token; claim and list need sign-in."
+    },
+    "tasks": [
+     {
+      "title": "Access dependency: capability key for anonymous sessions, owner check for owned ones",
+      "why": "Anyone holding the id can read, continue or delete a conversation, including a claimed one, and the id travels in URL paths.",
+      "where": "backend/app/api/deps.py, routers/ideation.py, agents/ideation.py (new_session), core/logging.py, frontend/src/voice/agentClient.ts, pages/Talk.tsx",
+      "how": "get_optional_user (401 on invalid token); key issued at start, hash stored; session_access on resume, delete, turn, stream and notices with 404 on mismatch; key only in X-Session-Key; id redaction in our logs.",
+      "when": "After T14's token verification (or with today's decode_token); no database needed.",
+      "what_for": "A conversation opens only for the device that started it or its signed-in owner.",
+      "subtasks": [
+       {
+        "text": "get_optional_user and session_access with the owner rule on all five routes, 404 on mismatch",
+        "flags": [
+         "F-A3-001",
+         "F-B5-021"
+        ]
+       },
+       {
+        "text": "Per-session key returned once, hashed in the store, sent only as X-Session-Key; id redaction in logs; programme flow moves to T20 membership",
+        "flags": [
+         "F-B1-033",
+         "F-A3-001"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "One owner column: nullable UUID FK, single source of truth",
+      "why": "The owner is a free 'anon' string in three places, never updated after create, and cannot cascade from users.",
+      "where": "backend/app/db/migrations/versions/0006_session_owner.py, models/agent_session.py, agents/store.py, agents/ideation.py, elicitation/engine.py and session.py",
+      "how": "owner_id UUID NULL FK ON DELETE CASCADE plus access_hash; backfill 'anon' -> NULL; document and elicitation copies removed (T34 step); save never writes owner.",
+      "when": "After T16 tasks 1-4; with T34.",
+      "what_for": "Erasure and lookups by founder follow a real relation.",
+      "subtasks": [
+       {
+        "text": "Migration 0006 with FK ON DELETE CASCADE, NULL = anonymous, backfill; drop the string column after one release",
+        "flags": [
+         "F-A3-008",
+         "F-A2-016"
+        ]
+       },
+       {
+        "text": "Remove user_id from the document and elicitation state; the store is the only writer of the owner",
+        "flags": [
+         "F-B5-020"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Explicit keyed claim of several sessions with founder confirmation",
+      "why": "There is no claim, the column stays 'anon', and an automatic claim on a shared phone hands one founder's idea to another.",
+      "where": "agents/store.py (claim in Memory/Sql/Cached), routers/ideation.py (POST /ideation/agent/sessions/claim), frontend Talk.tsx, auth.tsx",
+      "how": "Conditional UPDATE on owner_id IS NULL and the key hash, column and document in one transaction, Redis copy dropped; up to 20 {id, key}; ignores the idle hide, respects retention; titled confirmation before sending.",
+      "when": "After tasks 1-2 and T18 task 2 (recent-sessions list); T07 retention.",
+      "what_for": "Founders keep every conversation they started on this device, and nobody can claim one with a leaked id.",
+      "subtasks": [
+       {
+        "text": "store.claim with the conditional UPDATE; save never changes owner; owned or wrong-key ids reported",
+        "flags": [
+         "F-B5-020",
+         "F-A2-005",
+         "F-A3-002"
+        ]
+       },
+       {
+        "text": "POST /ideation/agent/sessions/claim for up to 20 {id, key}, bypassing the six-hour idle hide",
+        "flags": [
+         "F-B5-022",
+         "F-A3-002"
+        ]
+       },
+       {
+        "text": "Talk 'Add these to my account?' dialog listing titled conversations; nothing claimed automatically",
+        "flags": [
+         "F-A3-002",
+         "F-B5-022"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "My conversations",
+      "why": "On a new device the founder cannot find, resume or delete past sessions.",
+      "where": "agents/store.py (list_for_owner), routers/ideation.py (GET /ideation/agent/sessions), frontend/src/pages/Talk.tsx",
+      "how": "Column-only query by owner_id ordered by last_active, title from a JSONB expression; Talk lists them when signed in with open and delete.",
+      "when": "After task 3.",
+      "what_for": "Cross-device resume and per-session deletion.",
+      "subtasks": [
+       {
+        "text": "list_for_owner and GET /ideation/agent/sessions returning id, title, idea_version, last_active",
+        "flags": [
+         "F-A3-009"
+        ]
+       }
+      ]
+     }
+    ],
+    "tests": "test_session_access on the memory store: keyed anonymous session -> id without key 404, wrong key 404, right key 200; claimed session -> no token 404, other user 404, owner 200, for resume, delete, turn, stream and notices; invalid token 401. Claim: wrong key not claimed; second user gets 'owned'; idle-hidden session claimable; key dead after claim; save after claim keeps the owner. List: only the owner's sessions, newest first. Integration (T16 fixture): 0006 round trip; deleting a user cascades. Logs: no 32-hex id in our log lines. Frontend: the key never appears in a URL.",
+    "risks": "Clearing browser storage loses unclaimed sessions (as today; retention removes them). Keys in localStorage are readable by any script on the origin; acceptable with no third-party scripts (T25), and claims invalidate them. On a shared phone person B can still confirm person A's conversation; the titled dialog reduces but cannot remove that. The legacy no-hash rule must end with retention or a dated cutoff. A stale token now gives 401; Talk must refresh or sign out (T14/T18)."
+   }
+  },
+  {
+   "theme": "T18",
+   "winner": "merge",
+   "scores": {
+    "A": {
+     "root_cause": 5,
+     "correctness": 5,
+     "constraints": 5,
+     "simplicity": 4,
+     "plan": 5
+    },
+    "B": {
+     "root_cause": 5,
+     "correctness": 5,
+     "constraints": 5,
+     "simplicity": 4,
+     "plan": 5
+    }
+   },
+   "reasoning": "Both designs are the same mechanism (a ~100-line typed key registry with device/founder scope, versioned migrations, journeyStore v2 absorbing Journey.tsx's {facts, done}, owner namespaces with clear-on-logout and a confirmed adopt-on-login, a status-carrying ApiError so Talk forgets only on a definite not-found, and UUID/updated_at/tombstone records with union-by-id first sync), with the same sound rejections, and both map every flag. Verified: Talk.tsx:135 is .catch(() => save(null)). Each adds something real. A: a record written by a newer client is never overwritten; sign-out lists unsynced items before removing; talk.sessions is a list of up to 10 (needed by T17's claim). B: a CI grep that forbids localStorage outside the registry (the only thing that keeps the registry the single owner), network failures as ApiError status 0 retryable, a storage-event subscribe for other tabs, listKeys for the privacy page, a .bak copy when a migration throws, and the expiry signal put in the backend 404 body code (not_found|expired), which keeps T07's status semantics instead of introducing 410. Final: A's structure with B's enforcement and error details; talk.sessions entries carry the T17 key.",
+   "final": {
+    "chosen": "Typed storage registry (device/founder scope, versions, ordered migrations, never overwrite newer, .bak on failure, CI grep), journeyStore v2, owner namespaces with confirmed adopt at sign-in and an unsynced-aware clear at sign-out, ApiError (status 0 for network) with a resume policy that forgets only on 404 not_found, and UUID/updated_at/tombstone records with a union-by-id, 409 compare-and-set sync contract",
+    "why_chosen": "It gives browser state the owner it lacks with no runtime dependency: collisions become impossible, shape changes migrate instead of discarding, a shared device neither leaks nor cross-syncs, conversations survive outages, and 3.1.3 inherits a merge rule that reuses the version check sessions already use. The CI grep is what keeps every page going through the registry.",
+    "approaches": [
+     {
+      "name": "A small typed storage module (key registry with scope, version and migrations) plus owner namespaces, an adopt step at sign-in and a clear at sign-out, and a status-carrying error in agentClient",
+      "advantages": "Collisions impossible by construction, one migration path, shared-device leak and wrong-account sync both closed, no dependency.",
+      "drawbacks": "Touches every storage call site once; a founder who signs out before sync must choose to keep or remove local-only data.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "zustand with the persist middleware (named, versioned slices)",
+      "advantages": "Ready-made versioning and migration hooks.",
+      "drawbacks": "New dependency and a rewrite of every page's state for a problem a 60-line module solves; still needs our own scope/namespace and logout rules.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "zod schemas validating every key on read",
+      "advantages": "Catches any future shape clash at read time.",
+      "drawbacks": "New dependency; detects but does not separate two writers on one key or clear data on sign-out.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Separate keys only (Journey to vanigam_registration) and clear-all on logout",
+      "advantages": "Immediate stop to the collision and the leak.",
+      "drawbacks": "Leaves three copies of founder facts, discards unsynced drafts on sign-out with no warning, and still adopts anonymous data blindly at the next sign-in.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "sessionStorage for sensitive keys",
+      "advantages": "Limits exposure on shared machines.",
+      "drawbacks": "Breaks the anonymous start across tabs and days that the design relies on; does not fix the collision or the sync rule.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "CRDT sync for browser lists (Yjs, Automerge)",
+      "advantages": "Automatic offline merging.",
+      "drawbacks": "Heavy new format and server storage for a few short lists; the platform already trusts version-checked saves for sessions.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "IndexedDB via idb-keyval / Dexie",
+      "advantages": "Quota and structure for future offline features.",
+      "drawbacks": "The async API forces rewrites of synchronous loaders used during render; data volumes here are tiny; does not by itself define a merge or clearing policy.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Server as the only store (no browser persistence for signed-in users)",
+      "advantages": "No cross-user leakage for signed-in users; no sync conflicts.",
+      "drawbacks": "Breaks the offline/2G experience the product is built for; anonymous founders still need everything else.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Per-record version + updated_at with union-by-UUID merge (sync protocol)",
+      "advantages": "Two devices never erase each other's lists; reuses a pattern the backend already has.",
+      "drawbacks": "Covers only sync; needs the registry to own ids and migrations.",
+      "cost": "free/open source"
+     }
+    ],
+    "not_chosen": [
+     {
+      "name": "zustand with the persist middleware (named, versioned slices)",
+      "reason": "A runtime dependency and a state-style rewrite for version/migrate the registry provides in ~120 lines; scope and logout rules would still be ours."
+     },
+     {
+      "name": "zod schemas validating every key on read",
+      "reason": "Detects bad shapes but neither separates two writers nor clears data across users; a per-key type guard is enough."
+     },
+     {
+      "name": "Separate keys only (Journey to vanigam_registration) and clear-all on logout",
+      "reason": "Acceptable only as a same-day hotfix; loses unsynced drafts silently and leaves blind adoption at sign-in."
+     },
+     {
+      "name": "sessionStorage for sensitive keys",
+      "reason": "Breaks the anonymous multi-day start."
+     },
+     {
+      "name": "CRDT sync for browser lists (Yjs, Automerge)",
+      "reason": "Far heavier than a few short lists need; version checks and union-by-id suffice."
+     },
+     {
+      "name": "IndexedDB via idb-keyval / Dexie",
+      "reason": "Async storage forces render-path rewrites for kilobytes of data and answers none of the scope, clearing or merge questions."
+     },
+     {
+      "name": "Server as the only store (no browser persistence for signed-in users)",
+      "reason": "Breaks the offline/2G experience and does nothing for anonymous founders."
+     },
+     {
+      "name": "Per-record version + updated_at with union-by-UUID merge (sync protocol)",
+      "reason": "Not rejected: adopted as the list-record part of the chosen design."
+     }
+    ],
+    "design": {
+     "components": "1) frontend/src/storage.ts: defineKey<T>({name, scope: 'device'|'founder', version, empty, migrate[], guard, sensitive}); read/write/remove/subscribe (storage event); setOwner(owner); adoptAnonymous(); clearOwner(owner); listKeys(); every access in try/catch. Registered: device -> lang, tokens; founder -> profile, journey (v2), pipeline, suppliers, talk.sessions, cohort.enrolments (T20). A CI grep fails on localStorage outside storage.ts. 2) journeyStore v2 owns {entry_mode, reg_subtype, terrain, terrain_confirmed, consent (T19 purpose-keyed), milestones, registration: {facts, done}}; Journey.tsx goes through it. 3) auth.tsx: login with anonymous founder data -> adopt dialog (conversation titles; profile/journey present) -> on yes move keys and call T17 claim with {id, key} pairs; logout -> list items not yet synced, default 'remove from this device', clears the user's and the anon namespace. 4) api/errors.ts ApiError {status, code, retryable, detail}; network failure = status 0, code 'network', retryable. agentClient json() throws it. 5) Talk resume: 404 code not_found -> drop that id; 404 code expired -> keep the id and offer 'delete it' or 'start fresh'; 0/5xx/503 -> keep the id, retry notice with back-off. 6) Pipeline/Suppliers: crypto.randomUUID ids (old 'local-<ts>' ids migrated), updated_at, version, tombstones.",
+     "data_model": "Physical key 'vanigam.<owner>.<name>' (founder scope, owner = 'anon' or user id) or 'vanigam.<name>' (device); envelope {v, updated_at, data}. Legacy keys migrate once into the anon namespace; vanigam_journey is sniffed (v1 journeyStore or unversioned {facts, done}) and merged into v2. talk.sessions: [{id, key, title|null, started_at, last_seen}] max 10. List record {id: uuid, updated_at, version, deleted_at|null}. Sync contract (3.1.3): PUT with the version -> 409 with the server copy on conflict; first sync = union by id, newer (updated_at, version) wins per item, tombstones beat older edits. Backend: the session 404 body carries code not_found|expired (agreed with T07).",
+     "algorithm": "Migration runner: missing -> empty; v < current -> apply migrate[v..current-1]; v > current (newer client) -> use empty in memory and never write; unparseable or migrate throws -> copy raw to '<key>.bak' once, then empty. Adopt only on confirmation; profile/journey merge prefers the user's existing values; lists union by id. Sign-out: unsynced = items updated after the last successful sync (before 3.1.3 everything is 'only on this device').",
+     "files": [
+      "frontend/src/storage.ts (new)",
+      "frontend/src/api/errors.ts (new)",
+      "frontend/src/journeyStore.ts",
+      "frontend/src/pages/Journey.tsx",
+      "frontend/src/profileStore.ts",
+      "frontend/src/pages/Pipeline.tsx, Suppliers.tsx",
+      "frontend/src/auth.tsx, api.ts",
+      "frontend/src/voice/agentClient.ts",
+      "frontend/src/pages/Talk.tsx",
+      "frontend/src/components/LangSwitch.tsx, i18n.ts",
+      "backend/app/routers/ideation.py (404 body code)",
+      "frontend/package.json (vitest dev dependency)",
+      "frontend/src/storage.test.ts (new)",
+      ".github/workflows/ci.yml (localStorage grep)"
+     ],
+     "rollout": "1) storage.ts, legacy-key migration and journey v2 (fixes the crash and data loss today) plus the CI grep. 2) ApiError and the resume policy with talk.sessions. 3) Namespaces, adopt and sign-out. 4) UUID records; the server half of the sync contract lands with 3.1.3.",
+     "offline": "Entirely client-side; with the backend unreachable Talk keeps its ids and shows a retry notice; the session id is dropped only on a definite not_found."
+    },
+    "tasks": [
+     {
+      "title": "Storage registry with scopes, versions and migrations; one journey record",
+      "why": "Two modules write one key with different shapes, and a version mismatch discards consent and milestones.",
+      "where": "frontend/src/storage.ts (new), journeyStore.ts, pages/Journey.tsx, profileStore.ts, Pipeline.tsx, Suppliers.tsx, api.ts, LangSwitch.tsx, i18n.ts, ci.yml",
+      "how": "defineKey for every key; legacy keys migrated once; journeyStore v2 with registration and a shape-sniffing migration; ordered migrations, never overwrite a newer record, .bak on failure; CI grep for localStorage.",
+      "when": "First; no dependency.",
+      "what_for": "No page can destroy another's data, and shape changes migrate instead of discarding.",
+      "subtasks": [
+       {
+        "text": "Fold Journey facts/done into journeyStore v2 with a migration from both legacy shapes of vanigam_journey",
+        "flags": [
+         "F-B3-018",
+         "F-B2-017",
+         "F-A3-006"
+        ]
+       },
+       {
+        "text": "Ordered migrations replace discard-on-mismatch; newer records never overwritten; .bak on failure; CI grep",
+        "flags": [
+         "F-B3-018"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Typed ApiError and a resume policy that forgets only on not_found",
+      "why": "Any network blip or 5xx deletes the only pointer to the conversation and to its delete control.",
+      "where": "frontend/src/api/errors.ts (new), voice/agentClient.ts, pages/Talk.tsx, backend/app/routers/ideation.py",
+      "how": "ApiError {status, code, retryable}; network = status 0; backend 404 body code not_found|expired; Talk keeps the id on 0/5xx, forgets on not_found, offers delete or start fresh on expired; talk.sessions keeps up to 10 {id, key}.",
+      "when": "Independent of task 1 for the error class; the code field agreed with T07.",
+      "what_for": "Brief outages never lose a conversation, and the founder can always delete what the server holds.",
+      "subtasks": [
+       {
+        "text": "ApiError with status (0 for network) in agentClient; forget only on not_found; retry notice otherwise",
+        "flags": [
+         "F-B5-018",
+         "F-B2-027"
+        ]
+       },
+       {
+        "text": "Expired branch keeps the id and offers delete or start fresh; recent-sessions list kept for claim and delete",
+        "flags": [
+         "F-B3-013"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Owner namespaces, adopt on sign-in, clear on sign-out",
+      "why": "The next person on a shared phone inherits the previous founder's profile (caste, phone, DOB), consent, pipeline, quotes and conversation, and would sync them into their own account.",
+      "where": "frontend/src/storage.ts, auth.tsx, Talk.tsx",
+      "how": "Founder-scoped keys under vanigam.<owner>.*; sign-in with anonymous data shows the adopt dialog, then calls T17's claim; sign-out lists local-only items and removes the user's and anon namespaces by default.",
+      "when": "After task 1; the claim call after T17 task 3 (until then keep/discard locally).",
+      "what_for": "Shared devices stop leaking one founder's data to the next, and nothing syncs into the wrong account.",
+      "subtasks": [
+       {
+        "text": "Clear the user's and anon namespaces on sign-out with an unsynced-items warning",
+        "flags": [
+         "F-A3-005",
+         "F-B2-018"
+        ]
+       },
+       {
+        "text": "Owner-namespaced keys and adopt only on explicit confirmation at sign-in",
+        "flags": [
+         "F-B2-018"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Sync-ready list records and the first-sync merge rule",
+      "why": "Time-based ids and whole-array writes make the first server sync lose or overwrite work.",
+      "where": "frontend/src/pages/Pipeline.tsx, Suppliers.tsx, storage.ts; contract recorded in TASKS 3.1.3",
+      "how": "crypto.randomUUID ids (old ids migrated), updated_at, version, tombstones; union-by-id first sync and 409 compare-and-set contract for 3.1.3.",
+      "when": "After task 1; the server half with 3.1.3 (after T17 and 3.1.2).",
+      "what_for": "Moving browser state to the server cannot erase one device's work.",
+      "subtasks": [
+       {
+        "text": "UUID ids, updated_at, version and tombstones; union-by-id merge and 409 re-merge contract",
+        "flags": [
+         "F-B2-019"
+        ]
+       }
+      ]
+     }
+    ],
+    "tests": "Vitest with jsdom: both legacy vanigam_journey shapes migrate to v2 with nothing lost; Journey and Consent saving in either order keep each other's fields; a v3 record is not overwritten by a v2 client; unreadable JSON preserved under .bak. Talk with mocked fetch: network error and 503 keep the id, 404 not_found removes it, 404 expired shows delete. Sign-out removes every founder key (listKeys) and keeps lang; sign-in with anon data shows the dialog and moves keys only on yes. Merge: overlapping lists union by id, newer wins, tombstone beats older edit. CI grep: no localStorage outside storage.ts.",
+    "risks": "The frontend has no test runner; vitest is a free dev-only dependency (decide with T22). Clearing the anon namespace on sign-out could surprise someone who used the app anonymously first; the adopt dialog at sign-in moves drafts first. Migration bugs could lose data; the .bak copy guards it. Founders who decline adoption leave anonymous data until sign-out; the dialog says so."
+   }
+  },
+  {
+   "theme": "T19",
+   "winner": "merge",
+   "scores": {
+    "A": {
+     "root_cause": 5,
+     "correctness": 4,
+     "constraints": 5,
+     "simplicity": 4,
+     "plan": 4
+    },
+    "B": {
+     "root_cause": 5,
+     "correctness": 5,
+     "constraints": 5,
+     "simplicity": 5,
+     "plan": 5
+    }
+   },
+   "reasoning": "Both chose a backend purpose registry, append-only consent events in the session document now with a table later, a server-side gate, removal of the sc_st axis (ranking.py:18,30) and empty Schemes defaults, with sound rejections. B is wiser on three points: it implements the gate as FounderFacts.redact, which both T04 designs already introduce, instead of A's separate gate.py path-stripper (one fewer mechanism); it keeps idea_ip as 'planned, not offered' until a code path checks it, instead of rewording a purpose to legitimise unchecked processing; and consent given to an older notice_version is not counted for new uses. B also gates the funding route and support_for, ties cohort consent to a known programme_id, and orders the plan so caste stops being sent and ranked on day one. A contributes two things B lacks: the table keyed by owner_id with FK ON DELETE CASCADE (B's generic subject_kind/subject_id cannot cascade on erasure), with the event copy done inside T17's claim transaction and the document copy cleared; and a generated purposes.json snapshot with a CI drift test, which gives the frontend typed ids and an offline fallback when the purposes endpoint is unreachable. Final: B's design with A's table shape, in-claim copy and generated snapshot.",
+   "final": {
+    "chosen": "Backend purpose registry (live/planned status, notice_version) served to the screens with a generated offline snapshot; append-only consent events in the session document behind a ConsentLedger, moving to an owner-keyed consent_events table copied inside T17's claim; a server-side gate as FounderFacts.redact at every use of protected fields; caste removed from ranking and from default inputs",
+    "why_chosen": "Consent means something only if the server enforces it where the data is used. Reusing FounderFacts.redact (T04) means the gate is one function on a type every caller already builds, and T04's three-valued engine turns withheld fields into 'not checked' instead of a false no. Events in the session work now, for anonymous founders, on every store, with withdrawal and notice proof; an owner-keyed table with cascade takes over at claim so erasure stays a database guarantee. Only purposes a code path checks are offered, and the generated snapshot keeps the Consent page working offline with typed ids and no new build dependency.",
+    "approaches": [
+     {
+      "name": "Backend purpose registry plus consent events (session document now, owner-keyed table later) behind one ledger/service, plus a server-side purpose gate on protected fields",
+      "advantages": "One list drives the screen, the record and enforcement; withdrawal works today on every store; a defined claim path; consent becomes binding rather than cosmetic.",
+      "drawbacks": "Two physical stores (document, then table) behind one service; the claim must copy events.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Consent table only now (core.consents with nullable user and a session subject)",
+      "advantages": "Single physical store from the start.",
+      "drawbacks": "Needs the database (2.1.1 blocked) and has nothing to write to on the memory store, so 5.5.1 would ship with no record and no withdrawal.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Shared purposes JSON data file read by both sides",
+      "advantages": "Reviewed by commit; easy to translate.",
+      "drawbacks": "Only the list, not records or enforcement; no type check unless a type is generated (which the chosen approach does from the Python source).",
+      "cost": "free/open source"
+     },
+     {
+      "name": "OpenAPI-generated TypeScript types (openapi-typescript) for the purpose enum",
+      "advantages": "Compile-time check on the frontend.",
+      "drawbacks": "Adds a generator step and dependency to the frontend build for one enum; a generated JSON snapshot with a CI drift test gives the same check.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Policy engine (OPA, Oso) for purpose checks",
+      "advantages": "Auditable, declarative rules.",
+      "drawbacks": "A new runtime for a handful of rules; heavy for a single-owner project.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Consent management platform (Klaro open source; Osano/OneTrust paid)",
+      "advantages": "Ready UI and records.",
+      "drawbacks": "Cookie-banner tools that do not tie into server-side purpose checks; hosted CMPs are paid and send founder data to a third party, against the free/offline rule and decision 0004.",
+      "cost": "free (Klaro) / paid (Osano, OneTrust)"
+     },
+     {
+      "name": "Client-only gate and reworded notices",
+      "advantages": "Fast.",
+      "drawbacks": "Not enforced: the 1.4.3 slot projection and any other client bypass it, and rewording widens the purpose instead of honouring it.",
+      "cost": "free/open source"
+     }
+    ],
+    "not_chosen": [
+     {
+      "name": "Consent table only now (core.consents with nullable user and a session subject)",
+      "reason": "Blocked on 2.1.1 and useless on the memory store, so 5.5.1 would ship with no record; adopted later behind the same ledger interface."
+     },
+     {
+      "name": "Shared purposes JSON data file read by both sides",
+      "reason": "Lists purposes but records and enforces nothing; kept only as the generated output of the Python registry."
+     },
+     {
+      "name": "OpenAPI-generated TypeScript types (openapi-typescript) for the purpose enum",
+      "reason": "A frontend build dependency for one enum; the generated snapshot with a CI drift test gives the same check."
+     },
+     {
+      "name": "Policy engine (OPA, Oso) for purpose checks",
+      "reason": "A new runtime for a handful of rules that a field tag and one function express."
+     },
+     {
+      "name": "Consent management platform (Klaro open source; Osano/OneTrust paid)",
+      "reason": "Cookie-banner tools with no server-side purpose checks; hosted ones are paid and send founder data to a third party (against free/offline and 0004)."
+     },
+     {
+      "name": "Client-only gate and reworded notices",
+      "reason": "Not enforced for other callers or the 1.4.3 slot projection, and rewording widens the purpose instead of honouring it."
+     }
+    ],
+    "design": {
+     "components": "1) app/consent/purposes.py: Purpose StrEnum {conversation (required), voice, quality_review, cohort, caste, financial, idea_ip}; PurposeSpec{label, notice (en; ta/hi via 1.5.1), notice_version, required, protects_fields (FounderFacts paths), protects_slots, checked_by, status live|planned}. digest removed; idea_ip planned and not offered until a checker exists. 2) GET /api/v1/consent/purposes serves live purposes; scripts/export_purposes.py writes frontend/src/generated/purposes.json (TS type source and offline fallback) with a CI drift test. 3) app/consent/ledger.py: ConsentEvent{purpose, granted, at, notice_version, source, programme_id?}; ConsentLedger protocol current(subject)/record(subject, event); SessionLedger on AgentSession.consents; TableLedger for owned subjects. 4) FounderFacts.redact(granted) (T04) nulls fields of non-granted purposes and returns the withheld paths. 5) Gate points: routers/schemes.py and routers/funding.py build FounderFacts then redact (session ledger when session_id given, otherwise the request's consents list, default strip; signed-in callers use the server record and the client claim is ignored); agents/tools.py support_for; slot selector skips slots whose purpose is not granted (T24/T05). ranking.py drops the sc_st axis. 6) PUT /api/v1/ideation/agent/sessions/{id}/consents/{purpose} {granted, notice_version} via the version-checked save under T17's session_access. 7) snapshot() returns consents and programme {id, name} when known; Talk shows the cohort toggle naming the programme. 8) cohort/programme.py reads ledger.current(...)[cohort] and the programme id (T20). 9) Consent.tsx renders served purposes (generated fallback); journeyStore stores {purpose: {granted, notice_version, at}}; Schemes.tsx empty defaults, caste/gender asked only with caste granted. 10) T17's claim copies the session's events into consent_events in the same transaction (source 'claim') and clears the document list.",
+     "data_model": "Session document consents: list[ConsentEvent]; T34 format step maps legacy cohort_consent true to one event {cohort, granted, at: updated_at, notice_version: 0 ('legacy'), source: 'migration'}. Table (migration 0007 after T17's 0006): consent_events(id bigserial, owner_id UUID FK users ON DELETE CASCADE, session_id NULL, purpose text CHECK in registry, granted bool, notice_version int, programme_id NULL, at timestamptz, source text), index (owner_id, purpose, at).",
+     "algorithm": "granted = {p : last event for p is granted and its notice_version == PURPOSES[p].notice_version}; consent to an older notice is not granted for new uses and the screen asks again. facts = facts.redact(granted). Withdrawal = an event granted=false, effective at the next read (cohort, schemes, egress). Reserved-category schemes return 'not checked: share your category to check' when caste is withheld (T04). Cohort: included only if cohort is granted and programme_id matches.",
+     "files": [
+      "backend/app/consent/__init__.py, purposes.py, ledger.py (new)",
+      "backend/app/routers/consent.py (new)",
+      "backend/app/core/facts.py (redact)",
+      "backend/app/routers/schemes.py, routers/funding.py, agents/tools.py",
+      "backend/app/schemes/ranking.py",
+      "backend/app/agents/ideation.py (consents, snapshot), agents/session_format.py (step)",
+      "backend/app/routers/ideation.py (PUT consents)",
+      "backend/app/cohort/programme.py",
+      "backend/app/elicitation/slots.py (purpose tag)",
+      "backend/app/db/migrations/versions/0007_consent_events.py (new)",
+      "backend/scripts/export_purposes.py (new), frontend/src/generated/purposes.json",
+      "frontend/src/pages/Consent.tsx, Schemes.tsx, Profile.tsx, Talk.tsx, journeyStore.ts, voice/agentClient.ts",
+      "backend/tests/unit/test_purpose_registry.py, test_consent_gate.py, test_consent_ledger.py (new)"
+     ],
+     "rollout": "1) Now: empty Schemes defaults, sc_st axis removed. 2) Registry, endpoint, generated snapshot, Consent.tsx. 3) redact gate in schemes, funding and support_for (after T04 FounderFacts). 4) Session events (T34 step), PUT route, snapshot, Talk toggle, cohort reads the ledger. 5) consent_events table and in-claim copy after T16/T17. Steps 1-4 need no database.",
+     "offline": "Registry is code, the ledger is the session document (memory or PostgreSQL), the frontend falls back to the bundled generated snapshot; no third party."
+    },
+    "tasks": [
+     {
+      "title": "Stop sending and ranking by caste without consent",
+      "why": "Every founder who never chose is sent as an SC woman, and caste reorders schemes, against the consent text.",
+      "where": "frontend/src/pages/Schemes.tsx, Profile.tsx, backend/app/schemes/ranking.py (_founder_axes)",
+      "how": "Empty gender/category defaults; caste and gender fields shown only with the caste purpose granted; remove the sc_st likelihood axis.",
+      "when": "Now; no dependency.",
+      "what_for": "No protected attribute is sent or used that the founder did not give for that purpose.",
+      "subtasks": [
+       {
+        "text": "Schemes.tsx initial state without gender or caste; Profile asks caste only when granted",
+        "flags": [
+         "F-A3-015"
+        ]
+       },
+       {
+        "text": "ranking._founder_axes drops sc_st; test that changing caste never changes the order of eligible schemes",
+        "flags": [
+         "F-B3-005"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "One backend purpose registry served to the screens",
+      "why": "Consent.tsx, the plan and the session flag define different purposes, and the screen offers dropped features.",
+      "where": "backend/app/consent/purposes.py, routers/consent.py, scripts/export_purposes.py, frontend/src/generated/purposes.json, pages/Consent.tsx, journeyStore.ts",
+      "how": "Enum and specs with notice text/version, status live|planned, protected fields and checkers; GET /consent/purposes; generated JSON with a CI drift test; Consent.tsx renders it; journey consent migrated to purpose ids with version and time.",
+      "when": "After task 1; owner/legal review of wording via 3.2.6.",
+      "what_for": "Founders agree to exactly the uses that exist, with the notice version recorded.",
+      "subtasks": [
+       {
+        "text": "Registry with the 3.2.1 list; digest removed; idea_ip planned and not offered; test that every live purpose has a checker",
+        "flags": [
+         "F-B3-006",
+         "F-A3-013",
+         "F-B2-020"
+        ]
+       },
+       {
+        "text": "GET /consent/purposes, generated purposes.json with drift test, Consent.tsx renders from it",
+        "flags": [
+         "F-B3-006",
+         "F-A3-013",
+         "F-B2-020"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Server-side purpose gate through FounderFacts.redact",
+      "why": "Any client, and the 1.4.3 slot projection, can still send and use protected fields.",
+      "where": "backend/app/core/facts.py, routers/schemes.py, routers/funding.py, agents/tools.py, elicitation/slots.py",
+      "how": "Purpose-tagged FounderFacts fields; redact(granted) nulls and lists withheld fields; routes take a session_id (ledger) or a consents list (default strip); signed-in callers use the server record; withheld fields become 'not checked' in T04's engine.",
+      "when": "After task 2 and T04's FounderFacts task.",
+      "what_for": "The consent record describes what the system actually does, whatever the caller.",
+      "subtasks": [
+       {
+        "text": "redact() at the schemes/funding routes and support_for; test that caste without the caste purpose never reaches evaluation, ranking or logs",
+        "flags": [
+         "F-B3-005",
+         "F-A3-015"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Consent events in the session, withdrawal and a visible toggle",
+      "why": "Cohort consent is a start-time boolean with no time, notice, programme or withdrawal, invisible after resume.",
+      "where": "backend/app/consent/ledger.py, agents/ideation.py, agents/session_format.py, routers/ideation.py (PUT consents), cohort/programme.py, frontend Talk.tsx, agentClient.ts",
+      "how": "ConsentEvent list with a T34 step from cohort_consent; SessionLedger; PUT route under T17's session_access; snapshot returns consents and programme; Talk toggle; cohort reads the ledger and programme id.",
+      "when": "After task 2, T34 task 1 and T17 task 1.",
+      "what_for": "Withdrawal is as easy as consent, with proof of when and to what notice.",
+      "subtasks": [
+       {
+        "text": "Consent events replace cohort_consent with a legacy upgrade step; SessionLedger current/record",
+        "flags": [
+         "F-A3-014",
+         "F-B2-008",
+         "F-B3-007"
+        ]
+       },
+       {
+        "text": "PUT consents route; withdrawal excludes the session from the next aggregate",
+        "flags": [
+         "F-A3-014",
+         "F-B2-008"
+        ]
+       },
+       {
+        "text": "snapshot() returns consents and the programme name; Talk toggle; cohort consent offered only with a known programme",
+        "flags": [
+         "F-B3-015"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Owner-keyed consent table and the copy on claim",
+      "why": "Once a session belongs to a founder, consent must live with the founder and follow erasure.",
+      "where": "backend/app/db/migrations/versions/0007_consent_events.py, consent/ledger.py (TableLedger), agents/store.py (T17 claim hook)",
+      "how": "consent_events with owner_id FK ON DELETE CASCADE; TableLedger for owned subjects; T17's claim copies events in the same transaction and clears the document list; SessionLedger stays for unclaimed sessions; erasure leaves a tombstone per 3.2.4.4.",
+      "when": "After T16 CI and T17 tasks 2-3.",
+      "what_for": "One consent truth per founder, erased with the account.",
+      "subtasks": [
+       {
+        "text": "consent_events table and owner-scoped TableLedger",
+        "flags": [
+         "F-B2-008"
+        ]
+       },
+       {
+        "text": "Copy anonymous events into the table inside the claim; current() identical before and after",
+        "flags": [
+         "F-B3-007"
+        ]
+       }
+      ]
+     }
+    ],
+    "tests": "Registry: ids and versions; every live purpose has a checker; generated JSON equals the registry; frontend literals exist in the enum. Gate: caste without consent is stripped, ranking identical to no caste, reserved schemes 'not checked'; with consent eligibility uses caste and ranking still ignores it; property test that no recommend output depends on caste_category when not granted. Ledger: grant, withdraw, re-grant; notice_version bump requires new consent; legacy cohort_consent upgrade. Cohort excludes withdrawn sessions. PUT on a claimed session without the owner's token -> 404. Claim copy keeps current() unchanged; deleting a user cascades its events.",
+    "risks": "Anonymous stateless calls rely on the client's consents list; the default is strip and server-side callers cannot bypass it. Removing sc_st changes some rankings (intended). Notice wording is a legal contract: bump notice_version only for substantive changes and via the owner's review (3.2.6). The gate depends on T04's FounderFacts landing first; until then step 1 already stops the main misuse."
+   }
+  },
+  {
+   "theme": "T20",
+   "winner": "merge",
+   "scores": {
+    "A": {
+     "root_cause": 5,
+     "correctness": 4,
+     "constraints": 5,
+     "simplicity": 4,
+     "plan": 5
+    },
+    "B": {
+     "root_cause": 5,
+     "correctness": 5,
+     "constraints": 4,
+     "simplicity": 3,
+     "plan": 4
+    }
+   },
+   "reasoning": "Both remove the root cause the same way (server-owned membership by join code and enrolment token, one disclosure function with suppression under 5, base-5 rounding and banded shares, interim per-programme operator key) and reject DP, query auditing and k-anonymity for the right reasons. Verified: cohort.py:33-40 aggregates any caller list of up to 500 ids through store.get. The difference is temporal differencing. A recomputes a snapshot once a day, so a day with exactly one join or withdrawal still lets a manager compare two days, and rounding only hides that away from boundaries; B publishes a new snapshot only when the symmetric difference of members since the last publication is 5 or more, which closes single-join differencing. A is better on storage and fit: membership lives on the session document (programme field, indexed programme_id column later) with list_by_programme, the registry is a small file with a CLI that prints codes once, and people are deduplicated by owner_id after T17's claim. B's single programme document holding a members map is a write hot spot and puts programme state in the session store. Join codes are short and low-entropy, so B's keyed HMAC (SECRET_KEY now, T30 keyring later) is the right hash rather than A's plain SHA-256. Final: A's membership model and plan with B's step-of-5 publication and HMAC hashing.",
+   "final": {
+    "chosen": "Server-owned membership via join codes and enrolment tokens on the session document, one disclosure function for every output, snapshots republished only after a membership change of 5 or more, keyed-HMAC hashes for join codes and operator keys, and an interim per-programme operator key (replaced by a role later)",
+    "why_chosen": "It removes caller-chosen sets and session ids from the programme flow in one move, counts founders rather than sessions, and every number passes one deterministic rule that matches the 'bands, not rankings' promise. Step-of-5 publication closes differencing across time, which a daily snapshot alone does not. Keeping membership on the session document (with a file registry and CLI) avoids a contended programme document and works offline on the memory store before accounts exist.",
+    "approaches": [
+     {
+      "name": "Server-owned programme membership via join codes and enrolments, a frozen snapshot, one disclosure function (suppress under 5, round to base 5, band averages), with an interim per-programme operator key",
+      "advantages": "Removes caller-chosen sets (the root cause), counts founders not sessions, keeps session ids out of the programme flow, works before accounts and the database, deterministic and explainable.",
+      "drawbacks": "Coarser numbers ('about 10'); a leaked join code lets someone enrol planted sessions, which rounding and the daily snapshot limit but cannot rule out.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Differential privacy noise (OpenDP, diffprivlib)",
+      "advantages": "Formal guarantee even against repeated queries.",
+      "drawbacks": "Noise on groups of 5-50 makes the bands unreadable for a programme manager; a budget accountant is new machinery; a scientific dependency for a small view.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Query auditing (refuse lists overlapping an earlier query by fewer than 5)",
+      "advantages": "Keeps the paste flow and exact numbers.",
+      "drawbacks": "Defeated by self-made sessions and intermediate lists; needs stored query history; fragile.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Rounding and banding only, keeping caller-chosen session-id lists",
+      "advantages": "Smallest change.",
+      "drawbacks": "Differencing still works at rounding boundaries, and programmes still hold full session keys.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Nightly analytics tables per batch (5.5.5) as the only source",
+      "advantages": "No ad hoc queries at all.",
+      "drawbacks": "Blocked on 2.1.1 and 5.5.5; still needs membership and rounding; a later home for the same disclose() output.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Wait for accounts and a programme-manager role before any protection",
+      "advantages": "No interim code.",
+      "drawbacks": "Leaves the endpoint open and the leak live for an unknown time.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Owner-bound sessions and account-based membership",
+      "advantages": "The right long-term identity model.",
+      "drawbacks": "Blocked on the database (2.1.1) and T17, and it leaves anonymous founders double counted and exposed meanwhile. Still needs disclosure control.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "k-anonymity / microdata tooling (ARX, sdcMicro)",
+      "advantages": "Strong record-level protection.",
+      "drawbacks": "Built for releasing microdata, not a handful of aggregate counts, and needs a foreign runtime.",
+      "cost": "free/open source (Java or R)"
+     },
+     {
+      "name": "Signed cohort token instead of session ids (HMAC capability)",
+      "advantages": "Stops handing over the full session key.",
+      "drawbacks": "The caller still chooses the set, so the differencing leak stays.",
+      "cost": "free/open source"
+     }
+    ],
+    "not_chosen": [
+     {
+      "name": "Differential privacy noise (OpenDP, diffprivlib)",
+      "reason": "Noise on batches of 5-50 makes the bands unreadable; budget accounting is heavy for a small team."
+     },
+     {
+      "name": "Query auditing (refuse lists overlapping an earlier query by fewer than 5)",
+      "reason": "Stateful, evadable with planted sessions, and leaves session ids as credentials."
+     },
+     {
+      "name": "Rounding and banding only, keeping caller-chosen session-id lists",
+      "reason": "Differencing still works at rounding boundaries and programmes still hold session keys; kept only as the first rollout step."
+     },
+     {
+      "name": "Nightly analytics tables per batch (5.5.5) as the only source",
+      "reason": "Blocked on 2.1.1/5.5.5; becomes the later storage for the same published snapshot."
+     },
+     {
+      "name": "Wait for accounts and a programme-manager role before any protection",
+      "reason": "Leaves the endpoint open meanwhile."
+     },
+     {
+      "name": "Owner-bound sessions and account-based membership",
+      "reason": "Blocked on the database and T17; the enrolment maps onto a user id later without redesign (dedupe by owner_id)."
+     },
+     {
+      "name": "k-anonymity / microdata tooling (ARX, sdcMicro)",
+      "reason": "Built for microdata release, needs a Java/R runtime, for a few counts."
+     },
+     {
+      "name": "Signed cohort token instead of session ids (HMAC capability)",
+      "reason": "The caller still chooses the set, so the differencing leak stays."
+     }
+    ],
+    "design": {
+     "components": "1) app/cohort/programmes.py: Programme {id, name, join_code_hmac, operator_key_hmac, created_at}; registry in a JSON file in the app data dir (settings.programmes_file, outside Git); scripts/programme.py create|rotate|list prints code and key once. Hashes are HMAC-SHA256 with SECRET_KEY now, the T30 keyring when it lands. 2) Enrolment: POST /ideation/agent/sessions/{id}/programme {join_code, enrolment_token?} under T17's session_access: compare_digest on the HMAC; sets session.programme = {programme_id, enrolment_id, joined_at}; records a T19 cohort consent event naming the programme; returns {programme_name, enrolment_token} (128-bit random, kept in T18's cohort.enrolments and resent with later sessions so restarts keep one enrolment). Withdraw: a cohort consent event granted=false or DELETE .../programme. 3) Store: list_by_programme(programme_id) (memory scan; Sql indexed column from 0008), an analytics read that ignores the six-hour idle hide (T07). 4) app/cohort/disclosure.py: disclose_count, disclose_groups (fold sub-5 groups, then round or drop), disclose_share (bands); every programme output is built only from these. 5) programme_cohort: people = enrolled sessions grouped by owner_id if set else enrolment_id, latest session each, cohort consent current (T19 ledger), capital band only with financial granted. 6) Publication: computed nightly (T32 runner) or on operator refresh; the stored published payload is replaced only when the symmetric difference between current people and people_at_publish is 5 or more; the response shows as_of and 'updates when 5 or more founders join or leave'. 7) routers/cohort.py: GET /cohort/programme with X-Programme-Key; the session_ids body is removed; Cohort.tsx asks for the key; Talk/Consent take the join code instead of the share_with_programme checkbox.",
+     "data_model": "Session document: programme {programme_id, enrolment_id, joined_at} | null (replaces cohort_consent via T34; consent itself lives in T19's ledger). agent_sessions.programme_id String(32) NULL indexed (migration 0008). programmes.json: [{id, name, join_code_hmac, operator_key_hmac, created_at}]. Published snapshot per programme (Redis or file): {as_of, people_at_publish (enrolment/owner ids), payload}. Output: {programme, as_of, founders_sharing: 'about 10'|'fewer than 5', shown, groups..., progress bands, privacy}.",
+     "algorithm": "disclose_count(n) = 0 if n == 0; suppressed ('fewer than 5') if 1-4; else 5*round(n/5). n < 5 people -> shown false with no counts. Groups -> disclose_groups; means -> disclose_share; roadmap count -> disclose_count. Republish only if |current XOR people_at_publish| >= 5. Operator auth: HMAC(header) compare_digest against the stored value; wrong or missing -> 401 without revealing whether the programme exists.",
+     "files": [
+      "backend/app/cohort/programmes.py, disclosure.py (new)",
+      "backend/app/cohort/programme.py",
+      "backend/app/routers/cohort.py",
+      "backend/app/routers/ideation.py (join/leave programme)",
+      "backend/app/agents/store.py (list_by_programme), agents/ideation.py (programme field)",
+      "backend/app/db/migrations/versions/0008_session_programme.py (new)",
+      "backend/scripts/programme.py (new)",
+      "backend/app/core/config.py (programmes_file)",
+      "frontend/src/pages/Cohort.tsx, Talk.tsx, Consent.tsx, voice/agentClient.ts",
+      "backend/tests/property/test_disclosure.py, tests/unit/test_programme_membership.py (new)",
+      "docs/specs/TASKS.md 3.2.5"
+     ],
+     "rollout": "1) disclosure.py on today's output (closes 1-4 counts now). 2) Registry, CLI and operator key; cohort route switches from pasted ids to the key. 3) Join code and enrolment, people-not-sessions, removal of session_ids. 4) Step-of-5 publication (operator refresh until T32's runner). 5) Migration 0008 once the database is live. 6) A role replaces the key after T14/T17.",
+     "offline": "Registry is a local file, enrolment lives in the session document, the snapshot falls back to a file, HMAC is stdlib; no network or database needed."
+    },
+    "tasks": [
+     {
+      "title": "One disclosure function for every programme output",
+      "why": "Some outputs bypass the 5-founder fold, and exact counts leak by differencing.",
+      "where": "backend/app/cohort/disclosure.py (new), cohort/programme.py, tests/property/test_disclosure.py",
+      "how": "Suppress under 5, round to base 5, band shares; rebuild every field including founders_sharing, reached_a_roadmap and the average; Hypothesis property that no output integer is 1-4 or off a multiple of 5.",
+      "when": "First; no dependency.",
+      "what_for": "The printed privacy promise becomes true and 5.5.3's new fields inherit it.",
+      "subtasks": [
+       {
+        "text": "disclose_count/groups/share for every field including founders_sharing, roadmap count and average",
+        "flags": [
+         "F-A5-033",
+         "F-A3-012",
+         "F-B2-006"
+        ]
+       },
+       {
+        "text": "Hypothesis property test; the 5+1 Salem probe gives identical outputs with and without the target",
+        "flags": [
+         "F-A5-033",
+         "F-A3-012"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Programme registry and interim operator key",
+      "why": "The endpoint is open and its planned auth needs a blocked database.",
+      "where": "backend/app/cohort/programmes.py, scripts/programme.py, core/config.py, routers/cohort.py, frontend/src/pages/Cohort.tsx, TASKS 3.2.5",
+      "how": "File-backed programmes with HMAC'd join code and operator key; CLI create/rotate; GET /cohort/programme requires X-Programme-Key; session ids no longer accepted; Cohort page asks for the key; TASKS 3.2.5 gains 'replace with a role'.",
+      "when": "After task 1; independent of the database.",
+      "what_for": "Only the programme's operator sees its aggregates, and nobody needs founders' session ids.",
+      "subtasks": [
+       {
+        "text": "Per-programme operator key compared with compare_digest on the HMAC; 401 otherwise",
+        "flags": [
+         "F-B3-003"
+        ]
+       },
+       {
+        "text": "Cohort route stops accepting session ids; Cohort.tsx uses the key",
+        "flags": [
+         "F-B3-002"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Join codes, enrolments and people-not-sessions counting",
+      "why": "Caller-chosen sets allow differencing, and one founder counts several times.",
+      "where": "backend/app/routers/ideation.py, agents/ideation.py, agents/store.py (list_by_programme), cohort/programme.py, frontend Talk.tsx, Consent.tsx, agentClient.ts",
+      "how": "Founder enters the join code with cohort consent; server stores programme and enrolment on the session; browser keeps the enrolment token; aggregate enrolled consenting people (owner_id or enrolment), latest session each.",
+      "when": "After task 2, T19 task 4 (consent events) and T17 task 1 (session_access).",
+      "what_for": "The server decides who is in the batch, and the floor counts founders.",
+      "subtasks": [
+       {
+        "text": "Server-owned membership: list_by_programme replaces pasted ids",
+        "flags": [
+         "F-B3-001",
+         "F-A3-012"
+        ]
+       },
+       {
+        "text": "Join code at start or later; the programme is named in the consent",
+        "flags": [
+         "F-B3-002"
+        ]
+       },
+       {
+        "text": "Enrolment token reused across restarts; dedupe by owner_id after claim",
+        "flags": [
+         "F-B3-014"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Step-of-5 publication and indexed membership lookup",
+      "why": "Comparing outputs over time, or before and after one join, still isolates a founder.",
+      "where": "backend/app/cohort/disclosure.py (publication), cohort/programme.py, db/migrations/versions/0008_session_programme.py, agents/store.py, T32 runner",
+      "how": "Store the published payload with people_at_publish; replace it only when the symmetric difference is 5 or more; serve it with as_of; nightly recompute via T32 (operator refresh until then); indexed programme_id column when the database is live.",
+      "when": "After task 3; the migration after T16's CI.",
+      "what_for": "Neither a single join nor a single withdrawal can be isolated by differencing snapshots.",
+      "subtasks": [
+       {
+        "text": "Republish only after a membership change of 5 or more; one join leaves the served payload unchanged",
+        "flags": [
+         "F-B2-006",
+         "F-A3-012"
+        ]
+       },
+       {
+        "text": "Migration 0008 programme_id column and index; memory-scan fallback",
+        "flags": [
+         "F-B3-001"
+        ]
+       }
+      ]
+     }
+    ],
+    "tests": "Hypothesis: for random cohorts of 0-60 people every numeric output is 0, suppressed or a multiple of 5 that is at least 5. Differencing probes (5 plus 1 target, Chennai and Salem variants) give equal outputs. One join or one withdrawal leaves the published payload unchanged; five do not. Two sessions with one enrolment token count once; claimed sessions dedupe by owner. Unknown join code refused. Wrong or missing operator key -> 401, timing-safe. The cohort route rejects a body with session_ids. Cohort.tsx has no session-id input.",
+    "risks": "A leaked join code lets planted sessions in (rotation via CLI; rounding and step publication bound what they reveal). Publication lag may confuse operators; the response says when it updates. Rounding hides cohorts under 5 by design. The programme file is a second store to back up until roles move programmes into the database."
+   }
+  },
+  {
+   "theme": "T21",
+   "winner": "merge",
+   "scores": {
+    "A": {
+     "root_cause": 5,
+     "correctness": 5,
+     "constraints": 5,
+     "simplicity": 4,
+     "plan": 5
+    },
+    "B": {
+     "root_cause": 5,
+     "correctness": 5,
+     "constraints": 5,
+     "simplicity": 4,
+     "plan": 5
+    }
+   },
+   "reasoning": "Both designs are the same architecture (stored corpus with an ingest/normalise boundary, scheduled refresh off the request path, attribution filter before dedupe, stdlib ISO and RFC 822 dates with 'date unknown' instead of 999, phrase-typed item kinds plus a strict English/Tamil deadline reader, https and fetchable-only redirect hops, robotparser cached daily, honest demo/live labels, founder context and a +0.10 language boost), with identical sound rejections. Verified: pipeline.py:178 indexes BY_ID[...] inside dedupe before the guard. A fits neighbours better on egress: the refresher calls through the T15 gate (limits, pauses, isolation, counters for the monitoring page) and A is more careful on actionability (an unknown date is never 'act on'; a call with no deadline read scores 0.6 with 'check the deadline'; newest-first tie-break fix). B reuses T01's to_sector and Sector cues for relevance instead of raw substrings, adds a property test that rank() never raises for arbitrary ids and dates, and a router test that makes zero fetch calls per request; B's standalone news_refresh.py script is a sensible bridge until T32's runner exists. Final: A's design with B's T01 relevance, the two tests and the script entry point.",
+   "final": {
+    "chosen": "Stored corpus with an ingest boundary (attribution first, normalised dates, kind and deadline), refreshed by scripts/news_refresh.py (scheduled by the T32 runner, by hand until then) through the T15 gate with conditional GETs, strict redirects and daily robots checks; pure deterministic ranking with T01 sector cues and a language boost; honest demo/live labels on Intel",
+    "why_chosen": "Every symptom traces to the missing boundary between fetching and serving. One ingest step enforces attribution, dates, extract caps and item kinds; one store keeps publisher traffic off the founder's request path and carries provenance for honest labels. Routing the refresher through the T15 gate and the relevance through T01's cues reuses shared mechanisms instead of adding new ones. Everything is standard library and deterministic (0002) except feedparser, which arrives with the live fetcher that needs it.",
+    "approaches": [
+     {
+      "name": "Stored corpus with an ingest boundary: a scheduled refresher writes normalised, attributed items to a file corpus (Redis copy) and the board only reads it; stdlib date normalisation now, feedparser when the live fetcher is written; deterministic item typing with a small date-phrase reader",
+      "advantages": "Publisher traffic off the request path, polite crawling, an honest freshness label, no crash on bad items, past deadlines never pushed; works offline from the last corpus or the labelled demo.",
+      "drawbacks": "Needs the scheduler (T32/5.4.4); phrase lists need upkeep, including Tamil phrases reviewed by a Tamil reader.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "hishel HTTP cache for httpx on the request path",
+      "advantages": "Conditional GETs for free.",
+      "drawbacks": "Still fetches on the founder's request; the first request per interval waits on eleven publishers over 2G.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "In-process TTL cache (cachetools) of the fetched list",
+      "advantages": "Very simple.",
+      "drawbacks": "Per worker, lost on restart, still fetches on the request path.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "dateparser for all date reading (pubDate and deadlines in text)",
+      "advantages": "Handles many formats and languages.",
+      "drawbacks": "Heavy dependency (regex, tzlocal, pytz); lenient guessing on ambiguous dates, the wrong failure for a deadline a founder acts on.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Free-model classification of actionability (Gemini then Ollama, decision 0009)",
+      "advantages": "Handles wording variety.",
+      "drawbacks": "Not offline; decision 0002 says code decides facts, and a deadline is a fact the founder acts on.",
+      "cost": "free tier"
+     },
+     {
+      "name": "Government-tier-only actionability",
+      "advantages": "Removes trade-press false positives.",
+      "drawbacks": "Misses real calls reported by newspapers and still tags closed calls.",
+      "cost": "free/open source"
+     }
+    ],
+    "not_chosen": [
+     {
+      "name": "hishel HTTP cache for httpx on the request path",
+      "reason": "Keeps publisher fetches on the founder's request path and has nowhere to keep normalised items, robots state or provenance."
+     },
+     {
+      "name": "In-process TTL cache (cachetools) of the fetched list",
+      "reason": "Per worker, lost on restart, still request-path fetching."
+     },
+     {
+      "name": "dateparser for all date reading (pubDate and deadlines in text)",
+      "reason": "Heavy and lenient for a bounded grammar; a strict stdlib reader plus 'date unknown' is safer for deadlines; reconsider only if the coverage test shows misses."
+     },
+     {
+      "name": "Free-model classification of actionability (Gemini then Ollama, decision 0009)",
+      "reason": "Not offline, and a model must not decide a deadline fact (0002)."
+     },
+     {
+      "name": "Government-tier-only actionability",
+      "reason": "Misses real calls reported by newspapers and still tags closed calls; tier stays a ranking signal."
+     }
+    ],
+    "design": {
+     "components": "1) news/ingest.py: ingest(raw) -> RawArticle | None: drop if source_id not in BY_ID; published -> ISO via date/datetime.fromisoformat then email.utils.parsedate_to_datetime, else None ('date unknown'); _clamp moves here. 2) news/corpus.py: Corpus {provider: fixture|live, refreshed_at, sources: {id: {etag, last_modified, robots_checked_at, robots_allowed, last_status, last_ok_at}}, items}; read()/write() atomically on settings.news_corpus_file (resolved per 5.4.4.2) with a Redis copy; items kept 60 days; the fixture fetcher writes a provider=fixture corpus when none exists. 3) news/refresh.py + scripts/news_refresh.py: per fetchable source, robots via urllib.robotparser (re-read daily), conditional GET through the T15 gate (source 'news:<id>', hourly window), follow_redirects off and a manual loop of at most 3 hops checked by is_fetchable_url (https and fetchable host), feedparser in HttpNewsFetcher once D9 allows, ingest, merge by item_id; one failing source keeps its old items and records why. 4) pipeline.rank(): ingest guard first, then dedupe; classify() kind in {call, closed, funding_news, other} from phrase lists (call: 'apply by', 'last date', 'applications open', 'invites applications', 'deadline', Tamil 'விண்ணப்பிக்க', 'கடைசி நாள்'; closed: 'closed', 'ended', 'results announced', 'deadline passed'; funding_news: 'raises', 'raised', 'secures', 'Series A-E', 'funding round'); deadline reader for '20 September', 'September 20, 2026', '20/09/2026', '20.09.2026' and Tamil month names near call phrases; latest deadline < today -> closed. Relevance: ctx.sector via T01 to_sector and Sector cues over the item text; district and stage via vocab; +0.10 when item language equals ctx.language (no filter). Tie-break newest first. 5) routers/news.py reads only the corpus; response gains corpus_refreshed_at and per-source status. 6) Intel.tsx: 'Demo items, not real news' for fixture, 'Updated <time>' for live, 'stale' after 24 h; sends sector, district, stage (non-protected) and UI language from the T18 registry.",
+     "data_model": "corpus.json as above. RawArticle.published: str | None; NewsItem gains kind and deadline (ISO|null). NewsBoardOut gains provider demo|live, corpus_refreshed_at and source_status. FounderContext.language uses T01 Language codes.",
+     "algorithm": "Actionability: 1.0 for an open call with a future deadline, 0.6 for an open call with no date read (reason 'check the deadline'), 0 for closed, funding_news, other, or an item with an unknown published date (recency 0, reason 'date unknown'). Other ranking weights unchanged.",
+     "files": [
+      "backend/app/news/ingest.py, corpus.py, refresh.py (new)",
+      "backend/scripts/news_refresh.py (new)",
+      "backend/app/news/pipeline.py",
+      "backend/app/news/fetch.py (guard -> is_fetchable_url; HttpNewsFetcher uses ingest)",
+      "backend/app/news/sources.py (is_fetchable_url)",
+      "backend/app/news/models.py",
+      "backend/app/models/news_schemas.py",
+      "backend/app/routers/news.py",
+      "backend/app/core/config.py (news_corpus_file)",
+      "frontend/src/pages/Intel.tsx and the NewsBoard component",
+      "backend/tests/unit/test_news_ingest.py, test_news_actionability.py, test_news_router.py (new)"
+     ],
+     "rollout": "1) Ingest guard, date normalisation, tie-break fix (works on fixtures today). 2) Item typing and the deadline reader. 3) Intel labels, founder context, T01 relevance and language boost. 4) Corpus store, refresher script and strict guards, ready for the first verified source after D9 and 4.4.1.2; feedparser added in that PR; T32 schedules the script.",
+     "offline": "The board serves the last stored corpus labelled with its age, or the fixture demo labelled demo; no request waits on a publisher; a failed refresh keeps the last corpus."
+    },
+    "tasks": [
+     {
+      "title": "Ingest boundary: attribution first and normalised dates",
+      "why": "One unknown source crashes the board, and RSS dates would rank live items as stale.",
+      "where": "backend/app/news/ingest.py (new), pipeline.py, fetch.py (_clamp moves), models.py (published optional)",
+      "how": "Drop unattributable items before dedupe; ISO and RFC 822 via stdlib; unknown dates -> None with 'date unknown'; tie-break newest first; feedparser adopted in HttpNewsFetcher later.",
+      "when": "First; no dependency.",
+      "what_for": "A stray item is dropped instead of taking the board down, and fresh items rank as fresh.",
+      "subtasks": [
+       {
+        "text": "ingest() drops items whose source_id is not in BY_ID before dedupe; regression test and a property test that rank() never raises for arbitrary ids and dates",
+        "flags": [
+         "F-A4-021"
+        ]
+       },
+       {
+        "text": "Normalise published (ISO, RFC 822 with GMT and offsets) at ingest; garbage -> 'date unknown', never 999 days",
+        "flags": [
+         "F-A4-023"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Deterministic item typing with a deadline check",
+      "why": "Funding-round news and closed calls are pushed as things to act on.",
+      "where": "backend/app/news/pipeline.py (classify, deadline reader), news/models.py (kind, deadline)",
+      "how": "Phrase lists for call/closed/funding_news; strict date reader near call phrases with English and Tamil month tables; past deadline -> closed; only open calls actionable.",
+      "when": "After task 1; Tamil phrases reviewed by a Tamil reader before release.",
+      "what_for": "Founders are pointed only at calls they can still answer.",
+      "subtasks": [
+       {
+        "text": "classify() with call/closed/funding_news phrase lists; actionability only for open calls",
+        "flags": [
+         "F-A4-022"
+        ]
+       },
+       {
+        "text": "Deadline reader; latest deadline before today -> closed with 'deadline has passed'",
+        "flags": [
+         "F-A4-022"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Honest Intel label, founder context and language preference",
+      "why": "Demo items are labelled 'cached', and ranking features already built are never switched on.",
+      "where": "frontend/src/pages/Intel.tsx, NewsBoard, backend/app/news/pipeline.py (_relevance via T01 cues, language boost), routers/news.py",
+      "how": "Demo/updated/stale labels from corpus provenance and age; send sector, district, stage and UI language; T01 to_sector and Sector cues for relevance; +0.10 language boost.",
+      "when": "Label first (no dependency); T01 relevance after T01 task 1; founder context through the T18 registry when it lands.",
+      "what_for": "Founders never mistake demo items for news, and see their own sector and language first.",
+      "subtasks": [
+       {
+        "text": "Label demo/updated/stale from provider and corpus age",
+        "flags": [
+         "F-A4-025"
+        ]
+       },
+       {
+        "text": "Send founder context and language; T01 sector cues and language boost in rank()",
+        "flags": [
+         "F-A4-025"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Stored corpus, scheduled refresher and a strict fetch policy",
+      "why": "A live board would hit every publisher on every page view, and redirects could reach sources whose robots rules were never checked.",
+      "where": "backend/app/news/corpus.py, refresh.py, scripts/news_refresh.py (new), sources.py (is_fetchable_url), fetch.py, routers/news.py, core/config.py",
+      "how": "Atomic file corpus with a Redis copy; refresher through the T15 gate with conditional GETs, manual redirect hops checked by is_fetchable_url, robots re-read daily; the router reads only the corpus.",
+      "when": "After tasks 1-2 and T15 task 1; scheduled by T32's runner (by hand until then); switched on after D9 and 4.4.1.2.",
+      "what_for": "Polite, legal crawling and a fast board that works from its last corpus offline.",
+      "subtasks": [
+       {
+        "text": "Corpus store and refresher with per-source ETag/Last-Modified; router test with a mocked fetcher asserts zero fetch calls per request",
+        "flags": [
+         "F-A4-024"
+        ]
+       },
+       {
+        "text": "is_fetchable_url (https, fetchable sources only) after every redirect; robots.txt checked at fetch time and cached daily",
+        "flags": [
+         "F-A4-026"
+        ]
+       }
+      ]
+     }
+    ],
+    "tests": "Unit: rank() with an item from source 'unknown' plus a near-duplicate -> no exception, unknown absent; property test that rank() never raises; 'Fri, 17 Oct 2026 08:00:00 GMT' -> 2026-10-17 and a '48 hours' reason; garbage date -> 'date unknown', not actionable; 'raises Rs 50 crore in Series B funding' -> funding_news; 'Applications for TANSEED closed on 20 September' -> closed; 'apply by 30 November 2026' (today 2026-10-17) -> actionable; an 'agri' founder sees agritech stories via T01 cues; language boost reorders equal items; newest-first tie-break. Refresher with httpx.MockTransport: 304 keeps items; redirect to a listed non-fetchable host or to http refused; robots disallow skips the source with status; one source timing out keeps the others. Router: zero fetch calls per request; no fetchable source -> provider demo and Intel shows the demo label.",
+    "risks": "Phrase lists miss unusual wording (false negatives are safer than a false 'act on'; the coverage test grows with harvested items). A stale corpus could show old calls; past-deadline demotion and the age label mitigate. The stdlib robots parser lacks some wildcard extensions (switch to protego only if a source needs it). The refresher depends on T32's runner; the script can be run by hand until then."
+   }
+  }
+ ]
+}
