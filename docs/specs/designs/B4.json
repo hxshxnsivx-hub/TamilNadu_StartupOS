@@ -1,0 +1,1590 @@
+{
+ "agent": "B4",
+ "team": "B",
+ "shared_mechanisms": [
+  {
+   "id": "SM1",
+   "name": "Three-valued verdicts and score intervals (app/core/tri.py)",
+   "what": "Tri enum TRUE/FALSE/UNKNOWN with Kleene and_/or_/not_; Verdict(value, failed: list[str], unknown: list[str]) carrying the reason for every no and the missing input for every maybe; Interval(lo, hi) for additive scores, where an unknown input contributes [0, its max].",
+   "used_by": [
+    "T04 scheme rules",
+    "T29 investor constraints and readiness intervals",
+    "T09 supply gap (covered / gap / outside coverage)",
+    "T24 scheme pre-check on each opportunity card"
+   ]
+  },
+  {
+   "id": "SM2",
+   "name": "FounderFacts: one typed founder-facts contract (app/core/facts.py)",
+   "what": "Pydantic v2 model, every field Optional (None means not known, never zero or false), enums from T01's vocabulary module, each field tagged with json_schema_extra {slot, purpose}. Projections: from_slots(ElicitationSession) (on T03's typed store), from_scheme_form, from_funding_form. redact(granted_purposes) returns a copy with protected fields set to None and lists them in withheld.",
+   "used_by": [
+    "T04 scheme engine and support_for",
+    "T29 readiness and investor matching",
+    "T24 opportunity ranking",
+    "T19 purpose gate"
+   ]
+  },
+  {
+   "id": "SM3",
+   "name": "Purpose registry and consent ledger (app/consent/)",
+   "what": "Purpose enum with notice text, notice_version, the FounderFacts fields and slot keys it protects, and the code paths that check it; ConsentLedger interface (current(subject), record(subject, event)) with a session-document implementation now and a core.consents table implementation after 3.2.1.",
+   "used_by": [
+    "T19 consent",
+    "T24 selector skips financial slots without the financial purpose",
+    "T04/T29 redaction before evaluation",
+    "cohort aggregates"
+   ]
+  },
+  {
+   "id": "SM4",
+   "name": "Versioned session document with one decode and an upgrade chain (app/agents/session_format.py)",
+   "what": "FORMAT constant, pure upgrade steps keyed by format, decode(raw) raising UndecodableSession or NewerFormat, a format column, and an idempotent upgrade-all script. Every theme that adds a session field registers a step here.",
+   "used_by": [
+    "T34",
+    "T19 consent events in the document",
+    "T24 CHOOSING state and offered cards",
+    "T01 sector renames"
+   ]
+  },
+  {
+   "id": "SM5",
+   "name": "Request principal and window counters (app/core/identity.py, app/core/counters.py)",
+   "what": "Middleware resolves request.state.principal = user (verified bearer sub, no DB hit) | session (session id path parameter) | ip (client address honouring only trusted proxies). counters.hit(key, window, limit) uses Redis INCR+EXPIRE when Redis answers and a bounded in-process dict otherwise; the same helper serves research source budgets.",
+   "used_by": [
+    "T14 rate limits",
+    "T19 consent subject",
+    "T17 owner checks"
+   ]
+  },
+  {
+   "id": "SM6",
+   "name": "Cited reference data validated in CI",
+   "what": "Each Git-held JSON file gets a Pydantic schema and one parametrized pytest that loads it, checks source_url and checked_on on every record, and cross-references ids (seed scheme ids exist in the catalogue, card skill tags exist in the vocabulary, cluster districts exist in the centroid table).",
+   "used_by": [
+    "T04 catalogue status and criteria",
+    "T09 clusters.json and district centroids",
+    "T24 card skills_used/assets_used/sources",
+    "T29 investors (unknown stays null)"
+   ]
+  }
+ ],
+ "designs": [
+  {
+   "theme": "T04",
+   "understanding": "The scheme engine is a small pure evaluator (schemes/rules.py, 120 lines) with only two outcomes, so a missing field is folded into 'fails': _apply returns False when the value is None. A second bug sits in the same line: IS_FALSE on a missing value returns True because bool(None) is False, so a missing field passes a negative constraint. The input is two untyped dicts (scheme_schemas.EligibilityIn founder/startup: dict[str, Any]). Their keys are a private convention between seed.py rule paths, the catalogue 'inputs' lists (startup.dpiit vs startup.dpiit_recognized, startup.age_years vs incorporation_age_years) and the Schemes form, and nothing projects conversation slots onto them. Scheme facts live in two copies: seed.py has rules and money fields but no status; the funding catalogue has status and benefit text but no rules. The money fields mix benefit caps, loan sizes and project sizes, and 'grant' is taken to mean non-dilutive. Finally, /talk's support_for never consults the engine: registry._scheme_rules picks schemes from the domain card. The root is one missing contract (typed founder facts with an explicit unknown), one missing join (catalogue status and money meaning onto the rules), and a second, reason-less decision path in the agent.",
+   "flags_disputed": [
+    {
+     "id": "F-A4-001",
+     "note": "Holds. Additional defect in the same function: Op.IS_FALSE on a missing field returns True (bool(None) is False), so a missing field passes negative constraints. The three-valued rewrite fixes both."
+    },
+    {
+     "id": "F-A4-003",
+     "note": "Holds. Line numbers moved (models.py is now 36 lines), but Scheme still has no status field and seed.py still lists sisfs, standup_india and tanseed."
+    },
+    {
+     "id": "F-A4-005",
+     "note": "Holds. The catalogue's amount_min/amount_max are a third meaning again, so the fix must define the fields in the catalogue, not only in seed.py."
+    }
+   ],
+   "approaches": [
+    {
+     "name": "Kleene three-valued evaluator in the existing rules.py plus a typed FounderFacts contract",
+     "how": "Rule evaluation returns Tri (TRUE/FALSE/UNKNOWN); ALL is Kleene AND, ANY is Kleene OR, NONE is NOT(OR). An UNKNOWN leaf records its field path. The engine sorts schemes into eligible / needs_info (with the missing fields) / ineligible (with real violated rules). The input is a Pydantic FounderFacts model whose fields are all Optional.",
+     "basis": "Kleene's strong three-valued logic is the standard semantics for unknowns (SQL NULL uses it); the evaluator is ours and 120 lines; Pydantic v2 is already the schema layer.",
+     "cost": "free/open source",
+     "advantages": "No dependency. The Soundness/Completeness properties are kept and become true. The unknown fields become the next questions. One contract for seed rules, catalogue inputs, slots and forms, and a CI test can check every rule path against the model.",
+     "drawbacks": "Every caller and test must handle a third bucket; seed paths and catalogue inputs migrate once."
+    },
+    {
+     "name": "JsonLogic rules (json-logic-py) over a JSON profile",
+     "how": "Re-encode the rule trees as JsonLogic data; evaluate in Python and optionally in the browser.",
+     "basis": "JsonLogic is a known portable rule format with ports in many languages.",
+     "cost": "free/open source",
+     "advantages": "Rules become data; the same rules could run client-side.",
+     "drawbacks": "A missing var resolves to null and comparisons go false, so the bug is reproduced, not fixed. The Python port is small and rarely maintained, and every tree must be rewritten."
+    },
+    {
+     "name": "Answer-set or Datalog engine (clingo / pyDatalog) with open unknown atoms",
+     "how": "Encode eligibility as logic rules; unknown facts stay open and the solver reports which atoms would make a scheme derivable.",
+     "basis": "Answer-set programming handles incomplete knowledge natively; clingo is mature and pip-installable.",
+     "cost": "free/open source",
+     "advantages": "Can compute minimal 'what would you need' sets, including across ANY branches.",
+     "drawbacks": "A new language and a native dependency for 8 to 46 rules. Reasons are harder to word, and the team must learn ASP. Overkill for a tree evaluator."
+    },
+    {
+     "name": "Present-only filter or optimistic defaults",
+     "how": "Before evaluating, drop schemes with any missing input, or fill missing fields with permissive defaults.",
+     "basis": "One-line changes in normalise_profile.",
+     "cost": "free/open source",
+     "advantages": "Trivial.",
+     "drawbacks": "The filter hides most schemes from an early founder; the defaults invent facts and return false 'yes' answers. Both break 'no invented data' or Soundness."
+    },
+    {
+     "name": "Catalogue as the single source: rule trees generated from structured catalogue criteria",
+     "how": "Give each catalogue entry structured criteria (age bands per category, entity types, stages) and build RuleGroups from them at load, retiring the hand-written seed trees.",
+     "basis": "SYSTEM-DESIGN 5.3 already wants schemas for class A data; TASKS 4.1.1 wants one source.",
+     "cost": "free/open source",
+     "advantages": "One edit point for status, amounts and rules; drift between seed and catalogue becomes impossible.",
+     "drawbacks": "Catalogue eligibility is free text today. Structuring 46 entries is curation work that cannot block the logic fix, and generic criteria cannot express every scheme's quirks."
+    }
+   ],
+   "chosen": "Kleene three-valued evaluator plus typed FounderFacts (approach 1), with the catalogue joined by id for status, money meaning and the structured criteria of the encoded schemes (a staged step towards approach 5), and support_for routed through the same engine.",
+   "why_chosen": "It fixes the root inside code the team already owns, with no dependency: unknown is no longer false, and there is one typed contract. The same Tri/Verdict type (SM1) serves investor matching (T29) and the card pre-check (T24), and FounderFacts (SM2) is the contract T29, T24 and T19 also need. Consent stripping (T19) composes with it: a withheld caste field becomes UNKNOWN, so the founder sees 'share your category to check this' instead of a false no. Joining status and money fields from the catalogue by id keeps one copy of fast-changing facts and moves towards a single-source catalogue without waiting to curate all 46 entries.",
+   "not_chosen": [
+    {
+     "name": "JsonLogic",
+     "reason": "Treats missing as null/false, so it does not fix the defect, and costs a rewrite of every tree plus a thin, rarely maintained dependency."
+    },
+    {
+     "name": "Answer-set / Datalog engine",
+     "reason": "A new language and a native dependency for a tree evaluator. Reasons are harder to word and maintain for a one-person team, and Kleene evaluation already yields the missing fields."
+    },
+    {
+     "name": "Present-only filter / optimistic defaults",
+     "reason": "Either hides the schemes made for early founders or invents facts; violates 'no invented data' and the engine's Soundness property."
+    },
+    {
+     "name": "Generate all rules from the catalogue now",
+     "reason": "Blocked until the free-text eligibility of 46 entries is structured. Adopted only in part: structured criteria for the eight encoded schemes, checked against the seed rules, so it can grow with 4.1.1."
+    }
+   ],
+   "design": {
+    "components": "1) app/core/tri.py (SM1). 2) schemes/rules.py: evaluate(node, facts) -> Verdict. A None value gives UNKNOWN with the field path for every op, including IS_TRUE/IS_FALSE. A TypeError gives UNKNOWN with 'could not compare' logged, never FALSE. 3) app/core/facts.py FounderFacts (SM2). founder fields: state (TNState Literal, normalised for case, whitespace and the 'TN' alias), district (T01 enum), age, date_of_birth, gender, social_category (Literal general/bc/mbc/sc/st/ews/obc; purpose=caste), special_groups (set of ex_servicemen/differently_abled/transgender; purpose=caste), first_graduate, rural, tn_residency_years. startup fields: stage (T01), entity_type, incorporated, incorporation_age_years, dpiit_recognised, startuptn_registered, annual_revenue, sector (T01), women_led. 4) schemes/catalogue.py loads funding_catalogue.json through a Pydantic CatalogueEntry (SM6) and exposes status(id), status_note, checked_on, money(id) and criteria(id). 5) The Scheme dataclass gains project_min, project_max, benefit_max, benefit_rate_pct (optional), dilutive and equity_pct; min_funding/max_funding are removed. 6) engine.check_eligibility returns EligibilityResult(eligible, needs_info[(scheme, missing_fields)], ineligible, not_open[(scheme, status, status_note)]). 7) agents/tools.py _support_for(session, domain_id, district): registry routes become a relevance shortlist ('why relevant'), and the engine decides eligibility on FounderFacts.from_slots(session).redact(consents).",
+    "data_model": "FounderFacts (Pydantic, extra='forbid', all Optional). Verdict{value: Tri, failed: list[str], unknown: list[str]}. For encoded schemes the catalogue entry adds 'criteria' {age: {general: [21,45], special: [21,55], special_groups: [...]}, stages: [...], entity_types: [...]}, plus 'project_min', 'project_max', 'benefit_max', 'benefit_rate_pct', 'dilutive' and 'equity_pct'; 'inputs' is rewritten to FounderFacts paths. SchemeOut adds status, status_note, checked_on, dilutive, equity_pct, benefit_max and the project range. RecommendOut adds needs_info[{scheme, missing:[{field, question}]}] and not_open[].",
+    "algorithm": "Kleene logic: AND = FALSE if any child is FALSE, else UNKNOWN if any is UNKNOWN, else TRUE. OR = TRUE if any child is TRUE, else UNKNOWN if any is UNKNOWN, else FALSE. NONE = NOT(OR). A FALSE result carries only the violated labels of its FALSE children; an UNKNOWN result carries the field paths of the UNKNOWN children that could still change the outcome. Bucketing order: status outside {active, cohort, between_calls, announced} -> not_open with the catalogue note (closed, revamping, not_in_tn, lapsed_pending, unverified); otherwise TRUE -> eligible, UNKNOWN -> needs_info, FALSE -> ineligible. Eligible schemes with status between_calls or cohort are labelled 'next call expected' or 'check the current call'. Funding fit compares funding_need with [project_min, project_max]. The 'why' line states 'about Rs X of your Rs Y' (min(rate*need, cap)) only when benefit_rate_pct and benefit_max are curated; otherwise it shows the cap. 'non-dilutive' is said only for type GRANT with dilutive False; TANSEED says 'equity-linked grant (3% stake)'. NEEDS/UYEGP ages become ANY(ALL(category general, age in general band), ALL(category or special group in the special list, age in special band)). With an unknown category and age 40, NEEDS gives UNKNOWN (needs category) instead of a wrong yes or no.",
+    "interfaces": "Depends on T01 (Stage, Sector, District enums and mappings) and T03 (typed slot values with source rank, for from_slots). Provides SM1 to T29/T09/T24 and SM2 to T29/T24/T19. T19's purpose gate calls FounderFacts.redact before evaluation. T24's card pre-check calls check_eligibility per card. annotate.py and the planner milestone annotation (1.4.1.1) consume the eligible list and status labels.",
+    "files": [
+     "backend/app/core/tri.py (new)",
+     "backend/app/core/facts.py (new)",
+     "backend/app/schemes/rules.py",
+     "backend/app/schemes/engine.py",
+     "backend/app/schemes/models.py",
+     "backend/app/schemes/seed.py",
+     "backend/app/schemes/catalogue.py (new)",
+     "backend/app/schemes/data/funding_catalogue.json",
+     "backend/app/schemes/ranking.py",
+     "backend/app/schemes/annotate.py",
+     "backend/app/models/scheme_schemas.py",
+     "backend/app/routers/schemes.py",
+     "backend/app/agents/tools.py",
+     "backend/app/planner/registry.py",
+     "frontend/src/pages/Schemes.tsx",
+     "frontend/src/api.ts",
+     "backend/tests/unit/test_rules_tri.py",
+     "backend/tests/unit/test_founder_facts_paths.py",
+     "backend/tests/unit/test_seed_matches_catalogue.py"
+    ],
+    "rollout": "1) tri.py and the evaluator, keeping the existing dict input behind the same API (the response gains needs_info). 2) FounderFacts, with a compatibility constructor from the old dict keys for one release that logs a warning on legacy keys. 3) The catalogue join and money fields. 4) support_for. The API change is additive (new lists), and the frontend renders them in the same PR as the backend.",
+    "offline": "Entirely deterministic and local: a Git-held catalogue, a pure evaluator, no network. The model only words the reasons that code produced (0002)."
+   },
+   "tasks": [
+    {
+     "title": "Three-valued rule evaluation and a needs-info bucket",
+     "why": "Unknown founder facts are reported as failed rules, so the founders Vanigam is for are told 'not eligible' with false reasons.",
+     "where": "backend/app/core/tri.py (new), schemes/rules.py, schemes/engine.py, models/scheme_schemas.py, routers/schemes.py",
+     "how": "Add Tri/Verdict. Rewrite evaluate() with Kleene AND/OR/NOT and UNKNOWN leaves that carry field paths. The engine returns eligible / needs_info / ineligible, and the schemas and routes return needs_info with the missing fields and the slot question for each.",
+     "when": "First; depends on nothing. T29 tasks 1-2, T09 task 1 and T24 task 4 reuse tri.py.",
+     "what_for": "Every 'no' is a real violation and every 'maybe' names what to answer next.",
+     "subtasks": [
+      {
+       "text": "core/tri.py: Tri enum, Kleene and_/or_/not_, Verdict with failed and unknown lists, Interval; truth-table unit tests.",
+       "flags": [
+        "F-A4-001"
+       ]
+      },
+      {
+       "text": "rules.evaluate returns Verdict; None and TypeError give UNKNOWN for every op (this also stops IS_FALSE passing on missing data).",
+       "flags": [
+        "F-A4-001",
+        "F-B4-008"
+       ]
+      },
+      {
+       "text": "engine.check_eligibility gains needs_info; RecommendOut/EligibilityOut add needs_info[{scheme, missing}]; ranking runs on eligible schemes only, with needs_info listed after them.",
+       "flags": [
+        "F-B4-008"
+       ]
+      },
+      {
+       "text": "Regression tests: {'founder': {'state': 'Tamil Nadu'}, 'startup': {'stage': 'prototype'}} gives no false 'Founder must be at least 18' reasons; PMEGP and MUDRA for an idea-stage founder land in needs_info.",
+       "flags": [
+        "F-A4-001",
+        "F-B4-008"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "FounderFacts: one typed contract for rules, catalogue inputs, slots and forms",
+     "why": "Seed rule paths, catalogue inputs, the Schemes form and slots use different keys and free strings, so spelling and case decide eligibility.",
+     "where": "backend/app/core/facts.py (new), schemes/seed.py rule paths, schemes/data/funding_catalogue.json inputs, schemes/engine.normalise_profile, frontend/src/pages/Schemes.tsx, frontend/src/api.ts",
+     "how": "A Pydantic model with Optional typed fields and T01 enums, a state normaliser, and social_category including BC/MBC plus special_groups. The from_slots projection (1.4.3.1) is built on T03's typed store. A CI test resolves every Rule.field and every catalogue input path against FounderFacts.model_fields. The Schemes form uses selects (state, category including BC/MBC, 'not incorporated yet', 'no revenue yet', rural).",
+     "when": "After task 1. Needs T01's Stage/Sector/District enums and T03's typed slot values for the projection. Before T29 task 1 and T24 task 4, which reuse it.",
+     "what_for": "A fact means one thing everywhere, and a rename fails in CI instead of silently in a founder's result.",
+     "subtasks": [
+      {
+       "text": "Define FounderFacts with field metadata {slot, purpose}; extra='forbid' makes an unknown key a 422 instead of a silent 'no'.",
+       "flags": [
+        "F-A4-006",
+        "F-B4-009"
+       ]
+      },
+      {
+       "text": "Rename seed rule paths and catalogue inputs to FounderFacts paths (startup.dpiit -> startup.dpiit_recognised, startup.age_years -> startup.incorporation_age_years, founder.rural); test_founder_facts_paths.py fails on any unresolved path.",
+       "flags": [
+        "F-B4-009",
+        "F-A4-006"
+       ]
+      },
+      {
+       "text": "FounderFacts.from_slots(session) and from_scheme_form(body); district maps to founder.state='Tamil Nadu' plus district; sector maps through T01's table.",
+       "flags": [
+        "F-B4-009"
+       ]
+      },
+      {
+       "text": "Schemes.tsx: state and category selects, explicit 'not incorporated yet' and 'no revenue yet' choices that send null rather than 0, and a rural checkbox.",
+       "flags": [
+        "F-A4-006"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Scheme status, money meaning and encoded criteria joined from the catalogue",
+     "why": "Closed schemes are recommended and placed on roadmaps, amounts with different meanings are compared, TANSEED is called non-dilutive, and the NEEDS/UYEGP ages contradict the published rules.",
+     "where": "backend/app/schemes/catalogue.py (new), schemes/models.py, schemes/seed.py, schemes/ranking.py, schemes/annotate.py, schemes/data/funding_catalogue.json, backend/tests/unit/test_seed_matches_catalogue.py",
+     "how": "A Pydantic CatalogueEntry loader (SM6). Scheme reads status/status_note/checked_on from the catalogue by id, and seed.py keeps no dates. Add the not_open bucket. Curate and cite project_min/max, benefit_max, benefit_rate_pct, dilutive and equity_pct for the eight encoded schemes. Encode category-aware age groups, and add a consistency test between the seed rule constants and the catalogue's structured criteria.",
+     "when": "After task 2 (the rules use the new category fields). Independent of T09/T29.",
+     "what_for": "Founders are never sent to a closed scheme, read correct money statements, and the next seed/catalogue drift fails CI.",
+     "subtasks": [
+      {
+       "text": "schemes/catalogue.py with the status join; the engine moves closed/revamping/not_in_tn/lapsed_pending/unverified schemes to not_open with the catalogue note; between_calls and cohort are labelled; TANSEED dates come from the catalogue only.",
+       "flags": [
+        "F-A4-003"
+       ]
+      },
+      {
+       "text": "annotate.py places only active/cohort/between_calls schemes, labels between_calls 'next call expected', and never places closed or revamping ones.",
+       "flags": [
+        "F-B2-025"
+       ]
+      },
+      {
+       "text": "Replace min_funding/max_funding with the project range plus benefit fields; _funding_fit uses the project range; the why-line states the benefit only when the rate and cap are curated.",
+       "flags": [
+        "F-A4-005"
+       ]
+      },
+      {
+       "text": "dilutive and equity_pct on Scheme; ranking says 'non-dilutive' only for non-dilutive grants and 'equity-linked (3% stake)' for TANSEED; TANSEED's stage rule becomes prototype/mvp and its entity rule Pvt Ltd/LLP.",
+       "flags": [
+        "F-A4-004"
+       ]
+      },
+      {
+       "text": "NEEDS ages 21-45 for general and up to 55 for women, BC/MBC/SC/ST, ex-servicemen, transgender and differently abled founders; UYEGP 18-35 general and 18-45 special. Structured criteria go in the catalogue, and test_seed_matches_catalogue.py asserts they equal the seed constants.",
+       "flags": [
+        "F-A4-002"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "support_for goes through the engine",
+     "why": "The conversation says TANSEED is for the founder while the Schemes screen says ineligible, because support_for reads only the domain card.",
+     "where": "backend/app/agents/tools.py (_support_for), backend/app/planner/registry.py (_scheme_rules as a shortlist), backend/app/schemes/engine.py",
+     "how": "_support_for takes the session. Registry routes give the shortlist and the 'why relevant' text. check_eligibility on FounderFacts.from_slots(session).redact(consents), over the shortlisted ids, returns the same four buckets as /schemes. The tool output carries reasons and missing fields so the agent asks rather than asserts.",
+     "when": "After tasks 1-3; uses T19 task 3's redact. Until 4.1.1 encodes them, shortlisted catalogue ids without encoded rules are returned as 'not yet checked by rules', never as eligible.",
+     "what_for": "One eligibility answer in the conversation and on the screen (code decides, 0002; fact check before speech, 0005).",
+     "subtasks": [
+      {
+       "text": "Change _support_for(domain_id, district) to _support_for(session, domain_id, district); the engine decides; unencoded routes are labelled 'not yet checked'; a test checks that support_for and /schemes/recommend agree for the same facts.",
+       "flags": [
+        "F-B4-010"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Schemes screen shows needs-info, status and unencoded criteria",
+     "why": "The API already returns unmodelled notes the founder never sees, and the new needs_info/not_open lists need a place on the screen.",
+     "where": "frontend/src/pages/Schemes.tsx, frontend/src/api.ts (RecommendOut type)",
+     "how": "Plain lists under each scheme: 'Also check' with the unmodelled notes; the status, its note and checked_on; a 'We need to know' section listing the missing fields as questions; a 'Not open now' section. Meaning only, no styling (unstyled baseline).",
+     "when": "With tasks 1 and 3, in the same PRs as the backend lists.",
+     "what_for": "The founder sees every condition that could rule them out and what to answer next.",
+     "subtasks": [
+      {
+       "text": "Render unmodelled_notes as 'Also check' under each eligible and needs-info scheme.",
+       "flags": [
+        "F-A4-007"
+       ]
+      },
+      {
+       "text": "Render the status text and the needs_info and not_open sections from the new API fields.",
+       "flags": [
+        "F-A4-003",
+        "F-B4-008"
+       ]
+      }
+     ]
+    }
+   ],
+   "tests": "Truth-table tests for Tri. A property test (Hypothesis, planned in 5.1.4) that filling in an UNKNOWN field never turns a FALSE verdict into TRUE, and that eligible results stay eligible when more true facts are added. A path-resolution test for every rule field and catalogue input. A seed-vs-catalogue criteria equality test. The flags' runs as regression tests: an idea-stage founder gets PMEGP/MUDRA in needs_info; a 50-year-old SC woman is eligible for NEEDS; a 40-year-old general-category man is not eligible for UYEGP; SISFS is in not_open; TANSEED's reason never says non-dilutive; a Rs 40L need fits PMEGP's project range. An agreement test between support_for and /recommend.",
+   "risks": "Kleene ANY can leave many schemes in needs_info for a brand-new founder, which may feel vague. Mitigation: order needs_info by the number of missing fields and turn the top missing field into the next question (T05 value of asking). Money fields need citations; entries without them show only the cap with 'check the scheme page'. Renaming catalogue inputs touches registry code that reads the catalogue; the path test covers it."
+  },
+  {
+   "theme": "T09",
+   "understanding": "Two separate problems share one cause: the supply side is not anchored in the one real data source (the MCA directory) and its limits. (a) /b2b/decompose builds the supply map with match_demand over SEED_SUPPLY (invented suppliers), so 'matched' and 'gap' are defined against invented companies while the real nearby_makers sit unused in the same response. The cluster hint is an uncited constant in Supply.tsx. The directory covers only Chennai, Coimbatore and Madurai but does not say so, and when the founder's PIN is unknown it falls back to name order. (b) The CP-SAT allocation objective mixes scales. SHORT_PENALTY of 10,000,000 paise is only Rs 1 lakh, so expensive items go unbought with a false reason. FAR_PENALTY and TRUST_BONUS are flat rupees whatever the price. A minimum order above the need is a dead end, and inputs are not validated (duplicate ids, category case). All member flags hold on the current code.",
+   "flags_disputed": [
+    {
+     "id": "F-A4-009",
+     "note": "Holds. trust_score on a quote is founder-entered (QuoteIn default 50), so trust is the founder's own judgement, not invented data; it should stay a tie-breaker rather than money."
+    },
+    {
+     "id": "F-A4-012",
+     "note": "Holds. The fix has two parts: an honest coverage notice now, and a later data job that places every company by India Post PIN centroid, with no geocoder needed."
+    }
+   ],
+   "approaches": [
+    {
+     "name": "Directory-only supply map with a three-valued gap and cited reference files",
+     "how": "Matches are the MCA makers from suppliers_for. Gap is a Tri verdict: covered (makers found), gap (the directory has no maker for the category), or outside coverage (the founder's district is not in the directory: UNKNOWN). Cluster pointers and district centroids are Git-held, cited JSON files in the backend; the frontend renders what the API returns.",
+     "basis": "suppliers_for already returns real companies; reference data in Git is the repo rule (SYSTEM-DESIGN 2, 5.3); SM1 and SM6.",
+     "cost": "free/open source",
+     "advantages": "Only real data reaches founders; one gap definition for /supply, /suppliers and 4.2.2; honest about coverage.",
+     "drawbacks": "No price or capacity columns until the founder adds quotes; the centroid and cluster files need curation."
+    },
+    {
+     "name": "Lexicographic CP-SAT (two or three solves)",
+     "how": "Solve 1 maximises placed units, and that optimum is fixed as a constraint. Solve 2 minimises landed cost (price plus founder-entered delivery), and that optimum is fixed too. Solve 3 maximises local and trusted choices as a tie-breaker among cost-optimal plans.",
+     "basis": "The standard lexicographic (pre-emptive) multi-objective method; OR-Tools CP-SAT is already in the stack; the models are tiny (20 lines x 100 quotes).",
+     "cost": "free/open source",
+     "advantages": "Correct for any price scale with no magic constants; every preference is explainable, in order.",
+     "drawbacks": "Two to three solves (milliseconds each at this size)."
+    },
+    {
+     "name": "Single weighted objective with a data-derived big-M and percentage penalties",
+     "how": "Penalty per short unit = (max unit price + max penalties) * 100 + 1; distance and trust as a percentage of the unit price.",
+     "basis": "Common big-M practice in MIP modelling.",
+     "cost": "free/open source",
+     "advantages": "One solve; a small diff.",
+     "drawbacks": "Large coefficients at 10^7 units risk overflow or slow search; the percentages are invented tuning numbers presented as 'rules'."
+    },
+    {
+     "name": "Keep seed matching with an 'example' label; add quote-fed scoring later",
+     "how": "Label invented suppliers as examples; when the founder's quotes move server-side (3.1.3), score them with the 40/30/20/10 scorer.",
+     "basis": "Minimal change.",
+     "cost": "free/open source",
+     "advantages": "Quick.",
+     "drawbacks": "Invented companies and prices stay in front of founders, the gap stays meaningless, and the owner's D9 preference is 'not fetched' over labelled demos."
+    },
+    {
+     "name": "PostGIS spatial index over the full MCA file",
+     "how": "Load all 78,689 companies into PostgreSQL with geometry and query by distance.",
+     "basis": "PostGIS is the standard spatial extension.",
+     "cost": "free/open source",
+     "advantages": "Scales and ranks by true distance.",
+     "drawbacks": "Reference data lives in Git by design, the database is not live yet (2.1.1), and haversine over a few thousand rows in Python is already fast enough."
+    },
+    {
+     "name": "Paid geocoding (Google/Mapbox) to place unplaced companies",
+     "how": "Geocode each company address.",
+     "basis": "Commercial APIs.",
+     "cost": "paid",
+     "advantages": "Accurate coordinates.",
+     "drawbacks": "Violates the free/offline constraint; India Post PIN centroids give enough precision for 'nearest' at district scale."
+    }
+   ],
+   "chosen": "A directory-only supply map with a three-valued gap and cited reference files (approach 1), plus lexicographic CP-SAT with founder-entered landed cost (approach 2), Pydantic input validation and a post-solve MOQ suggestion.",
+   "why_chosen": "Approach 1 removes invented data from every founder path and makes the coverage limit visible. It uses the same Tri verdict (SM1) as the scheme and investor engines, so 'we do not know for your district' is a first-class answer rather than a hidden fallback. The district centroid table also fixes the A-Z fallback and gives cluster distances, and it follows the same SM6 pattern as the scheme catalogue. Lexicographic solving removes every magic constant from the objective: delivery cost comes from the founder's quote (a real number), and distance and trust become explicit tie-breakers rather than fake money.",
+   "not_chosen": [
+    {
+     "name": "Single weighted objective with big-M and percentages",
+     "reason": "Numerically fragile at the allowed 10^7 quantities, and it replaces one set of invented constants with another."
+    },
+    {
+     "name": "Seed matching labelled 'example'",
+     "reason": "Keeps invented companies, prices and trust in front of founders, against 'no invented data' and D9."
+    },
+    {
+     "name": "PostGIS",
+     "reason": "Contradicts reference data in Git, waits on 2.1.1, and is unnecessary at this data size."
+    },
+    {
+     "name": "Paid geocoding",
+     "reason": "Costs money and needs the network; PIN centroids from the free India Post directory are enough."
+    }
+   ],
+   "design": {
+    "components": "1) b2b/decompose.build_supply_map no longer calls match_demand. Each SupplyMapLine = {line, makers (suppliers_for top N with km), coverage (Tri verdict), cluster (cited pointer or null)}. 2) b2b/directory.suppliers_for adds coverage {covered_districts, founder_district_covered: bool|null, note} and a km fallback. The founder's location is the PIN centroid if known, else the district centroid; a company's location is its PIN centroid, else its district centroid. Ties are broken by km, never by name. 3) ecosystem/data/district_centroids.json: 38 TN districts with lat/lon, sourced from the India Post PIN directory on data.gov.in averaged per district, with checked_on. 4) b2b/data/clusters.json: [{category, cluster, districts, source_url, source_title, checked_on}], curated from MSME-DI / TN Industries cluster lists and served per line with the distance from the founder's district centroid. 5) b2b/allocate.py: lexicographic solve, variables keyed by list index, post-solve MOQ alternatives. 6) routers/b2b.py: QuoteIn gains delivery_per_unit (optional, >= 0); validators enforce unique ids and a canonical lowercase category from CATEGORY_NIC keys (T01 vocabulary). 7) Supply.tsx renders makers, the coverage note and the backend cluster; the CLUSTERS constant and the dead 'Invite a vendor' button are removed. 8) scripts/build_ecosystem.py (later): place every active TN company by PIN centroid from the India Post directory, writing compact per-district files.",
+    "data_model": "Coverage verdict: {value: covered|gap|outside_coverage, reason}. SupplyMapLine {line, makers[], total_makers, coverage, cluster?}. clusters.json entries as above. district_centroids.json {district_id: {lat, lon, source, checked_on}}. Allocation response: lines[{splits, unmet, why_unmet, alternatives[{supplier, buy_units, extra_units, extra_cost}]}], objective_order ['placed units', 'landed cost', 'local then trusted'].",
+    "algorithm": "Gap: if the founder's district is not in the directory's districts -> outside_coverage (UNKNOWN) with 'our directory covers Chennai, Coimbatore and Madurai today'. Else if the directory has 0 makers for the category -> gap (FALSE), and the cluster hint fires (4.2.2). Else covered (TRUE). No reach threshold is invented: makers are listed with km and the founder judges. Allocation: stage 1 maximises sum(x) and adds sum(x) == best. Stage 2 minimises sum((price + delivery) * 100 * x) in paise and adds cost == best2. Stage 3 maximises sum(local[s] * x) + sum(trusted[s] * y) as a tie-breaker. why_unmet comes from the stage-1 model: capacity, MOQ, budget, or 'no supplier with known prices'. 'Capacity taken by your other lines' is said only when another line actually uses that supplier. MOQ alternative: for each unmet line and each same-category supplier whose min_order is above the need and whose remaining capacity after the solve is at least min_order, offer 'buy min_order: extra units, extra cost', cheapest first.",
+    "interfaces": "Depends on T01 (canonical BOM category vocabulary and district ids). Uses SM1 (Tri) and SM6 (cited data test). Feeds 4.2.2: the cluster fallback triggers on gap or outside_coverage. When the founder's quotes move server-side (3.1.3) they plug into allocate unchanged.",
+    "files": [
+     "backend/app/b2b/decompose.py",
+     "backend/app/b2b/directory.py",
+     "backend/app/b2b/allocate.py",
+     "backend/app/b2b/data/clusters.json (new)",
+     "backend/app/ecosystem/data/district_centroids.json (new)",
+     "backend/app/routers/b2b.py",
+     "backend/app/models/b2b_schemas.py",
+     "frontend/src/pages/Supply.tsx",
+     "scripts/build_ecosystem.py",
+     "backend/tests/unit/test_allocate_lexicographic.py",
+     "backend/tests/unit/test_supply_map_directory.py"
+    ],
+    "rollout": "1) The directory-only supply map and coverage notice (removes invented data at once). 2) The centroid fallback and clusters.json. 3) Validators, then the allocation rewrite. 4) The all-district data job as a separate data PR with a size check (target under about 10 MB of compact JSON, split per district if larger).",
+    "offline": "All data is Git-held; haversine and CP-SAT run locally. There is no geocoder or network call at runtime or in the build: the owner downloads the India Post CSV once and commits the derived centroids."
+   },
+   "tasks": [
+    {
+     "title": "Supply map from the real directory with a three-valued gap",
+     "why": "/supply shows invented suppliers as matches and defines gaps against them, so real gaps never surface.",
+     "where": "backend/app/b2b/decompose.py, backend/app/routers/b2b.py (/decompose), frontend/src/pages/Supply.tsx",
+     "how": "Drop match_demand from build_supply_map. Each line carries makers from suppliers_for and a coverage verdict (covered / gap / outside_coverage) from core/tri.py. Supply.tsx shows makers with km and the coverage note; the unwired 'Invite a vendor' button is removed.",
+     "when": "First; uses T04 task 1's tri.py (or lands it if T04 comes later). Extends TASKS 4.2.1 to /supply.",
+     "what_for": "Founders see only real companies, and a gap means what 4.2.2 needs it to mean.",
+     "subtasks": [
+      {
+       "text": "build_supply_map returns makers from the MCA directory and no seed supplier reaches /decompose; a test checks that SEED_SUPPLY names never appear in the response.",
+       "flags": [
+        "F-A4-010",
+        "F-B4-005"
+       ]
+      },
+      {
+       "text": "A coverage verdict per line: outside_coverage when the founder's district is not in the directory, gap when the directory has no maker for the category, covered otherwise.",
+       "flags": [
+        "F-B4-005",
+        "F-A4-012"
+       ]
+      },
+      {
+       "text": "Supply.tsx renders makers, the total and the coverage note; the 'N matched' count comes from real makers; the dead button is removed.",
+       "flags": [
+        "F-A4-010"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Coverage notice and a district-centroid distance fallback",
+     "why": "Founders outside the three pilot districts get an A-to-Z list of Chennai firms as 'nearest' and are not told coverage is partial.",
+     "where": "backend/app/b2b/directory.py, backend/app/ecosystem/data/district_centroids.json (new), SM6 test",
+     "how": "Add a cited 38-district centroid file. Founder and company locations fall back from PIN centroid to district centroid. Sort by rank, same district, then km, never by name. The response carries coverage {covered_districts, founder_district_covered, note}.",
+     "when": "After task 1; needs T01's district ids.",
+     "what_for": "Coimbatore ranks above Chennai for a Tiruppur founder, and the founder knows the list is incomplete.",
+     "subtasks": [
+      {
+       "text": "district_centroids.json from the India Post PIN directory (data.gov.in), averaged per district, with source and checked_on; an SM6 test that all 38 districts exist.",
+       "flags": [
+        "F-B4-006"
+       ]
+      },
+      {
+       "text": "The suppliers_for km fallback through district centroids; a test that suppliers_for('yarn', district='tiruppur') puts Coimbatore makers before Chennai ones.",
+       "flags": [
+        "F-B4-006",
+        "F-A4-012"
+       ]
+      },
+      {
+       "text": "A coverage field and note in the suppliers_for and /directory responses.",
+       "flags": [
+        "F-A4-012"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "One cited cluster file in the backend",
+     "why": "An uncited cluster map in Supply.tsx calls a fixed place 'nearest' and will disagree with 4.2.2's backend mapping.",
+     "where": "backend/app/b2b/data/clusters.json (new), backend/app/b2b/directory.py (cluster_for), routers/b2b.py, frontend/src/pages/Supply.tsx",
+     "how": "Curate clusters per canonical category, with source_url from the MSME-DI/TN Industries cluster lists. cluster_for(category, founder_district) returns the nearest cited cluster by district-centroid distance, and it is returned on each line whose coverage is gap or outside_coverage. Delete CLUSTERS from Supply.tsx.",
+     "when": "After task 2 (uses the centroids). This file is the data owner for TASKS 4.2.2.",
+     "what_for": "One cited answer to 'where else to look', computed from the founder's district.",
+     "subtasks": [
+      {
+       "text": "clusters.json with citations and SM6 validation; cluster_for by centroid distance; Supply.tsx shows the backend cluster and its source; the frontend constant is removed.",
+       "flags": [
+        "F-B4-004"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Lexicographic allocation with landed cost and MOQ alternatives",
+     "why": "Items over Rs 1 lakh a unit go unbought with a false reason, a flat Rs 2 penalty picks a 2.5x dearer supplier, and minimum orders above the need are dead ends.",
+     "where": "backend/app/b2b/allocate.py, backend/app/routers/b2b.py (QuoteIn.delivery_per_unit)",
+     "how": "Three-stage CP-SAT (placed units, then landed cost, then a local/trusted tie-break), fixing each optimum before the next stage. Remove SHORT_PENALTY, FAR_PENALTY and TRUST_BONUS. Rebuild why_unmet from facts. Add post-solve MOQ alternatives using the remaining capacity. The response's 'rules' block states the objective order.",
+     "when": "After task 5 (its validators make the index keys safe); independent of tasks 1-3.",
+     "what_for": "Plans that buy what can be bought at the lowest real cost, and an honest choice when only an MOQ purchase works.",
+     "subtasks": [
+      {
+       "text": "Stage 1 maximises placed units; regression: one machinery line at Rs 2,50,000 with capacity 5 gives unmet 0.",
+       "flags": [
+        "F-A4-008"
+       ]
+      },
+      {
+       "text": "Stage 2 minimises (unit_price + delivery_per_unit) in paise; stage 3 uses local and trusted only as a tie-break. Regression: 1,000 beads at Rs 1.00 from Chennai vs Rs 2.50 from Madurai picks Chennai unless the founder enters delivery that makes it dearer.",
+       "flags": [
+        "F-A4-009"
+       ]
+      },
+      {
+       "text": "MOQ alternatives for unmet lines (buy min_order: extra units, extra cost), cheapest first, only where the remaining capacity allows.",
+       "flags": [
+        "F-A4-013"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Validate allocation and pairing inputs",
+     "why": "Duplicate quote ids silently drop units, and category case mismatches leave lines unmet.",
+     "where": "backend/app/routers/b2b.py (QuoteIn, LineIn, AllocateIn, pair input), backend/app/b2b/allocate.py",
+     "how": "A Pydantic field validator lowercases category and checks it against the CATEGORY_NIC keys (T01 vocabulary). A model validator rejects duplicate line or quote ids with a 422. Solver variables are keyed by list index internally. A property test checks sum(splits) + unmet == quantity.",
+     "when": "First in the allocation series; needs T01's category list (the CATEGORY_NIC keys meanwhile).",
+     "what_for": "The API never returns a plan whose splits do not add up.",
+     "subtasks": [
+      {
+       "text": "Unique-id and canonical-category validators on AllocateIn and the pair inputs; index-keyed variables; a Hypothesis property test of unit conservation.",
+       "flags": [
+        "F-A4-014"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Place every TN company by PIN centroid (data job)",
+     "why": "The coverage notice is honest, but founders in 35 districts still get no local makers.",
+     "where": "scripts/build_ecosystem.py, backend/app/ecosystem/data/ (per-district company files)",
+     "how": "Join the 78,689 active companies to India Post PIN centroids offline and write compact per-district files. The directory loads them lazily, and covered_districts grows automatically.",
+     "when": "After task 2; a separate data PR, with its size checked against the repo budget.",
+     "what_for": "Real local makers statewide without any geocoder.",
+     "subtasks": [
+      {
+       "text": "Extend build_ecosystem to all districts using PIN centroids; derive the coverage list from the data; a test that _meta.districts matches the files.",
+       "flags": [
+        "F-A4-012"
+       ]
+      }
+     ]
+    }
+   ],
+   "tests": "test_supply_map_directory: no seed names in the response; the coverage verdict for Tiruppur (outside_coverage now, covered after the data job); a gap for an unmapped category. Directory ordering by km with the district fallback. SM6 tests for clusters.json and the centroids. Allocation regressions from each flag. Hypothesis properties: units are conserved; total placed equals the max-flow bound; among maximal placements, cost never exceeds the price-only optimum. Determinism (num_search_workers=1).",
+   "risks": "Showing fewer 'matches' may look like a regression to a demo audience; the coverage note explains why. Centroid distances are approximate (district scale), so they are labelled 'about N km'. Three CP-SAT solves must fit the 5 s limit: each model is tiny; set per-stage limits and return the best feasible plan with a note if a stage times out. Cluster curation needs real citations; a category without one shows no cluster rather than a guess."
+  },
+  {
+   "theme": "T14",
+   "understanding": "Auth works for a demo but has no production guard. secret_key defaults to 'change-me' and nothing refuses it (is_production exists but is unused), so tokens can be forged in any deployment that forgets the variable. Refresh tokens carry a jti that nothing stores; the frontend never calls /auth/refresh; there is no logout; and refresh does not invalidate the old token. Login skips bcrypt for unknown emails and register answers 409, so accounts can be enumerated. The rate limiter keys by request.state.user_id, which nothing sets, so everything is keyed by the raw client IP: shared under carrier NAT and behind any proxy. The per-key dict is never pruned, limits are per worker process, and every request (a cheap GET, SSE notices, a TTS sentence) costs the same; a 429 on the notices EventSource kills it for good. The single root: the server has no notion of who is calling (a principal) and keeps no durable server-side token state.",
+   "flags_disputed": [
+    {
+     "id": "F-A3-010",
+     "note": "The login half holds and is a two-line fix. The register half cannot be fully closed without email verification, which is not available offline or free: with any 'generic' register reply, a prober can register and then log in to learn whether the email already existed. Resolved by constant-time login, a generic register message, strict per-email-hash and per-IP auth budgets, and a documented residual risk until email delivery exists."
+    },
+    {
+     "id": "F-A3-004",
+     "note": "Holds. The recommendation's reason for ruling out Redis is right: Redis is optional here, so revocation must be durable in PostgreSQL. Sign-in already needs the users table, so this adds no new availability dependency."
+    }
+   ],
+   "approaches": [
+    {
+     "name": "Principal middleware plus Redis-or-memory window counters with route cost classes (in-house)",
+     "how": "One middleware resolves the principal: the verified bearer sub (no DB hit), else the session id in agent/voice paths, else the client IP, honouring only trusted proxies. Limits are per class (turn, speak, notices-connect, auth, default) and per principal, counted in Redis INCR+EXPIRE fixed windows with a bounded in-process dict as fallback. An IP backstop cap applies to session and anonymous principals.",
+     "basis": "The same INCR+EXPIRE pattern as research/sources.py _over_budget; Redis rate limits are in SYSTEM-DESIGN 4.1 L1; the Starlette middleware is already in place.",
+     "cost": "free/open source",
+     "advantages": "Fair under CGNAT, shared across workers, memory bounded by TTL, no new dependency, and testable through the in-memory fallback without a Redis server.",
+     "drawbacks": "Fixed windows allow a burst at a window edge (acceptable at these limits), and we own a little code."
+    },
+    {
+     "name": "slowapi / limits library",
+     "how": "Decorate routes with per-route limits, with Redis or memory storage and a key function that returns the principal.",
+     "basis": "A popular port of Flask-Limiter for Starlette/FastAPI; limits supports moving windows.",
+     "cost": "free/open source",
+     "advantages": "Moving windows and per-route rules are prebuilt.",
+     "drawbacks": "A new dependency and decorator changes across routers; the keying decision (the principal) still has to be written; its key format differs from SYSTEM-DESIGN's Redis key table."
+    },
+    {
+     "name": "Reverse-proxy limiting (nginx limit_req / Caddy rate_limit)",
+     "how": "Limit at the proxy by IP or header.",
+     "basis": "The standard production pattern.",
+     "cost": "free/open source",
+     "advantages": "Off the app's CPU.",
+     "drawbacks": "Hosting is undecided; the proxy cannot see the JWT subject or session cheaply; not testable in the repo or in local runs."
+    },
+    {
+     "name": "DB-backed rotating refresh tokens with reuse detection, plus a single-flight refresh in the client",
+     "how": "A refresh_tokens table (hashed jti, family_id, user_id, expires_at, revoked_at, replaced_by). /refresh rotates and revokes the presented token; presenting a revoked token revokes its whole family; /logout revokes. api.ts retries once on 401 after one shared refresh call.",
+     "basis": "Refresh-token rotation with reuse detection from the OAuth 2.0 Security BCP; SQLAlchemy/Alembic are already used.",
+     "cost": "free/open source",
+     "advantages": "Durable revocation without Redis; logout works server-side; theft is detected; fits erasure (delete by user).",
+     "drawbacks": "One DB write per refresh (every 30 minutes per active user: negligible)."
+    },
+    {
+     "name": "fastapi-users or an external identity provider",
+     "how": "Adopt a full auth package or a hosted IdP for tokens, refresh, reset and verification.",
+     "basis": "fastapi-users is popular; hosted IdPs (Auth0, Clerk) are mature.",
+     "cost": "free/open source (fastapi-users); paid beyond free tiers and online (hosted IdPs)",
+     "advantages": "Many flows prebuilt.",
+     "drawbacks": "Replaces the working User model and services (a large migration); hosted IdPs break free/offline and send founder identities to a third party."
+    },
+    {
+     "name": "Asymmetric signing (EdDSA/RS256) with a key ring",
+     "how": "Sign with a private key and verify with public keys selected by kid.",
+     "basis": "python-jose supports it.",
+     "cost": "free/open source",
+     "advantages": "Verification keys can be shared; rotation by kid.",
+     "drawbacks": "No second verifier service exists, so it is key-management overhead for no gain now."
+    }
+   ],
+   "chosen": "Approach 1 (principal middleware and in-house window counters with cost classes) combined with approach 4 (durable rotating refresh tokens and a single-flight client refresh), plus a production settings guard with a two-key verification window for rotation, and constant-time login.",
+   "why_chosen": "Both halves fix the root: the server finally knows who is calling (the principal, SM5) and keeps token state durably. The principal is also what T19 needs for the consent subject and T17 for owner checks, so one middleware serves three themes. The window counters reuse the research-budget Redis pattern and degrade to bounded memory when Redis is off, matching the optional-Redis stack. PostgreSQL refresh state adds no availability dependency, because sign-in already needs the users table. A previous-key verification window (SECRET_KEY_PREVIOUS) makes rotation possible without logging everyone out: the cheap part of a key ring, without asymmetric keys.",
+   "not_chosen": [
+    {
+     "name": "slowapi / limits",
+     "reason": "A new dependency and router decorators for what INCR+EXPIRE already does in this codebase; the principal keying would still be ours to write."
+    },
+    {
+     "name": "Reverse-proxy limiting",
+     "reason": "Hosting is undecided, the proxy cannot see the JWT subject or session, and it is untestable locally. It may be added later as an outer layer."
+    },
+    {
+     "name": "fastapi-users / hosted IdP",
+     "reason": "A large rewrite of working auth; hosted IdPs cost money beyond free tiers, need the network and send identities to a third party."
+    },
+    {
+     "name": "Asymmetric keys with a full key ring",
+     "reason": "No second verifier exists; the two-key HS256 window gives rotation for a fraction of the work."
+    }
+   ],
+   "design": {
+    "components": "1) core/config.py: a model_validator(mode='after') that refuses a secret_key in a denylist ('change-me', '', 'secret') or shorter than 32 bytes when app_env != 'development'. An optional secret_key_previous. In production the same guard reports the other dev defaults (postgres password, MinIO keys) as errors. 2) core/security.py: decode_token tries secret_key, then secret_key_previous; tokens carry a kid fingerprint for logging. 3) models/refresh_token.py + migration: refresh_tokens(id, user_id FK, jti_hash sha256, family_id, issued_at, expires_at, revoked_at, replaced_by). 4) services/auth_service.py: issuing stores the refresh jti; refresh rotates (revokes the old token and issues a new one in the same family); reuse of a revoked jti revokes the family and returns 401 TOKEN_REUSED; logout revokes the family. authenticate_user verifies against a module-level dummy bcrypt hash when the user is missing. On a duplicate, register returns the same 202 and message as a fresh registration ('If this email is new, the account is ready; sign in'). 5) routers/auth.py: POST /logout. 6) core/identity.py IdentityMiddleware (SM5) sets the principal: the bearer token, decoded without a DB hit (an invalid token means anonymous, and the route still rejects it); else the session id parsed from /api/v1/ideation/agent/sessions/{id}/...; else the IP. Trusted proxies come from settings.forwarded_allow_ips via uvicorn's ProxyHeadersMiddleware. 7) core/counters.py: hit(key, window_s, limit) -> (allowed, remaining, reset), using a Redis INCR+EXPIRE pipeline, else an in-process dict pruned on access and capped (oldest windows evicted). 8) core/middleware.py: RateLimitMiddleware rewritten around route classes. 9) Frontend: api.ts does a single-flight refresh on 401, then one retry; auth.tsx logs out via /logout; agentClient.ts listenNotices reconnects with backoff on error and resumes notices.",
+    "data_model": "Principal{kind: user|session|ip, id, ip}. Route classes in settings: turn (stream POST: 30/min per principal); speak (voice/speak: 120/min per session); notices (EventSource connect: 10/min per session; the open stream is not counted again); auth (login/register/refresh: 10/min per IP and 5/min per email hash); default (100/min per principal). ip_backstop: 600/min for session and anonymous principals. The per-worker global guard is kept. Redis keys rl:{class}:{kind}:{id}:{window_start} with TTL = window. refresh_tokens as above.",
+    "algorithm": "Per request: classify the route, resolve the principal, then call counters.hit for the principal's limit and, for session/ip principals, the IP backstop. A refusal returns 429 with Retry-After = seconds to the window reset, and logs a structured rate_limited{class, kind} event so 5.4.1 sees rejected turns. Refresh rotation: look up jti_hash; missing or expired -> 401; revoked -> revoke the family and return 401 TOKEN_REUSED; otherwise revoke it and issue a new pair in the same family, in one transaction. Client: concurrent 401s share one in-flight refresh promise; if the refresh fails, the tokens are cleared.",
+    "interfaces": "The SM5 principal is used by T19 (consent subject: user or session) and T17 (owner checks on session routes). counters.hit is reused by the research source budgets (theme of F-B5-001). Erasure (3.2.4) deletes refresh_tokens by user. Claiming a session (3.1.1) changes the principal from session to user; the keys are separate, so limits are not reset unfairly.",
+    "files": [
+     "backend/app/core/config.py",
+     "backend/app/core/security.py",
+     "backend/app/core/identity.py (new)",
+     "backend/app/core/counters.py (new)",
+     "backend/app/core/middleware.py",
+     "backend/app/main.py",
+     "backend/app/services/auth_service.py",
+     "backend/app/routers/auth.py",
+     "backend/app/models/refresh_token.py (new)",
+     "backend/app/db/migrations/versions/0005_refresh_tokens.py (new)",
+     "docs/runbooks/rotate-key.md",
+     "frontend/src/api.ts",
+     "frontend/src/auth.tsx",
+     "frontend/src/voice/agentClient.ts",
+     "backend/tests/security/test_auth_hardening.py",
+     "backend/tests/unit/test_rate_limit.py"
+    ],
+    "rollout": "1) The settings guard and constant-time login (no DB needed; TASKS 3.1.4). 2) The principal middleware and counters, with limits read from settings so they can be tuned without code. 3) The refresh table, rotation, logout and the client wrapper together, once the users table is live (3.1.1/2.1.1). The runbook is updated in the same PR as SECRET_KEY_PREVIOUS.",
+    "offline": "No network calls. Redis is optional (bounded memory fallback; the health endpoint notes that limits are then per worker). PostgreSQL is needed only for sign-in, which already needs it."
+   },
+   "tasks": [
+    {
+     "title": "Refuse default secrets outside development and support rotation",
+     "why": "A deployment without SECRET_KEY accepts tokens anyone can forge, and rotating the key logs everyone out with no plan.",
+     "where": "backend/app/core/config.py, backend/app/core/security.py, docs/runbooks/rotate-key.md, backend/tests/security/test_auth_hardening.py",
+     "how": "A Pydantic model_validator on Settings that rejects a denylisted or short secret_key when app_env != development. An optional secret_key_previous is accepted for verification only. Runbook: set PREVIOUS to the old key and KEY to the new one, wait refresh_token_expire_days, then remove PREVIOUS.",
+     "when": "Now; no dependencies (TASKS 3.1.4).",
+     "what_for": "Tokens cannot be forged, and the key can be rotated without a mass logout.",
+     "subtasks": [
+      {
+       "text": "Settings validator, and a test that Settings(app_env='production') without SECRET_KEY raises at startup.",
+       "flags": [
+        "F-A3-003",
+        "F-A5-021"
+       ]
+      },
+      {
+       "text": "decode_token tries the current key, then the previous one; rotate-key.md gains SECRET_KEY, with the rotation steps and their effect on sessions.",
+       "flags": [
+        "F-A5-021"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Constant-time login and non-revealing registration",
+     "why": "Unknown emails return without the bcrypt cost and register answers 409, so anyone can test whether a person is a Vanigam founder.",
+     "where": "backend/app/services/auth_service.py, backend/app/routers/auth.py",
+     "how": "Verify against a precomputed dummy bcrypt hash when the user is missing. On a duplicate email, register returns the same 202 shape and message as a fresh registration (no tokens), and the client signs in next. The auth route class limits per IP and per email hash (task 3) slow bulk probing. The residual register-then-login leak is documented until email verification exists.",
+     "when": "Now; the rate-limit part lands with task 3.",
+     "what_for": "Membership in the programme cannot be discovered from timing or status codes.",
+     "subtasks": [
+      {
+       "text": "Dummy-hash verification with a timing test (unknown vs known email within a tolerance); a generic register reply.",
+       "flags": [
+        "F-A3-010"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Principal middleware and shared window counters with route classes",
+     "why": "The limiter never sees the user or session, keys everyone behind one carrier IP together, grows without bound and is per process. TTS and notices calls trigger 429s that silently stop evidence updates.",
+     "where": "backend/app/core/identity.py (new), backend/app/core/counters.py (new), backend/app/core/middleware.py, backend/app/main.py, backend/app/core/config.py",
+     "how": "IdentityMiddleware sets request.state.principal: the bearer sub decoded without a DB hit, else the session id from the path, else the trusted-proxy client IP. RateLimitMiddleware classifies routes (turn, speak, notices, auth, default) and calls counters.hit per principal plus an IP backstop. Redis INCR+EXPIRE when available, otherwise a bounded, pruned dict. Rejected requests are logged with their class and principal kind.",
+     "when": "After task 1. Provides SM5 to T19 task 4 and to T17's owner checks.",
+     "what_for": "Founders on one network do not lock each other out, limits hold across workers, and memory stays bounded.",
+     "subtasks": [
+      {
+       "text": "IdentityMiddleware decodes the bearer token and sets request.state.principal (the user id for signed-in callers).",
+       "flags": [
+        "F-A3-011",
+        "F-A5-008"
+       ]
+      },
+      {
+       "text": "Session-keyed buckets for agent and voice routes, separate classes for speak and notices, and an IP backstop cap.",
+       "flags": [
+        "F-B1-030",
+        "F-A3-011"
+       ]
+      },
+      {
+       "text": "counters.hit with Redis INCR+EXPIRE and a bounded in-memory fallback; trusted-proxy handling via forwarded_allow_ips; a test that 10,000 distinct IPs leave the fallback dict at its cap.",
+       "flags": [
+        "F-A2-017",
+        "F-A5-008"
+       ]
+      },
+      {
+       "text": "Log rate_limited{class, principal_kind}; in agentClient.ts the notices EventSource reconnects with backoff on error.",
+       "flags": [
+        "F-B1-030"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Durable rotating refresh tokens, logout and client refresh",
+     "why": "Founders are signed out every 30 minutes, a stolen refresh token stays valid for 14 days, and sign-out on a shared phone does not end the server session.",
+     "where": "backend/app/models/refresh_token.py (new), migration 0005_refresh_tokens, backend/app/services/auth_service.py, backend/app/routers/auth.py (/logout), frontend/src/api.ts, frontend/src/auth.tsx",
+     "how": "Store the hashed jti with its family. Rotate on refresh; reuse revokes the family; /logout revokes. api.ts wraps fetch with one shared refresh on 401 and a single retry. auth.tsx calls /logout and clears browser state (3.1.5.1).",
+     "when": "When the users table is live (3.1.1 / 2.1.1); after task 1.",
+     "what_for": "Founders stay signed in while active, and sign-out and response to theft work on the server.",
+     "subtasks": [
+      {
+       "text": "refresh_tokens table and migration; rotation with reuse detection; /logout; tests for rotation, reuse (family revoked) and logout.",
+       "flags": [
+        "F-A3-004"
+       ]
+      },
+      {
+       "text": "Single-flight refresh wrapper in api.ts and the logout call in auth.tsx.",
+       "flags": [
+        "F-A3-004"
+       ]
+      }
+     ]
+    }
+   ],
+   "tests": "Settings guard tests per environment. A token forged with 'change-me' is rejected under production settings. Previous-key verification works, and stops when the key is removed. A login timing test. A duplicate register is indistinguishable by status and body. Rate limits: two sessions behind one IP each get their own turn budget; the IP backstop still trips on a flood; speak calls do not consume the turn budget; a 429 carries Retry-After; the Redis-off fallback stays bounded; two app instances sharing a fake Redis enforce one limit. Refresh rotation, reuse and logout. The client wrapper is unit-tested with a mocked fetch (two concurrent 401s cause one refresh).",
+   "risks": "Session-keyed limits can be dodged by minting sessions: session creation sits in the auth/default class per IP, and the IP backstop remains. A mis-set forwarded_allow_ips would let clients spoof IPs: the default is none (direct connections only), and the health endpoint reports it. Fixed windows allow edge bursts of up to twice the limit, which is acceptable at these values. The register leak remains until email verification exists (documented)."
+  },
+  {
+   "theme": "T19",
+   "understanding": "Consent exists only as words on Consent.tsx, booleans in browser storage, and one session boolean (cohort_consent) set once at start. Consent.tsx lists five purposes (core, caste, financial, idea_ip, digest), two of which describe dropped features. No backend code reads consent. The Schemes form pre-fills caste 'sc' and gender 'female' and sends them, and ranking.py turns caste into an 'sc_st' likelihood axis that reorders schemes, contradicting the consent text that caste is only checked against reserved-category rules. The session flag is not in the snapshot, cannot be changed, has no time or notice version, and names no programme. The root is a missing backend purpose registry and consent record that code paths check before using protected fields, where the subject is either a session (anonymous) or a user (after sign-up).",
+   "flags_disputed": [
+    {
+     "id": "F-B3-006",
+     "note": "Holds. The recommended OpenAPI type generation is not needed: the frontend has no codegen today, the registry endpoint can serve purpose ids at runtime, and one test can check the few literal ids the frontend uses."
+    },
+    {
+     "id": "F-B3-015",
+     "note": "Holds. Naming the programme depends on server-owned programme membership (3.2.5.3). Until that exists, the cohort purpose is offered only when a session starts from a programme link the server knows."
+    }
+   ],
+   "approaches": [
+    {
+     "name": "Backend purpose registry plus consent events in the session document, read through a ConsentLedger interface",
+     "how": "A Python Purpose enum with notice text, notice_version, protected fields and checking code paths. Consent events {purpose, granted, at, notice_version, programme_id?, source} are appended to the session document. A ConsentLedger interface returns the current state per subject. After 3.2.1 a table-backed ledger replaces the document one, and events are copied on claim.",
+     "basis": "Decision 0003 (one JSON document); TASKS 3.2.7 'consent recorded in the session until the consent table exists'; DPDP requires per-purpose, withdrawable consent with proof of the notice shown.",
+     "cost": "free/open source",
+     "advantages": "Works today for anonymous founders and on the memory store; withdrawal and proof now; one migration path to the table; one list for the screens, the gate and the cohort.",
+     "drawbacks": "Two storage implementations over time; the copy on claim must be tested."
+    },
+    {
+     "name": "core.consents table now, with a nullable user and a session subject",
+     "how": "Create the 3.2.1 table immediately with subject_kind/subject_id and write every consent there.",
+     "basis": "SQLAlchemy/Alembic table as planned.",
+     "cost": "free/open source",
+     "advantages": "One store from the start; queryable in SQL for the cohort rebuild.",
+     "drawbacks": "Blocked on the database being live (2.1.1). There is nothing to write to on the memory store, so 5.5.1 would still ship with no record."
+    },
+    {
+     "name": "Policy engine (Open Policy Agent / Oso) for purpose checks",
+     "how": "Express 'field X may be processed for purpose Y if consent is granted' as policies evaluated per request.",
+     "basis": "Mature open-source policy engines.",
+     "cost": "free/open source",
+     "advantages": "Declarative, auditable rules.",
+     "drawbacks": "A new runtime or library for a handful of rules; heavy for a one-person team; still needs the consent record."
+    },
+    {
+     "name": "Client-only gate and reworded notices",
+     "how": "Schemes.tsx omits caste unless journey.consent.caste; Consent.tsx is reworded to match current behaviour.",
+     "basis": "A few lines of React.",
+     "cost": "free/open source",
+     "advantages": "Fast.",
+     "drawbacks": "Not enforced: the 1.4.3 slot projection and any other client bypass it, and rewording widens the purpose instead of honouring it."
+    },
+    {
+     "name": "Hosted consent-management platform",
+     "how": "Use a commercial CMP for records and UI.",
+     "basis": "Commercial tools such as Osano; Klaro is open source but built for cookie banners.",
+     "cost": "paid (hosted CMPs); free (Klaro)",
+     "advantages": "Ready-made UI and records.",
+     "drawbacks": "Hosted CMPs are paid and online and send founder data to a third party (against free/offline and 0004); Klaro targets cookie banners, not server-side purpose checks."
+    }
+   ],
+   "chosen": "Approach 1: a backend purpose registry and consent events in the session document behind a ConsentLedger interface, with a server-side purpose gate implemented as FounderFacts.redact; a table-backed ledger after 3.2.1, with a copy on claim.",
+   "why_chosen": "It enforces consent where the data is used, works now for anonymous sessions on any store, and has a clean path to the 3.2.1 table without changing callers. The gate is not a new mechanism: FounderFacts (SM2) fields already carry a purpose tag, and redact() nulls the ones whose purpose is not granted. T04's three-valued engine then reports 'not checked: you have not shared your category' instead of a false no, so honouring consent costs no accuracy. The same registry tags slots (T24: financial questions are asked only when the financial purpose is granted) and replaces the cohort boolean. The session format step that adds the events is registered with T34's upgrade chain.",
+   "not_chosen": [
+    {
+     "name": "core.consents table now",
+     "reason": "Blocked on 2.1.1 and useless on the memory store; adopted later behind the same ledger interface."
+    },
+    {
+     "name": "Policy engine",
+     "reason": "A new runtime for a few rules that a field tag and one function express; extra maintenance for one owner."
+    },
+    {
+     "name": "Client-only gate / rewording",
+     "reason": "Not enforced for other callers or the slot projection, and rewording legalises the misuse instead of stopping it."
+    },
+    {
+     "name": "Hosted CMP",
+     "reason": "Paid, online, and sends data to a third party; open-source cookie tools do not do server-side purpose checks."
+    }
+   ],
+   "design": {
+    "components": "1) app/consent/purposes.py: Purpose(str, Enum) = conversation, voice, quality_review, cohort, caste, financial, idea_ip. PURPOSES maps each to a PurposeSpec{label, notice (en; ta/hi via 1.5.1), notice_version, required, protects_fields (FounderFacts paths), protects_slots, checked_by (code paths), status: live|planned}. Only live purposes are offered; digest is removed; idea_ip stays planned (not offered) until a code path checks it. 2) GET /api/v1/consent/purposes serves the live purposes with notice and version. 3) app/consent/ledger.py: ConsentEvent{purpose, granted, at, notice_version, source, programme_id?}; a ConsentLedger protocol with current(subject) -> dict[Purpose, ConsentState] and record(subject, event); SessionLedger reads and writes AgentSession.consents (a list of events). 4) FounderFacts.redact(granted) (SM2) nulls the fields of non-granted purposes and returns the withheld paths. 5) Gate points: routers/schemes.py and routers/funding.py build FounderFacts and then redact it, using the session ledger when a session_id is given and otherwise the consents list in the request body (the founder's choice on the same client, never stored). agents/tools.py support_for redacts with the session ledger. schemes/ranking.py loses the sc_st likelihood axis, so caste is used only in eligibility rules, as the notice promises. 6) PUT /api/v1/ideation/agent/sessions/{id}/consents/{purpose} {granted, notice_version} appends an event through the version-checked save, with the owner check from T17/SM5. 7) snapshot() returns consents {purpose: {granted, at, notice_version}} and programme {id, name} when known; Talk.tsx shows the cohort toggle on resume and calls the route. 8) cohort/programme.py reads ledger.current(session)[cohort] and the programme id instead of s.cohort_consent. 9) Consent.tsx renders the served purposes; journeyStore keeps {purpose: {granted, notice_version, at}}; Schemes.tsx has empty defaults and asks caste and gender only with the caste purpose granted. 10) After 3.2.1: a TableLedger with subject (session|user); on claim (3.1.1) the session's events are copied to the user subject in one transaction.",
+    "data_model": "Session document field consents: list[ConsentEvent]. Its T34 format step turns a legacy cohort_consent true into one event {cohort, granted, at: updated_at, notice_version: 'legacy-start-checkbox', source: 'migration'}. The current state is the last event per purpose. Table (3.2.1): consents(id, subject_kind, subject_id, purpose, granted, at, notice_version, source, programme_id); withdrawn_at is derived from later events.",
+    "algorithm": "Gate: granted = {p for p, st in ledger.current(subject).items() if st.granted and st.notice_version == PURPOSES[p].notice_version}. Consent given to an older notice counts as not granted for new uses, and the screen asks again with the new text. Then facts = facts.redact(granted). Selector (T05/T24): a slot whose protecting purpose is not granted is not asked. Cohort: a session is included only if its current cohort state is granted and its programme_id equals the requested programme.",
+    "interfaces": "Depends on T17 (session ownership and the principal for the PUT route; SM5 from T14) and T34 (format step for the consents field). Provides redact for T04/T29, slot purpose tags for T24/T05, and the ledger for the cohort endpoint (3.2.5) and erasure/retention (3.2.4 tombstones).",
+    "files": [
+     "backend/app/consent/__init__.py (new)",
+     "backend/app/consent/purposes.py (new)",
+     "backend/app/consent/ledger.py (new)",
+     "backend/app/routers/consent.py (new)",
+     "backend/app/core/facts.py (redact)",
+     "backend/app/routers/schemes.py",
+     "backend/app/routers/funding.py",
+     "backend/app/schemes/ranking.py",
+     "backend/app/agents/ideation.py (consents field, snapshot)",
+     "backend/app/agents/session_format.py (step)",
+     "backend/app/routers/ideation.py (PUT consents)",
+     "backend/app/cohort/programme.py",
+     "backend/app/elicitation/slots.py (purpose tag)",
+     "frontend/src/pages/Consent.tsx",
+     "frontend/src/pages/Schemes.tsx",
+     "frontend/src/pages/Profile.tsx",
+     "frontend/src/pages/Talk.tsx",
+     "frontend/src/journeyStore.ts",
+     "frontend/src/voice/agentClient.ts",
+     "backend/tests/unit/test_consent_gate.py",
+     "backend/tests/unit/test_purpose_registry.py"
+    ],
+    "rollout": "Step 1 (now): empty Schemes defaults; remove the sc_st ranking axis; the registry and its endpoint; Consent.tsx renders it. Step 2: the FounderFacts.redact gate on the schemes and funding routes and in support_for. Step 3: consent events in the session (T34 step), the PUT route, the snapshot and Talk toggle, and the cohort reading the ledger. Step 4 (after 3.1.1/3.2.1): TableLedger and the copy on claim; SessionLedger is kept for anonymous sessions.",
+    "offline": "All local, with no third party: the registry is code, and the ledger is the session document (memory or PostgreSQL)."
+   },
+   "tasks": [
+    {
+     "title": "Stop sending and ranking by caste without consent",
+     "why": "Every founder who never chose is sent as an SC woman, and caste reorders schemes, against the consent text.",
+     "where": "frontend/src/pages/Schemes.tsx (defaults), frontend/src/pages/Profile.tsx, backend/app/schemes/ranking.py (_founder_axes)",
+     "how": "Empty defaults for gender and category. The caste and gender fields are shown only when the caste purpose is granted on this device. Remove the sc_st likelihood axis so caste affects eligibility rules only.",
+     "when": "Now; no dependencies.",
+     "what_for": "No protected attribute is sent or used that the founder did not give for that purpose.",
+     "subtasks": [
+      {
+       "text": "Schemes.tsx's initial state has no gender or caste; Profile.tsx asks caste only with the caste purpose granted.",
+       "flags": [
+        "F-A3-015"
+       ]
+      },
+      {
+       "text": "ranking._founder_axes drops sc_st; a test that changing caste never changes the order of eligible schemes.",
+       "flags": [
+        "F-B3-005"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "One backend purpose registry served to the screens",
+     "why": "Consent.tsx, the plan and the session flag define different purposes, and the screen asks for consent to dropped features.",
+     "where": "backend/app/consent/purposes.py (new), backend/app/routers/consent.py (new), frontend/src/pages/Consent.tsx, frontend/src/journeyStore.ts",
+     "how": "The Purpose enum and specs with notice text and version, protected fields and checking code paths. Only live purposes are served by GET /consent/purposes. Consent.tsx renders them and stores {granted, notice_version, at}. A test checks that every live purpose names at least one checking code path and that every literal purpose id in the frontend exists in the enum.",
+     "when": "After task 1; before task 3.",
+     "what_for": "Founders agree to exactly the uses that exist, with the notice version recorded.",
+     "subtasks": [
+      {
+       "text": "A purpose registry with the 3.2.1 list; digest removed; idea_ip marked planned and not offered; registry test.",
+       "flags": [
+        "F-B3-006",
+        "F-A3-013",
+        "F-B2-020"
+       ]
+      },
+      {
+       "text": "GET /consent/purposes and Consent.tsx rendering from it; journeyStore stores the notice version and time and migrates the old ids.",
+       "flags": [
+        "F-A3-013",
+        "F-B2-020"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Server-side purpose gate through FounderFacts.redact",
+     "why": "Any client, and the 1.4.3 slot projection, can still send and use protected fields.",
+     "where": "backend/app/core/facts.py (redact), backend/app/routers/schemes.py, backend/app/routers/funding.py, backend/app/agents/tools.py",
+     "how": "FounderFacts fields are tagged with purposes; redact(granted) nulls non-granted fields and lists them as withheld. The routes take a session_id (ledger) or a consents list. The three-valued engine reports withheld fields as 'not checked: not shared'.",
+     "when": "After task 2 and T04 task 2 (FounderFacts).",
+     "what_for": "The consent record describes what the system actually does.",
+     "subtasks": [
+      {
+       "text": "redact() and the gate in the schemes/funding routes and support_for; a test that caste sent without the caste purpose never reaches evaluation or ranking.",
+       "flags": [
+        "F-B3-005",
+        "F-A3-015"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Consent events in the session, withdrawal and a visible toggle",
+     "why": "Cohort consent is a start-time boolean with no time, notice, programme or withdrawal, and it is invisible after resume.",
+     "where": "backend/app/consent/ledger.py (new), backend/app/agents/ideation.py (consents field, snapshot), backend/app/agents/session_format.py (format step), backend/app/routers/ideation.py (PUT consents), backend/app/cohort/programme.py, frontend/src/pages/Talk.tsx, frontend/src/voice/agentClient.ts",
+     "how": "A ConsentEvent list on the session, with a T34 upgrade step from cohort_consent. SessionLedger. A PUT route with an owner check. The snapshot returns consents and the programme; Talk.tsx shows a toggle on resume; the cohort aggregates read the ledger and the programme id.",
+     "when": "After task 2 and T34 task 1 (format chain); owner check from T17; SM5 principal from T14 task 3.",
+     "what_for": "Founders can see and withdraw consent as easily as they gave it, with proof of when and to what notice.",
+     "subtasks": [
+      {
+       "text": "The consents event list, the upgrade step from cohort_consent, and SessionLedger.current/record; programme.py filters on the current cohort state.",
+       "flags": [
+        "F-A3-014",
+        "F-B2-008",
+        "F-B3-007"
+       ]
+      },
+      {
+       "text": "PUT /ideation/agent/sessions/{id}/consents/{purpose} through the version-checked save; a test that after a withdrawal the aggregate excludes the session.",
+       "flags": [
+        "F-A3-014",
+        "F-B2-008"
+       ]
+      },
+      {
+       "text": "snapshot() returns consents and the programme; the Snapshot type and the Talk.tsx toggle; cohort consent is offered only with a known programme.",
+       "flags": [
+        "F-B3-015"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Move to the consent table and copy on claim",
+     "why": "Consents given in anonymous sessions must survive sign-up as one record, and 3.2.1 needs per-purpose rows.",
+     "where": "backend/app/consent/ledger.py (TableLedger), migration for core.consents, the 3.1.1 claim step",
+     "how": "A TableLedger implementing the same interface. On claim, the session's events are copied to the user subject in one transaction. SessionLedger stays for unclaimed sessions. Erasure leaves a tombstone (3.2.4.4).",
+     "when": "Waits on 3.1.1 and 3.2.1 (database live).",
+     "what_for": "One consent truth per founder across sessions and screens.",
+     "subtasks": [
+      {
+       "text": "TableLedger, its migration, and a claim copy test (events identical before and after the claim).",
+       "flags": [
+        "F-B3-007",
+        "F-B2-008"
+       ]
+      }
+     ]
+    }
+   ],
+   "tests": "Registry tests: ids, notice versions, every live purpose has a checker, and frontend literals exist in the enum. Gate tests: caste without consent never affects eligibility, ranking or logs, and withheld fields appear as UNKNOWN reasons. Ledger tests: grant, withdraw, re-grant, and a notice version change requires new consent. An upgrade-step test from a legacy document with cohort_consent true. The cohort excludes withdrawn sessions. Snapshot shape. The claim copy.",
+   "risks": "For stateless calls, consents in the request body rely on the client telling the truth. That is acceptable because the client is the founder's own and the data comes from the same client; signed-in calls use the ledger. Removing the sc_st axis changes rankings for some founders: intended, and the notice is now true. Notice-version bumps force new consent, so versions should stay stable and be bumped only for substantive changes."
+  },
+  {
+   "theme": "T24",
+   "understanding": "Experience mode (EntryMode.EXPERIENCE) is idea mode with three slots dropped and four promoted. Its REQUIRED set has 10 slots against Q_MAX = 7, so district, assets and motivation are never asked. The questions are worded for an idea ('Which sector does this sit in?'), and money is asked before skills, against the plan's rule that financial questions wait on consent. The state machine goes CONFIRMING -> GENERATING with the self-description as the idea, so there is no step where the founder sees and chooses an opportunity. Research runs on 'I worked 12 years as a cook in Salem' once it passes 20 characters. On the data side, registry cards have no field that experience can match (skills, assets) and no citations, and 190 of 240 cards are drafts. The root: the mode was modelled as a different required set rather than as a different flow (describe yourself -> ranked, cited cards -> choose -> idea flow).",
+   "flags_disputed": [
+    {
+     "id": "F-B1-001",
+     "note": "Holds. The idea REQUIRED set has 9 slots (problem, solution, sector, product_form, beneficiary, district, stage, capital_band, funding_route); minus 3 plus 4 gives 10 against Q_MAX 7."
+    },
+    {
+     "id": "F-B1-006",
+     "note": "Holds. Card needs/offers are business capabilities (processing, cold_storage) from categories.json, not personal skills, so a separate skill vocabulary is needed rather than reusing capabilities."
+    }
+   ],
+   "approaches": [
+    {
+     "name": "Experience as a first-class flow on the same machine: a trimmed required set, per-mode wording, a CHOOSING state and a deterministic, cited card ranking",
+     "how": "Experience REQUIRED = founder_skills, founder_years, owned_assets, district (4). Sector of interest and motivation are enriching; capital_band is asked only with the financial purpose granted. Slot gets per-mode question text. SessionState.CHOOSING holds the offered cards in a generic Choice, used later by the lever choice (1.2.4). The ranking scores reviewed, cited cards on skill tags, asset tags, district fit and capital band. Choosing a card writes the idea slots and sets the idea, then the normal idea flow continues; research waits for a real idea.",
+     "basis": "Keeps the slots.py contract 'same machine, different required set'; the enum state machine already exists; registry data is reviewed through Git (SYSTEM-DESIGN 10); deterministic scoring per 0002.",
+     "cost": "free/open source",
+     "advantages": "Fits the seven-question budget; explainable, cited cards; resumable through the snapshot; reuses the T04 pre-check, T19 purposes and the T34 format chain.",
+     "drawbacks": "Curating skills_used/assets_used/sources for cards takes reviewer time, and only 50 base cards exist until more are reviewed."
+    },
+    {
+     "name": "Separate experience slot keys and a parallel engine",
+     "how": "exp_sector, exp_form and so on, with their own wording and stopping rule.",
+     "basis": "A parallel implementation.",
+     "cost": "free/open source",
+     "advantages": "Clear wording per mode.",
+     "drawbacks": "Duplicates slots and violates elicit-once and the 'same machine' design; two engines to maintain."
+    },
+    {
+     "name": "Per-mode question budget (raise Q_MAX for experience)",
+     "how": "Allow 10 questions in experience mode.",
+     "basis": "One constant.",
+     "cost": "free/open source",
+     "advantages": "Simple.",
+     "drawbacks": "Longer interviews for the least confident founders; contradicts the seven-question product decision."
+    },
+    {
+     "name": "Embedding similarity between the self-description and card text",
+     "how": "Local sentence-transformers embeddings rank cards by cosine similarity.",
+     "basis": "sentence-transformers runs offline.",
+     "cost": "free/open source",
+     "advantages": "Semantic matching without curation.",
+     "drawbacks": "The plan has dropped embeddings (offline embeddings are hashes); a CPU cost and a model download; not explainable or citable; against 'code decides' explanations."
+    },
+    {
+     "name": "Model-led wording and card choice (free model chain)",
+     "how": "Let Gemini/Ollama reword questions per mode and pick cards from the founder's description.",
+     "basis": "Decision 0009 free model chain.",
+     "cost": "free tier",
+     "advantages": "Natural wording.",
+     "drawbacks": "The offline path stays broken, the model would decide (against 0002), and its choices are uncited."
+    },
+    {
+     "name": "Founder picks a category first, then ranks within it",
+     "how": "A category list screen before any questions.",
+     "basis": "A UI flow that works with today's data.",
+     "cost": "free/open source",
+     "advantages": "Works without new card fields.",
+     "drawbacks": "Pushes the matching work onto the founders the mode exists to help, and breaks voice-first, one-question turns."
+    }
+   ],
+   "chosen": "Approach 1: a first-class experience flow on the same machine, with a trimmed required set, per-mode question text, money questions behind consent, a CHOOSING state with a generic Choice, a deterministic cited card ranking with a three-valued scheme pre-check, and research gated on a real idea.",
+   "why_chosen": "It fixes the modelling error at its root (a flow, not a reworded required set) while keeping one selector, one stopping rule and one session document. It composes with the shared mechanisms. Slot purpose tags (SM3) keep money questions behind the financial consent. FounderFacts (SM2) projects the experience slots for the scheme pre-check (T04, SM1) on each card. The CHOOSING state and offered cards are a registered format step (SM4, T34). Card data follows the cited-reference-data rule (SM6). The generic Choice structure is reused by the lever choice in 1.2.4, so one state serves two features.",
+   "not_chosen": [
+    {
+     "name": "Separate slot keys / parallel engine",
+     "reason": "Duplicates slots and breaks elicit-once; two machines for one team to keep in step."
+    },
+    {
+     "name": "Per-mode Q_MAX",
+     "reason": "Contradicts the seven-question decision and burdens the founders least able to bear it."
+    },
+    {
+     "name": "Embedding similarity",
+     "reason": "Dropped by the plan, not explainable or citable, and adds a model download and CPU cost."
+    },
+    {
+     "name": "Model-led wording and choice",
+     "reason": "Leaves the offline path wrong and lets the model decide, against 0002."
+    },
+    {
+     "name": "Category first",
+     "reason": "Moves the work onto the founder and breaks the voice-first flow."
+    }
+   ],
+   "design": {
+    "components": "1) elicitation/slots.py: Slot gains questions: dict[EntryMode, str] (falling back to question) and purpose: Purpose|None (capital_band and funding_route -> financial). _required_for(EXPERIENCE) = {founder_skills, founder_years, owned_assets, district}. sector is reworded 'Which line of work would you like to be in?' and becomes enriching; motivation is enriching; stage, product_form and funding_route are not asked in experience mode before a card is chosen. An invariant test checks len(REQUIRED_BY_MODE[m]) <= Q_MAX for every mode, and an ordering test checks that no financial slot precedes founder_skills. 2) elicitation/session.py: SessionState.CHOOSING; ElicitationSession.choice: Choice{kind: 'card'|'lever', options: [ids], shown_at, chosen: id|None, round: int}. 3) elicitation/engine.py: confirming in EXPERIENCE goes to CHOOSING with ranked cards. choose(card_id) writes problem/solution/sector/product_form/beneficiary from the card with Source.CARD (ranked below ANSWER in T03); the mode stays EXPERIENCE, but the required set switches to the idea set minus what is filled, then ELICITING or CONFIRMING. 'None fit' gives the next round of cards excluding those shown (at most 2 rounds), then offers switching to idea mode while keeping all confirmed slots. 4) planner/opportunity.py (new): rank(facts) over cards with review in {base, approved} and non-empty sources. 5) Registry data: cards gain skills_used (tags), assets_used (tags) and sources [{url, title, checked_on}]; categories.json gains a skills vocabulary {tag: {label, synonyms_en, synonyms_ta}} and an assets vocabulary; elicitation/extract.py maps founder_skills/owned_assets free text to tags by whole-word synonym match (T01 cue rules). 6) agents/ideation.py: the research trigger requires mode IDEA or choice.chosen; choose sets s.idea = card label + summary and clears s.scan so 1.2.3 versioning runs a fresh scan; the snapshot exposes the pending choice. 7) routers/ideation.py: AgentStartIn.mode (EntryMode) and a choose action shared with 1.2.4 (POST .../choice {option_id | 'none'}); Start.tsx routes founders with no idea to experience mode.",
+    "data_model": "Choice as above, in the elicitation document (a T34 format step adds choice: null). Card fields: skills_used: list[str], assets_used: list[str], sources: list[Source], review. Ranked card: {domain_id, label, summary, score, terms: {skills: matched tags, assets: matched tags, district: fit or 'not rated for your district', capital: within|above|unknown}, schemes: T04 buckets, sources}.",
+    "algorithm": "Score = 0.4 * skill_overlap + 0.2 * asset_overlap + 0.25 * district_fit + 0.15 * capital_fit, each in [0,1]. skill_overlap = |founder_tags & skills_used| / |skills_used|; asset_overlap likewise, and when the card needs no assets the term is dropped and the weights renormalised. district_fit = card.districts[d][0] / 3, or UNKNOWN when the card has no rating for that district (term dropped, shown as 'not rated for your district', never as 1). capital_fit = 1 if the card's capital_band <= the founder's, 0 if above, UNKNOWN when capital was not asked (no financial consent). The weights are documented as the ranking policy and shown in each card's 'why'. Ties are broken by the number of cited sources, then id. The top 3 are spoken (5 on screen); a card with zero skill overlap is never shown. Scheme pre-check: check_eligibility(FounderFacts.from_slots(session).redact(consents)) restricted to the card's registry routes, three-valued.",
+    "interfaces": "Depends on T05 (the question policy honours the required set, purposes and per-mode text), T01 (sector and district vocabularies, whole-word cue matching), T03 (Source.CARD rank), T04 (engine pre-check), T19 (purpose tags) and T34 (format step for choice and CHOOSING). Shares Choice with the 1.2.4 lever choice.",
+    "files": [
+     "backend/app/elicitation/slots.py",
+     "backend/app/elicitation/session.py",
+     "backend/app/elicitation/engine.py",
+     "backend/app/elicitation/extract.py",
+     "backend/app/elicitation/selector.py",
+     "backend/app/agents/ideation.py",
+     "backend/app/agents/session_format.py (step)",
+     "backend/app/routers/ideation.py",
+     "backend/app/planner/opportunity.py (new)",
+     "backend/app/planner/registry.py (review/sources filter)",
+     "backend/app/planner/data/registry/categories.json (skills, assets vocabularies)",
+     "backend/app/planner/data/registry/domains*.json (card fields)",
+     "frontend/src/pages/Start.tsx",
+     "frontend/src/pages/Talk.tsx",
+     "backend/tests/unit/test_experience_flow.py",
+     "backend/tests/unit/test_opportunity_rank.py"
+    ],
+    "rollout": "1) Slots: the required set, per-mode text and purpose tags (pure data, plus tests). 2) The research gate. 3) The card schema fields and vocabularies, curated first for the 50 base cards (an SM6 test checks that every shown card has sources and tags). 4) opportunity.py ranking and the pre-check. 5) The CHOOSING state, the choose action, the snapshot, the routes and the frontend. Experience mode stays unreachable from /start until step 5 lands, so no founder sees a half-built flow.",
+    "offline": "Deterministic scoring over Git-held cards; the model only words the cards and questions; no network needed. Research for the chosen card follows the normal idea path and its free-source budgets."
+   },
+   "tasks": [
+    {
+     "title": "Experience slots fit the budget, are worded for the mode, and keep money behind consent",
+     "why": "Ten required slots against seven questions leave district, assets and motivation unasked; the questions talk about 'this' idea; and money comes before skills.",
+     "where": "backend/app/elicitation/slots.py, backend/app/elicitation/selector.py",
+     "how": "EXPERIENCE required = founder_skills, founder_years, owned_assets, district. Add Slot.questions per mode and Slot.purpose. The selector skips slots whose purpose is not granted and asks founder_skills first in experience mode (with T05's anchor rule). Invariant and ordering tests.",
+     "when": "First; coordinate with T05's question policy (the required set fits the budget) and T19 task 2 (the Purpose enum).",
+     "what_for": "A cooperative founder reaches confirmation with every ranking input known, asked in words that fit someone without an idea.",
+     "subtasks": [
+      {
+       "text": "Trim _required_for(EXPERIENCE) and add the invariant test len(REQUIRED_BY_MODE[m]) <= Q_MAX; a replay of the flag's run reaches confirmation with no required slot missing.",
+       "flags": [
+        "F-B1-001"
+       ]
+      },
+      {
+       "text": "Slot.questions per mode for sector, product_form, stage and beneficiary; Slot.purpose for capital_band and funding_route; an ordering test: no financial slot before founder_skills, and none without the financial purpose.",
+       "flags": [
+        "F-B1-002"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Research waits for a real idea",
+     "why": "Prior-art search and a novelty verdict run on the founder's self-description and persist after a card is chosen.",
+     "where": "backend/app/agents/ideation.py (research trigger, s.idea assignment), backend/app/agents/tools.py (scan tool)",
+     "how": "Start research only when the mode is IDEA or choice.chosen is set. In experience mode, do not copy the first turn into s.idea. On choose, set s.idea from the card and clear s.scan/novelty so 1.2.3 versioning runs a fresh scan.",
+     "when": "Independent; must land before task 5 ships.",
+     "what_for": "No free source budget is spent, and no verdict is spoken, on a CV.",
+     "subtasks": [
+      {
+       "text": "A mode-and-idea gate on the research trigger and the scan tool; a test that an experience session's first turn starts no job.",
+       "flags": [
+        "F-B1-003"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Cards carry skills, assets and sources; drafts are not shown",
+     "why": "The ranking has nothing to match experience against, cards are uncited, and draft cards would be presented as opportunities.",
+     "where": "backend/app/planner/data/registry/categories.json, domains*.json, backend/app/planner/registry.py, backend/app/elicitation/extract.py",
+     "how": "Add skills and assets vocabularies with English and Tamil synonyms. Add skills_used, assets_used and sources to the 50 base cards first. The registry filter excludes review='draft' and source-less cards from opportunity ranking. extract.py maps free text to tags by whole-word matching (T01). SM6 test.",
+     "when": "After task 1. The vocabularies are reviewed by commit, and more cards are added as the 5.6.1 review proceeds.",
+     "what_for": "Every shown card is reviewed, cited and matchable to what the founder can do.",
+     "subtasks": [
+      {
+       "text": "Vocabularies, card fields for the base cards, the draft/source filter and an SM6 validation test.",
+       "flags": [
+        "F-B1-006"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Deterministic opportunity ranking with a scheme pre-check",
+     "why": "1.1.5.3 needs a fit score over the experience inputs, and 1.1.5.4 a scheme pre-check that agrees with the engine.",
+     "where": "backend/app/planner/opportunity.py (new), backend/app/schemes/engine.py (call), backend/app/core/facts.py (from_slots)",
+     "how": "Score from skill and asset overlap, district fit (UNKNOWN when unrated) and capital fit (UNKNOWN without financial consent), with the terms shown as the card's why. The pre-check uses T04's three-valued engine on redacted FounderFacts.",
+     "when": "After task 3 and T04 tasks 1-2; T19 task 3 for redact.",
+     "what_for": "Three to five cards a founder can trust and understand.",
+     "subtasks": [
+      {
+       "text": "rank(facts) with documented weights, where UNKNOWN terms are dropped, never defaulted. Tests: a Salem cook with the cooking skill gets food cards first; a card with no skill overlap never shows.",
+       "flags": [
+        "F-B1-006"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "CHOOSING state and a choose action",
+     "why": "A confirmed experience profile goes straight to a roadmap of the self-description. There is no step to show or choose a card, and no rule for 'none fit'.",
+     "where": "backend/app/elicitation/session.py, backend/app/elicitation/engine.py, backend/app/agents/ideation.py (_advance, snapshot), backend/app/agents/session_format.py (format step), backend/app/routers/ideation.py (AgentStartIn.mode, POST .../choice), frontend/src/pages/Start.tsx, frontend/src/pages/Talk.tsx",
+     "how": "SessionState.CHOOSING with a generic Choice. Confirming in experience mode goes to CHOOSING. choose writes the idea slots (Source.CARD) and continues the idea flow. 'None' gives one more round, then offers idea mode with the slots kept. The snapshot carries the pending choice for resume, and a T34 step adds choice: null to old documents.",
+     "when": "After tasks 1-4 and T34 task 1; the choose route is shared with 1.2.4.",
+     "what_for": "The founder chooses an opportunity, and the conversation continues on a real idea.",
+     "subtasks": [
+      {
+       "text": "The CHOOSING state, the Choice model, the engine transitions and the 'none fit' rule; a snapshot and resume test.",
+       "flags": [
+        "F-B1-004"
+       ]
+      },
+      {
+       "text": "AgentStartIn.mode and POST .../choice; Start.tsx sends founders with no idea to experience mode; Talk.tsx renders the cards.",
+       "flags": [
+        "F-B1-004"
+       ]
+      }
+     ]
+    }
+   ],
+   "tests": "test_experience_flow: a replay of the flag's run fills all required slots within seven questions; no financial question without consent; the first turn starts no research; confirm -> CHOOSING -> choose -> idea slots filled with Source.CARD -> research starts on the card's idea; 'none' twice offers idea mode with the slots kept; resume from a snapshot taken during CHOOSING. test_opportunity_rank: deterministic order, UNKNOWN terms dropped, drafts never shown, every card has sources. A format upgrade test for the choice field.",
+   "risks": "Only 50 base cards may give thin results in some districts; the 'none fit' path and the switch to idea mode cover it, and card review (5.6.1) grows the set. Skill synonym matching misses some phrasings; the confirmation step shows the mapped tags so the founder can correct them. The ranking weights are a policy choice: documented and shown, never presented as data."
+  },
+  {
+   "theme": "T29",
+   "understanding": "The Funding screen hard-codes 'richer defaults' (has_ip, retention 60, runway 12, unit economics, a cap table and more) that supply most of the points in four of the six readiness dimensions. readiness.py treats a missing input as zero, so without the defaults scores are falsely low and with them falsely high. The overall score then gates investors through an invented threshold (60 for every stage that is not late), so idea and prototype founders see no investor. Investors whose stages or sectors are unpublished are rejected as 'no', and 60% of the fit score is constants (stage always 100, geography always 100, track always 60). The gap plan adds whole playbooks without checking what the founder already has, with impact points that disagree with the rubric. Pipeline metrics count a lost deal as reaching every stage, and lose the first stage's time because date.fromisoformat cannot parse the browser's ISO timestamps. One root: unknown is treated as a value (zero, yes or no) instead of being carried as unknown, and numbers are asserted instead of derived from the rubric or the data.",
+   "flags_disputed": [
+    {
+     "id": "F-A4-017",
+     "note": "Holds. investor_match.py has been reformatted (127 lines), but readiness_gate still returns 60/70 and is applied as a hard violation."
+    },
+    {
+     "id": "F-A4-020",
+     "note": "Holds. STAGE_PROBABILITY is also uncited, so 'weighted value' is invented data; the design replaces it with real sums by stage."
+    }
+   ],
+   "approaches": [
+    {
+     "name": "Unknown-aware scoring: interval readiness, three-valued investor constraints, counterfactual gaps",
+     "how": "Readiness terms declare their input and maximum points. An unknown input contributes [0, max], so each dimension and the overall score are intervals, and a band is stated only when both ends fall in it. Investor constraints are Tri: published and violated = no; unpublished = 'check with the investor'. Readiness becomes advice, not a gate, and fit uses only terms that vary. Gap impact = score(after the action) - score(before), using the same function, so actions whose input is already at its target drop out.",
+     "basis": "Interval arithmetic is the numeric form of Kleene logic (SM1); the rubric is a pure function, so counterfactual re-scoring is exact and cheap.",
+     "cost": "free/open source",
+     "advantages": "Honest numbers with no invented inputs; the interval width shows what to answer next; gap points agree with the score by construction; idea-stage founders see pre-seed investors.",
+     "drawbacks": "Founders see ranges instead of a single number; each playbook action needs an input mapping."
+    },
+    {
+     "name": "Ask every rubric field on the form",
+     "how": "Turn every input into a form question.",
+     "basis": "Plain inputs.",
+     "cost": "free/open source",
+     "advantages": "Complete data.",
+     "drawbacks": "A 25-field form on 2G phones for low-literacy founders, who drop off; still needs an answer for 'I don't know'."
+    },
+    {
+     "name": "Project from the ideation session and impute the rest from cohort medians",
+     "how": "Fill fields from slots (stage, team) and impute the missing ones from typical values.",
+     "basis": "Common imputation practice.",
+     "cost": "free/open source",
+     "advantages": "A single number for everyone.",
+     "drawbacks": "Imputation is invented data under this project's rules, and no cohort data exists yet."
+    },
+    {
+     "name": "Per-stage readiness gates and preconditions on playbook rows",
+     "how": "Keep gates, but none for pre-seed; skip 'Register the entity' if already registered.",
+     "basis": "Small local fixes.",
+     "cost": "free/open source",
+     "advantages": "Fixes the worst symptoms quickly.",
+     "drawbacks": "The gate numbers stay invented, and the impact points stay wrong."
+    },
+    {
+     "name": "BM25 / text similarity over investor theses for fit",
+     "how": "rank_bm25 over investor summaries against the founder's idea text.",
+     "basis": "A small, popular pure-Python library.",
+     "cost": "free/open source",
+     "advantages": "Uses the richest investor field.",
+     "drawbacks": "Noisy on 36 short summaries; a new dependency; the idea text would need privacy handling; canonical sector matching gives most of the signal."
+    }
+   ],
+   "chosen": "Approach 1: interval readiness over founder-given inputs only; three-valued investor constraints, with readiness as advice and fit from varying terms only; counterfactual gap impacts; and corrected pipeline metrics.",
+   "why_chosen": "It removes invented inputs and thresholds at the root, using the same unknown-aware machinery as schemes (SM1: Tri for constraints, Interval for scores) and the same FounderFacts contract (SM2), so the conversation's stage, team and traction answers fill readiness without asking again. Counterfactual impacts make gap advice and the score agree by construction, and actions already done disappear automatically, so one mechanism fixes both gap flaws. The pipeline fixes are standard-library changes.",
+   "not_chosen": [
+    {
+     "name": "Ask every field",
+     "reason": "Long forms lose the target founders, and 'I don't know' still needs an unknown state."
+    },
+    {
+     "name": "Imputation from medians",
+     "reason": "Invented data, and there is no cohort data to impute from."
+    },
+    {
+     "name": "Per-stage gates and row preconditions",
+     "reason": "Keeps invented thresholds and wrong impact numbers."
+    },
+    {
+     "name": "BM25 thesis similarity",
+     "reason": "Noisy at this data size and adds a dependency; the canonical sector and stage terms carry the real signal. Can be revisited when the investor data grows."
+    }
+   ],
+   "design": {
+    "components": "1) funding/readiness.py: the rubric as data, TERMS[dimension] = [Term(input, kind: bool|num, points(value), max_points)]. score_readiness(inputs) -> ReadinessResult{dimensions: {name: {lo, hi, known: [...], missing: [...], assessed: bool}}, overall: Interval, band: str|None, band_range: (band_lo, band_hi)}. A dimension with no known input is 'not assessed'. 2) The input is FundingFacts (part of SM2 FounderFacts: stage, team_size, founder_experience_years, users, monthly_revenue, is_registered, dpiit_recognised, has_pitch_deck, ...), all Optional; from_slots fills stage, team and traction from the session. 3) funding/gaps.py: playbook rows declare the inputs they set {input: value} and an effort label. For each row whose target differs from the current known value (or the value is unknown), impact = overall.lo(after) - overall.lo(before). Rows with impact 0 are dropped; the rest are ordered by impact, with effort shown as a 'rough guide'. 4) funding/investor_match.py: constraints return Tri via core/tri.py, grouped as eligible / check_with_investor ('stage not published: ask them') / ineligible. readiness_gate is deleted and replaced by an advice line from gaps. Fit is a weighted mean over varying terms only: sector (specialist 1.0, generalist 0.8); stage position (1.0 if the founder's stage is the earliest in the investor's list, otherwise 0.7); traction margin above the floor; ticket position within the range. Geography and track record are omitted until the data varies; weights are renormalised over known terms, and the terms are listed. 5) funding/pipeline.py: _parse(at) = datetime.fromisoformat(at).date() (Python 3.11 accepts 'Z'), and date-only strings are also accepted. _reached for a terminal entry without history = {initial_contact, terminal}. weighted_value and STAGE_PROBABILITY are removed and value_by_stage added. 6) Funding.tsx sends only the fields the founder set ('not sure' sends null), and shows ranges, 'not assessed' dimensions, the next inputs to answer, and the investor list in three groups.",
+    "data_model": "Interval{lo:int, hi:int}. ReadinessOut: dimensions[{name, lo, hi, assessed, missing}], overall{lo, hi}, band|null, band_range. Recommendation{dimension, action, sets, impact_points, effort_label}. InvestorMatchOut: eligible[{investor, fit, terms}], check_with_investor[{investor, unknown}], ineligible[{investor, reasons}]. PipelineMetrics: weighted_value removed, value_by_stage added.",
+    "algorithm": "Readiness: a known term adds points(value) to both lo and hi; an unknown term adds 0 to lo and max_points to hi. Each dimension is clamped to 0..100, and overall = the weighted sum of the lo values and of the hi values. A band is shown when band(lo) == band(hi). The next input to ask is the missing input with the largest weight * max_points (the interval width it removes), which feeds T05's value of asking. Investors: Kleene AND over the constraints; an unknown ticket is already UNKNOWN; not_investing is FALSE. Gaps: counterfactual re-score on the lower bound, so an action on an unknown input is phrased 'if you have not done this yet' and its impact is the points it would add.",
+    "interfaces": "Depends on T01 (stage and sector vocabularies; readiness _STAGE_SCORE and investor stages map through the canonical Stage). Uses SM1 and SM2. T19's redact applies to the financial inputs (monthly_revenue, runway) under the financial purpose. The pipeline board moving server-side (3.1.3) and the programme aggregates (5.5.5) inherit the corrected metrics.",
+    "files": [
+     "backend/app/funding/readiness.py",
+     "backend/app/funding/gaps.py",
+     "backend/app/funding/investor_match.py",
+     "backend/app/funding/pipeline.py",
+     "backend/app/models/funding_schemas.py",
+     "backend/app/routers/funding.py",
+     "backend/app/core/tri.py (Interval)",
+     "backend/app/core/facts.py (funding fields)",
+     "frontend/src/pages/Funding.tsx",
+     "frontend/src/pages/Pipeline.tsx",
+     "backend/tests/unit/test_readiness_interval.py",
+     "backend/tests/unit/test_investor_tri.py",
+     "backend/tests/unit/test_gaps_counterfactual.py",
+     "backend/tests/unit/test_pipeline_metrics.py"
+    ],
+    "rollout": "1) Pipeline fixes (independent and small). 2) Remove the Funding.tsx defaults together with interval readiness, in one PR (removing the defaults alone would make scores falsely low). 3) Three-valued investor groups and removal of the gate. 4) Counterfactual gaps. API fields change shape, so the frontend is updated in the same PRs.",
+    "offline": "All deterministic and local; investor data is Git-held; no model is involved beyond wording."
+   },
+   "tasks": [
+    {
+     "title": "Readiness from founder-given inputs only, as an interval",
+     "why": "The screen invents most of the inputs, and the rubric scores missing inputs as zero, so the band reflects answers nobody gave.",
+     "where": "frontend/src/pages/Funding.tsx, backend/app/funding/readiness.py, backend/app/models/funding_schemas.py, backend/app/core/tri.py (Interval), backend/app/core/facts.py",
+     "how": "Delete the hard-coded defaults. Make the inputs Optional (FounderFacts funding fields, projected from slots where available). Express the rubric as declared terms. Report dimensions and the overall score as intervals with known/missing lists, a band only when it is unambiguous, and the next input to answer.",
+     "when": "After T04 tasks 1 (tri.py) and 2 (FounderFacts), or with stub fields; T01 stage mapping.",
+     "what_for": "An honest readiness picture that tells the founder what to answer next.",
+     "subtasks": [
+      {
+       "text": "Remove the defaults in Funding.tsx and send only the fields the founder set; 'not sure' sends null.",
+       "flags": [
+        "F-A4-016"
+       ]
+      },
+      {
+       "text": "Interval scoring with per-dimension coverage and 'not assessed'. Test: a founder who gives only stage and registration gets ranges (legal [30, 100]), never a legal score of 80 from invented inputs.",
+       "flags": [
+        "F-A4-016"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Investor matching without invented gates or constant fit terms",
+     "why": "An invented readiness gate hides every pre-seed investor, unpublished criteria count as 'no', and 60% of the fit is constant.",
+     "where": "backend/app/funding/investor_match.py, backend/app/routers/funding.py, frontend/src/pages/Funding.tsx",
+     "how": "Constraints as Tri, grouped eligible / check_with_investor / ineligible. Delete readiness_gate and replace it with gap advice. Fit from sector specialism, stage position, traction margin and ticket position only, renormalised, with the terms shown.",
+     "when": "After task 1 (the gap advice uses readiness) and T04 task 1 (tri.py).",
+     "what_for": "Idea and prototype founders see the investors who exist for them, and the order means something.",
+     "subtasks": [
+      {
+       "text": "Delete readiness_gate and its violation. Test: an idea-stage founder with readiness 35 sees the idea/poc investors as eligible.",
+       "flags": [
+        "F-A4-017"
+       ]
+      },
+      {
+       "text": "Tri constraints with a check_with_investor group for unpublished stages or sectors, and fit from varying terms only. Test: no two investors tie unless their terms are equal.",
+       "flags": [
+        "F-A4-019"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Gap plan by counterfactual re-scoring",
+     "why": "The advice ignores what the founder already has, and the impact points disagree with the rubric.",
+     "where": "backend/app/funding/gaps.py",
+     "how": "Playbook rows declare the inputs they set. impact = overall.lo(after) - overall.lo(before) via score_readiness; zero-impact rows are dropped; rows are ordered by impact, with effort shown as a rough guide.",
+     "when": "After task 1.",
+     "what_for": "Advice that applies to this founder, and points that add up.",
+     "subtasks": [
+      {
+       "text": "Counterfactual impacts. Tests: an MVP-stage founder is never told to ship an MVP; the impact of 'Register the entity' equals the rubric's overall change (3 points, not 8).",
+       "flags": [
+        "F-A4-018"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Correct pipeline metrics",
+     "why": "Lost deals count as reaching every stage, the first stage's time is dropped on browser timestamps, and the weighted value rests on uncited odds.",
+     "where": "backend/app/funding/pipeline.py, frontend/src/pages/Pipeline.tsx",
+     "how": "Parse with datetime.fromisoformat(...).date(). Terminal entries without history reach only initial_contact and the terminal stage. Remove STAGE_PROBABILITY and weighted_value and add value_by_stage; Pipeline.tsx shows the real sums.",
+     "when": "Now; independent.",
+     "what_for": "Funnel numbers that founders and programmes can trust.",
+     "subtasks": [
+      {
+       "text": "Timestamp parsing, the _reached fix and value_by_stage. Tests from the flag's runs: a closed_lost entry without history does not count for negotiation; 9 days in initial_contact are reported.",
+       "flags": [
+        "F-A4-020"
+       ]
+      }
+     ]
+    }
+   ],
+   "tests": "An interval monotonicity property: adding a true fact never lowers lo and never raises hi. With all inputs known, readiness equals the old point score. Gap impacts equal the re-score differences for every playbook row. Investor regressions from the flags. Pipeline regressions. API schema tests for the new shapes.",
+   "risks": "Ranges may confuse some founders: show the lower bound as 'at least', with the missing inputs as questions. Removing the gate lengthens the eligible list, so it is ordered by fit and grouped. Investor data stays thin (12 investors without stages); the check_with_investor group makes that visible instead of hiding it."
+  },
+  {
+   "theme": "T34",
+   "understanding": "AgentSession.to_dict/from_dict read and write a fixed key list with no format number. Stores call from_dict directly, so any undecodable document raises (ValidationError, KeyError) into a 500, and /cohort/programme loads up to 500 documents in one comprehension, so one bad document fails the whole aggregate. Older code silently drops keys it does not know when it loads and saves (rollbacks, workers on mixed versions, the 6-hour Redis copy). Unknown enum strings are kept as bare str under contextlib.suppress, so renamed sectors (D5, 4.1.2) survive as dead values that also feed idea_version, which keys background results. Upgrade-on-read (2.1.4 as planned) never rewrites rows nobody opens, and there is no format column, so the planned table split (5.5.5) would face every historical format, with no rule for staying in step with the live JSON. Root: no format contract (a version number, one decode, a pure upgrade chain, a newer-format guard, a queryable column, and a backfill).",
+   "flags_disputed": [
+    {
+     "id": "F-B2-001",
+     "note": "Holds. Also, SqlStore.get merges row.version into the document; decode must treat the row columns (version, format) as authoritative over the copies inside the document."
+    }
+   ],
+   "approaches": [
+    {
+     "name": "Format number, one decode, a pure upgrade chain, a newer-format guard, a format column and an upgrade-all script",
+     "how": "A FORMAT constant; documents carry 'format'. decode(raw) upgrades step by step with pure functions and raises UndecodableSession or NewerFormat, which stores and routers map to 410/skip and 503. Saves refuse when the stored format is newer. A format column records the format, and an idempotent script rewrites old rows. The table split is a derived projection from upgraded JSON.",
+     "basis": "Schema-version reader rules (Avro/Protobuf compatibility, Django and Rails data migrations), expand/contract with backfill (SYSTEM-DESIGN 5.2), and a CQRS read model for the split.",
+     "cost": "free/open source",
+     "advantages": "Small, in one module, testable on the memory store; visible failures instead of silent loss; the split sees one format.",
+     "drawbacks": "During a rollback, newer sessions are unavailable until the roll-forward; one more migration and one script."
+    },
+    {
+     "name": "The whole session as a Pydantic model with lenient validators and extra='allow'",
+     "how": "Replace the dataclass with a Pydantic model whose defaults and coercions absorb old shapes, keeping extra keys.",
+     "basis": "Pydantic v2 already models the elicitation part.",
+     "cost": "free/open source",
+     "advantages": "A declarative shape; unknown keys preserved.",
+     "drawbacks": "A large refactor; leniency hides real corruption; old code still acts wrongly on fields it ignores (retention ignoring 'saved')."
+    },
+    {
+     "name": "Preserve unknown keys only (an extras dict round-tripped)",
+     "how": "from_dict stores unrecognised keys and to_dict writes them back.",
+     "basis": "Protobuf's unknown-field preservation.",
+     "cost": "free/open source",
+     "advantages": "No bytes lost on rollback.",
+     "drawbacks": "Old code still makes decisions blind to new fields (consent, saved), which is worse than refusing."
+    },
+    {
+     "name": "Alembic data migrations with frozen upgrader copies, or jsonb_set SQL",
+     "how": "Each format change is an Alembic migration that rewrites the JSONB in SQL or with a frozen copy of the Python upgrader.",
+     "basis": "Common Alembic practice; native PostgreSQL JSONB functions.",
+     "cost": "free/open source",
+     "advantages": "Self-contained and set-based.",
+     "drawbacks": "Duplicated upgrade logic; large JSONB rewrites inside a migration transaction; nested enum mapping is awkward in SQL; untestable on the memory store."
+    },
+    {
+     "name": "Dual-write normalised tables in SqlStore.save, or PostgreSQL triggers/generated columns",
+     "how": "Write the split tables in the same transaction, or derive them in the database.",
+     "basis": "SQLAlchemy unit of work; native PostgreSQL features.",
+     "cost": "free/open source",
+     "advantages": "Always in step.",
+     "drawbacks": "A heavier live path with more failure modes (the rewrite SYSTEM-DESIGN rules out). Triggers hide logic in SQL and cannot run on the memory store, and nested arrays do not suit generated columns."
+    }
+   ],
+   "chosen": "Approach 1: a format number with one decode and a pure upgrade chain; a newer-format guard on load and save; a format column with an idempotent upgrade-all script; enum mapping steps that also re-key idea_version results; and the table split as a nightly derived projection from upgraded JSON (decision record).",
+   "why_chosen": "It addresses every symptom at the root with the least machinery: one module owns the format, every store goes through it, failures are visible and contained, and the backfill gives the split a single format. It is the shared mechanism (SM4) other themes need: T19 adds consent events and T24 adds the CHOOSING choice as registered steps, and T01's sector mapping becomes a step instead of an ad-hoc rewrite. The projection keeps decision 0003 (one document, one write per turn) intact.",
+   "not_chosen": [
+    {
+     "name": "Pydantic model with lenient validators",
+     "reason": "A large refactor that hides corruption and still lets old code act on documents it does not understand."
+    },
+    {
+     "name": "Preserve unknown keys only",
+     "reason": "Keeps the bytes but lets old code make consent and retention decisions blind to new fields; the guard is safer."
+    },
+    {
+     "name": "Alembic data migrations / jsonb_set",
+     "reason": "Duplicates the upgrader, rewrites large JSONB inside a transaction, and cannot be tested on the memory store."
+    },
+    {
+     "name": "Dual write / triggers",
+     "reason": "Adds failure modes to every turn and is the rewrite the design rules out; triggers are untestable offline."
+    }
+   ],
+   "design": {
+    "components": "1) agents/session_format.py (new; no app imports beyond pure helpers): FORMAT = 2 initially, and documents without 'format' are format 1. UPGRADES: dict[int, Callable[[dict], dict]], each step pure and idempotent. decode(raw: dict, *, row_version=None) -> Decoded{session, upgraded_from, idea_version_before}; errors UndecodableSession(session_id, format, reason) and NewerFormat(session_id, format). 2) AgentSession.to_dict writes 'format': FORMAT; from_dict only builds the dataclass from an already-upgraded dict. Enum restore is strict: an unknown value left after upgrading logs session.unknown_enum, and the slot is kept with a confidence below the filled floor so it is asked again (never left as a bare str). 3) All three stores (Memory, Sql, Cached) call decode; CachedStore treats a Redis copy that fails to decode, or is older than the row, as a miss and drops it. 4) Save guard: SqlStore.save adds WHERE format <= FORMAT and writes format=FORMAT; MemoryStore compares the stored document's format; a refusal raises NewerFormat (503 'this conversation was saved by a newer version; try again shortly'). 5) Routers: _load maps UndecodableSession to 410 'cannot be resumed' with a log event; cohort.programme uses store.get_many / decode per row, and skips and counts sessions_unreadable. 6) Migration 0005_session_format adds agent_sessions.format as a nullable, indexed int; the script backfills it; a later migration sets NOT NULL default 1. 7) scripts/upgrade_sessions.py processes batches of N rows WHERE format < FORMAT: decode, then save with the version check (retrying on conflict), with --dry-run and a report of counts per source format and failures. 8) Enum-mapping steps carry a frozen mapping table from T01 (old -> new) as data. The same step switches idea_version to hashing canonical codes; decode reports idea_version_before/after, and the store calls results.rekey(session_id, old, new) once. 9) Decision record 0011: the split tables are a derived projection, rebuilt nightly from documents at format >= N, with Pydantic contracts for the novelty/council/roadmap payloads validated in the projection (a bad payload is skipped and counted).",
+    "data_model": "The document gains 'format': int. Column agent_sessions.format int (indexed). ResultStore gains rekey(session_id, old_iv, new_iv). Projection tables (5.5.5) are derived and can be dropped.",
+    "algorithm": "decode: f = raw.get('format', 1); if f > FORMAT -> NewerFormat; while f < FORMAT: raw = UPGRADES[f](copy(raw)), f += 1; then raw['format'] = f. Building AgentSession, any ValidationError, KeyError, ValueError or TypeError becomes UndecodableSession, logged with the session id, format and exception type, never the document text. Save: refuse if the stored format > FORMAT; write FORMAT. Backfill: idempotent, because decoding a current document is the identity and saves are version-checked.",
+    "interfaces": "Depends on T07 (store contract: get/get_many/save semantics, outage behaviour) and T01 (sector/stage mapping tables). Provides the step registry used by T19 (the consents field from cohort_consent) and T24 (the choice field and CHOOSING state), and decode for T17's owner checks and the 3.2.5.5 get_many. Logging follows 2.4.2 (ids only).",
+    "files": [
+     "backend/app/agents/session_format.py (new)",
+     "backend/app/agents/ideation.py (to_dict/from_dict, idea_version)",
+     "backend/app/agents/store.py",
+     "backend/app/agents/results.py (rekey)",
+     "backend/app/routers/ideation.py (_load)",
+     "backend/app/routers/cohort.py",
+     "backend/app/models/agent_session.py (format column)",
+     "backend/app/db/migrations/versions/0005_session_format.py (new)",
+     "scripts/upgrade_sessions.py (new)",
+     "docs/decisions/0011-session-tables-as-projection.md (new)",
+     "backend/tests/unit/test_session_format.py",
+     "backend/tests/fixtures/sessions/ (one document per historical format)"
+    ],
+    "rollout": "1) Ship decode with FORMAT=2 (step 1->2 only adds the key) and the guard, with every store using it. 2) The migration adding the nullable format column, then the script, then the constraint. 3) Each later format change lands as a step, a fixture and a test in one PR. Deploys only roll forward; during a rollback window newer sessions return 503 instead of losing data. 4) Before 5.5.5, run the script until COUNT(format < FORMAT) = 0, then build the projection.",
+    "offline": "Pure Python; runs on the memory store and in tests. The script needs only the database it upgrades."
+   },
+   "tasks": [
+    {
+     "title": "Format number, one decode and the upgrade chain",
+     "why": "Old and new code disagree silently about fields, and an undecodable document raises a 500 everywhere.",
+     "where": "backend/app/agents/session_format.py (new), backend/app/agents/ideation.py, backend/app/agents/store.py, backend/app/routers/ideation.py, backend/app/routers/cohort.py",
+     "how": "A FORMAT constant, pure steps, and decode with UndecodableSession/NewerFormat. All three stores decode. _load returns 410 'cannot be resumed', and /programme skips and counts sessions_unreadable. Fixtures per format.",
+     "when": "First; coordinate with T07's store contract. T19 task 4 and T24 task 5 register their steps after this lands.",
+     "what_for": "Old documents stay readable, and a bad one fails alone and visibly.",
+     "subtasks": [
+      {
+       "text": "session_format.decode used by MemoryStore, SqlStore and CachedStore; a Redis copy that fails to decode is dropped and read from the database.",
+       "flags": [
+        "F-B2-001"
+       ]
+      },
+      {
+       "text": "_load maps UndecodableSession to 410 with a log event; the cohort programme counts sessions_unreadable instead of failing; a test with one corrupt document among five.",
+       "flags": [
+        "F-B2-001"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Refuse to load or save a newer format",
+     "why": "Rollbacks and workers on mixed versions drop fields such as 'saved' or consent events without any error.",
+     "where": "backend/app/agents/session_format.py, backend/app/agents/store.py (save WHERE format <= FORMAT)",
+     "how": "decode raises NewerFormat. Saves write FORMAT and are refused when the stored format is newer, returning 503 with retry advice.",
+     "when": "With task 1. The SQL guard needs the format column from task 4; until then, the guard checks the format inside the stored document.",
+     "what_for": "A newer document is never silently downgraded.",
+     "subtasks": [
+      {
+       "text": "NewerFormat on load and save. Test: a document at format FORMAT+1 is neither loaded nor overwritten by the current code.",
+       "flags": [
+        "F-B2-002"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Enum renames as upgrade steps that re-key results",
+     "why": "Renamed sectors stay as dead strings, and mapping them shifts idea_version, orphaning finished scans and council runs.",
+     "where": "backend/app/agents/session_format.py (step using T01's mapping), backend/app/agents/ideation.py (strict enum restore, idea_version on canonical codes), backend/app/agents/results.py (rekey)",
+     "how": "A step maps old values through T01's frozen mapping. The same step moves idea_version to canonical codes; decode reports the old and new idea_version, and the store calls results.rekey once. Unmapped values are asked again (low confidence), never kept as bare strings.",
+     "when": "After task 1 and T01's mapping table (4.1.2 / D5).",
+     "what_for": "Old sessions become valid without spending free research budget again.",
+     "subtasks": [
+      {
+       "text": "The mapping step, the canonical-code idea_version, rekey and the strict restore. Test: an 'agritech_old' session upgrades to the new code and keeps its scan result.",
+       "flags": [
+        "F-B2-003"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Format column and an idempotent upgrade-all script",
+     "why": "Rows nobody reopens keep their original format forever, so the table split would face every historical format.",
+     "where": "backend/app/models/agent_session.py, backend/app/db/migrations/versions/0005_session_format.py (new), scripts/upgrade_sessions.py (new)",
+     "how": "Add a nullable, indexed format column, backfill it with the script (batches, version-checked saves, a dry run, a report), then constrain it NOT NULL. Progress is queryable with WHERE format < FORMAT.",
+     "when": "After tasks 1-2, once the database is live (2.1.1); before 5.5.5.",
+     "what_for": "One known format in the database before any split.",
+     "subtasks": [
+      {
+       "text": "The migration in add/fill/constrain steps; a script idempotency test (a second run changes nothing).",
+       "flags": [
+        "F-B2-004"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Decision record: split tables as a nightly projection",
+     "why": "Nothing says how the split tables stay in step with the live JSON after a one-off migration.",
+     "where": "docs/decisions/0011-session-tables-as-projection.md (new), SYSTEM-DESIGN 5.1, the 5.5.5.2 rebuild script, Pydantic contracts for the novelty/council/roadmap payloads",
+     "how": "Record that the JSON stays the truth and the tables are derived nightly, rebuilt from scratch from documents at the current format, with typed payload contracts validated during the projection (bad payloads skipped and counted).",
+     "when": "Before 5.5.5.1; after task 4.",
+     "what_for": "The live path keeps one write per turn, and the analytics tables can always be rebuilt.",
+     "subtasks": [
+      {
+       "text": "Write 0011, update the wording of SYSTEM-DESIGN 5.1 and TASKS 5.5.5, and define the payload contracts the projection uses.",
+       "flags": [
+        "F-B2-007"
+       ]
+      }
+     ]
+    }
+   ],
+   "tests": "Fixture documents for every historical format decode to the same AgentSession as a fresh session with those facts. decode is idempotent on current documents. Corrupt fixtures raise UndecodableSession and never a 500. NewerFormat on load and save across the Memory, Sql (SQLite JSON variant) and Cached stores. Script dry run and idempotency. rekey keeps results. A projection rebuild equals a from-scratch rebuild.",
+   "risks": "A buggy upgrade step could corrupt many documents at once during the backfill: the script runs dry first, writes are version-checked, and steps are tested against fixtures before release. During a rollback window, sessions touched by the newer release return 503: documented in the deploy runbook, with format bumps kept rare and additive. Asking again for unmapped enum values annoys returning founders, but it only happens when T01's mapping misses a value, which the mapping test should prevent."
+  }
+ ]
+}
