@@ -1,0 +1,1441 @@
+{
+ "agent": "B2",
+ "team": "B",
+ "designs": [
+  {
+   "theme": "T02",
+   "understanding": "Reference data is trusted as a whole file. Cards carry review in {base, draft, approved} but no code reads it: 190 of 240 cards are draft (domains_batch2: 70, domains_batch3: 120, all checked) and reach founders unlabelled through agents/tools.py _domain_row/_roadmap. translations.json asks for a per-entry reviewed flag that phrasebook.translation() (phrasebook.py:50-52) ignores. The funding catalogue, pack prices and regulatory items have no per-item checked date or source, so no freshness rule can be stated. Districts outside the five in registry.DISTRICTS read as 'weak fit' because fit() defaults to 1 (registry.py:191-192). registry.load() lets a later batch silently replace a card ({d['id']: d}) and sorts batch files lexically (registry.py:52, :64). The weekly harvest rewrites whole files, so one 'unreachable' erases good records; an OpenAlex budget exit fails the job and skips the PR step; a new dated branch and PR is opened each week with GITHUB_TOKEN (weekly-checks.yml:38-55), so ci.yml never runs on it; and five settled years are re-fetched for every domain. Root cause: no per-item provenance model (source, checked_on, review) with one validator and one freshness helper, and a harvest pipeline that writes instead of merging. All thirteen flags hold against the files.",
+   "flags_disputed": [
+    {
+     "id": "F-A5-014",
+     "note": "Describes a planned CI gate (5.2.2), not existing code; the per-entry date gap it found is real (all 46 schemes have no per-scheme checked date)."
+    }
+   ],
+   "approaches": [
+    {
+     "name": "Per-item provenance block validated by Pydantic models, plus one freshness helper with per-dataset max ages",
+     "how": "Every reference item carries provenance {source, checked_on, review, reviewed_by, reviewed_on, checklist}; app/refdata/models.py holds a Pydantic model per data file; loaders validate at load and one test validates all files; app/refdata/freshness.py states the max age per dataset and returns current | stale | never_checked for intake, investor matching, schemes and the weekly report.",
+     "basis": "Pydantic v2 is already the stack's validator and can emit JSON Schema for editors (model_json_schema()).",
+     "cost": "free/open source",
+     "advantages": "No new dependency; the same model validates at runtime and in CI; one staleness rule everywhere.",
+     "drawbacks": "A one-time data migration adding provenance to existing items, with honest nulls."
+    },
+    {
+     "name": "JSON Schema files + jsonschema/check-jsonschema in CI",
+     "how": "Write a .schema.json per dataset and validate in CI.",
+     "basis": "Widely used and editor-friendly.",
+     "cost": "free/open source",
+     "advantages": "Language-neutral schemas.",
+     "drawbacks": "A new dependency and a second description of shapes the loaders already assume; runtime loading stays unvalidated."
+    },
+    {
+     "name": "Reference data in PostgreSQL tables with audit columns",
+     "how": "Load JSON into tables with reviewed_by/at columns and history.",
+     "basis": "Standard data management.",
+     "cost": "free/open source",
+     "advantages": "Queryable and auditable.",
+     "drawbacks": "Loses diffable data PRs; needs the database on the offline baseline; large change."
+    },
+    {
+     "name": "Frictionless Data packages",
+     "how": "Describe datasets with datapackage.json and validate with frictionless.",
+     "basis": "Mature open-data standard.",
+     "cost": "free/open source",
+     "advantages": "Rich metadata and validation.",
+     "drawbacks": "Built for tabular CSV; nested cards fit poorly; heavy dependency."
+    },
+    {
+     "name": "GitHub Actions hardening: reusable workflow + create-pull-request on a fixed branch + issue-based freshness",
+     "how": "data-checks.yml (workflow_call) used by ci.yml and weekly-checks.yml; weekly steps continue-on-error with outcomes recorded; peter-evans/create-pull-request updates one branch and PR; a scheduled freshness step opens or updates one issue instead of failing CI.",
+     "basis": "Built-in GitHub features plus a popular maintained action; free for this repo.",
+     "cost": "free/open source",
+     "advantages": "Checks run on bot PRs without a PAT; one PR to merge; clocks never turn code PRs red.",
+     "drawbacks": "Pins a third-party action (pin by commit SHA)."
+    },
+    {
+     "name": "Personal access token / GitHub App for the bot",
+     "how": "Open the PR with a PAT so the normal ci.yml triggers.",
+     "basis": "Common workaround.",
+     "cost": "free/open source",
+     "advantages": "No workflow restructuring.",
+     "drawbacks": "A long-lived secret to set up and rotate; still needs step isolation."
+    }
+   ],
+   "chosen": "Provenance block + Pydantic dataset models + one freshness helper, with GitHub Actions hardening and merge-based harvest scripts (approaches 1 and 5)",
+   "why_chosen": "The thirteen flags reduce to two missing things: item-level provenance with one validator, and a harvest pipeline that merges and isolates failures. Pydantic is installed and the loaders already parse these files, so validation happens at load and in tests with zero new dependencies; the freshness helper turns SYSTEM-DESIGN §9's 'last checked on ...' into one function shared by intake, investors and schemes. The workflow changes use built-in features and one widely used action, with no secret to manage.",
+   "not_chosen": [
+    {
+     "name": "JSON Schema + jsonschema",
+     "reason": "A second description of the same shapes and a new dependency; Pydantic can emit JSON Schema if editors need it."
+    },
+    {
+     "name": "Reference data in PostgreSQL",
+     "reason": "Breaks the offline baseline and the reviewable data-PR workflow."
+    },
+    {
+     "name": "Frictionless",
+     "reason": "Tabular-first and heavy; nested cards fit poorly."
+    },
+    {
+     "name": "PAT / GitHub App",
+     "reason": "A long-lived secret to rotate for something workflow_call solves for free."
+    }
+   ],
+   "design": {
+    "components": "app/refdata/provenance.py: Provenance(source: str|None, checked_on: date|None, review: Literal['base','draft','approved'], reviewed_by: str|None, reviewed_on: date|None, checklist: dict[str,bool]|None); validator: approved requires reviewed_by, reviewed_on and an answer for every item of the batch's _meta.review_checklist. app/refdata/models.py: DomainCard, RegulatoryItem, PackPrice, Scheme, IntakeRecord, InvestorSignal, DomainSignal, Translation, each embedding provenance fields. app/refdata/freshness.py: MAX_AGE_DAYS = {intake: 14, investor_signals: 30, schemes_open: 30, regulatory: 180, pack_prices: 365, domain_signals: 365}; status(dataset, checked_on, today) -> current|stale|never_checked; label() -> 'last checked on <date>'. scripts/_harvest.py: merge(previous, fresh, transient={'unreachable','timeout'}) keeps the last good record and adds last_attempt + consecutive_failures; summary(previous, merged) for the PR body.",
+    "data_model": "Existing items get provenance with honest values and no invented dates: cards keep review; regulatory items and pack prices get checked_on null and their existing source or null; funding-catalogue entries get checked_on null unless the owner confirms the date. signals.json domains gain checked_on and trend_query_hash. translations.json keeps reviewed. Settings: allow_unreviewed_translations: bool = False. Registry: coverage(district) -> covered | not_covered; fit() returns None for an uncovered district.",
+    "algorithm": "registry.load(): batch files sorted by _meta.batch as int; ValueError on a duplicate id across files; each card validated. Founder wording: _domain_row/_roadmap carry review; the offline template and grounding check add 'from a draft card, not yet checked by a reviewer' to sentences built from draft cards; the model gets review in the tool result plus a SYSTEM rule. Uncovered district: 'I do not have district data for Salem yet, so I cannot say how well this fits there', plus a structlog counter district.not_covered (district only, no person). translation(text, lang): None unless reviewed or the setting is on; callers fall back to English. Investor reachability: stale signals -> status 'stale', score 0.3, 'last checked on ...'. Incremental signals: domains missing, older than 180 days or with a changed trend_query, oldest first, --max per run (default 60); on BudgetExhausted write completed domains and exit 0 with a summary.",
+    "interfaces": "T01 owns vocabulary ids the cards reference; T04 consumes per-scheme checked_on for live status; T13/T21 reuse freshness labels; T22 shares data-checks.yml and the harvest-script tests; T26 consumes the translation gate; T23 shows freshness counts; 5.6.1's reviewer writes reviewed_by/reviewed_on/checklist through the Provenance validator.",
+    "files": [
+     "backend/app/refdata/provenance.py, models.py, freshness.py (new)",
+     "backend/app/planner/registry.py",
+     "backend/app/agents/tools.py",
+     "backend/app/agents/ideation.py",
+     "backend/app/agents/grounding.py",
+     "backend/app/voice/phrasebook.py",
+     "backend/app/core/config.py",
+     "backend/app/ecosystem/intake.py",
+     "backend/app/ecosystem/match.py",
+     "backend/app/planner/data/packs/*.json",
+     "backend/app/planner/data/registry/regulatory.json, signals.json",
+     "backend/app/schemes/data/funding_catalogue.json",
+     "scripts/_harvest.py (new)",
+     "scripts/check_incubator_intake.py",
+     "scripts/check_investor_signals.py",
+     "scripts/build_domain_signals.py",
+     "scripts/check_freshness.py (new)",
+     ".github/workflows/data-checks.yml (new)",
+     ".github/workflows/weekly-checks.yml",
+     ".github/workflows/ci.yml",
+     "backend/tests/unit/test_refdata.py (new)",
+     "backend/tests/unit/test_registry.py"
+    ],
+    "rollout": "1) loader correctness and validators (data change is provenance nulls only); 2) founder-facing labels and gates; 3) harvest merge and incremental signals; 4) workflow restructuring and the freshness issue.",
+    "offline": "All runtime parts are local file reads; only the weekly workflow is online, and its failure leaves the previous data marked with its date."
+   },
+   "tasks": [
+    {
+     "title": "Provenance model, dataset validators and a strict registry loader",
+     "why": "Items have no source, date or reviewer, approvals are untraceable, and duplicate ids silently replace cards.",
+     "where": "backend/app/refdata/, planner/registry.py, data files, tests/unit/test_refdata.py and test_registry.py",
+     "how": "Pydantic models with Provenance; migrate data files with honest nulls; load() sorts by batch number and raises on duplicates; tests validate every file and the raw per-file lists.",
+     "when": "First; T01 vocabulary checks join once T01 lands.",
+     "what_for": "Every fact a founder hears can be traced to a source, a date and a reviewer, or is labelled as lacking one.",
+     "subtasks": [
+      {
+       "text": "Raise on duplicate ids across batch files; sort by _meta.batch; replace the tautological uniqueness test with one over the raw per-file lists.",
+       "flags": [
+        "F-A5-016"
+       ]
+      },
+      {
+       "text": "Provenance validator: approved cards require reviewed_by, reviewed_on and checklist answers.",
+       "flags": [
+        "F-A5-037"
+       ]
+      },
+      {
+       "text": "checked_on + source per pack price and regulatory item (null where unknown), required by the model.",
+       "flags": [
+        "F-A5-015"
+       ]
+      },
+      {
+       "text": "checked_on per funding-catalogue entry (null where unknown), validated.",
+       "flags": [
+        "F-A5-014"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Founder-facing honesty: draft labels, translation gate, district coverage, one staleness rule",
+     "why": "Drafts, unreviewed translations, uncovered districts and old investor routes are presented as checked facts.",
+     "where": "agents/tools.py, agents/ideation.py, agents/grounding.py, voice/phrasebook.py, core/config.py, planner/registry.py, ecosystem/intake.py, ecosystem/match.py, refdata/freshness.py",
+     "how": "Carry review into the agent and wording; ALLOW_UNREVIEWED_TRANSLATIONS default off; coverage() with 'not covered yet' wording and a demand counter; freshness helper used by intake and investor reachability.",
+     "when": "After task 1.",
+     "what_for": "Founders hear what is checked, what is a draft and what is missing instead of a confident guess.",
+     "subtasks": [
+      {
+       "text": "_domain_row/_roadmap carry review; offline sentence 'from a draft card, not yet checked'; review in the model's tool result; grounding test.",
+       "flags": [
+        "F-A5-034"
+       ]
+      },
+      {
+       "text": "translation() returns None for unreviewed entries unless the setting is on; test with the 38 unreviewed entries.",
+       "flags": [
+        "F-B5-024"
+       ]
+      },
+      {
+       "text": "registry.coverage(); fit None for uncovered districts; 'no district data for X yet' wording; district.not_covered counter; add a 5.6 task 'add districts by founder demand'.",
+       "flags": [
+        "F-A5-035"
+       ]
+      },
+      {
+       "text": "freshness.py with per-dataset max age; intake.py uses it; match.reachability marks investor signals stale after 30 days.",
+       "flags": [
+        "F-A5-013"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Harvest scripts that merge, isolate and fetch incrementally",
+     "why": "One unreachable fetch erases good records, a budget exit discards the run, and every week re-asks settled years.",
+     "where": "scripts/_harvest.py, check_incubator_intake.py, check_investor_signals.py, build_domain_signals.py, registry/signals.json, backend/tests/scripts/",
+     "how": "merge() carries forward the last good record on transient failure; partial write on BudgetExhausted; incremental domain selection with a per-run cap; unit tests with saved samples (shared with T22).",
+     "when": "After task 1 (record models).",
+     "what_for": "The weekly job only improves data, and the free OpenAlex budget fills the 190 missing domains.",
+     "subtasks": [
+      {
+       "text": "_harvest.merge used by both check scripts; test: unreachable after ok keeps pitch_url/evidence with consecutive_failures=1.",
+       "flags": [
+        "F-A5-012"
+       ]
+      },
+      {
+       "text": "build_domain_signals writes completed domains and exits 0 on BudgetExhausted.",
+       "flags": [
+        "F-A5-011"
+       ]
+      },
+      {
+       "text": "Incremental mode: missing, older than 180 days or changed trend_query, oldest first, --max per run; per-domain checked_on.",
+       "flags": [
+        "F-A5-036"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Weekly workflow: reusable checks, isolated steps, one updating PR, freshness issue",
+     "why": "Bot PRs skip CI, one failing step drops the others, PRs pile up, and a clock-based gate would turn code PRs red.",
+     "where": ".github/workflows/data-checks.yml (new), weekly-checks.yml, ci.yml, scripts/check_freshness.py",
+     "how": "workflow_call data-checks used by ci.yml and run inside weekly-checks before the PR; each harvest step continue-on-error with its outcome in the PR body; create-pull-request (SHA-pinned) on fixed branch data/weekly-checks; check_freshness opens or updates one issue listing stale items.",
+     "when": "After task 3; shares data-checks.yml with T22's CI job.",
+     "what_for": "Data PRs are always checked, there is one PR to review, and stale data raises a to-do instead of breaking unrelated work.",
+     "subtasks": [
+      {
+       "text": "data-checks.yml (validators, shrink guard, script tests) called from ci.yml and from weekly-checks.yml before the PR step.",
+       "flags": [
+        "F-A5-010"
+       ]
+      },
+      {
+       "text": "continue-on-error per harvest step; PR step if: always(); outcomes summarised in the PR body.",
+       "flags": [
+        "F-A5-011"
+       ]
+      },
+      {
+       "text": "create-pull-request with a fixed branch that updates the open PR instead of opening a new one.",
+       "flags": [
+        "F-A5-038"
+       ]
+      },
+      {
+       "text": "Scheduled freshness check opening or updating a single issue; no clock-based gate in ci.yml.",
+       "flags": [
+        "F-A5-014"
+       ]
+      }
+     ]
+    }
+   ],
+   "tests": "test_refdata: every data file validates; an approved card without reviewer fails; a duplicate id across two temp batch files raises; batch10 sorts after batch2. Agent tests: build_plan for a draft domain yields the draft wording; Salem yields the not-covered sentence; translation gate off returns English. Script tests with saved samples: merge carry-forward, partial write on budget exit, incremental selection order. actionlint on workflows in CI.",
+   "risks": "Draft labels on 80% of domains sound hesitant until 5.6.1 reviews them; this is the honest state. Hiding unreviewed translations gives Tamil/Hindi voice users English fixed sentences until 1.5.2. Third-party action supply chain: pin by SHA and let Dependabot propose updates."
+  },
+  {
+   "theme": "T07",
+   "understanding": "store.py has three stores sharing a four-method protocol and nothing else. Durability, lifetime, read purpose and failure semantics are implied: 'saved' is store.name == 'database' (routers/ideation.py:303), already wrong under CachedStore ('database+redis', store.py:189); one _expired (6 h, store.py:48-49) is applied at three layers, so the Redis copy re-hides a row the database just returned (F-B5-017); the Redis copy is filled by reads with no version guard and delete drops the copy before the row (store.py:206-233), so a slow read resurrects a deleted session; the store kind is chosen once per process (store.py:236-249) and SqlStore has no error handling, so a later outage is a raw 500 and an outage at boot is sticky; and the cohort endpoint reuses the founder's live read one id at a time (cohort.py:40), inheriting the 6-hour hiding and filling Redis with up to 500 copies. Root cause: no contract naming lifetime (cache TTL vs retention), durability, read purpose (live vs analytics) and failure behaviour, with wrappers that delegate instead of re-deciding. All ten flags hold against the code.",
+   "flags_disputed": [
+    {
+     "id": "F-A2-002",
+     "note": "Holds, but its recommendation (hold every conversation in memory) conflicts with F-B2-012 (retry, then 503). A NEW conversation can start in memory, honestly marked not saved; an EXISTING durable one cannot continue from memory without forking from its row, so it gets one retry and then a clear 503. Resolved as a combination."
+    },
+    {
+     "id": "F-B2-028",
+     "note": "Holds. kept_until depends on decision D4; the lifetime becomes a setting so D4 changes one value, not the message."
+    }
+   ],
+   "approaches": [
+    {
+     "name": "Explicit store contract with one lifetime policy and delegating wrappers",
+     "how": "Extend SessionStore with durable, kept_until(s), get(id) (live, retention-bounded, no idle hiding), get_many(ids) (analytics: no cache fill, consent filtered) and delete(id). One Lifetime (cache_ttl 6 h, retention = settings.session_retention_days) is the only clock; CachedStore applies no expiry of its own (Redis TTL only) and delegates durable/kept_until.",
+     "basis": "Protocols are already the pattern in store.py and results.py; nothing new to install.",
+     "cost": "free/open source",
+     "advantages": "Fixes the re-hide, analytics and 'saved' flags at the root; testable on MemoryStore and the existing FakeRedis; D4 becomes one setting.",
+     "drawbacks": "Touches every store class once; get_many needs a cohort_consent column (migration)."
+    },
+    {
+     "name": "Version-guarded cache writes: Redis Lua compare-and-set plus a delete tombstone",
+     "how": "Keep the copy as a Redis hash {v, doc}; one EVAL writes only when no tombstone gone:{id} exists and the incoming version is greater than the stored one, then sets the TTL. delete() sets the tombstone, deletes the row, then drops the copy.",
+     "basis": "EVAL is core Redis and exposed by redis-py; atomic on the server in one round trip.",
+     "cost": "free/open source",
+     "advantages": "Closes the delete-resurrect race and the stale-overwrite 409 across all processes.",
+     "drawbacks": "A short script to maintain; the hand-written FakeRedis in tests must emulate it."
+    },
+    {
+     "name": "Write-through cache only, with delete reordered",
+     "how": "Only create/save write Redis; read misses do not populate; delete removes the row first.",
+     "basis": "Common cache-aside simplification.",
+     "cost": "free/open source",
+     "advantages": "No script.",
+     "drawbacks": "A save landing between row delete and copy drop still resurrects; resumed sessions are never cached."
+    },
+    {
+     "name": "Resilience libraries (tenacity, pybreaker/aiobreaker)",
+     "how": "Decorate SqlStore with retry and a breaker library.",
+     "basis": "Mature and popular.",
+     "cost": "free/open source",
+     "advantages": "Proven retry semantics.",
+     "drawbacks": "Two dependencies for one retry and one breaker; services/breaker.py already exists; the fallback itself is still custom."
+    },
+    {
+     "name": "Redis write-behind as the outage buffer",
+     "how": "Keep writes in Redis during an outage and flush later.",
+     "basis": "Write-behind caching pattern.",
+     "cost": "free/open source",
+     "advantages": "Existing sessions could continue during an outage.",
+     "drawbacks": "Breaks 'nothing is stored only in Redis' (core/redis.py); useless on the offline baseline without Redis; needs reconciliation."
+    },
+    {
+     "name": "Direct JSONB queries for analytics",
+     "how": "cohort.py queries agent_sessions with a JSONB projection.",
+     "basis": "PostgreSQL JSONB operators.",
+     "cost": "free/open source",
+     "advantages": "Fast, no document parse.",
+     "drawbacks": "Couples analytics to the document shape T34/5.5.5 will change, skips the format upgrade on read, no memory-store path."
+    }
+   ],
+   "chosen": "Explicit store contract + Lua compare-and-set cache with tombstone + a FallbackStore that reuses services/breaker.py (approaches 1 and 2, with a hand-rolled fallback)",
+   "why_chosen": "Every flag is a symptom of callers inferring behaviour, so the lasting fix is a contract that wrappers delegate to. The cache race is a real cross-process race, so only an atomic server-side guard closes it, and EVAL is free through redis-py. The outage path reuses the Breaker class already in the repo, so the store re-probes the database instead of deciding once per process, with no new dependency.",
+   "not_chosen": [
+    {
+     "name": "Write-through only",
+     "reason": "Leaves a save-after-delete window across processes and stops caching resumed sessions; CAS + tombstone closes both for one short script."
+    },
+    {
+     "name": "tenacity / pybreaker",
+     "reason": "Two dependencies for one retry and one breaker; services/breaker.py exists and the fallback logic would still be custom."
+    },
+    {
+     "name": "Redis write-behind",
+     "reason": "Contradicts 'nothing only in Redis' and does nothing on the offline baseline."
+    },
+    {
+     "name": "Direct JSONB analytics",
+     "reason": "Couples aggregates to the document format (T34) and has no memory-store path."
+    }
+   ],
+   "design": {
+    "components": "app/agents/lifetime.py: Lifetime(cache_ttl=6 h, retention=timedelta(days=settings.session_retention_days)) with kept_until(s) and retained(s). SessionStore: durable: bool; get(id); get_many(ids, *, consented_only=True); create; save; delete(id) -> bool (T17 adds claim and list_for_owner). MemoryStore (durable False), SqlStore (durable True), CachedStore (delegates durable/kept_until; no _expired; CAS put; tombstone delete), FallbackStore(primary=SqlStore, secondary=MemoryStore, breaker=Breaker('database', threshold=2, window_s=30, cooldown_s=30)). StoreUnavailable mapped to 503 in core/errors.py.",
+    "data_model": "agent_sessions gains cohort_consent BOOLEAN NOT NULL DEFAULT false (index with last_active), written by create/save like private. Redis: sess:{id} becomes a HASH {v, doc} with EXPIRE cache_ttl; gone:{id} with EXPIRE cache_ttl as tombstone. Settings: session_retention_days = 90 (D4), session_cache_ttl_hours = 6. Responses (start, snapshot, done) carry persistence {saved: bool, kept_until: ISO date | null}.",
+    "algorithm": "CAS put (KEYS sess:id, gone:id; ARGV version, doc, ttl): EXISTS gone -> 0; HGET v >= version -> 0; else HSET, EXPIRE, 1. get: Redis hit returns the doc (TTL is the only cache clock); miss -> inner.get -> CAS put, so a stale read cannot overwrite a newer copy and a deleted id cannot be refilled. delete: SET gone:id EX ttl -> inner.delete -> DEL sess:id. Save conflict still drops the copy. FallbackStore: primary calls retried once after 200 ms on OperationalError/DBAPIError/OSError/TimeoutError, then breaker.fail(); while open, create() goes to memory (durable False), ids held in memory are served there, any other id raises StoreUnavailable ('This conversation can't be saved right now; try again in a minute'); half-open re-probes the database; a memory-born session is created in the database on its first save after recovery, so saved flips true. get_many: one SELECT ... WHERE session_id = ANY(:ids) AND cohort_consent AND last_active > now() - retention; MemoryStore filters its dict; CachedStore delegates without filling Redis.",
+    "interfaces": "T12's end_session calls store.delete and reuses Lifetime.cache_ttl for result TTLs; T17 adds owner_id, claim and list_for_owner to this protocol; T32 retention and erasure use delete/delete_idle and the same tombstones; T20 consumes get_many; T34 upgrades documents inside from_dict on every path; T16 owns the migration chain; Talk.tsx shows the banner from persistence on start, resume and every turn.",
+    "files": [
+     "backend/app/agents/store.py",
+     "backend/app/agents/lifetime.py (new)",
+     "backend/app/core/config.py",
+     "backend/app/core/errors.py",
+     "backend/app/routers/ideation.py",
+     "backend/app/routers/cohort.py",
+     "backend/app/models/agent_session.py",
+     "backend/app/db/migrations/versions/00xx_session_cohort_consent.py (new)",
+     "backend/tests/unit/test_redis_layer.py",
+     "backend/tests/unit/test_store_contract.py (new)",
+     "backend/tests/api/test_ideation_api.py",
+     "frontend/src/pages/Talk.tsx",
+     "docs/runbooks/sessions-not-saved.md"
+    ],
+    "rollout": "1) durable + persistence field (no schema change); 2) CAS cache + tombstone (old string keys ignored, expire within 6 h); 3) Lifetime with retention, idle hiding removed (value per D4, default 90 days); 4) FallbackStore replaces the once-per-process auto choice; 5) cohort_consent migration and get_many.",
+    "offline": "MemoryStore alone implements the same contract with durable False and kept_until null ('until this server restarts'); FallbackStore without a database behaves like today's memory mode but re-probes every 30 s; without Redis, CachedStore is not built."
+   },
+   "tasks": [
+    {
+     "title": "Store contract: durable, persistence and one lifetime",
+     "why": "Callers infer durability from a display name, and three layers apply their own expiry.",
+     "where": "agents/store.py, agents/lifetime.py, routers/ideation.py, agents/ideation.py snapshot, Talk.tsx, tests/api/test_ideation_api.py",
+     "how": "durable on the protocol (wrappers delegate); Lifetime and kept_until; persistence in start, snapshot and done; Talk banner from it.",
+     "when": "First; D4 sets the retention value (default 90 days).",
+     "what_for": "The founder is told truthfully whether and until when the conversation is kept, after resume too.",
+     "subtasks": [
+      {
+       "text": "durable: bool on SessionStore; MemoryStore False, SqlStore True, CachedStore/FallbackStore delegate; replace store.name == 'database'.",
+       "flags": [
+        "F-B2-029"
+       ]
+      },
+      {
+       "text": "API tests asserting persistence.saved for memory, database and cached stores on start, resume and turn.",
+       "flags": [
+        "F-B2-029"
+       ]
+      },
+      {
+       "text": "persistence {saved, kept_until} in agent_start, snapshot and done; Talk.tsx banner text from it.",
+       "flags": [
+        "F-B2-028"
+       ]
+      },
+      {
+       "text": "Lifetime: cache_ttl for Redis only, retention for Sql/Memory; remove _expired from CachedStore.get.",
+       "flags": [
+        "F-B5-017"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Version-guarded Redis copy with tombstone",
+     "why": "A read in flight or a slow save can put a deleted or older copy back into Redis.",
+     "where": "agents/store.py CachedStore, tests/unit/test_redis_layer.py FakeRedis",
+     "how": "Hash {v, doc}; one EVAL compare-and-set; delete sets gone:{id} before the row delete; FakeRedis.eval emulates exactly this script.",
+     "when": "After task 1; before T12 'end_session' and T32 erasure, which rely on the tombstone.",
+     "what_for": "Deleted or erased conversations cannot come back through the cache, and normal turns lose the spurious 409.",
+     "subtasks": [
+      {
+       "text": "CAS put and tombstone delete; keep drop-on-VersionConflict.",
+       "flags": [
+        "F-A2-001"
+       ]
+      },
+      {
+       "text": "Race tests with a slow inner store: delete during a get, stale get after a newer save.",
+       "flags": [
+        "F-A2-001"
+       ]
+      },
+      {
+       "text": "Regression test: a session the database returns is not re-hidden on the next read (resume, then turn).",
+       "flags": [
+        "F-B5-017"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "FallbackStore for database outages",
+     "why": "The store is chosen once per process, and database errors after start become generic 500s.",
+     "where": "agents/store.py (FallbackStore, get_store), core/errors.py, routers/ideation.py, docs/runbooks/sessions-not-saved.md",
+     "how": "Retry once + Breaker('database'); new sessions to memory while open; known durable sessions get a 503 with the designed sentence; half-open re-probe; promote memory-born sessions on recovery.",
+     "when": "After task 1; no schema change.",
+     "what_for": "A database restart costs founders one 'try again' instead of a broken conversation, and recovery needs no manual restart.",
+     "subtasks": [
+      {
+       "text": "FallbackStore with retry and breaker; StoreUnavailable -> 503 'This conversation can't be saved right now.'",
+       "flags": [
+        "F-A2-002",
+        "F-B2-012"
+       ]
+      },
+      {
+       "text": "get_store auto mode always builds FallbackStore; re-probe; promote memory-born sessions; persistence recomputed per response.",
+       "flags": [
+        "F-B2-012",
+        "F-A2-002"
+       ]
+      },
+      {
+       "text": "Tests with an inner store raising OperationalError N times; runbook updated.",
+       "flags": [
+        "F-A2-002",
+        "F-B2-012"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Analytics read: get_many without idle hiding or cache fill",
+     "why": "The cohort endpoint reuses the live read, drops sessions idle over 6 h and makes up to 500 sequential round trips.",
+     "where": "agents/store.py (get_many), models/agent_session.py + migration, routers/cohort.py",
+     "how": "One SELECT with ANY(:ids), consent and retention filters; memory filters its dict; no Redis fill; cohort.py switched.",
+     "when": "After task 1 and after T16 makes migrations safe; T17 later replaces raw ids with cohort refs; T20 adds disclosure control.",
+     "what_for": "Programme aggregates count every consenting founder in the retention window in one query.",
+     "subtasks": [
+      {
+       "text": "Migration adding cohort_consent backfilled from the document; create/save write it.",
+       "flags": [
+        "F-A3-019"
+       ]
+      },
+      {
+       "text": "store.get_many on all stores: retention applies, idle expiry and Redis fill do not.",
+       "flags": [
+        "F-B2-005",
+        "F-B3-004",
+        "F-A2-003"
+       ]
+      },
+      {
+       "text": "cohort.py uses get_many; tests: 6 consenting sessions idle 7 h all counted; non-consenting rows never parsed; one query for 500 ids.",
+       "flags": [
+        "F-B2-005",
+        "F-B3-004",
+        "F-A2-003",
+        "F-A3-019"
+       ]
+      }
+     ]
+    }
+   ],
+   "tests": "test_store_contract.py: one parametrised suite over MemoryStore, SqlStore, CachedStore(FakeRedis) and FallbackStore (durable, kept_until, retention boundary, version conflict, delete twice, get_many). Race tests from the F-A2-001 and F-B5-017 probes as regressions; outage tests with a failing inner store; API tests for persistence. Optional CI job against a real Redis service container.",
+   "risks": "Lua script and FakeRedis emulation can drift; a real-Redis CI job (free service container) guards it. 90-day retention depends on D4 and on T32's retention step running. Promotion after recovery assumes uuid4 ids never collide (negligible)."
+  },
+  {
+   "theme": "T12",
+   "understanding": "Four process-local maps have no lifecycle: Board.jobs and MemoryResults._rows (jobs.py:58-59, results.py), MemoryStore._docs (store.py:58) and _turn_locks (routers/ideation.py:268). The only removal is Board.forget on the founder's DELETE. Consequences: memory grows with every conversation and idea text outlives the session; a delete racing a running turn is undone because the turn can call board.start and results.put after forget (delete takes no lock, there is no tombstone); and job state is collapsed to a boolean, so wait() returns False for FAILED as for RUNNING (jobs.py:88-92), the founder hears 'still searching' and every turn restarts the failed job (start replaces FAILED, jobs.py:71-73). The stream route takes the lock before the response exists and releases it only in the generator's finally (routers/ideation.py:338-359). Root cause: nothing owns a session's in-process life (start, touch, fail, end). All nine flags hold.",
+   "flags_disputed": [
+    {
+     "id": "F-A1-011",
+     "note": "Holds in principle: Starlette normally iterates the body, but a failure between acquire and return or a disconnect before the response starts leaves the lock held; acquiring inside the generator removes the question."
+    }
+   ],
+   "approaches": [
+    {
+     "name": "Session lifecycle service owning in-process state, with TTL sweep and tombstones",
+     "how": "app/agents/lifecycle.py owns refcounted TurnLocks, Board tombstones (forgotten ids refuse start/put), last-touch per session, and one asyncio sweep task started in lifespan that prunes finished jobs, result rows and MemoryStore docs beyond their TTL; end_session(id) is the single delete path.",
+     "basis": "asyncio primitives and the existing lifespan hook in main.py.",
+     "cost": "free/open source",
+     "advantages": "No dependency; one place for delete races; covers locks, jobs, results and memory docs; gives T32 one call.",
+     "drawbacks": "A periodic task to start, stop and test with a fake clock."
+    },
+    {
+     "name": "cachetools TTLCache / LRUCache per map",
+     "how": "Swap the dicts for TTLCache(maxsize, ttl).",
+     "basis": "Mature and widely used.",
+     "cost": "free/open source",
+     "advantages": "A few lines per map.",
+     "drawbacks": "Insert-time TTL, not idle time; can evict a running job or held lock; no fix for write-after-delete or failed state; new dependency."
+    },
+    {
+     "name": "Durable job queue (arq / RQ / Celery on Redis)",
+     "how": "Move jobs and results to Redis-backed workers.",
+     "basis": "Standard for background jobs; planned for 2.3.1.",
+     "cost": "free/open source",
+     "advantages": "Survives restarts and works across workers.",
+     "drawbacks": "Redis must stay optional; the offline baseline has none; large change for a leak fix."
+    },
+    {
+     "name": "PostgreSQL results table with ON DELETE CASCADE",
+     "how": "Persist results keyed (session, idea_version, kind) with FK to agent_sessions.",
+     "basis": "Planned in 2.3.1.",
+     "cost": "free/open source",
+     "advantages": "Results die with the row; retention follows automatically.",
+     "drawbacks": "Blocked on the database being the default; today's memory path stays open."
+    },
+    {
+     "name": "WeakValueDictionary for locks plus evict on expired read",
+     "how": "Weakly held locks; MemoryStore pops a doc when a read finds it expired.",
+     "basis": "Standard library.",
+     "cost": "free/open source",
+     "advantages": "Tiny change.",
+     "drawbacks": "Covers locks and re-read sessions only; abandoned sessions, the bulk of the leak, stay."
+    }
+   ],
+   "chosen": "Session lifecycle service with refcounted turn locks, Board failure states and tombstones, and one in-process TTL sweep; the 2.3.1 results table specified with ON DELETE CASCADE as the durable follow-up",
+   "why_chosen": "The four maps share one lifecycle, so one owner removes the whole class of leaks and races. It works with no database and no Redis, adds no dependency, and gives T07 (store delete) and T32 (erasure) a single entry point. The failed-state fix belongs to the same object: Board must know a job's terminal state to prune it, so wait() returning the state is the same change.",
+   "not_chosen": [
+    {
+     "name": "cachetools",
+     "reason": "Insert-time expiry can evict a running job or held lock and does nothing for write-after-delete or failure reporting."
+    },
+    {
+     "name": "arq/RQ/Celery",
+     "reason": "Requires Redis, which must stay optional; right for 2.3.1 at scale, not for the offline baseline."
+    },
+    {
+     "name": "Results table alone",
+     "reason": "Blocked on the database; kept as the 2.3.1 shape so retention and erasure include it."
+    },
+    {
+     "name": "WeakValueDictionary / evict on read",
+     "reason": "Misses abandoned sessions."
+    }
+   ],
+   "design": {
+    "components": "lifecycle.py: TurnLocks.hold(id) async context manager (dict[str, (Lock, count)], entry removed at 0); end_session(id) -> bool: hold lock, board.tombstone(id), store.delete(id), board.forget(id); Sweeper task every settings.sweep_interval_s (600): board.prune, results.prune, MemoryStore.prune, drop old tombstones, apply_erasures() (T32 hook). Board: JobState DONE/RUNNING/FAILED; wait() returns JobState; Job.attempts, failed_at; start() refuses a rerun inside a backoff (60 s doubling, max 3 attempts per session, kind and idea_version); failure notice to listeners; start() and the run() closure refuse tombstoned ids.",
+    "data_model": "MemoryResults rows gain last_access; TTL = Lifetime.cache_ttl (6 h idle), since an absorbed result already lives in the session document. Board.tombstones: dict[str, float] kept 1 h. MemoryStore pruned by retention plus a cap settings.memory_store_max_sessions = 2000 (least recently active evicted, logged). 2.3.1 table agent_results(session_id FK agent_sessions ON DELETE CASCADE, idea_version, kind, payload, created_at), listed in T32's erasure map.",
+    "algorithm": "Turn route: cheap existence check first (404 creates no lock), then TurnLocks.hold: load, turn, save. Stream route: existence check before returning the response; the generator's first statement is async with TurnLocks.hold, and it loads inside. Narration: FAILED research -> one honest line 'I could not search this time; I will try again shortly.' (narrated 'search_failed:<n>'), tool chip status 'failed'; FAILED panel -> 'The review panel could not run this time.' instead of PANEL_BUSY.",
+    "interfaces": "Uses T07 store.delete and Lifetime; T32 calls end_session and fills apply_erasures; T27 uses JobState for its evidence gate; T28 types the failed notice and tool status; T23 exposes map sizes as gauges.",
+    "files": [
+     "backend/app/agents/lifecycle.py (new)",
+     "backend/app/agents/jobs.py",
+     "backend/app/agents/results.py",
+     "backend/app/agents/store.py",
+     "backend/app/agents/ideation.py",
+     "backend/app/routers/ideation.py",
+     "backend/app/main.py",
+     "backend/app/core/config.py",
+     "backend/app/voice/phrasebook.py",
+     "backend/tests/unit/test_jobs.py",
+     "backend/tests/unit/test_lifecycle.py (new)"
+    ],
+    "rollout": "Three small PRs: job states and failure narration; TurnLocks and end_session; sweeper and TTLs. No session-document change.",
+    "offline": "Entirely in-process; works with no database and no Redis."
+   },
+   "tasks": [
+    {
+     "title": "Job states, failure notice and retry backoff",
+     "why": "A failed search is narrated as 'still searching' and rerun every turn, spending the free source budget.",
+     "where": "agents/jobs.py, agents/ideation.py (_offline_stream, _search, _convene), routers/ideation.py (notices), voice/phrasebook.py",
+     "how": "wait() returns JobState; failure notice; backoff and attempt cap in start(); honest one-time sentences added to FIXED_EN.",
+     "when": "First; T27 and T28 consume the state.",
+     "what_for": "The founder hears once that the search failed, chips resolve, and the budget is not burnt on retries.",
+     "subtasks": [
+      {
+       "text": "JobState; wait() returns it; callers updated; failed notice from the done callback; notices route sends 'failed'.",
+       "flags": [
+        "F-A2-011"
+       ]
+      },
+      {
+       "text": "Backoff and attempt cap; test: a TimeoutError job over 4 turns runs once inside the backoff.",
+       "flags": [
+        "F-A2-011"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Refcounted turn locks and a single end_session path",
+     "why": "Locks never shrink, the stream lock can leak, and a delete during a turn is undone by late writes.",
+     "where": "agents/lifecycle.py, agents/jobs.py (tombstones), routers/ideation.py",
+     "how": "TurnLocks with refcount; stream acquires inside the generator; 404 before lock creation; DELETE via end_session; tombstoned ids refused by start/put.",
+     "when": "After task 1; uses T07's tombstoned delete.",
+     "what_for": "A delete really deletes, even mid-stream, and random ids cannot grow the lock map.",
+     "subtasks": [
+      {
+       "text": "TurnLocks in agent_turn and agent_turn_stream; stream acquires inside the generator; unknown ids answer 404 with no entry.",
+       "flags": [
+        "F-A1-011",
+        "F-A2-004",
+        "F-B5-019"
+       ]
+      },
+      {
+       "text": "end_session used by agent_delete; Board tombstones; test: delete mid-stream leaves no results, jobs or session.",
+       "flags": [
+        "F-B3-012",
+        "F-A2-012"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "In-process sweeper with TTLs tied to the session lifetime",
+     "why": "Jobs, results and memory-store docs are never pruned; memory grows and idea text outlives the session.",
+     "where": "agents/lifecycle.py, agents/results.py, agents/jobs.py, agents/store.py, main.py lifespan",
+     "how": "One asyncio task every 10 min prunes finished jobs and idle result rows (cache TTL), memory docs beyond retention or the cap, and old tombstones; expired memory reads pop the doc.",
+     "when": "After task 2 and T07 task 1 (Lifetime); apply_erasures filled by T32.",
+     "what_for": "Bounded memory on a long-running offline server and no founder text kept after its session ends.",
+     "subtasks": [
+      {
+       "text": "MemoryResults last_access + prune; latest() indexed by session; Board.prune of finished jobs and empty listener sets.",
+       "flags": [
+        "F-A1-015",
+        "F-A5-029",
+        "F-A2-012"
+       ]
+      },
+      {
+       "text": "MemoryStore.prune (retention + cap) and pop on expired read.",
+       "flags": [
+        "F-A2-004",
+        "F-B5-019"
+       ]
+      },
+      {
+       "text": "Sweeper in lifespan; document the boundary: in-process maps cleared by the sweeper, durable stores by the T32 runner via tombstones.",
+       "flags": [
+        "F-B5-012"
+       ]
+      },
+      {
+       "text": "Specify the 2.3.1 results table with ON DELETE CASCADE and add it to T32's erasure map.",
+       "flags": [
+        "F-A2-012"
+       ]
+      }
+     ]
+    }
+   ],
+   "tests": "test_jobs: failed job -> FAILED, one notice, no rerun inside backoff; tombstoned session -> no start, no result. test_lifecycle with an injectable clock: 1000 sessions pruned after TTL; lock map empty after 100 concurrent turns and 100 random-id 404s; delete mid-stream leaves nothing. API test: client cancels before the first byte, next turn succeeds.",
+   "risks": "Pruning a result before a returning founder absorbs it reruns research once (cost, not correctness). The memory cap evicts the oldest conversation on a busy offline server (already 'not saved'). Multi-worker maps stay per worker; T32 tombstones cover erasure and 2.3.1 moves results to the database."
+  },
+  {
+   "theme": "T17",
+   "understanding": "Every route under /ideation/agent/sessions/{id} (resume, delete, turn, stream, notices; routers/ideation.py:307-394) is authorised by possession of the 32-hex id alone, and the cohort route takes the same ids (cohort.py:32-41), so a programme holding ids for aggregates can read or delete transcripts. The owner is a free string 'anon' in three places (document, elicitation state, column); the column is written only at create (store.py:148-152), is String(64) with no FK, while users.user_id is a UUID. There is no claim, no 'my conversations' list, and the browser remembers one id per device (Talk.tsx:29). Root cause: no model of who may do what to a conversation. All ten flags hold.",
+   "flags_disputed": [],
+   "approaches": [
+    {
+     "name": "Per-session capability key for anonymous sessions + account ownership after an explicit claim + separate cohort reference",
+     "how": "At start the server returns session_id and a random access key (token_urlsafe(24)); only its SHA-256 is stored. Anonymous routes require the key in an X-Session-Key header, never in the URL. A signed-in founder claims sessions by presenting id + key; claim sets owner_id with a conditional UPDATE. Owned sessions require the owner's bearer token. Programmes get an opaque cohort_ref per consenting session.",
+     "basis": "Unguessable capability secrets are a well-known pattern; hashlib/hmac in the standard library; FastAPI dependencies already in api/deps.py.",
+     "cost": "free/open source",
+     "advantages": "Keeps the anonymous start; separates read/write/delete from aggregate access; secrets stay out of paths and logs; claim is explicit and one-way.",
+     "drawbacks": "The client must keep id + key pairs; legacy sessions without a key need a transition rule."
+    },
+    {
+     "name": "Optional-user dependency only",
+     "how": "Optional get_current_user and an owner comparison in _load; anonymous sessions by id.",
+     "basis": "Minimal FastAPI change.",
+     "cost": "free/open source",
+     "advantages": "Smallest change; protects claimed sessions.",
+     "drawbacks": "Anonymous sessions and programme access stay bearer ids in URLs and logs; a cohort id can still open a transcript."
+    },
+    {
+     "name": "Mandatory sign-in",
+     "how": "Require an account before a conversation.",
+     "basis": "Conventional.",
+     "cost": "free/open source",
+     "advantages": "Simple rule.",
+     "drawbacks": "Removes the anonymous start the plan wants; blocked on T14."
+    },
+    {
+     "name": "Signed session ids (itsdangerous / JWT)",
+     "how": "Replace the id with a signed token.",
+     "basis": "Mature libraries.",
+     "cost": "free/open source",
+     "advantages": "Unforgeable ids.",
+     "drawbacks": "Still one credential for every power, still in the URL path."
+    },
+    {
+     "name": "PostgreSQL row-level security",
+     "how": "Policies keyed on a per-request setting.",
+     "basis": "Built into PostgreSQL.",
+     "cost": "free/open source",
+     "advantages": "Enforced in the database.",
+     "drawbacks": "Blind to Redis, MemoryStore and the job board; per-request settings with async pools are error-prone."
+    },
+    {
+     "name": "Policy engine (Casbin / Oso)",
+     "how": "Declarative authorisation policies.",
+     "basis": "Mature libraries.",
+     "cost": "free/open source",
+     "advantages": "Scales to many rules.",
+     "drawbacks": "A dependency and policy language for three rules."
+    }
+   ],
+   "chosen": "Capability key for anonymous sessions + explicit conditional claim to an account + separate cohort_ref for programmes (approach 1, which includes approach 2's owner check)",
+   "why_chosen": "It is the only option that closes all three holes (anyone with the id, programmes with ids, shared-phone takeover) without forcing sign-up. It costs one hashed column, one header and one dependency; the claim is one conditional UPDATE that also makes the column the single owner, fixing the 'never updated' and 'three copies' flags.",
+   "not_chosen": [
+    {
+     "name": "Optional-user only",
+     "reason": "Anonymous sessions and programme access stay bearer ids in URLs and logs; F-B1-033 stays open."
+    },
+    {
+     "name": "Mandatory sign-in",
+     "reason": "Removes the anonymous start and waits on T14."
+    },
+    {
+     "name": "Signed ids",
+     "reason": "One credential for every power, still in the path; a random key does the same without a signing secret."
+    },
+    {
+     "name": "Row-level security",
+     "reason": "Blind to Redis, memory store and job board."
+    },
+    {
+     "name": "Casbin/Oso",
+     "reason": "A dependency and policy language for three rules."
+    }
+   ],
+   "design": {
+    "components": "api/deps.py: get_optional_user (None without a token; error only for an invalid token); session_access(session_id, x_session_key, user) -> AgentSession for resume, turn, stream, notices and delete. Rule: owner_id set -> user.user_id == owner_id else 404; owner_id null -> constant-time key-hash match, or legacy rows without access_hash accepted until retention ends them. Store (T07 protocol): claim(pairs, user_id) -> claimed ids; list_for_owner(user_id); get_many_by_cohort_ref(refs). Routes: POST /ideation/agent/sessions/claim (signed in, up to 20 {id, key}); GET /ideation/agent/sessions (my conversations); DELETE /ideation/agent/sessions (delete all via T32 erase_user). Cohort: cohort_ref issued at start when share_with_programme; cohort.py accepts refs only.",
+    "data_model": "agent_sessions: owner_id UUID NULL REFERENCES users(user_id) ON DELETE CASCADE (NULL = anonymous); access_hash CHAR(64) NULL; cohort_ref VARCHAR(32) NULL UNIQUE; the string user_id dropped after backfill ('anon' -> NULL). Session document and elicitation state lose user_id; the store sets AgentSession.owner_id from the column (T34 upgrader drops the old field). Browser (T18 key registry): vanigam_talk_sessions = [{id, key, name, started}] (max 10) replacing vanigam_talk_session.",
+    "algorithm": "Claim: UPDATE agent_sessions SET owner_id = :uid, access_hash = NULL WHERE session_id = :id AND owner_id IS NULL AND access_hash = :hash RETURNING session_id; one transaction; the key stops working after the claim. UI: after sign-in Talk lists this device's unclaimed conversations by name and date and asks 'Add these to my account?'; nothing is claimed automatically; sign-out offers to clear the device list. Programmes receive a cohort_ref from the founder (or, after 5.5.4, via a programme code); it opens no per-session route.",
+    "interfaces": "T14 hardened tokens and identity-aware rate limits; T16 migration chain; T07 store protocol and get_many; T32 erasure by owner_id; T18 browser key registry; T19 cohort consent purpose; T20 disclosure on cohort refs; T28 stream contract (key in header only); T34 document version.",
+    "files": [
+     "backend/app/api/deps.py",
+     "backend/app/routers/ideation.py",
+     "backend/app/routers/cohort.py",
+     "backend/app/agents/store.py",
+     "backend/app/agents/ideation.py",
+     "backend/app/elicitation/engine.py",
+     "backend/app/elicitation/session.py",
+     "backend/app/models/agent_session.py",
+     "backend/app/db/migrations/versions/00xx_session_owner.py (new)",
+     "frontend/src/pages/Talk.tsx",
+     "frontend/src/auth.tsx",
+     "frontend/src/api/agentClient.ts",
+     "backend/tests/security/test_session_access.py (new)"
+    ],
+    "rollout": "1) keys for new sessions, enforced where access_hash exists; 2) owner_id migration and backfill, drop user_id after one release; 3) claim, list and delete-all routes plus Talk UI; 4) cohort_ref, old id body accepted for one release with a deprecation warning.",
+    "offline": "Works on MemoryStore (owner and key on the in-memory record); claim and list need sign-in, so offline mode is anonymous-with-key, the safe default."
+   },
+   "tasks": [
+    {
+     "title": "Access dependency: capability key for anonymous sessions, owner check for owned ones",
+     "why": "Any holder of the id can read, continue or delete a conversation, including a claimed one.",
+     "where": "api/deps.py, routers/ideation.py, agents/ideation.py (new_session), agentClient.ts, Talk.tsx",
+     "how": "Key generated at start, SHA-256 stored; session_access on every per-session route; key sent in a header.",
+     "when": "After T14 (token hardening); before T32 delete-all.",
+     "what_for": "A conversation opens only for the device that started it or its signed-in owner.",
+     "subtasks": [
+      {
+       "text": "get_optional_user and session_access; owner_id match (404 on mismatch) on resume, turn, stream, notices and delete.",
+       "flags": [
+        "F-A3-001",
+        "F-B5-021"
+       ]
+      },
+      {
+       "text": "Per-session key returned once, hashed in the store, sent as X-Session-Key; tests: id without key -> 404; owner token required once owned.",
+       "flags": [
+        "F-B1-033",
+        "F-A3-001"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "One owner column: nullable UUID FK, single source of truth",
+     "why": "The owner is a free 'anon' string in three places and cannot cascade from users.",
+     "where": "models/agent_session.py, new migration, agents/store.py, agents/ideation.py, elicitation/engine.py and session.py",
+     "how": "owner_id UUID NULL FK ON DELETE CASCADE; backfill 'anon' to NULL; document and elicitation copies removed.",
+     "when": "After T16; with T34.",
+     "what_for": "Erasure and lookups by founder follow a real relation.",
+     "subtasks": [
+      {
+       "text": "Migration adding owner_id with FK ON DELETE CASCADE and backfill; drop the string column after one release.",
+       "flags": [
+        "F-A3-008",
+        "F-A2-016"
+       ]
+      },
+      {
+       "text": "Remove user_id from the document and elicitation state; the store is the only writer of the owner.",
+       "flags": [
+        "F-B5-020"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Explicit claim of several sessions with founder confirmation",
+     "why": "There is no claim; the obvious one leaves the column 'anon', and an automatic claim on a shared phone hands one founder's idea to another.",
+     "where": "agents/store.py (claim), routers/ideation.py (POST /claim), Talk.tsx, auth.tsx",
+     "how": "Conditional UPDATE on owner_id IS NULL and key hash; keys invalidated; up to 10 id+key pairs kept in the browser; confirm before claiming; sign-out offers to clear.",
+     "when": "After tasks 1 and 2; T18 key registry; T07 retention (no 6 h hiding).",
+     "what_for": "Founders keep every conversation they started on this device, and a shared phone never transfers one silently.",
+     "subtasks": [
+      {
+       "text": "store.claim with the conditional UPDATE (column and document in one transaction); owned or wrong-key ids skipped and reported.",
+       "flags": [
+        "F-B5-020",
+        "F-A2-005",
+        "F-A3-002"
+       ]
+      },
+      {
+       "text": "POST /ideation/agent/sessions/claim taking up to 20 {id, key}.",
+       "flags": [
+        "F-B5-022",
+        "F-A3-002"
+       ]
+      },
+      {
+       "text": "Talk.tsx recent-sessions list and 'Add these to my account?' dialog; auth.tsx sign-out asks to clear the list.",
+       "flags": [
+        "F-B5-022",
+        "F-A3-002"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "My conversations and a separate cohort reference",
+     "why": "Founders cannot find past sessions on another device, and programmes hold full-power ids.",
+     "where": "routers/ideation.py, agents/store.py, routers/cohort.py, Talk.tsx",
+     "how": "List for the signed-in owner; cohort_ref issued for consenting sessions; cohort route accepts refs only.",
+     "when": "After task 2 and T07 'analytics read'; T20 builds on refs.",
+     "what_for": "Resume on any device, delete one of several, and aggregate access that cannot open a transcript.",
+     "subtasks": [
+      {
+       "text": "GET /ideation/agent/sessions (id, name, idea_version, last_active) on the indexed owner_id; Talk shows it when signed in.",
+       "flags": [
+        "F-A3-009"
+       ]
+      },
+      {
+       "text": "cohort_ref column and issuance; cohort.py resolves refs server-side; test that a ref opens no per-session route.",
+       "flags": [
+        "F-B1-033"
+       ]
+      }
+     ]
+    }
+   ],
+   "tests": "test_session_access: id alone -> 404 for keyed sessions; wrong key -> 404; owned session without token -> 404; other user's token -> 404; owner token -> 200; re-claim of an owned session skipped; cohort ref on resume -> 404. Store tests: claim updates column and document atomically; deleting a user cascades. Frontend unit test: the key never appears in a URL.",
+   "risks": "Clearing browser storage loses access to unclaimed sessions (as today; retention removes them). Keys in localStorage are readable by any script on the origin; acceptable with no third-party scripts (T25), and claims invalidate them. The legacy no-hash rule must end with retention or a cutoff date."
+  },
+  {
+   "theme": "T22",
+   "understanding": "Docs and config are hand-copies of code with nothing comparing them: backend/.env.example lacks 8 Settings fields (checked: gemini_thinking, research_wait_s, council_wait_s, opinion_wait_s, voice_cache_dir, gemini_tts_style, research_cache_dir, research_cache_days); docs/runbooks/model-down.md:23 cites model.failed_turn_offline, which nothing logs; FILE_STRUCTURE.md and VANIGAM-EXPLAINED.md describe dropped swarms/LangGraph and missing files; code comments cite 'build spec' sections that exist only in private claude.ai artifacts; orphan llm_provider/openai_api_key/llm_model_router remain (config.py:44-48); the planner imports from app/swarms; ci.yml runs only backend ruff, black and pytest --cov=app, so the frontend (no tsc, six unimported components) and the data-rewriting scripts are unchecked. Root cause: no machine check ties docs, config and dead code to the code. All eight flags hold.",
+   "flags_disputed": [
+    {
+     "id": "F-A5-018",
+     "note": "Holds, but the build-spec content sits in the owner's private claude.ai artifacts; exporting it is an owner action. The design adds a check so that, once exported, every citation must resolve."
+    }
+   ],
+   "approaches": [
+    {
+     "name": "Repo-consistency tests in pytest + generated .env.example",
+     "how": "scripts/gen_env_example.py writes .env.example from Settings (defaults and Field descriptions); one test module asserts the file equals the generator output, every backticked a.b log name in runbooks is emitted in backend/app, every backticked repo path and relative link exists, and every 'build spec N.N' citation resolves to a heading in docs/specs/BUILD-SPEC.md.",
+     "basis": "pytest already runs in CI; standard library only.",
+     "cost": "free/open source",
+     "advantages": "No new tool; failures appear in the existing CI job with a one-line fix.",
+     "drawbacks": "Regexes need a small allow-list."
+    },
+    {
+     "name": "Frontend CI job (tsc --noEmit + knip) and backend vulture",
+     "how": "A CI job runs typecheck and knip (unused files, exports, deps); vulture finds dead Python.",
+     "basis": "TypeScript is installed; knip is the maintained successor to ts-prune; vulture is the standard Python dead-code finder.",
+     "cost": "free/open source",
+     "advantages": "Stops type errors and new dead code at PR time.",
+     "drawbacks": "Two dev dependencies and whitelists for false positives."
+    },
+    {
+     "name": "External link checkers (lychee, markdown-link-check)",
+     "how": "Run a link-checker action over Markdown.",
+     "basis": "Popular actions.",
+     "cost": "free/open source",
+     "advantages": "Also checks external URLs.",
+     "drawbacks": "Blind to backticked code paths and log names, the references that rot here; external checks are flaky."
+    },
+    {
+     "name": "pre-commit hooks only",
+     "how": "Run the checks locally before commit.",
+     "basis": "pre-commit is already a dev dependency.",
+     "cost": "free/open source",
+     "advantages": "Fast feedback.",
+     "drawbacks": "Skippable and absent on bot PRs."
+    },
+    {
+     "name": "Docs site in strict mode (mkdocs --strict)",
+     "how": "Build docs as a site that fails on broken links.",
+     "basis": "Mature.",
+     "cost": "free/open source",
+     "advantages": "Rendered docs.",
+     "drawbacks": "A new toolchain; still blind to code paths."
+    },
+    {
+     "name": "Generate docs from code (log event registry)",
+     "how": "A registry module of event names that runbooks reference.",
+     "basis": "Single source of truth.",
+     "cost": "free/open source",
+     "advantages": "No drift by construction.",
+     "drawbacks": "A broad logging refactor for a guarantee a grep test gives."
+    }
+   ],
+   "chosen": "Repo-consistency tests + generated .env.example, plus a frontend CI job with tsc and knip and backend vulture, after one-off cleanups (approaches 1 and 2)",
+   "why_chosen": "Each drift found is a comparison a short standard-library test can make inside the CI job that already exists, and generating .env.example removes one hand-kept list. The frontend has no CI at all; tsc plus knip is the smallest pair catching type errors and whole unused files. The cleanups make the checks start green.",
+   "not_chosen": [
+    {
+     "name": "lychee / markdown-link-check",
+     "reason": "Misses backticked paths and log names; external URLs make CI flaky."
+    },
+    {
+     "name": "pre-commit only",
+     "reason": "Skippable and absent on bot PRs; CI runs the same checks."
+    },
+    {
+     "name": "mkdocs --strict",
+     "reason": "A new toolchain and still blind to code paths."
+    },
+    {
+     "name": "Event registry",
+     "reason": "A broad logging refactor for what a grep test guarantees."
+    }
+   ],
+   "design": {
+    "components": "scripts/gen_env_example.py (Settings.model_fields in order, section comments, Field descriptions). backend/tests/repo/test_consistency.py: test_env_example_is_generated, test_runbook_log_names_exist, test_markdown_paths_exist, test_build_spec_citations_resolve (xfail until BUILD-SPEC.md exists, then strict). ci.yml: frontend job (npm ci, npm run typecheck, npx knip); backend job adds vulture with a whitelist and pytest --cov=app --cov=../scripts; calls T02's data-checks.yml.",
+    "data_model": "Settings fields gain description= text; frontend/knip.json lists entry points; backend/vulture_whitelist.py lists framework-called names (routes, validators).",
+    "algorithm": "Pure file reads and regexes; the env test diffs generator output with the committed file.",
+    "interfaces": "T02 shares data-checks.yml and backend/tests/scripts/; T16 adds an Alembic upgrade/downgrade job beside these; T32's resolved paths appear in the generated .env.example; implements 5.3.1, 5.3.3 and 5.7.1 items.",
+    "files": [
+     "scripts/gen_env_example.py (new)",
+     "backend/.env.example",
+     "backend/app/core/config.py",
+     "backend/tests/repo/test_consistency.py (new)",
+     "backend/tests/scripts/ (new)",
+     "backend/vulture_whitelist.py (new)",
+     "backend/pyproject.toml",
+     ".github/workflows/ci.yml",
+     "frontend/package.json",
+     "frontend/knip.json (new)",
+     "backend/app/planner/graph.py (new)",
+     "backend/app/planner/roadmap.py",
+     "backend/app/swarms/ (deleted)",
+     "backend/app/agents/__init__.py",
+     "FILE_STRUCTURE.md",
+     "VANIGAM-EXPLAINED.md",
+     "README.md",
+     "docs/runbooks/model-down.md",
+     "docs/runbooks/research-budget.md",
+     "docs/specs/BUILD-SPEC.md (owner export)"
+    ],
+    "rollout": "Cleanups first, then each check in its own PR; knip and vulture run in report mode for one PR to build whitelists, then fail the build.",
+    "offline": "All checks run locally with pytest and npm."
+   },
+   "tasks": [
+    {
+     "title": "Remove today's drift",
+     "why": "The checks cannot be enabled while the repo already fails them.",
+     "where": "core/config.py, .env.example, planner/roadmap.py, app/swarms, agents/__init__.py, root docs, docs/runbooks",
+     "how": "Delete orphan settings; move graph functions into planner/graph.py and delete app/swarms; rewrite or delete FILE_STRUCTURE.md; fix paths and links; fix the runbook log name and document the weekly-job behaviour.",
+     "when": "First; the swarms move lands with 1.4.1.3, settings with 5.7.1.2.",
+     "what_for": "Docs and config describe the system that exists.",
+     "subtasks": [
+      {
+       "text": "Delete llm_provider, openai_api_key, llm_model_router and their .env.example lines.",
+       "flags": [
+        "F-A5-040"
+       ]
+      },
+      {
+       "text": "Move critical_path/topological_order/models into planner/graph.py, delete app/swarms, fix the agents docstring.",
+       "flags": [
+        "F-A5-042"
+       ]
+      },
+      {
+       "text": "Rewrite or delete FILE_STRUCTURE.md; fix VANIGAM-EXPLAINED.md paths and the README .kiro link.",
+       "flags": [
+        "F-A5-023"
+       ]
+      },
+      {
+       "text": "Replace model.failed_turn_offline with the real event; add the weekly-job note to research-budget.md.",
+       "flags": [
+        "F-A5-024"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Generated .env.example and consistency tests",
+     "why": "Hand-kept lists drift silently.",
+     "where": "scripts/gen_env_example.py, core/config.py, backend/tests/repo/test_consistency.py",
+     "how": "Generator from Settings; tests for env, runbook log names, paths and links, build-spec citations.",
+     "when": "After task 1.",
+     "what_for": "A new setting, renamed log event or moved file fails CI with a one-line fix.",
+     "subtasks": [
+      {
+       "text": "gen_env_example.py and a test that .env.example equals its output (adds the 8 missing settings).",
+       "flags": [
+        "F-A5-022"
+       ]
+      },
+      {
+       "text": "Test that every backticked a.b log name in docs/runbooks is emitted in backend/app.",
+       "flags": [
+        "F-A5-024"
+       ]
+      },
+      {
+       "text": "Test that backticked repo paths and relative links in Markdown exist.",
+       "flags": [
+        "F-A5-023"
+       ]
+      },
+      {
+       "text": "Owner exports the build spec and architecture dashboard to docs/specs/BUILD-SPEC.md; citations re-pointed; test that each resolves.",
+       "flags": [
+        "F-A5-018"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Frontend CI job and dead-code checks",
+     "why": "Type errors ship because vite build does not type-check, and dead files accumulate.",
+     "where": ".github/workflows/ci.yml, frontend/package.json, frontend/knip.json, backend/pyproject.toml, backend/vulture_whitelist.py",
+     "how": "Frontend job with tsc --noEmit and knip; delete Aurora, Facade, Motif, Ornament, Procession, Ring; vulture in the backend job.",
+     "when": "After task 1.",
+     "what_for": "Every frontend change is type-checked and new dead code is caught at PR time.",
+     "subtasks": [
+      {
+       "text": "Frontend CI job (typecheck + knip), delete the six unimported components, vulture with whitelist.",
+       "flags": [
+        "F-A5-041"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Tests and coverage for data-rewriting scripts",
+     "why": "Weekly scripts rewrite class A data with no test.",
+     "where": "backend/tests/scripts/, ci.yml coverage sources",
+     "how": "Sample-based unit tests of parse and merge functions; coverage includes ../scripts.",
+     "when": "With T02 task 'harvest scripts that merge'.",
+     "what_for": "A script regression fails CI before it rewrites founder-facing data.",
+     "subtasks": [
+      {
+       "text": "Tests for check_incubator_intake, check_investor_signals and build_domain_signals parse/merge; --cov=../scripts.",
+       "flags": [
+        "F-A5-009"
+       ]
+      }
+     ]
+    }
+   ],
+   "tests": "Each consistency test has a negative case on a temp file (missing setting, fake log name, broken path) proving it fails; actionlint on workflows.",
+   "risks": "Path regexes may flag prose (allow-list). knip false positives on dynamic imports (knip.json entries). The build-spec export depends on the owner; the citation test is xfail and visible until then."
+  },
+  {
+   "theme": "T27",
+   "understanding": "_advance (agents/ideation.py:846-873) decides the next action from the elicitation engine state plus ad-hoc checks (yes/no in CONFIRMING, SKIP, the OPINION regex); AgentSession has only pending_slot. Once GENERATING, every reply is 'generate' and _offline_stream speaks _roadmap_line again (:689-697, :902-909), so the offered 'costs or licences' is unreachable and a later correction never rebuilds the plan. Choices among cards or levers have no state and no spoken matcher. _convene runs the panel with scan=None (:404-415). The offline path awaits board.wait up to research_wait_s 3 s (+council_wait_s 1.5 s, or opinion_wait_s 12 s) before its first sentence. Root cause: no explicit conversation state with a typed pending action read first in each turn. All five flags hold.",
+   "flags_disputed": [],
+   "approaches": [
+    {
+     "name": "Hand-rolled explicit FSM: typed Pending (Pydantic discriminated union) + transition table",
+     "how": "AgentSession.pending = Ask{slot} | Confirm{objective} | ChooseCard{options} | ChooseLever{options} | WalkRoadmap{section, done}; _advance first resolves text against pending (yes/no, ordinal or name, section keyword), otherwise falls through to slot observation; a dict maps (pending kind, resolution) to the next pending.",
+     "basis": "Pydantic v2 discriminated unions are installed and the elicitation state already uses Pydantic.",
+     "cost": "free/open source",
+     "advantages": "Deterministic, offline, table-testable; the model only words what code decided (0002); resume re-presents options.",
+     "drawbacks": "Hand-maintained transitions, to be kept small."
+    },
+    {
+     "name": "pytransitions",
+     "how": "Declare states and transitions with callbacks.",
+     "basis": "Popular Python FSM library.",
+     "cost": "free/open source",
+     "advantages": "Guards and diagrams out of the box.",
+     "drawbacks": "Adds dynamic methods to objects, awkward with a JSON document and async turns; a dependency for about six states."
+    },
+    {
+     "name": "python-statemachine",
+     "how": "Class-based FSM with async support.",
+     "basis": "Maintained and typed.",
+     "cost": "free/open source",
+     "advantages": "Clean declarations.",
+     "drawbacks": "A second state model beside SessionState; persistence still ours."
+    },
+    {
+     "name": "Rasa dialogue framework",
+     "how": "Stories and forms with its own NLU.",
+     "basis": "Mature conversational framework.",
+     "cost": "free/open source",
+     "advantages": "Rich dialogue management.",
+     "drawbacks": "A second conversation engine, against decisions 0001/0002."
+    },
+    {
+     "name": "Model-driven state",
+     "how": "The LLM decides what is pending.",
+     "basis": "Common in chat agents.",
+     "cost": "free tiers only",
+     "advantages": "Flexible.",
+     "drawbacks": "No offline path; the model must not decide state (0002)."
+    },
+    {
+     "name": "Frontend-only buttons",
+     "how": "Talk.tsx shows buttons for choices and sections.",
+     "basis": "Simple UI.",
+     "cost": "free/open source",
+     "advantages": "Unambiguous input.",
+     "drawbacks": "Excludes voice-first, low-literacy founders; still needs backend state."
+    }
+   ],
+   "chosen": "Hand-rolled FSM with a typed Pending union and a deterministic choice/section matcher, plus an evidence gate and a code-chosen first sentence before any wait",
+   "why_chosen": "With five or six pending kinds, a Pydantic union in the session document is the smallest structure that survives resume (T34) and lets the turn interpret 'the second one', 'licences' or 'yes' before slot extraction. No dependency, deterministic offline, wording left to templates or the model. The evidence gate and early sentence are small rules that need the explicit state to consult.",
+   "not_chosen": [
+    {
+     "name": "pytransitions",
+     "reason": "Dynamic-method mutation fits a JSON document and async turns poorly; a dependency for six states."
+    },
+    {
+     "name": "python-statemachine",
+     "reason": "A second state model beside SessionState with persistence still ours."
+    },
+    {
+     "name": "Rasa",
+     "reason": "A second conversation engine; contradicts 0001/0002."
+    },
+    {
+     "name": "Model-driven state",
+     "reason": "No offline path; the model must not decide state."
+    },
+    {
+     "name": "Frontend-only buttons",
+     "reason": "Fails voice-first founders; buttons stay as an extra input mapped to the same pending action."
+    }
+   ],
+   "design": {
+    "components": "app/agents/conversation.py: Pending union, Option{id, label, aliases}, resolve(pending, text, language) -> yes | no | choice:<id> | section:<name> | none, next_pending(). app/agents/choices.py: ordinals en ('first', 'second', '2nd', 'the last'), ta ('முதல்', 'இரண்டாவது', 'மூன்றாவது'), hi ('पहला', 'दूसरा', 'तीसरा'), digits, and label/alias words with word boundaries (T10 tokeniser). app/planner/walk.py: SECTIONS costs, licences, milestones, risks, gates with en/ta/hi keywords and templated sentence builders over the roadmap dict (costs.unit/rows/levers, regulatory titles, milestones, risks_by_phase, gates).",
+    "data_model": "AgentSession.pending (validated dict) replaces pending_slot; the T34 upgrader maps pending_slot -> {'kind': 'ask', 'slot': ...}. WalkRoadmap{section, done, roadmap_idea_version}; ChooseCard/ChooseLever{options, idea_version}. snapshot, ack and done carry pending (typed by T28).",
+    "algorithm": "Turn: resolve against s.pending first; a resolution becomes the action without slot extraction; otherwise observe as today. After roadmap: pending WalkRoadmap; a section keyword or yes/next speaks that section and offers the next undone one; a turn that changes a core, capital or district fact (T03 put outcome 'changed', or idea_version change) rebuilds the roadmap and states the difference ('With the capital now X, the roadmap is N months instead of M.'). Evidence gate: _convene runs only when research is DONE or FAILED (T12 JobState) or not allowed (private mode); otherwise narrate 'I will give the panel's view once the search finishes.', mark opinion_owed, and deliver it from _absorb when research lands; if research failed the brief says it rests on no outside evidence. First sentence: before any board.wait, yield a reflection of a newly understood fact ('So the buyers are mango farmers.') or a recorded ACK from phrasebook.ACKS; waits are shortened once a sentence has been spoken.",
+    "interfaces": "T03 put outcome for revision; T10 tokenisation and negation; T12 JobState; T28 typed pending in events; T34 document version; T26 records new fixed sentences; 1.1.5 and 1.2.4 fill ChooseCard/ChooseLever; Talk.tsx buttons map to the same option ids.",
+    "files": [
+     "backend/app/agents/conversation.py (new)",
+     "backend/app/agents/choices.py (new)",
+     "backend/app/planner/walk.py (new)",
+     "backend/app/agents/ideation.py",
+     "backend/app/agents/council/__init__.py",
+     "backend/app/voice/phrasebook.py",
+     "backend/app/routers/ideation.py",
+     "frontend/src/pages/Talk.tsx",
+     "backend/tests/unit/test_conversation.py, test_choices.py, test_walk.py (new)"
+    ],
+    "rollout": "1) Pending with ask/confirm only (behaviour-preserving, document upgrade); 2) early sentence and evidence gate; 3) roadmap walk and revision; 4) choice matcher when 1.1.5/1.2.4 produce options.",
+    "offline": "Entirely deterministic; the model path reads the same pending state and only rewords."
+   },
+   "tasks": [
+    {
+     "title": "Typed pending action in the session document",
+     "why": "pending_slot cannot express confirm, choices or the roadmap walk, and resume cannot re-present options.",
+     "where": "agents/conversation.py, agents/ideation.py (AgentSession, snapshot, _advance), T34 upgrader, Talk.tsx",
+     "how": "Pending union replaces pending_slot; snapshot and events carry it; Talk restores options from it.",
+     "when": "First; with T34 and T28.",
+     "what_for": "Every step that waits for the founder has a place to live and survives resume.",
+     "subtasks": [
+      {
+       "text": "Pending union stored in AgentSession; pending_slot upgraded; snapshot returns options; a replayed choice carries idea_version so it is idempotent.",
+       "flags": [
+        "F-B1-012"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "First sentence before any wait, and the panel only after evidence",
+     "why": "Founders hear seconds of silence, and a verdict built on missing evidence.",
+     "where": "agents/ideation.py (_offline_stream, _convene, _absorb), council/__init__.py, voice/phrasebook.py",
+     "how": "Reflection or ACK before board.wait; _convene gated on research DONE/FAILED; owed opinion delivered when research lands.",
+     "when": "After T12 task 'job states'.",
+     "what_for": "The first sound arrives within the latency target, and the panel speaks only from evidence.",
+     "subtasks": [
+      {
+       "text": "Lead sentence yielded before any board.wait on the offline path; test that a sentence event precedes the wait.",
+       "flags": [
+        "F-B1-028"
+       ]
+      },
+      {
+       "text": "Evidence gate and owed-opinion narration; test with a slow research job: no band narrated before research finishes.",
+       "flags": [
+        "F-A1-018"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Roadmap walk-through and revision",
+     "why": "After the roadmap the offline conversation repeats one sentence forever and never revises.",
+     "where": "planner/walk.py, agents/ideation.py",
+     "how": "WalkRoadmap pending; section keywords in three languages; templated section sentences; rebuild on changed facts with a 'what changed' sentence.",
+     "when": "After task 1; T03 for the 'changed' outcome.",
+     "what_for": "Founders can hear costs, licences, milestones, risks and gates by voice, and corrections change the plan.",
+     "subtasks": [
+      {
+       "text": "walk.py sections and builders; _advance resolves sections and next/yes; replay of the probe (costs, licences, cost per pack) gives three different sentences.",
+       "flags": [
+        "F-A1-024"
+       ]
+      },
+      {
+       "text": "Revision: a changed core, capital or district fact after the roadmap rebuilds it and names the difference.",
+       "flags": [
+        "F-A1-024"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Deterministic spoken choice matcher",
+     "why": "'The second one' is stored as a slot answer instead of choosing.",
+     "where": "agents/choices.py, agents/conversation.py, Talk.tsx",
+     "how": "Ordinal and alias matching in en/ta/hi only while a choice is pending; ambiguity re-asks listing the options.",
+     "when": "After task 1; when 1.1.5 and 1.2.4 supply options; T10 tokeniser.",
+     "what_for": "Voice-first founders choose without tapping.",
+     "subtasks": [
+      {
+       "text": "choices.match with table tests for ordinals, digits, labels and ambiguity; wired into resolve() for choose_card and choose_lever.",
+       "flags": [
+        "F-B1-017"
+       ]
+      }
+     ]
+    }
+   ],
+   "tests": "Table tests for resolve() over every pending kind; matcher tests in three languages; replay of the F-A1-024 probe; latency test (sentence before first wait, fake board); evidence-gate test with a slow fake job; resume test re-presenting options.",
+   "risks": "A section keyword may appear inside a new fact; a fact change wins over a section match. Tamil/Hindi ordinals need native review (with 1.5.2). Frequent rebuilds are limited to listed slots."
+  },
+  {
+   "theme": "T32",
+   "understanding": "Nothing maps a person to their data: every session's owner is 'anon', users -> founders is ON DELETE SET NULL in the wrong direction (models/user.py:24-28), and a Redis copy and the job board survive any delete not made through the app's DELETE route (store.py:206-213, routers/ideation.py:316-318). The retention table keeps consents a year after the data while the erasure sentence deletes them (SYSTEM-DESIGN §5.4). Planned nightly work is an out-of-process script, but Settings resolves .env and the research cache against the working directory (config.py:14, :115), so a root-started script reads no DATABASE_URL and purges a different cache (both directories already exist); there is no run lock and no run record. Root cause: no erasure service, no decided consent rule, and no maintenance runner with a fixed home, a lock and a ledger. All six flags hold.",
+   "flags_disputed": [
+    {
+     "id": "F-B5-016",
+     "note": "Holds, but 'run erasure inside the app' and F-A5-028 'OS scheduler only' pull in opposite directions; both are met by running app code (python -m app.maintenance) from the OS scheduler, handling durable stores and Redis directly and in-process maps via tombstones the app's sweeper (T12) reads."
+    }
+   ],
+   "approaches": [
+    {
+     "name": "App-package maintenance runner started by the OS scheduler, with lock file, JSONL run ledger and an erasure tombstone bridge",
+     "how": "python -m app.maintenance nightly runs registered steps with package-relative paths, takes an exclusive lock file, records each step in a ledger and isolates failures. app/services/erasure.py is called from the CLI, the founder's delete-all route and retention, and writes erasure tombstones the in-app sweeper consumes.",
+     "basis": "Windows Task Scheduler and cron are free and present; os.open(O_CREAT|O_EXCL) is a portable lock; JSON lines need nothing.",
+     "cost": "free/open source",
+     "advantages": "Exactly one run per schedule whatever the worker count; works with no database; missed and failed runs visible; one erasure map for every caller.",
+     "drawbacks": "The owner registers one scheduled task (runbook)."
+    },
+    {
+     "name": "In-process scheduler (APScheduler or asyncio loop)",
+     "how": "Schedule steps from lifespan.",
+     "basis": "APScheduler is mature.",
+     "cost": "free/open source",
+     "advantages": "Reaches in-process memory directly.",
+     "drawbacks": "N workers fire N runs; needs a cross-process lock anyway; nothing runs when the app is stopped; a dependency."
+    },
+    {
+     "name": "Localhost admin endpoint called by the OS scheduler",
+     "how": "Task Scheduler curls POST /internal/maintenance with a shared secret.",
+     "basis": "Common ops pattern.",
+     "cost": "free/open source",
+     "advantages": "Runs inside a worker.",
+     "drawbacks": "Reaches one worker's memory only, adds a secret and attack surface, fails when the API is down."
+    },
+    {
+     "name": "Database-native retention (pg_cron, cascades)",
+     "how": "Let PostgreSQL delete and cascade.",
+     "basis": "pg_cron is mature.",
+     "cost": "free/open source",
+     "advantages": "No app scheduler.",
+     "drawbacks": "pg_cron not installed locally; blind to Redis, the disk cache and memory; cascades impossible until T17's owner FK."
+    },
+    {
+     "name": "Hosted scheduler / heartbeat (GitHub Actions cron, healthchecks.io)",
+     "how": "External cron or heartbeat monitoring.",
+     "basis": "Popular.",
+     "cost": "free tiers, but hosted",
+     "advantages": "Alerts on missed runs.",
+     "drawbacks": "Cannot reach the owner's laptop; hosted services contradict free-and-offline."
+    }
+   ],
+   "chosen": "App-package maintenance runner started by the OS scheduler, with lock file, JSONL ledger and erasure tombstone bridge, plus a decided consent-tombstone rule",
+   "why_chosen": "The OS starts one process and the lock refuses a second, so there is one run per schedule whatever the worker count; it runs whether or not the API is up; the lock and ledger need no database; and reusing app code means paths and settings resolve once in Settings. The tombstone bridge extends erasure to in-process memory without pub/sub. One erasure service serves delete-all (T17), admin requests and retention.",
+   "not_chosen": [
+    {
+     "name": "In-process scheduler",
+     "reason": "N runs for N workers, nothing while the app is stopped, and still needs the lock."
+    },
+    {
+     "name": "Localhost admin endpoint",
+     "reason": "One worker's memory only, a new secret and surface, fails when the API is down."
+    },
+    {
+     "name": "Database-native retention",
+     "reason": "pg_cron unavailable locally; the database cannot see Redis, disk cache or memory."
+    },
+    {
+     "name": "Hosted scheduler/heartbeat",
+     "reason": "Hosted and unreachable from a laptop; against free-and-offline."
+    }
+   ],
+   "design": {
+    "components": "core/config.py: BACKEND_DIR = Path(app.__file__).resolve().parents[1]; env_file = BACKEND_DIR/'.env'; validator making every *_dir setting absolute under BACKEND_DIR. app/maintenance/: __main__.py, runner.py (STEPS registry: retention, research_cache_purge, cohort_rebuild (5.5.5), warming (2.2.6)), run_lock() with O_EXCL, pid and start time, stale after 6 h; ledger var/maintenance-runs.jsonl {run_id, step, started, ended, ok, error_class, summary}; non-zero exit if any step failed. app/services/erasure.py: ordered ERASURE_MAP (sessions by owner_id -> ids; agent_results cascade (2.3.1); founder documents, profile, startups; consents -> tombstones; users row last); erase_user(user_id) and erase_sessions(ids) -> receipt; per session T07 store.delete (Redis tombstone) and an erased_sessions row the sweeper applies.",
+    "data_model": "erased_sessions(session_id PK, erased_at), pruned after 7 days. Consent rule (to be written into SYSTEM-DESIGN §5.4): erasure replaces consent rows with consent tombstones {purpose, policy_version, granted_at, erased_at, receipt_id} with no user id, name or contact, deleted one year after erased_at; plain retention keeps consents for the data's life plus one year. Ledger rotated at 1 MB; /health reports last_ok and consecutive_failures per step.",
+    "algorithm": "Nightly: acquire lock (if held, record 'already running' and exit 0); each step in try/except with a ledger line; retention: SqlStore.delete_idle(before = now - retention) -> ids -> Redis tombstones + erased_sessions; cache purge by mtime in the resolved research_cache_dir; release lock. Missed nights: the Task Scheduler entry enables 'run as soon as possible after a missed start' (anacron or @reboot catch-up on Linux); API startup logs maintenance.overdue if any step's last ok run is older than 26 h; 'failing twice' = consecutive_failures >= 2 shown on the 5.4.3 page. Guards: erase_user refuses None, 'anon' and non-UUID values; erase_sessions refuses empty lists or more than 1000 ids per call.",
+    "interfaces": "T17 owner_id FK and the delete-all route; T19 consent table; T30 founder-link direction; T12 sweeper applies erased_sessions; T07 tombstoned delete; T23 shows the ledger; T22's generated .env.example documents resolved paths.",
+    "files": [
+     "backend/app/core/config.py",
+     "backend/app/maintenance/__init__.py, __main__.py, runner.py, steps.py (new)",
+     "backend/app/services/erasure.py (new)",
+     "backend/app/models/erased_session.py + migration (new)",
+     "backend/app/agents/lifecycle.py",
+     "backend/app/routers/health.py",
+     "SYSTEM-DESIGN.md §5.4",
+     "docs/decisions/00xx-consent-after-erasure.md (new)",
+     "docs/runbooks/nightly-maintenance.md (new)",
+     "backend/tests/unit/test_maintenance.py, test_erasure.py (new)"
+    ],
+    "rollout": "1) path resolution (fixes the wrong-cache bug now); 2) runner, lock, ledger and cache purge (no database needed); 3) erasure service once T17's owner_id lands; 4) retention step after D4; 5) cohort rebuild and warming register their own steps.",
+    "offline": "Runner, lock and ledger need only local disk; without a database retention and erasure record 'skipped: no database' instead of silently succeeding; the T12 sweeper handles memory-store retention."
+   },
+   "tasks": [
+    {
+     "title": "Resolve .env and data paths against the backend package",
+     "why": "A root-started script reads no .env and purges a different cache from the app's.",
+     "where": "backend/app/core/config.py, tests/unit/test_config.py",
+     "how": "BACKEND_DIR; absolute env_file; dir validator; runbook note to remove the stray root .cache.",
+     "when": "First; no dependency.",
+     "what_for": "API, scripts and nightly runs see the same settings and cache.",
+     "subtasks": [
+      {
+       "text": "BACKEND_DIR, absolute env_file and dir validator; test that Settings() from another cwd gives identical paths.",
+       "flags": [
+        "F-B5-011"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Maintenance runner with lock file and run ledger",
+     "why": "Nightly work has no single home, no overlap protection and no record of missed or failed runs.",
+     "where": "backend/app/maintenance/, routers/health.py, docs/runbooks/nightly-maintenance.md",
+     "how": "python -m app.maintenance nightly; O_EXCL lock with stale detection; per-step JSONL ledger; failure isolation; health status; runbook for one Task Scheduler/cron entry with catch-up.",
+     "when": "After task 1; T23 renders the ledger; 5.5.5 and 2.2.6 register steps.",
+     "what_for": "Exactly one run per schedule, and 'failing twice' becomes countable.",
+     "subtasks": [
+      {
+       "text": "Runner, STEPS registry and O_EXCL lock; OS scheduler as the only trigger; test two concurrent runs -> one runs, one records 'already running'.",
+       "flags": [
+        "F-A5-028"
+       ]
+      },
+      {
+       "text": "Ledger per step, overdue warning at API start, consecutive_failures in /health.",
+       "flags": [
+        "F-B5-013"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Erasure service with explicit table map and tombstone bridge",
+     "why": "Nothing links a user to their data, and deletes outside the app leave Redis copies and in-process results.",
+     "where": "services/erasure.py, models/erased_session.py + migration, agents/lifecycle.py, delete-all route (T17), CLI",
+     "how": "Ordered ERASURE_MAP with the anon guard; per session T07 tombstoned delete plus erased_sessions row; sweeper applies tombstones; retention reuses it.",
+     "when": "After T17 'one owner column', T30, T07 'version-guarded Redis copy', T12 'sweeper'.",
+     "what_for": "One request removes every copy of a founder's data, wherever it is held.",
+     "subtasks": [
+      {
+       "text": "ERASURE_MAP, erase_user/erase_sessions and the anon guard; test that erasing a user removes sessions, founder records and documents and never touches anonymous rows; metadata test fails on an unlisted table with a personal column.",
+       "flags": [
+        "F-B5-015"
+       ]
+      },
+      {
+       "text": "Redis tombstone + copy drop and erased_sessions; sweeper applies them; test: erase from a separate process, then the API answers 404 and the board holds nothing.",
+       "flags": [
+        "F-B5-016"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Decide and implement the consent rule on erasure",
+     "why": "Erasure deletes consents while retention keeps them a year after the data.",
+     "where": "SYSTEM-DESIGN.md §5.4, new decision record, services/erasure.py, T19 consent model",
+     "how": "Erasure replaces consents with de-identified tombstones; retention deletes tombstones a year after erasure.",
+     "when": "Decision now; implementation with T19.",
+     "what_for": "Proof of lawful processing is kept without keeping the person.",
+     "subtasks": [
+      {
+       "text": "Write the rule into SYSTEM-DESIGN §5.4 and a decision record; tombstone step in ERASURE_MAP and its one-year purge in retention.",
+       "flags": [
+        "F-B5-014"
+       ]
+      }
+     ]
+    }
+   ],
+   "tests": "test_config (identical paths from two cwds); test_maintenance (lock exclusivity, stale takeover, failure isolation, ledger, consecutive_failures, overdue with a fake clock); test_erasure (map coverage via SQLAlchemy metadata, anon guard, cross-process erasure with FakeRedis, consent tombstone has no user id).",
+   "risks": "A laptop off for days runs one catch-up; steps are idempotent. Pseudonymous consent tombstones may still count as personal data; minimal fields and one-year deletion are the mitigation, written down for review. The metadata coverage test relies on conventional column names."
+  }
+ ]
+}
