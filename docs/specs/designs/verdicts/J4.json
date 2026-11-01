@@ -1,0 +1,1653 @@
+{
+ "judge": "J4",
+ "verdicts": [
+  {
+   "theme": "T22",
+   "winner": "merge",
+   "scores": {
+    "A": {
+     "root_cause": 5,
+     "correctness": 5,
+     "constraints": 5,
+     "simplicity": 4,
+     "plan": 5
+    },
+    "B": {
+     "root_cause": 4,
+     "correctness": 4,
+     "constraints": 4,
+     "simplicity": 5,
+     "plan": 4
+    }
+   },
+   "reasoning": "Both chose the same core (pytest repo-consistency tests, generated .env.example, frontend tsc+knip job, vulture, script tests). A read the code more carefully: app/swarms cannot be deleted yet because routers/ideation.py:48-49 (RoadmapSwarm, Roadmap) and schemes/annotate.py:13 still import it (verified), so A moves milestones.py/models.py into planner/ now and deletes the package only when 1.4.1 retires the legacy routes; B's task 1 says 'delete app/swarms' as a first cleanup step, which would break those imports unless it waits. B deletes the six orphan components (Aurora, Facade, Motif, Ornament, Procession, Ring) outright, which collides with the owner's pending frontend-theme decision; A puts them on a knip ignore list with a reason. A also adds deptry to prove langgraph/langchain-core/openai (pyproject.toml:39-43) are dead before removing them, a vite build step, and the weekly workflow running script tests first. B contributes two good refinements A lacks: the build-spec citation test is xfail (visible, not blocking) until the owner exports BUILD-SPEC.md, and knip/vulture run one PR in report mode to build whitelists before failing the build. Final = A's design and task list, with B's xfail citation test and report-mode rollout.",
+   "final": {
+    "chosen": "Repo-consistency tests in pytest + generated .env.example + frontend CI job (tsc, knip, build, generated-API diff) + backend vulture and deptry + script tests, after one-off cleanups; citation test xfail until the owner export; dead-code tools start in report mode",
+    "why_chosen": "Every drift class found (env, runbook event names, backticked paths and links, build-spec citations, dead settings/deps/files, untested scripts) is a cheap mechanical comparison that can run in the existing CI with standard tools; generating .env.example removes one hand-kept list entirely. Cleanups land with the check that holds them so Main never goes red. The swarms package is moved in two steps because legacy routes still import it, and the orphan theme components are ignored rather than deleted pending the owner's decision.",
+    "approaches": [
+     {
+      "name": "Repo-consistency tests in pytest + generated .env.example",
+      "advantages": "No new tool; one place for repo checks; failures appear in the existing CI job with a one-line fix.",
+      "drawbacks": "Regex allow-lists to maintain.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Frontend CI job (tsc --noEmit, knip, vite build) + backend vulture and deptry",
+      "advantages": "Type errors, unused files/exports/deps fail the PR.",
+      "drawbacks": "Dev dependencies and whitelists for framework-called names.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Off-the-shelf link checkers / env generators (lychee, markdown-link-check, pydantic-settings-export)",
+      "advantages": "Ready made; external URLs and anchors.",
+      "drawbacks": "Blind to backticked code paths and log names, where the rot is; external URL checks are flaky; generators lightly maintained.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "pre-commit hook suite only",
+      "advantages": "Fast local feedback; pre-commit already a dev dependency.",
+      "drawbacks": "Skippable, absent on bot PRs, not a PR gate.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Docs site / docs generated from code (mkdocs --strict, mkdocstrings)",
+      "advantages": "Rendered docs; reference cannot drift.",
+      "drawbacks": "New toolchain; does not cover runbooks, env, spec citations or code paths.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Central registries (log-event constants, settings registry)",
+      "advantages": "Drift impossible by construction.",
+      "drawbacks": "Refactor of every log call for a guarantee a grep test gives.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Process only (PR template checklist)",
+      "advantages": "No code.",
+      "drawbacks": "The drift happened despite the rule.",
+      "cost": "free/open source"
+     }
+    ],
+    "not_chosen": [
+     {
+      "name": "Off-the-shelf link checkers / env generators (lychee, markdown-link-check, pydantic-settings-export)",
+      "reason": "Miss backticked paths and log names; external URLs make CI flaky."
+     },
+     {
+      "name": "pre-commit hook suite only",
+      "reason": "Skippable; the same checks may also be wired into pre-commit, but CI is the gate."
+     },
+     {
+      "name": "Docs site / docs generated from code (mkdocs --strict, mkdocstrings)",
+      "reason": "New toolchain that does not cover the docs that actually drifted."
+     },
+     {
+      "name": "Central registries (log-event constants, settings registry)",
+      "reason": "Broad logging refactor for what a test gives cheaply."
+     },
+     {
+      "name": "Process only (PR template checklist)",
+      "reason": "Already failed in practice."
+     }
+    ],
+    "design": {
+     "components": "scripts/gen_env_example.py (new): renders backend/.env.example from Settings.model_fields in order (name, default, Field description, secret marker); --check exits 1 on diff. backend/tests/repo/test_docs.py: runbook backticked a.b event names must occur as string literals in backend/app; relative links and backticked repo paths (.py/.ts/.tsx/.md/.json/.yml) must exist or be allow-listed; 'build spec N' citations must resolve to a heading in docs/specs/BUILD-SPEC.md (xfail until the export exists, then strict). backend/tests/repo/test_settings.py: env file equals generator output; every Settings field is read in app/ outside config.py or listed as library-consumed. backend/tests/scripts/ with saved samples for parse/merge functions. ci.yml: backend adds vulture (vulture_whitelist.py) and deptry, pytest --cov=app --cov=../scripts; new frontend job (npm ci, npm run typecheck = tsc --noEmit, knip, vite build, T28 gen:api + git diff --exit-code). weekly-checks.yml runs the script tests before the scripts. One-off cleanups: delete llm_provider/openai_api_key/llm_model_router with services/llm.py; drop langgraph, langchain-core, openai once deptry confirms (pgvector with T16); git mv swarms/roadmap/milestones.py and models.py to planner/graph.py and planner/models.py, update planner/roadmap.py and schemes/annotate.py imports; delete app/swarms when 1.4.1 retires RoadmapSwarm; agents/__init__.py docstring; FILE_STRUCTURE.md rewritten short or deleted with the map in README; VANIGAM-EXPLAINED paths and README .kiro link fixed; model-down.md names real events; research-budget.md documents the weekly-job behaviour.",
+     "data_model": "Settings fields gain Field(description=...) as the single source for env comments. tests/repo/allowlist.txt (path + reason; test prints the count). backend/vulture_whitelist.py (routes, validators). frontend/knip.json (entry src/main.tsx; ignore list for Aurora, Facade, Motif, Ornament, Procession, Ring with reason 'pending owner theme decision').",
+     "algorithm": "Pure file reads and regexes. Runbook: backticked tokens ^[a-z_]+\\.[a-z_]+$ in docs/runbooks must appear in backend/app. Paths: backticked tokens with code/doc extensions must exist or be allow-listed. Citations: r'build spec\\s*§?(\\d+(\\.\\d+)*)' must match a heading in docs/specs/BUILD-SPEC.md. Env: diff generator output with the committed file.",
+     "files": [
+      "scripts/gen_env_example.py (new)",
+      "backend/.env.example (generated)",
+      "backend/app/core/config.py",
+      "backend/app/services/llm.py (deleted with 5.7.1.2)",
+      "backend/tests/repo/test_docs.py (new)",
+      "backend/tests/repo/test_settings.py (new)",
+      "backend/tests/repo/allowlist.txt (new)",
+      "backend/tests/scripts/ (new, with samples)",
+      "backend/vulture_whitelist.py (new)",
+      "backend/pyproject.toml",
+      ".github/workflows/ci.yml",
+      ".github/workflows/weekly-checks.yml",
+      "frontend/package.json",
+      "frontend/knip.json (new)",
+      "backend/app/planner/graph.py, backend/app/planner/models.py (moved), backend/app/planner/roadmap.py",
+      "backend/app/schemes/annotate.py",
+      "backend/app/swarms/ (deleted with 1.4.1)",
+      "backend/app/agents/__init__.py",
+      "docs/specs/BUILD-SPEC.md, docs/specs/ARCHITECTURE-DASHBOARD.md (owner export)",
+      "FILE_STRUCTURE.md, VANIGAM-EXPLAINED.md, README.md, docs/runbooks/model-down.md, docs/runbooks/research-budget.md"
+     ],
+     "rollout": "Each check lands with the cleanup that makes it pass (Main never red). knip and vulture run in report mode for one PR to build whitelists, then fail the build. Citation test is xfail until the owner exports the build spec, then strict. Shares ci.yml with T16 (separate commits); gen:api diff after T28 task 1. One commit per file, branch + PR merged by the owner.",
+     "offline": "All checks run locally with pytest and npm and in free GitHub Actions; no external URLs are fetched."
+    },
+    "tasks": [
+     {
+      "title": "Generated .env.example and settings checks",
+      "why": "Eight settings are undocumented and three orphan settings still advertise OpenAI.",
+      "where": "scripts/gen_env_example.py (new), backend/app/core/config.py, backend/.env.example, backend/tests/repo/test_settings.py",
+      "how": "Generator from Settings.model_fields with --check; move comments into Field descriptions; regenerate; delete the orphans with services/llm.py; unused-setting test.",
+      "when": "First; orphan deletion rides with 5.7.1.2.",
+      "what_for": "Config matches code and stays that way.",
+      "subtasks": [
+       {
+        "text": "gen_env_example.py with --check; Field descriptions; regenerate .env.example (adds the 8 missing settings); test env equals generator output",
+        "flags": [
+         "F-A5-022"
+        ]
+       },
+       {
+        "text": "Delete llm_provider, openai_api_key, llm_model_router and their env lines with services/llm.py; unused-setting test",
+        "flags": [
+         "F-A5-040"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Docs consistency tests and root doc fixes",
+      "why": "Runbooks cite events nothing logs; root docs map a dropped architecture; code paths in docs rot.",
+      "where": "backend/tests/repo/test_docs.py (new), allowlist.txt, docs/runbooks/model-down.md, docs/runbooks/research-budget.md, FILE_STRUCTURE.md, VANIGAM-EXPLAINED.md, README.md",
+      "how": "Fix the docs, then add the runbook-event test and the link/backticked-path test with a reasoned allow-list, each with a negative fixture.",
+      "when": "After task 1.",
+      "what_for": "Operators find the events runbooks name; readers get the current map.",
+      "subtasks": [
+       {
+        "text": "Replace model.failed_turn_offline with the real event; add the weekly-job note to research-budget.md; runbook log-name test",
+        "flags": [
+         "F-A5-024"
+        ]
+       },
+       {
+        "text": "Rewrite or delete FILE_STRUCTURE.md; fix VANIGAM-EXPLAINED paths and README .kiro link; link and backticked-path test",
+        "flags": [
+         "F-A5-023"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Build spec exported into the repo and citations enforced",
+      "why": "Code cites rules that live only in private claude.ai artifacts.",
+      "where": "docs/specs/BUILD-SPEC.md, docs/specs/ARCHITECTURE-DASHBOARD.md (new); citing comments in council/, elicitation/session.py, planner/risks.py, services/breaker.py, council_weights.json, tests/eval/ideas.json",
+      "how": "Add the citation test as xfail now; owner exports both artifacts to Markdown with section anchors; citations re-pointed; test flipped to strict.",
+      "when": "Test now (xfail); export waits on the owner.",
+      "what_for": "Every rule the code claims is readable in the repo.",
+      "subtasks": [
+       {
+        "text": "Citation test ('build spec N' must resolve to a docs/specs heading), xfail until export",
+        "flags": [
+         "F-A5-018"
+        ]
+       },
+       {
+        "text": "Owner exports build spec and dashboard to docs/specs; re-point citations; make the test strict",
+        "flags": [
+         "F-A5-018"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Frontend CI job and dead-code checks",
+      "why": "Nothing type-checks the frontend; dead code and dependencies are removed only by hand.",
+      "where": ".github/workflows/ci.yml, frontend/package.json, frontend/knip.json, backend/vulture_whitelist.py, backend/pyproject.toml",
+      "how": "Frontend job: npm ci, tsc --noEmit, knip (six orphans on ignore list pending owner decision), vite build, gen:api diff. Backend: vulture + deptry, report mode one PR then failing; remove langgraph/langchain-core/openai once deptry confirms.",
+      "when": "After T16's ci.yml edits (separate commit); gen:api after T28 task 1.",
+      "what_for": "Type errors and new dead code fail the PR.",
+      "subtasks": [
+       {
+        "text": "Frontend job: typecheck, knip with ignore list, build, generated-API diff",
+        "flags": [
+         "F-A5-041"
+        ]
+       },
+       {
+        "text": "Backend vulture + deptry with whitelists; remove dead runtime dependencies",
+        "flags": [
+         "F-A5-041"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Move planner graph code out of app/swarms",
+      "why": "Live roadmap code sits in a package named after the dropped architecture.",
+      "where": "swarms/roadmap/milestones.py, models.py -> planner/graph.py, planner/models.py; planner/roadmap.py; schemes/annotate.py; agents/__init__.py",
+      "how": "git mv with import updates now; delete app/swarms when 1.4.1 retires RoadmapSwarm and the legacy routes in routers/ideation.py:48-49.",
+      "when": "Move now; deletion with 1.4.1.3.",
+      "what_for": "Package names match the design without breaking legacy routes.",
+      "subtasks": [
+       {
+        "text": "git mv graph functions and models into planner; fix imports and the agents docstring",
+        "flags": [
+         "F-A5-042"
+        ]
+       },
+       {
+        "text": "Delete app/swarms with 1.4.1 once nothing imports it",
+        "flags": [
+         "F-A5-042"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Tests for the reference-data scripts",
+      "why": "Weekly scripts rewrite class A data with no tests.",
+      "where": "backend/tests/scripts/ (new) with samples, ci.yml coverage, weekly-checks.yml",
+      "how": "Factor parse/merge functions where needed; unit tests on saved samples; --cov=../scripts; weekly workflow runs them first.",
+      "when": "With T02's harvest-script task.",
+      "what_for": "A parser regression cannot silently rewrite reference data.",
+      "subtasks": [
+       {
+        "text": "Sample-based unit tests for check_incubator_intake, check_investor_signals, build_domain_signals and other data scripts; coverage includes scripts/",
+        "flags": [
+         "F-A5-009"
+        ]
+       },
+       {
+        "text": "weekly-checks.yml runs the script tests before the scripts",
+        "flags": [
+         "F-A5-009"
+        ]
+       }
+      ]
+     }
+    ],
+    "tests": "Each check ships with a negative fixture that must fail (temp Markdown citing a missing path, a runbook naming a fake event, a Settings field absent from the env file) and passes on the real repo. An injected type error on a scratch branch fails the frontend job. Script tests run offline on samples. actionlint on the edited workflows.",
+    "risks": "Allow-lists can become dumping grounds: each entry needs a reason and tests print the count. Path regexes may flag prose. The export depends on the owner (citation test stays visible as xfail). vulture false positives on FastAPI routes/validators and knip false positives on dynamic imports handled by whitelists; knip ignore list revisited when the owner decides on the theme files."
+   }
+  },
+  {
+   "theme": "T23",
+   "winner": "merge",
+   "scores": {
+    "A": {
+     "root_cause": 5,
+     "correctness": 4,
+     "constraints": 5,
+     "simplicity": 5,
+     "plan": 4
+    },
+    "B": {
+     "root_cause": 5,
+     "correctness": 5,
+     "constraints": 5,
+     "simplicity": 4,
+     "plan": 5
+    }
+   },
+   "reasoning": "Both diagnosed the same causes correctly (BaseHTTPMiddleware at core/middleware.py returns at headers for StreamingResponse; no metrics store; jobs log no finish; Breaker.state unread and /health static; grounding.dropped logs the sentence; x-request-id taken unchecked). Both build a fixed-bucket in-process registry. B is stronger on three points: a pure ASGI middleware that times to the last body chunk actually fixes F-B1-027 at its source (A only stops timing streaming routes and relies on in-generator marks); a per-minute PostgreSQL roll-up (metric_minute) gives cross-worker, restart-surviving p95 using the database and Alembic already in the stack, with an in-process fallback when the store is memory (A's numbers are per-process unless optional Redis is on, which is off by default); and the status route is guarded by an operator token or localhost instead of being open until T14. B also correctly rejects F-B1-029's prometheus_client recommendation, and A's extra /metrics Prometheus text endpoint is speculative with no scraper in the free stack. A contributes what B lacks: an in-process 10-minute per-minute ring so the no-database fallback still yields a windowed p95 (B's snapshot_and_reset would otherwise empty it), TTS timing in /speak, deny-key redaction (sentence, text, reply, idea, utterance, transcript) alongside truncation, and alert rules evaluated on read (first_sentence p50 > 1.5 s over 10 min, breaker open, store unreachable, research paused). Final = B's design with those four A parts; no /metrics endpoint and no Redis mirror.",
+   "final": {
+    "chosen": "In-process fixed-bucket metrics registry with a 10-minute per-minute ring, rolled up per minute into PostgreSQL (metric_minute) when the database store is live, read by a guarded status endpoint; plus a pure ASGI timing middleware, in-stream turn marks, job outcome events and a log-content policy",
+    "why_chosen": "It gives SYSTEM-DESIGN's medians, p95 and 10-minute window across workers using only the database the app already has, keeps working in-process (with a real window) when there is no database or Redis, and adds no service. The ASGI middleware and in-generator TurnClock measure where streaming actually happens. One registry is the sink for T08, T28, T03 and T13 counters, so one page shows latency, caches, budgets and degraded modes.",
+    "approaches": [
+     {
+      "name": "In-process fixed-bucket histograms + counters with a per-minute ring, rolled up per minute into PostgreSQL, read by a status endpoint",
+      "advantages": "Cross-worker percentiles that survive restarts; no new service; offline fallback in-process.",
+      "drawbacks": "Bucket-approximate percentiles; one small table and migration.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "In-process registry only, with optional Redis minute-bucket mirror and a Prometheus-text /metrics endpoint",
+      "advantages": "No migration; fixed memory; Prometheus-ready format.",
+      "drawbacks": "Per process unless optional Redis is on; /metrics has no scraper in the free stack.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "prometheus_client (multiprocess) + self-hosted Prometheus/Grafana",
+      "advantages": "Industry standard queries, alerting and dashboards.",
+      "drawbacks": "Extra always-on services; multiprocess directory; aggregation stacks dropped from the plan; the in-app page still needs its own store.",
+      "cost": "free/open source (extra services)"
+     },
+     {
+      "name": "Redis-only HINCRBY minute buckets",
+      "advantages": "Cross-worker, simple.",
+      "drawbacks": "Redis optional and off by default so the default setup shows nothing; network call per observation; lost on Redis restart.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "OpenTelemetry SDK with a collector",
+      "advantages": "Full traces across job boundaries.",
+      "drawbacks": "Heavy dependencies; needs a collector/backend the free setup lacks; auto-instrumentation also stops at headers for streams.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Parse stdout/log files offline (nightly or on request)",
+      "advantages": "No hot-path cost.",
+      "drawbacks": "Fragile, per-host, a day late, no live degraded-mode view.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Client-only Performance API marks",
+      "advantages": "True perceived latency.",
+      "drawbacks": "Lost on bad networks; server steps invisible.",
+      "cost": "free/open source"
+     }
+    ],
+    "not_chosen": [
+     {
+      "name": "In-process registry only, with optional Redis minute-bucket mirror and a Prometheus-text /metrics endpoint",
+      "reason": "The in-process ring is kept as the fallback, but per-process numbers alone are wrong under several workers, Redis is off by default, and /metrics has no consumer in the free stack."
+     },
+     {
+      "name": "prometheus_client (multiprocess) + self-hosted Prometheus/Grafana",
+      "reason": "Requires always-on services the owner cannot host free; the in-app page would still need its own store."
+     },
+     {
+      "name": "Redis-only HINCRBY minute buckets",
+      "reason": "Default free setup would show nothing; hot-path network call; data lost on restart."
+     },
+     {
+      "name": "OpenTelemetry SDK with a collector",
+      "reason": "Large dependency set with no free store or query backend; tracing is not what the flags ask for."
+     },
+     {
+      "name": "Parse stdout/log files offline (nightly or on request)",
+      "reason": "Cannot give a live cross-worker p95 or a degraded-mode view."
+     },
+     {
+      "name": "Client-only Performance API marks",
+      "reason": "Kept only as one extra mark (first-audio beacon); cannot see server steps."
+     }
+    ],
+    "design": {
+     "components": "1) core/metrics.py: Counter/Histogram registry; log-scale buckets 5 ms..120 s (~20 buckets) chosen dense around the 1-1.5 s targets; observe(name, ms, **labels) with a fixed label allowlist per metric (no ids, no text); a 10-slot per-minute ring per series for in-process windowed summaries; drain_deltas() for the flush (ring untouched); quantile(buckets, q). 2) core/metrics_flush.py: lifespan task every 60 s adding this worker's deltas into metric_minute when the SqlStore is live; 7-day retention; on DB error keep deltas and retry (bounded 60 min). 3) core/middleware.py: RequestContextMiddleware rewritten as pure ASGI middleware wrapping send(), recording time to http.response.start and to the final body chunk (more_body False) per route template; x-request-id accepted only if ^[A-Za-z0-9._-]{8,64}$, else uuid4, bound via structlog contextvars. 4) agents/ideation.py turn_stream: TurnClock perf_counter marks ack, first_sentence, done and per tool call, labelled by lane (offline/model/provider), observed and written as one turn.timing log line; lives in the T28 typed event writer. 5) agents/jobs.py: job.done with seconds; job.duration histogram by kind; Board.wait counts job.wait{kind, outcome=in_time|late|failed}. 6) routers/voice.py: TTS seconds per /speak call. 7) routers/status.py: GET /api/v1/status guarded by an operator token from settings, else localhost only; aggregates only: breakers (state, open_until), store name and DB reachability, redis.is_live (T08), research pauses, budgets used, provider chain, egress block (T25), 10-minute p50/p95 per metric, job in-time ratio, alerts[] evaluated on read (first_sentence p50 > 1.5 s over 10 min, breaker open, store unreachable, research paused), and a 'scope' field saying cluster (DB) or this worker. routers/health.py adds /health/ready. POST /api/v1/status/client-timing: bounded, no ids, rate-limited first-audio beacon. 8) Log policy in core/logging.py: grounding.dropped logs problem codes and sha256(sentence)[:10]; a structlog processor replaces values of deny keys (sentence, text, reply, idea, utterance, transcript) with length+hash and truncates any other string over 200 chars.",
+     "data_model": "metric_minute(minute timestamptz, name text, labels jsonb canonical sorted, count bigint, sum_ms double precision, buckets int[], PRIMARY KEY (minute, name, labels)); counters use count only. Metrics: turn.ack_ms, turn.first_sentence_ms, turn.done_ms{lane}, turn.tool_ms{tool}, http.response_ms{route}, job.duration_ms{kind}, job.wait{kind,outcome}, voice.tts_ms, voice.first_audio_ms, grounding.dropped{code}, breaker.open{name}.",
+     "algorithm": "Quantile: sum bucket arrays over the window, walk cumulative counts to q x total, interpolate linearly inside the bucket. In-process ring rotates on observe by minute. Flush: swap delta dicts (single event loop, atomic), upsert with SELECT ... FOR UPDATE and add arrays in Python. Status reads metric_minute for the last 10 minutes when the DB is live, else the in-process ring.",
+     "files": [
+      "backend/app/core/metrics.py (new)",
+      "backend/app/core/metrics_flush.py (new)",
+      "backend/app/db/migrations/versions/<new>_metric_minute.py (new)",
+      "backend/app/core/middleware.py",
+      "backend/app/core/logging.py",
+      "backend/app/core/errors.py",
+      "backend/app/agents/ideation.py",
+      "backend/app/agents/jobs.py",
+      "backend/app/routers/voice.py",
+      "backend/app/routers/status.py (new)",
+      "backend/app/routers/health.py",
+      "backend/app/main.py (lifespan, router)",
+      "frontend/src/voice/mentorVoice.ts (first-audio beacon)",
+      "backend/tests/unit/test_metrics.py (new)",
+      "backend/tests/unit/test_log_privacy.py (new)"
+     ],
+     "rollout": "1) Log policy and request-id validation now (no dependency). 2) Registry with in-process ring and the guarded status page. 3) ASGI middleware, TurnClock (with T28 task 1), job outcomes, TTS timing. 4) metric_minute migration and flush. Each later metric is added by the theme owning the code path through the registry API.",
+     "offline": "No external service. Without a database the status page shows this worker's 10-minute window and says so; without Redis it reports 'Redis: off'."
+    },
+    "tasks": [
+     {
+      "title": "Log-content policy and request-id validation",
+      "why": "Dropped model sentences carrying the founder's idea are logged verbatim, and a client-controlled request id is echoed and logged unchecked.",
+      "where": "backend/app/agents/ideation.py (_Gate), core/middleware.py, core/logging.py, core/errors.py",
+      "how": "Codes + sha256[:10] for dropped sentences; strict request-id pattern or uuid4; deny-key redaction plus truncation processor; a test forcing a gate drop and scanning captured logs.",
+      "when": "First; no dependencies.",
+      "what_for": "DPDP-safe logs that operators can still count by reason, and no header injection.",
+      "subtasks": [
+       {
+        "text": "grounding.dropped logs codes + hash; request id validated; deny-key redaction and truncation processor; forced-drop privacy test",
+        "flags": [
+         "F-A2-015"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Metrics registry with windowed percentiles and database roll-up",
+      "why": "There is nowhere to compute medians and p95, and in-process numbers cover one worker only.",
+      "where": "backend/app/core/metrics.py, core/metrics_flush.py, Alembic migration, main.py lifespan",
+      "how": "Fixed-bucket histograms and counters with allowlisted labels; 10-slot per-minute ring; 60 s flush into metric_minute when the DB store is live; 7-day retention.",
+      "when": "After task 1; before tasks 3-5.",
+      "what_for": "5.4.1-5.4.3 have a store shared by every worker, with no extra service.",
+      "subtasks": [
+       {
+        "text": "Registry, buckets, per-minute ring, quantile function and unit tests",
+        "flags": [
+         "F-A5-025",
+         "F-B1-029"
+        ]
+       },
+       {
+        "text": "metric_minute table, flush task, and in-process fallback when the database is absent",
+        "flags": [
+         "F-A5-025",
+         "F-B1-029"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Turn timings inside the stream and an ASGI timing middleware",
+      "why": "BaseHTTPMiddleware timing ends at headers, so streamed turns report milliseconds and ack/first sentence/done are never measured.",
+      "where": "backend/app/core/middleware.py, agents/ideation.py (turn_stream), routers/voice.py, frontend/src/voice/mentorVoice.ts",
+      "how": "Pure ASGI middleware timing to response start and last body chunk; TurnClock marks per lane in the T28 event writer with one turn.timing line; TTS timing in /speak; bounded first-audio beacon.",
+      "when": "After task 2; shares the event writer with T28 task 1.",
+      "what_for": "The latency founders feel on voice turns becomes visible and tunable.",
+      "subtasks": [
+       {
+        "text": "ASGI middleware with end-of-body timing per route template; TurnClock marks ack/first_sentence/done per lane",
+        "flags": [
+         "F-B1-027"
+        ]
+       },
+       {
+        "text": "TTS timing in /speak and the client first-audio beacon (no ids, rate-limited)",
+        "flags": [
+         "F-B1-027"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Job outcome events and wait in-time counters",
+      "why": "Jobs log start and failure but not finish, so decision 0010's wait budgets cannot be tuned.",
+      "where": "backend/app/agents/jobs.py",
+      "how": "job.done log with seconds; job.duration histogram by kind; Board.wait counts in_time/late/failed.",
+      "when": "After task 2.",
+      "what_for": "research_wait_s, council_wait_s and opinion_wait_s can be set from data.",
+      "subtasks": [
+       {
+        "text": "job.done event with duration and job.wait{outcome} counter from Board.wait",
+        "flags": [
+         "F-A5-030"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Guarded status endpoint for degraded modes",
+      "why": "Open breakers, the store in use, Redis liveness and research pauses are invisible until founders complain.",
+      "where": "backend/app/routers/status.py (new), routers/health.py, services/breaker.py, core/redis.py, agents/store.py",
+      "how": "GET /api/v1/status (operator token or localhost) aggregating breakers, store and DB reachability, redis.is_live, research pauses, budgets, provider chain, egress, 10-minute p50/p95, job in-time ratio and alerts evaluated on read; /health/ready.",
+      "when": "After task 2 and T08's Redis re-probe; egress block after T25 task 1.",
+      "what_for": "Each SYSTEM-DESIGN section 9 failure mode is visible the moment it starts.",
+      "subtasks": [
+       {
+        "text": "Status route with breaker, store, Redis, pause, provider and egress sections; readiness probe",
+        "flags": [
+         "F-A5-026"
+        ]
+       },
+       {
+        "text": "Latency and job summaries plus alert rules (first_sentence p50 > 1.5 s over 10 min) in the status payload",
+        "flags": [
+         "F-A5-025",
+         "F-B1-029"
+        ]
+       }
+      ]
+     }
+    ],
+    "tests": "Quantile over known bucket arrays within one bucket; ring drops data older than 10 minutes (injected clock); flush merges two workers' deltas into one row; registry rejects unknown labels. ASGI middleware: a streaming endpoint sleeping 200 ms between chunks records >= 200 ms; a request id with a newline or 200 chars is replaced. Offline turn gives ack <= first_sentence <= done. A job finishing after wait() counts 'late'. A forced grounding drop leaves no sentence text but leaves code and hash in captured logs. An opened breaker and memory store show in status; Redis off shows off; status without token from a non-local client is 403; payload contains no ids or text.",
+    "risks": "Label cardinality held by allowlists. A dying worker loses up to a minute of deltas (acceptable). Bucket edges bound accuracy. The redaction processor is a safety net, not the primary control. The client beacon must not become a tracking channel: no ids, bounded values, rate-limited."
+   }
+  },
+  {
+   "theme": "T24",
+   "winner": "merge",
+   "scores": {
+    "A": {
+     "root_cause": 5,
+     "correctness": 4,
+     "constraints": 4,
+     "simplicity": 5,
+     "plan": 5
+    },
+    "B": {
+     "root_cause": 5,
+     "correctness": 4,
+     "constraints": 5,
+     "simplicity": 3,
+     "plan": 4
+    }
+   },
+   "reasoning": "Both read the code correctly (slots.py _required_for: idea REQUIRED 9 minus 3 plus 4 = 10 against Q_MAX = 7; idea-worded questions; research on the self-description; CONFIRMING -> GENERATING) and chose the same approach: one machine, trimmed required set, per-mode wording, cited skill/asset tags on cards, a deterministic ranker and a choice step. A also verified that AgentStartIn has no mode (routers/ideation.py:248), so the mode is unreachable today and must be exposed last. They differ on two points that matter. (1) Where the choice lives: A puts it in T27's agent-level PendingAction Choose(card) with T27's ordinal/keyword matcher; B adds SessionState.CHOOSING plus a Choice field in the elicitation session and a separate POST .../choice route. Both T27 designs already define Choose{card|lever} in the agent session, so B's CHOOSING would be a second, parallel pending-choice mechanism that T27's decide() would have to reconcile; A's fits the dependency graph. (2) Data honesty: B makes capital_band and funding_route purpose-tagged (financial consent, T19) instead of required, so the required set is 4 and never conflicts with consent; A lists capital_band as required yet says it is skipped without consent, which is self-contradictory. B also drops UNKNOWN terms (district not rated, capital not asked) and renormalises instead of A's invented defaults (capital 0.5 when unknown, district 0 when absent), never shows a card with zero skill overlap, and correctly notes that card needs/offers are business capabilities, not personal skills, so A's half-weight capability fallback for untagged cards is unsound. Final = A's structure (T27 Choose, skills.json vocabulary with en/ta/hi aliases, ship-the-mode-last rollout, ranker reasons) with B's 4-slot required set, purpose tags, UNKNOWN-dropping scoring, zero-overlap exclusion and source-count tie-break.",
+   "final": {
+    "chosen": "First-class experience flow on the same machine: a 4-slot experience required set with money behind financial consent, per-mode question text and order, research gated on a real idea, cards enriched with cited skills/assets tags, a deterministic ranker that drops unknown terms, and T27's Choose(card) pending action for picking an opportunity",
+    "why_chosen": "It fixes the modelling error (a flow, not a reworded required set) inside the existing selector, engine and the T27 conversation state, so there is one pending-choice mechanism for cards and levers. The required set fits Q_MAX by construction, money questions honour consent, and the ranker is code-decided (0002), explainable and cited, offline, with no invented values when a fact is unknown.",
+    "approaches": [
+     {
+      "name": "First-class experience flow on the same machine (trimmed required set, per-mode wording, cited card ranker, a choice step)",
+      "advantages": "Fits the 7-question budget; skills before money; explainable, citable, offline; one code path.",
+      "drawbacks": "Reviewer time to tag cards; vocabulary needs native review.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Choice held as an elicitation SessionState.CHOOSING with its own Choice field and route",
+      "advantages": "Resumable inside the elicitation document.",
+      "drawbacks": "Duplicates T27's agent-level Choose pending action; two places decide what is pending.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Separate experience engine with its own slot keys",
+      "advantages": "Clean wording; no risk to the idea path.",
+      "drawbacks": "Duplicates slots and elicit-once; facts do not carry into the idea flow.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Per-mode Q_MAX (allow 10 questions in experience mode)",
+      "advantages": "One constant.",
+      "drawbacks": "Longer interviews for the least confident founders; contradicts the seven-question decision.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Model-led discovery and wording",
+      "advantages": "Natural wording, flexible matching.",
+      "drawbacks": "No offline path; model decides (0002); uncited; egress in private mode.",
+      "cost": "free tier"
+     },
+     {
+      "name": "Category-first picker",
+      "advantages": "No card enrichment.",
+      "drawbacks": "Moves the matching onto low-literacy founders; breaks voice-first flow.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Embedding similarity of skills to card summaries",
+      "advantages": "Semantic matches without tagging.",
+      "drawbacks": "Dropped by the plan; model download and CPU; not explainable or citable; no pgvector.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Keyword overlap of skills with card text / capability fallback",
+      "advantages": "No data work.",
+      "drawbacks": "Weak recall; card capabilities are business capabilities, not personal skills; unexplainable score.",
+      "cost": "free/open source"
+     }
+    ],
+    "not_chosen": [
+     {
+      "name": "Choice held as an elicitation SessionState.CHOOSING with its own Choice field and route",
+      "reason": "T27 already defines Choose{card|lever} in the agent session; a second mechanism would conflict with decide()."
+     },
+     {
+      "name": "Separate experience engine with its own slot keys",
+      "reason": "Duplicates elicit-once; facts would not flow into the idea path."
+     },
+     {
+      "name": "Per-mode Q_MAX (allow 10 questions in experience mode)",
+      "reason": "Contradicts the seven-question product decision."
+     },
+     {
+      "name": "Model-led discovery and wording",
+      "reason": "No offline path; model decides (0002); uncited cards."
+     },
+     {
+      "name": "Category-first picker",
+      "reason": "Puts the work on the founders least able to do it; breaks voice-first."
+     },
+     {
+      "name": "Embedding similarity of skills to card summaries",
+      "reason": "Dropped by the plan, unexplainable, CPU cost."
+     },
+     {
+      "name": "Keyword overlap of skills with card text / capability fallback",
+      "reason": "Too weak and semantically wrong; untagged cards are simply not offered until tagged."
+     }
+    ],
+    "design": {
+     "components": "elicitation/slots.py: Slot.questions: dict[EntryMode,str] (fallback to question), Slot.order_by_mode, Slot.purpose (capital_band, funding_route -> financial, T19); _required_for(EXPERIENCE) = {founder_skills, founder_years, owned_assets, district}; sector reworded ('Which line of work would you like to be in?') and enriching; motivation enriching (tie-break); stage/product_form/funding_route not asked before a card is chosen. elicitation/selector.py: experience anchor founder_skills; slots whose purpose is not granted are skipped without a miss. engine.restate: experience wording. elicitation/extract.py: whole-word alias matching of founder_skills/owned_assets free text to tags (T01 cue rules). planner/data/registry/skills.json (new): cited skills and assets vocabularies with en/ta/hi aliases. Card JSON adds skills_used, assets_used, sources. planner/registry.py: opportunity ranking admits review in {base, approved} with non-empty sources and tags; drafts excluded. planner/opportunity.py (new): rank(facts, cards, limit=5) -> [RankedCard{id, label, summary, score, terms, reasons[], sources[], schemes}]. agents/ideation.py: s.idea only in IDEA mode; research only when mode is IDEA or a card has been chosen; T27 decide(): Confirm accepted in EXPERIENCE -> Choose(card) with ranked options; ApplyChoice writes the card into idea slots (Source.CARD, ranked below ANSWER per T03), sets s.idea, clears scan/novelty under a new idea_version (T06), starts research on the card, then Confirm of the combined objective. routers/ideation.py: AgentStartIn.mode (EntryMode, T01 mapping); Start.tsx routes founders with no idea; Talk.tsx renders the Choose options (T27 task 5).",
+     "data_model": "Card: skills_used:[skill_id], assets_used:[asset_id], sources:[{title, url, checked}] (T02 shape), review. skills.json: {skills:[{id, label, aliases:{en,ta,hi}, source}], assets:[{id in land|vehicle|shop_premises|kitchen|machinery|livestock|cold_storage, aliases}]}. founder_skills/owned_assets values become tag lists (T03 typed put). T27 pending: Choose{choice:'card', options:[Option{id, label, keywords}], idea_version, represented}. RankedCard.terms: {skills: matched, assets: matched, district: fit|'not rated for your district', capital: within|above|unknown}.",
+     "algorithm": "score = weighted mean over KNOWN terms only of 0.40 skill_overlap, 0.20 asset_overlap, 0.25 district_fit, 0.15 capital_fit; unknown terms are dropped and weights renormalised, never defaulted. skill_overlap = |founder ∩ skills_used| / |skills_used|; asset term dropped when the card needs no assets; district_fit = card.districts[d][0]/3 or unknown when unrated; capital_fit = 1 if card band <= founder band, 0 if above, unknown when not asked (no financial consent). Hard filters: review != draft, sources and tags non-empty, skill_overlap > 0, catalogue 'demand' entries only if the T04 three-valued pre-check on FounderFacts.from_slots(...).redact(consents) passes. Ties: number of cited sources, then id. Top 3 spoken, 5 on screen; reasons are code-written ('uses your cooking skill', 'fits Salem 2 of 3'). Picking via T27 match_choice (ordinals en/ta/hi, keywords). None of these: next 3 excluding shown; second time offer idea mode keeping all confirmed slots.",
+     "files": [
+      "backend/app/elicitation/slots.py",
+      "backend/app/elicitation/selector.py",
+      "backend/app/elicitation/engine.py",
+      "backend/app/elicitation/extract.py",
+      "backend/app/agents/ideation.py",
+      "backend/app/agents/conversation.py (T27 Choose card transitions)",
+      "backend/app/routers/ideation.py",
+      "backend/app/planner/opportunity.py (new)",
+      "backend/app/planner/registry.py",
+      "backend/app/planner/data/registry/skills.json (new)",
+      "backend/app/planner/data/registry/domains*.json",
+      "frontend/src/pages/Start.tsx",
+      "frontend/src/pages/Talk.tsx",
+      "backend/tests/unit/test_experience_flow.py (new)",
+      "backend/tests/unit/test_opportunity_rank.py (new)"
+     ],
+     "rollout": "Never expose the mode half-built: 1) slot table, purposes and invariant tests (engine only); 2) research gate; 3) card schema, vocabulary, tagging of the 50 base cards; 4) ranker and pre-check; 5) Choose(card) via T27; 6) AgentStartIn.mode and Start.tsx last. Later batches are offered only once tagged and sourced (5.6.1 review).",
+     "offline": "Ranker, vocabulary and cards are local; works fully in private mode (T25). Research on the chosen card follows idea-mode rules. No model needed."
+    },
+    "tasks": [
+     {
+      "title": "Experience slots fit the budget, are worded for the mode, and keep money behind consent",
+      "why": "Ten required slots cannot fit seven questions; idea-worded, money-first questions confuse founders without an idea.",
+      "where": "backend/app/elicitation/slots.py, selector.py, engine.py (restate)",
+      "how": "EXPERIENCE required = founder_skills, founder_years, owned_assets, district; Slot.questions and order per mode; Slot.purpose on money slots; anchor founder_skills; invariant and ordering tests.",
+      "when": "First; with T05's question policy (shared invariant test) and T19's Purpose enum; before 1.1.5.1 exposes the mode.",
+      "what_for": "Every ranker input asked within budget, skills first, money only with consent.",
+      "subtasks": [
+       {
+        "text": "Trim _required_for(EXPERIENCE) to four; invariant len(REQUIRED_BY_MODE[m]) <= Q_MAX for every mode (with T05); replay of the flag's run reaches confirmation",
+        "flags": [
+         "F-B1-001"
+        ]
+       },
+       {
+        "text": "Slot.questions per mode and experience restatement",
+        "flags": [
+         "F-B1-002"
+        ]
+       },
+       {
+        "text": "Slot.purpose on capital_band/funding_route; selector anchor founder_skills; ordering test: no financial slot before founder_skills or without the financial purpose",
+        "flags": [
+         "F-B1-002"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Research waits for a real idea",
+      "why": "Prior-art on 'I worked 12 years as a cook in Salem' wastes free quota and narrates a false verdict.",
+      "where": "backend/app/agents/ideation.py (s.idea, research trigger), agents/conversation.py (StartResearch effect), agents/tools.py (scan)",
+      "how": "s.idea only in IDEA mode; StartResearch requires mode IDEA or a chosen card; ApplyChoice resets scan/novelty under the new idea_version and starts research on the card.",
+      "when": "With T27 task 2 and T06 versioning; before the mode is exposed.",
+      "what_for": "No scan before an idea exists; the chosen card gets exactly one scan.",
+      "subtasks": [
+       {
+        "text": "Gate StartResearch and the scan tool on mode and chosen card; stop the s.idea fallback in EXPERIENCE; test that the first experience turn starts no job",
+        "flags": [
+         "F-B1-003"
+        ]
+       },
+       {
+        "text": "Reset scan/novelty and start research after the card writeback",
+        "flags": [
+         "F-B1-003"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Card schema, skill/asset vocabulary and review filter",
+      "why": "The ranker has nothing to match experience against, cards are uncited, and drafts would be presented as opportunities.",
+      "where": "planner/data/registry/skills.json (new), domains*.json, planner/registry.py, elicitation/extract.py",
+      "how": "skills_used, assets_used, sources on cards (50 base cards first); cited vocabulary with en/ta/hi aliases; whole-word alias extraction; ranking admits base/approved with sources and tags only; validation test that every rankable card has sources and tags.",
+      "when": "After task 1; with T02 provenance and T01 vocabulary; reviewer time per batch.",
+      "what_for": "Every shown card is reviewed, cited and matchable.",
+      "subtasks": [
+       {
+        "text": "Schema fields and loader validation",
+        "flags": [
+         "F-B1-006"
+        ]
+       },
+       {
+        "text": "skills.json vocabulary with aliases, cited; extract.py tag mapping",
+        "flags": [
+         "F-B1-006"
+        ]
+       },
+       {
+        "text": "Exclude draft, unsourced and untagged cards from ranking",
+        "flags": [
+         "F-B1-006"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Deterministic opportunity ranker with scheme pre-check",
+      "why": "1.1.5.3 needs a fit score over the experience inputs and 1.1.5.4 a pre-check that agrees with the engine.",
+      "where": "backend/app/planner/opportunity.py (new), schemes/engine.py (call), core/facts.py (from_slots)",
+      "how": "Weighted score over known terms only (renormalised), zero-skill-overlap exclusion, T04 pre-check on demand entries, code-written reasons, source-count tie-break.",
+      "when": "After task 3 and T04 tasks 1-2; T19 redact.",
+      "what_for": "Three to five cards a founder can trust and understand.",
+      "subtasks": [
+       {
+        "text": "rank() with documented weights, UNKNOWN terms dropped, hard filters and reasons; fixture 'cook, Salem, owns kitchen' ranks food-processing above a defence challenge",
+        "flags": [
+         "F-B1-006"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Choose(card) step and exposing the mode",
+      "why": "A confirmed profile goes straight to a roadmap of the self-description; there is no step to show or choose a card and no rule for 'none of these'.",
+      "where": "agents/conversation.py (T27 Choose card transitions), agents/ideation.py (ApplyChoice), routers/ideation.py (AgentStartIn.mode), frontend Start.tsx, Talk.tsx",
+      "how": "Confirm in EXPERIENCE -> Choose(card) with ranked options; pick writes back and goes to Confirm; none-of-these -> next 3, then offer idea mode keeping facts; expose the mode last.",
+      "when": "After tasks 1-4 and T27 tasks 1-2.",
+      "what_for": "A path in for first-generation founders that ends in a cited roadmap.",
+      "subtasks": [
+       {
+        "text": "Choose(card) after experience confirmation, ApplyChoice writeback (Source.CARD) and none-of-these rule; snapshot/resume test during the choice",
+        "flags": [
+         "F-B1-004"
+        ]
+       },
+       {
+        "text": "AgentStartIn.mode and Start.tsx routing, shipped last",
+        "flags": [
+         "F-B1-004"
+        ]
+       }
+      ]
+     }
+    ],
+    "tests": "Engine: start(mode=EXPERIENCE) with a cooperative script reaches confirmation with all four required slots in <= 7 questions, founder_skills before any financial slot, none without consent. Invariant over all modes. Agent: no research job before a card is chosen; exactly one scan on the card text after the pick. Ranker: deterministic order; unknown district/capital dropped, never defaulted; drafts and untagged cards never shown; zero skill overlap never shown; every card has >= 1 reason and source. 'the second one' / 'இரண்டாவது' picks option 2; 'none of these' twice offers idea mode without re-asking filled slots; resume during Choose re-presents options.",
+    "risks": "Tagging cards takes reviewer time; thin results in some districts are covered by none-of-these and the switch to idea mode. Weights are a policy choice, kept in one constant, shown in reasons and checked by a fixture-order test with the T33 eval set. Tamil/Hindi aliases need native review; confirmation shows mapped tags so founders can correct them."
+   }
+  },
+  {
+   "theme": "T25",
+   "winner": "B",
+   "scores": {
+    "A": {
+     "root_cause": 5,
+     "correctness": 5,
+     "constraints": 5,
+     "simplicity": 3,
+     "plan": 4
+    },
+    "B": {
+     "root_cause": 5,
+     "correctness": 5,
+     "constraints": 5,
+     "simplicity": 4,
+     "plan": 4
+    }
+   },
+   "reasoning": "Both found the same cause (s.private read only by research; providers.chain()/judge() never see the session; /voice/speak takes free text with no session; browser SpeechRecognition sends audio to Google in Chrome; the planned notice keys on the answering provider) and the same fix: a per-session egress policy computed before the first turn from configuration, privacy and consent, chain(policy)/judge(policy), session-scoped /speak, a versioned may-reach notice, and browser STT named and gated. The deciding difference is fit with neighbouring themes: both teams' T15 designs build a single outbound gate (A3: core/outbound.py, B5: core/egress.py) for every external call. B enforces the policy in that gate (one place that allows, counts and limits), while A adds a second mechanism, a contextvar-scoped httpx GuardedTransport with its own host->destination map, that duplicates the gate. B also plans the T34 upgrade of old sessions (private -> all false, otherwise 'pre-notice' so the next session shows the notice) and corrects TASKS 3.2.1. A's per-destination agreement and B's four purposes are equivalent in effect; B's purpose names line up with T19's registry. One refinement from A is kept: the notice names 'your browser's speech service (Google in Chrome)' rather than asserting Google in every browser, and breaker fall-over may only move among allowed destinations.",
+   "final": {
+    "chosen": "Per-session EgressPolicy decided at start from configuration and consent, enforced in the T15 egress gate and in chain(policy)/judge(policy), with a versioned 'may reach' notice before the first turn",
+    "why_chosen": "It is the only option that makes private mode true and shows the notice before anything leaves, decided from configuration rather than whichever provider answered. Enforcement reuses the outbound gate T15 builds, so exactly one place allows, counts and limits outbound calls, and a test transport that fails on any non-local host proves it. Consent records come from T19 and cite the notice version. Private mode reuses existing local paths (Ollama, templates, phrasebook audio, typing).",
+    "approaches": [
+     {
+      "name": "Per-session egress policy decided at start, enforced at one outbound choke point, with a versioned may-reach notice",
+      "advantages": "Private means private; notice before anything leaves; one rule covers model, panel, TTS, STT, research; testable at one point.",
+      "drawbacks": "Private and not-yet-agreed sessions are plainer (Ollama or templates).",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Separate outbound httpx GuardedTransport with a contextvar scope as backstop",
+      "advantages": "Catches future call sites that forget the policy.",
+      "drawbacks": "Duplicates the T15 gate and its host map; two enforcement points to keep in step.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Disclosure only (notice when Gemini answered / banner)",
+      "advantages": "Trivial.",
+      "drawbacks": "After the text left by construction; 'private' still sends everything.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Redaction or pseudonymisation before cloud calls (scrub, Presidio)",
+      "advantages": "Keeps cloud quality.",
+      "drawbacks": "The idea is the secret, so masked text defeats the conversation; audio cannot be scrubbed; weak for Tamil.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Per-destination toggles or per-call consent prompts",
+      "advantages": "Founder control.",
+      "drawbacks": "Consent fatigue; unusable in voice; still needs server enforcement.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Fully local voice and models (Vosk/whisper.cpp STT, Piper TTS, Ollama only)",
+      "advantages": "Nothing ever leaves.",
+      "drawbacks": "Tamil accuracy unproven, CPU latency, new worker; enforces nothing by itself.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Frontend-only gating",
+      "advantages": "Quick.",
+      "drawbacks": "Server keeps no promise; model and panel calls are server-side.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Paid Gemini tier with no-training terms",
+      "advantages": "Quality with stronger data terms.",
+      "drawbacks": "Paid; violates the free constraint.",
+      "cost": "paid"
+     }
+    ],
+    "not_chosen": [
+     {
+      "name": "Separate outbound httpx GuardedTransport with a contextvar scope as backstop",
+      "reason": "The T15 gate is already the single outbound choke point; a parallel transport guard duplicates it. The integration test's failing transport gives the same assurance."
+     },
+     {
+      "name": "Disclosure only (notice when Gemini answered / banner)",
+      "reason": "Too late by definition; private mode stays untrue (against 0004)."
+     },
+     {
+      "name": "Redaction or pseudonymisation before cloud calls (scrub, Presidio)",
+      "reason": "Breaks the conversation it protects."
+     },
+     {
+      "name": "Per-destination toggles or per-call consent prompts",
+      "reason": "Consent fatigue in a voice flow; four purposes per session suffice."
+     },
+     {
+      "name": "Fully local voice and models (Vosk/whisper.cpp STT, Piper TTS, Ollama only)",
+      "reason": "Unproven Tamil and CPU latency; kept as the backlog follow-up for private voice (T26)."
+     },
+     {
+      "name": "Frontend-only gating",
+      "reason": "The server would not keep the promise."
+     },
+     {
+      "name": "Paid Gemini tier with no-training terms",
+      "reason": "Paid."
+     }
+    ],
+    "design": {
+     "components": "core/egress.py (T15 gate): EgressPolicy{cloud_model, cloud_voice, browser_speech, external_research, notice_version}; gate.call(dest, ..., policy=) refuses with Reason.POLICY when dest is cloud and the purpose is not granted. agents/providers.py: Provider.locality and vendor; chain(policy) and judge(policy) list only allowed providers before any stream starts, so breaker fall-over can only move among allowed destinations. agents/privacy.py (new): may_reach(settings) -> [{vendor, purpose, what}] from configured keys, TTS vendors, the browser listener and research sources; NOTICE_VERSION. agents/ideation.py: policy built at start (private -> local only), passed to turn_stream, _council_work (no allowed judge -> rule seats) and research. routers/ideation.py: GET /ideation/agent/notice; start body carries purpose choices. routers/voice.py: /speak and /transcribe require session_id, load the session and check cloud_voice (fallback to phrasebook or 204). Frontend: Talk.tsx shows the notice before the first turn; no remote TTS or browser STT unless allowed; private mode defaults to typing; speech.ts guarded by the returned policy; Consent.tsx. Notice text names 'your browser's speech service (Google in Chrome)'. docs/specs/TASKS.md 3.2.1 corrected.",
+     "data_model": "Session gains egress {cloud_model, cloud_voice, browser_speech, external_research: bool, notice_version, decided_at}; 'private' stays as a derived view (all false). Consent records (T19): {purpose, notice_version, granted_at, withdrawn_at}; session-local record until T19 lands. may_reach is computed, never stored.",
+     "algorithm": "Start: may = may_reach(settings); private -> all false; else purposes from the founder's choices on the notice shown before session creation (nothing chosen -> all false, default deny). Every outbound call goes through gate.call with the session policy. A vendor added to configuration mid-session that is not in the agreed notice_version is refused until the founder agrees again. A T19 withdrawal changes purposes at once. browser_speech cannot be enforced server-side: the policy is returned to the client and the notice says so. No keys -> may_reach empty, no notice, behaves like today's offline path.",
+     "files": [
+      "backend/app/core/egress.py (EgressPolicy, gate check; T15)",
+      "backend/app/agents/privacy.py (new)",
+      "backend/app/agents/providers.py",
+      "backend/app/agents/ideation.py",
+      "backend/app/routers/ideation.py",
+      "backend/app/routers/voice.py",
+      "backend/app/agents/session_format.py (T34 upgrade step)",
+      "frontend/src/pages/Talk.tsx",
+      "frontend/src/voice/speech.ts",
+      "frontend/src/pages/Consent.tsx",
+      "docs/specs/TASKS.md (3.2.1)",
+      "backend/tests/integration/test_private_egress.py (new)"
+     ],
+     "rollout": "1) chain(policy)/judge(policy) with private = local only (quick fix, no notice UI; chain filters directly until T15's gate lands, then the gate re-checks). 2) Session-scoped /speak. 3) may_reach, versioned notice and purposes recorded via T19. 4) Browser speech purpose in the notice. Old sessions upgraded by T34: private -> all false; otherwise cloud purposes true with notice_version 'pre-notice' so the next session shows the notice.",
+     "offline": "Private mode is the offline mode: Ollama if running, else deterministic templates; phrasebook audio; typing."
+    },
+    "tasks": [
+     {
+      "title": "Local-only provider chain for private sessions",
+      "why": "Private sessions still stream the conversation and the panel to Gemini or Claude.",
+      "where": "backend/app/agents/providers.py (locality, chain(policy), judge(policy)), agents/ideation.py (turn_stream, _council_work), docs/specs/TASKS.md 3.2.1",
+      "how": "Locality and vendor per provider; chain and judge take the session policy; private -> Ollama then templates; panel uses rule seats when no judge is allowed; correct TASKS 3.2.1.",
+      "when": "First; uses T15's gate when present.",
+      "what_for": "'Private' means what the greeting promises.",
+      "subtasks": [
+       {
+        "text": "chain(policy)/judge(policy) exclude cloud providers for private sessions; integration test with a transport that fails on any non-local host",
+        "flags": [
+         "F-B3-008",
+         "F-A1-022"
+        ]
+       },
+       {
+        "text": "Panel falls back to rule seats when no allowed judge; TASKS 3.2.1 corrected",
+        "flags": [
+         "F-A1-022",
+         "F-B3-008"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Session-scoped voice endpoints",
+      "why": "/speak takes any text with no session, so private replies go to Gemini or Sarvam TTS and anyone can spend the quota.",
+      "where": "backend/app/routers/voice.py (/speak, /transcribe), frontend/src/pages/Talk.tsx, frontend/src/voice/agentClient.ts, mentorVoice.ts",
+      "how": "SpeakIn.session_id; load session, refuse remote TTS without cloud_voice (phrasebook or 204); Talk passes session_id and uses only the phrasebook in private mode.",
+      "when": "After task 1; until T19, cloud_voice = not private.",
+      "what_for": "Voice never carries a private founder's words to a vendor.",
+      "subtasks": [
+       {
+        "text": "/speak and /transcribe require session_id and check the policy before any remote call",
+        "flags": [
+         "F-A3-016"
+        ]
+       },
+       {
+        "text": "Talk.tsx passes session_id; no remote voice requested in private mode",
+        "flags": [
+         "F-A3-016"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Session egress policy, may-reach notice and recorded agreement",
+      "why": "A notice keyed to the provider that answered appears after the text left and records nothing.",
+      "where": "backend/app/agents/privacy.py (new), core/egress.py, routers/ideation.py (notice endpoint, start body), Talk.tsx, Consent.tsx, session_format.py",
+      "how": "may_reach from configuration with NOTICE_VERSION; shown before the first turn; agreement per purpose via T19; gate refuses cloud destinations without the purpose; mid-session new vendor refused until re-agreed; T34 upgrade of old sessions.",
+      "when": "After tasks 1-2 and T15's gate task; T19 consent records (session-local until then).",
+      "what_for": "The founder decides before any text leaves; agreement cites a notice version.",
+      "subtasks": [
+       {
+        "text": "may_reach() from settings, NOTICE_VERSION, notice endpoint before session creation",
+        "flags": [
+         "F-B3-009"
+        ]
+       },
+       {
+        "text": "Agreement recorded per purpose, enforced by the gate, default deny, re-prompt when vendors grow",
+        "flags": [
+         "F-B3-009"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Browser speech recognition in the notice and policy",
+      "why": "On the default no-key setup Chrome's SpeechRecognition sends audio to Google with no notice.",
+      "where": "frontend/src/voice/speech.ts, Talk.tsx, agents/privacy.py may_reach",
+      "how": "List the browser listener in may_reach as 'your browser's speech service (Google in Chrome)'; without browser_speech (and always in private mode) hide the mic and default to typing; record Vosk as the planned private listener in BACKLOG.",
+      "when": "After task 3; coordinate with T26.",
+      "what_for": "Voice-first founders know where their audio goes, and private mode sends none.",
+      "subtasks": [
+       {
+        "text": "Browser STT named in may_reach and the notice text",
+        "flags": [
+         "F-B3-010"
+        ]
+       },
+       {
+        "text": "Mic gated on browser_speech; private mode defaults to typing; frontend test",
+        "flags": [
+         "F-B3-010"
+        ]
+       }
+      ]
+     }
+    ],
+    "tests": "Integration: a private session with GEMINI_API_KEY set and an httpx MockTransport recording hosts; a full conversation with panel and voice reaches no generativelanguage.googleapis.com, api.anthropic.com or Sarvam host. Non-private before agreement: same; after: Gemini used. No keys: empty notice. Adding Gemini after an Ollama-only agreement refuses it until re-agreed. /speak without session_id -> 422; private -> phrasebook or 204, no remote call. may_reach lists the browser listener when there is no Sarvam key. Frontend: private mode hides the mic. Old document upgrades to the expected policy.",
+    "risks": "Private and not-yet-agreed sessions are plainer, which the start screen must explain. Browser speech relies on the client honouring the policy, as the notice says. One notice per session, versioned, reappearing only when vendors change. Every outbound client must go through the T15 gate; the failing-transport integration test catches gaps."
+   }
+  },
+  {
+   "theme": "T26",
+   "winner": "merge",
+   "scores": {
+    "A": {
+     "root_cause": 5,
+     "correctness": 5,
+     "constraints": 5,
+     "simplicity": 4,
+     "plan": 5
+    },
+    "B": {
+     "root_cause": 5,
+     "correctness": 4,
+     "constraints": 4,
+     "simplicity": 4,
+     "plan": 4
+    }
+   },
+   "reasoning": "Both chose the same design: cache only fixed sentences (nothing personal at rest, so erasure needs no voice step), server-side per-sentence assembly with recordings first and grouped remote TTS for unrecorded runs, WAV join with the stdlib and an X-Voiced header, Unicode-script detection for typed Tamil/Hindi, per-sentence language and origin, separate translated/reworded counters and truthful model/provider. A is more accurate on two points checked in code: the recordings are written by voice-worker/record_phrases.py at model.config.sampling_rate (Indic Parler-TTS), not the 24 kHz Gemini/Sarvam rate (gemini_tts.py RATE = 24000), so a one-time normalisation is required; B asserts both are already 24 kHz mono. And A keys the egress check on session_id, consistent with both teams' T25 (/speak requires session_id), while B adds a client-asserted SpeakIn.private flag, which the server cannot trust. A's tasks also map flags more finely. B contributes useful refinements: unvoiced sentences fall back to the browser voice (fully offline) rather than text only, detect_script lives in T01's shared vocab/language.py, done keeps 'language' for compatibility beside 'languages', the sentence record is the one stored in T11's Turn.reply, short scriptless replies keep the previous language, and an eval-replay test that every cache file written is in the fixed set. Final = A with those B refinements.",
+   "final": {
+    "chosen": "Sentence-typed voice pipeline: fixed-sentence-only cache with purge, server-side per-sentence assembly (recordings first, grouped remote TTS for unrecorded runs, gated by T25 via session_id), Unicode-script session language, and per-sentence language and origin with truthful model attribution",
+    "why_chosen": "Not storing founder audio removes the erasure problem instead of managing it, and 0009's savings come from repeats, which are the fixed sentences that stay cached. Per-sentence assembly lets free recordings win whenever they exist while keeping grouping's savings, and degrades to the browser voice. Per-sentence language and origin on the typed event (T28) fixes voice choice, captions, metrics and T25 attribution with one field; script detection is a few deterministic lines.",
+    "approaches": [
+     {
+      "name": "Sentence-typed pipeline: fixed-only cache + per-sentence assembly (recordings first) + per-sentence language and origin",
+      "advantages": "No founder audio at rest; zero quota for recorded sentences; right voice per sentence; truthful attribution.",
+      "drawbacks": "Repeated dynamic sentences cost a TTS call each; WAV formats must match; romanised Tamil undetected.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Session-scoped audio cache deleted with the session",
+      "advantages": "Exact erasure while keeping reuse.",
+      "drawbacks": "Keeps personal audio that need not exist; couples /speak to sessions; loses cross-session reuse.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "TTL purge of the voice cache alone",
+      "advantages": "Bounds disk.",
+      "drawbacks": "Audio survives a delete until the purge; not erasure on request.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Redis TTL audio cache",
+      "advantages": "Expiry built in.",
+      "drawbacks": "Memory-heavy; Redis optional so the file leak remains.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Client-orchestrated voice",
+      "advantages": "Simple server.",
+      "drawbacks": "Duplicated key logic on the client; more 2G requests; no server guarantee.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Local TTS for everything (Piper / espeak-ng)",
+      "advantages": "Nothing leaves; no quota.",
+      "drawbacks": "Tamil quality varies; CPU latency; new runtime.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Statistical language ID (fastText lid.176)",
+      "advantages": "Some romanised text.",
+      "drawbacks": "126 MB for three scripts; weak on short Tanglish.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Parameterised gettext/ICU templates now",
+      "advantages": "Covers sentences with figures and names.",
+      "drawbacks": "Large refactor needing native review; does not fix labelling until complete.",
+      "cost": "free/open source"
+     }
+    ],
+    "not_chosen": [
+     {
+      "name": "Session-scoped audio cache deleted with the session",
+      "reason": "Manages audio that need not exist."
+     },
+     {
+      "name": "TTL purge of the voice cache alone",
+      "reason": "Not erasure on request; kept only as a sweep and backstop for non-fixed files."
+     },
+     {
+      "name": "Redis TTL audio cache",
+      "reason": "Memory-heavy and optional; file leak remains."
+     },
+     {
+      "name": "Client-orchestrated voice",
+      "reason": "Duplicated logic on the client and more 2G round trips."
+     },
+     {
+      "name": "Local TTS for everything (Piper / espeak-ng)",
+      "reason": "Unproven Tamil and CPU latency; later private-mode upgrade."
+     },
+     {
+      "name": "Statistical language ID (fastText lid.176)",
+      "reason": "Unicode block counting solves the three scripts exactly; Tanglish stays with D7."
+     },
+     {
+      "name": "Parameterised gettext/ICU templates now",
+      "reason": "The right next step for coverage (1.5.2); labelling must be honest first, and the coverage report says which templates to parameterise."
+     }
+    ],
+    "design": {
+     "components": "voice/phrasebook.py: is_fixed(text, language) over a normalised fixed set from wanted() (FIXED_EN, slot questions, recurring.json, T27 lead/walk sentences) plus every translation value. routers/voice.py speak(session_id, text, language): SentenceSplitter, per-sentence source (recording -> cached fixed -> remote run), maximal unvoiced runs per remote call only when T25's policy allows cloud_voice for that session, wave join, X-Voiced header, Cache-Control no-store when any dynamic audio, cache writes only when every sentence in the run is fixed; Sarvam keeps MP3 but obeys the same cache rule. voice-worker/record_phrases.py: write 24 kHz mono s16 and a one-off conversion of existing recordings; load-time format assertion (mismatching part skipped, not mixed). Purge/sweep step (scripts/purge_voice_cache.py, run once now and nightly via 5.4.4): delete cache files whose key is not in the fixed key set for configured voices. core/vocab/language.py (T01): detect_script(text) -> ta-IN|hi-IN|None by share of Tamil (U+0B80-0BFF) / Devanagari (U+0900-097F) letters >= 0.3; scriptless short replies keep the previous language. agents/ideation.py: s.language from detect_script when the request has none (a picker choice wins); offline path substitutes translation() for ta/hi (1.5.1.1); sentence events carry origin and language; _reword_stream keeps counters apart; model/provider only from real calls. Frontend: mentorVoice groups only same-language runs, passes session_id, browser-speaks unvoiced indexes (or shows text when no browser voice); Talk persists the picker (localStorage in try/catch) and defaults from navigator.language; recognition follows it. scripts/voice_coverage.py: per-language, per-origin translation coverage.",
+     "data_model": "Sentence event (T28 union): {seq, text, language, origin: 'code'|'translation'|'model', provider|None}, same record stored in T11's Turn.reply. Done: counts {code, translated, reworded}, language (majority, compatibility) and languages[]; model in {'model','fixed-translation','offline','offline (model failed)','model (cut short)'}; provider set only when a model call produced spoken sentences. Speak response: audio/wav + X-Voiced; 204 only when nothing was voiced.",
+     "algorithm": "For each sentence: recording -> use; elif is_fixed and cached -> use; elif policy allows cloud_voice and TTS ready -> one call per maximal run of consecutive unvoiced sentences, cached only if every sentence in the run is fixed; on failure/429 the run stays unvoiced and is listed; join in order with wave (params asserted equal). Script detection only when the request carries no language.",
+     "files": [
+      "backend/app/routers/voice.py",
+      "backend/app/voice/phrasebook.py",
+      "backend/app/core/vocab/language.py (T01; detect_script)",
+      "backend/app/agents/ideation.py",
+      "voice-worker/record_phrases.py",
+      "scripts/voice_coverage.py",
+      "scripts/purge_voice_cache.py (new, or nightly step)",
+      "frontend/src/voice/mentorVoice.ts",
+      "frontend/src/voice/agentClient.ts",
+      "frontend/src/pages/Talk.tsx",
+      "backend/tests/unit/test_voice_speak.py (new)",
+      "backend/tests/unit/test_language_detect.py (new)"
+     ],
+     "rollout": "1) Stop caching non-fixed sentences and sweep (immediate privacy win, no key needed). 2) Normalise recordings; per-sentence assembly (after T25 session_id). 3) Script detection and picker. 4) Per-sentence language/origin with T28, separate counters. 5) Offline translations (1.5.1.1) and coverage report guiding 1.5.2.",
+     "offline": "No key or network: recordings for fixed sentences, browser voice or text for the rest; detection and translations local; nothing new on disk."
+    },
+    "tasks": [
+     {
+      "title": "Cache only fixed sentences and purge the rest",
+      "why": "Audio of founders' ideas stays on disk forever, outside erasure.",
+      "where": "routers/voice.py (_gemini and Sarvam paths), voice/phrasebook.py (is_fixed), scripts/purge_voice_cache.py / 5.4.4 nightly, data dictionary (5.3.1)",
+      "how": "is_fixed gate before any cache write; no-store otherwise; sweep non-fixed keys once and nightly; data-dictionary entry 'voice cache holds fixed sentences only'.",
+      "when": "Now; does not need session_id.",
+      "what_for": "No personal audio at rest; bounded cache; erasure complete by construction.",
+      "subtasks": [
+       {
+        "text": "phrasebook.is_fixed; cache write only for fixed sentences on Gemini and Sarvam paths; test that a restatement of the idea is not written and a slot question is",
+        "flags": [
+         "F-A1-027",
+         "F-B3-011",
+         "F-A5-020"
+        ]
+       },
+       {
+        "text": "Sweep non-fixed files once and nightly; data-dictionary entry",
+        "flags": [
+         "F-A3-017",
+         "F-B3-011",
+         "F-A5-020"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Recordings first, per sentence, with grouped remote synthesis for the rest",
+      "why": "Gemini quota is spent on recorded sentences and grouped requests never match recordings, so a 429 gives silence.",
+      "where": "routers/voice.py (speak), voice-worker/record_phrases.py, frontend/src/voice/mentorVoice.ts",
+      "how": "Server-side split, recordings first, maximal unvoiced runs per remote call gated by T25 policy via session_id, wave join, X-Voiced; normalise recordings; client browser-speaks unvoiced indexes.",
+      "when": "After T25 task 2 and task 1 here.",
+      "what_for": "Free voice by default; no silence on 429 for recorded sentences.",
+      "subtasks": [
+       {
+        "text": "Per-sentence assembly with wave join and X-Voiced",
+        "flags": [
+         "F-A1-028"
+        ]
+       },
+       {
+        "text": "One-time recording normalisation to 24 kHz mono s16 and format assertion",
+        "flags": [
+         "F-A1-028"
+        ]
+       },
+       {
+        "text": "mentorVoice voices unvoiced indexes with the browser voice or shows the text",
+        "flags": [
+         "F-A1-028"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Session language from typed script and a persisted picker",
+      "why": "Typed Tamil/Hindi never sets the session language, so 1.5.1's switch never fires.",
+      "where": "core/vocab/language.py (T01), agents/ideation.py (turn_stream), frontend/src/pages/Talk.tsx",
+      "how": "detect_script when no language is sent; picker persisted and defaulted from navigator.language; recognition follows it.",
+      "when": "After T01's Language enum; before 1.5.1.",
+      "what_for": "The founder's language reaches templates and voice.",
+      "subtasks": [
+       {
+        "text": "detect_script() applied in turn_stream; table tests on Tamil, Hindi, English, mixed, Tanglish",
+        "flags": [
+         "F-A1-029"
+        ]
+       },
+       {
+        "text": "Persist picker, default from navigator.language, recognition language follows it",
+        "flags": [
+         "F-A1-029"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Per-sentence language and origin, truthful model attribution",
+      "why": "One language per reply mislabels mixed replies; translations are credited to a model that was never called.",
+      "where": "agents/ideation.py (_Gate, _offline_stream, _reword_stream, done), T28 event models, agentClient/Talk/mentorVoice, scripts/voice_coverage.py",
+      "how": "Sentence events carry seq, language, origin, provider; offline path uses translation(); separate counters; 'fixed-translation' label; provider only from real calls; coverage report.",
+      "when": "With T28 task 1 and T11's Turn records.",
+      "what_for": "Correct voice and captions per sentence; honest metrics (5.4.2) and notice inputs (T25).",
+      "subtasks": [
+       {
+        "text": "language and origin on each sentence event; voice chosen per sentence on the client",
+        "flags": [
+         "F-B5-023"
+        ]
+       },
+       {
+        "text": "Separate translated/reworded counters and the fixed-translation label; test that a translations-only reply reports no provider",
+        "flags": [
+         "F-B5-025"
+        ]
+       },
+       {
+        "text": "voice_coverage.py translation coverage per language and origin",
+        "flags": [
+         "F-B5-023"
+        ]
+       }
+      ]
+     }
+    ],
+    "tests": "/speak with a fixed and a dynamic sentence: both voiced, only the fixed file cached (tmp dir). Every cache file written during a full eval replay is in the fixed set. Sweep keeps only fixed files. Gemini mocked 429: two recorded + one dynamic -> audio for two, X-Voiced '0,1'. A recorded sentence never calls Gemini (respx 0). Private session: no remote call. detect_script table. Tamil offline replay: translated sentences ta-IN, the rest en-IN. Translations-only reply -> model 'fixed-translation', provider None. Coverage script snapshot.",
+    "risks": "WAV mismatch if recordings are re-made carelessly (load-time assertion; mismatches skipped, not mixed). Extra TTS calls for repeated dynamic sentences (measured by the coverage report; frequent ones become fixed via 1.5.2). Romanised Tamil undetected (D7). Translations need native review before being spoken."
+   }
+  },
+  {
+   "theme": "T27",
+   "winner": "merge",
+   "scores": {
+    "A": {
+     "root_cause": 5,
+     "correctness": 4,
+     "constraints": 5,
+     "simplicity": 4,
+     "plan": 5
+    },
+    "B": {
+     "root_cause": 5,
+     "correctness": 5,
+     "constraints": 5,
+     "simplicity": 5,
+     "plan": 4
+    }
+   },
+   "reasoning": "Both teams reached the same root cause (AgentSession has only pending_slot; _advance and _offline_stream are if-chains; after the roadmap every reply is 'generate' and _roadmap_line repeats; the panel runs with scan=None; the offline path waits up to research_wait_s + council_wait_s before its first sentence) and the same fix: a typed Pydantic discriminated-union pending action in the session document, deterministic en/ta/hi ordinal and keyword choice matching, a roadmap walk with revision, an evidence gate and a lead sentence before any wait. A's plan is stronger structurally: a pure decide(session, text) -> Transition with a small effects list, ported behaviour-preserving first with a golden replay over tests/eval, a convene() backstop rejecting scan=None, the roadmap still buildable when research failed, and a Talk-page task rendering pending options as buttons that send the same text as voice. B's evidence gate is more correct: A guards the panel on 's.scan is set', which in private mode (no research ever runs) would leave the panel unreachable forever, whereas B keys the gate on the research job state (DONE, FAILED, or not allowed in private mode) via T12 and makes a failed-research brief say it rests on no outside evidence. B also leads with a reflection of a newly understood fact before falling back to a recorded ACK, and states that a fact change wins over a section-keyword match in Walk. Final = A's structure and plan with B's job-state evidence gate, reflection lead sentence and fact-change precedence.",
+   "final": {
+    "chosen": "Table-driven conversation reducer: a typed PendingAction union in the session document, a pure decide() returning a transition with a small effects list, a shared spoken-choice matcher, a roadmap walk with revision, a job-state evidence gate for the panel and a lead sentence before any wait",
+    "why_chosen": "Every step that needs a state (ask, confirm, choose card, choose lever, walk roadmap) becomes a PendingAction kind with its own matcher and transitions, stored in the one session document so resume (T28 snapshot), replay (T28 last_turn) and the Talk page read the same thing. Pure Python, offline, deterministic (0002), no dependency, unit-testable as a function of (pending, text). The evidence gate keyed on research job state works in private mode too.",
+    "approaches": [
+     {
+      "name": "Hand-rolled reducer with a typed PendingAction union in the session document",
+      "advantages": "One place says what each state accepts; resumable and replay-checkable; pure decide() testable without I/O; no dependency.",
+      "drawbacks": "Session format change (T34); effects list must stay small.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "FSM library (python-statemachine or pytransitions)",
+      "advantages": "Guards, callbacks and diagrams.",
+      "drawbacks": "A dependency for about six states; dynamic methods sit poorly with a JSON document and async turns; typed payload and utterance matching still ours; a second state model beside SessionState.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Keep ad-hoc checks and patch each symptom",
+      "advantages": "Smallest diff.",
+      "drawbacks": "Reproduces the root cause; every future step adds another flag.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Dialogue-manager framework (Rasa Open Source)",
+      "advantages": "Rich intent and form handling.",
+      "drawbacks": "Second conversation engine and ML NLU on CPU, against 0001/0002.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Model-classified intents / model-driven state",
+      "advantages": "Handles free phrasing.",
+      "drawbacks": "No offline path; model decides state (0002); egress in private mode.",
+      "cost": "free tier"
+     },
+     {
+      "name": "Client-side statechart (XState) or frontend-only buttons",
+      "advantages": "Visual state, unambiguous input.",
+      "drawbacks": "Two sources of truth; excludes voice-first founders; eval runner bypasses it.",
+      "cost": "free/open source"
+     }
+    ],
+    "not_chosen": [
+     {
+      "name": "FSM library (python-statemachine or pytransitions)",
+      "reason": "A dependency that solves none of the actual problems (typed payload, utterance matching, effect order)."
+     },
+     {
+      "name": "Keep ad-hoc checks and patch each symptom",
+      "reason": "Leaves the root cause; 1.2.4 and 1.1.5 would each add another flag."
+     },
+     {
+      "name": "Dialogue-manager framework (Rasa Open Source)",
+      "reason": "Second conversation engine against 0001/0002; too heavy."
+     },
+     {
+      "name": "Model-classified intents / model-driven state",
+      "reason": "No offline path; the model must not decide state."
+     },
+     {
+      "name": "Client-side statechart (XState) or frontend-only buttons",
+      "reason": "Splits the source of truth and fails voice-first founders; buttons stay as an extra input mapped to the same pending action."
+     }
+    ],
+    "design": {
+     "components": "agents/conversation.py (new): PendingAction union, Transition/Effect types, decide(session, text) -> Transition. agents/choice.py (new): match_choice(text, options, language) -> Pick(id)|NoneOfThese|Ambiguous|NoMatch with ordinals en/ta/hi (first/second/2nd/last, முதல்/இரண்டாவது/மூன்றாவது, पहला/दूसरा/तीसरा), digits, option keywords on word boundaries (T10 tokenizer) and none-of-these phrases; shared by cards (T24) and levers (1.2.4). agents/roadmap_walk.py (new): sections(roadmap) (costs, licences, milestones, risks, gates present in planner output), route_section(text, language), speak_section(...) from plan fields only, diff_line(old, new). agents/ideation.py: turn_stream calls decide() and executes effects; _advance removed; lead sentences emitted before any board.wait. council/__init__.py: convene() rejects scan=None unless research is FAILED or not allowed. voice/phrasebook.py: lead, PANEL_AFTER_SEARCH and walk sentences in FIXED_EN (T26 records/translates). Talk.tsx: Choose options as large buttons sending the option label as text; Walk sections as chips; resume speaks snapshot.pending.",
+     "data_model": "PendingAction (discriminator 'kind'): Ask{slot, question}; Confirm{objective}; Choose{choice:'card'|'lever', options:[Option{id, label, keywords[]}] (3-5), idea_version, offered_at_turn, represented:int}; Walk{section|None, offered:[str], cursor:int, roadmap_idea_version}; Idle. AgentSession.pending replaces pending_slot (T34 upgrader maps pending_slot -> Ask) and gains opinion_requested: bool. Transition{pending, effects[], engine_action|None, reason}. Effect = StartResearch | ConvenePanel | BuildRoadmap | RebuildRoadmap(changed[]) | SpeakSection(name) | ApplyChoice(choice, option_id).",
+     "algorithm": "decide by pending.kind. ask: skip -> engine.skip; opinion -> keep Ask, add guarded ConvenePanel; else engine.observe(answering=slot) + engine.step. confirm: yes/no on word boundaries -> engine.confirm; accepted in EXPERIENCE before a card is chosen -> Choose(card) from T24's ranker; else BuildRoadmap + Walk. choose: match_choice; Pick -> ApplyChoice (bumps idea_version via T06; a pick offered under an older version is refused and options re-presented); NoneOfThese -> T24 rule; Ambiguous/NoMatch -> re-present once, then ordinary observation. walk: a fact change reported by engine.observe (T03 put outcome 'changed') wins over a section keyword -> RebuildRoadmap, speak diff_line, continue; else route_section -> SpeakSection; 'done'/'thanks' -> Idle. Evidence gate: ConvenePanel only when research is DONE or FAILED (T12 JobState) or not allowed (private mode); otherwise set opinion_requested and say PANEL_AFTER_SEARCH; _absorb convenes when research lands; a brief after failed research says it rests on no outside evidence; the roadmap builds without the panel when research failed. Waits: any effect that waits on the board first yields a lead sentence (a reflection of a newly understood fact, else a recorded ACK/SEARCHING); _absorb no longer waits for the panel.",
+     "files": [
+      "backend/app/agents/conversation.py (new)",
+      "backend/app/agents/choice.py (new)",
+      "backend/app/agents/roadmap_walk.py (new)",
+      "backend/app/agents/ideation.py",
+      "backend/app/agents/council/__init__.py",
+      "backend/app/voice/phrasebook.py",
+      "backend/app/voice/data/translations.json",
+      "frontend/src/pages/Talk.tsx",
+      "frontend/src/voice/agentClient.ts",
+      "backend/tests/unit/test_conversation.py (new)",
+      "backend/tests/unit/test_choice.py (new)",
+      "backend/tests/unit/test_roadmap_walk.py (new)"
+     ],
+     "rollout": "1) PendingAction with an upgrade from pending_slot. 2) Move _advance into decide() with unchanged behaviour (golden tests on eval replays). 3) Evidence gate and lead sentences. 4) Walk and revision. 5) Choose kinds land with T24 (card) and 1.2.4 (lever). 6) Talk page rendering. One PR per step, merged by the owner.",
+     "offline": "All deterministic code; model paths only reword sentences a transition produced. Identical with no model."
+    },
+    "tasks": [
+     {
+      "title": "Typed pending action in the session document",
+      "why": "pending_slot cannot express a choice, a walk position or a confirmation; resume and replay need it.",
+      "where": "backend/app/agents/conversation.py (new), agents/ideation.py (AgentSession, to_dict/from_dict, snapshot)",
+      "how": "Pydantic v2 discriminated union; AgentSession.pending replaces pending_slot; T34 upgrade; snapshot and ack expose pending with options.",
+      "when": "First; format bump with T34. Blocks T24 task 5 and T28 tasks 2-3.",
+      "what_for": "One source for resume, replay checks and the screen.",
+      "subtasks": [
+       {
+        "text": "Define PendingAction union (Ask, Confirm, Choose, Walk, Idle) and Option model",
+        "flags": [
+         "F-B1-012"
+        ]
+       },
+       {
+        "text": "Store pending in AgentSession; upgrade pending_slot documents (T34 step)",
+        "flags": [
+         "F-B1-012"
+        ]
+       },
+       {
+        "text": "Expose pending in snapshot and the ack event",
+        "flags": [
+         "F-B1-012"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Pure decide() reducer replacing _advance, with a spoken-choice matcher",
+      "why": "Ad-hoc checks are the root cause; spoken choices are stored as slot answers.",
+      "where": "backend/app/agents/conversation.py, agents/choice.py (new), agents/ideation.py (turn_stream)",
+      "how": "Port today's behaviour into decide() first (golden test over tests/eval), then add match_choice with en/ta/hi ordinals, keywords, none-of-these and one re-present on ambiguity.",
+      "when": "After task 1; Tamil/Hindi ordinals to native review with 1.5.2.",
+      "what_for": "Spoken choices understood offline; no state hidden in if-chains.",
+      "subtasks": [
+       {
+        "text": "decide(s, text) -> Transition with effects; turn_stream executes effects; golden replay",
+        "flags": [
+         "F-B1-012"
+        ]
+       },
+       {
+        "text": "match_choice with en/ta/hi ordinals, digits, keywords and none-of-these, shared by cards and levers",
+        "flags": [
+         "F-B1-017"
+        ]
+       },
+       {
+        "text": "Re-present options once on ambiguity, then fall back to ordinary observation",
+        "flags": [
+         "F-B1-017"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Guards: panel only after evidence, lead sentence before any wait",
+      "why": "Verdicts on missing evidence anchor the founder; 3-4.5 s of silence breaks the 1 s first-sentence target.",
+      "where": "agents/conversation.py, agents/ideation.py (_offline_stream, _absorb, _convene), agents/council/__init__.py, voice/phrasebook.py",
+      "how": "ConvenePanel only when research is DONE/FAILED or not allowed, else opinion_requested + PANEL_AFTER_SEARCH and delivery from _absorb; convene() backstop; reflection or ACK yielded before every board.wait; _absorb stops waiting for the panel.",
+      "when": "After task 2 and T12's job states; T23 measures first-sentence time before and after.",
+      "what_for": "No verdict before evidence (also in private mode); first sentence well under 1 s offline.",
+      "subtasks": [
+       {
+        "text": "Evidence gate on research job state; opinion_requested and PANEL_AFTER_SEARCH; owed opinion delivered when research lands",
+        "flags": [
+         "F-A1-018"
+        ]
+       },
+       {
+        "text": "convene() backstop; failed-research brief caveat; roadmap builds without the panel when research failed",
+        "flags": [
+         "F-A1-018"
+        ]
+       },
+       {
+        "text": "Reflection or ACK lead sentence before research/panel waits; remove the council wait from _absorb",
+        "flags": [
+         "F-B1-028"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Roadmap walk-through and revision",
+      "why": "After the roadmap the offline conversation repeats one line and a corrected fact never changes the plan.",
+      "where": "backend/app/agents/roadmap_walk.py (new), agents/conversation.py (Walk), agents/ideation.py",
+      "how": "Walk pending offering sections present in the planner output; keyword routing per language; one section per turn from plan fields; a changed slot (T03 'changed') wins over a section match, rebuilds the plan and speaks a diff line.",
+      "when": "After task 2; T03 put outcome; walk templates to the phrasebook (T26).",
+      "what_for": "The offline baseline reaches costs, licences, milestones, risks and gates and stays correct after corrections.",
+      "subtasks": [
+       {
+        "text": "sections(), route_section(), speak_section() over planner output; replay of the probe gives different sentences for costs, licences, cost per pack",
+        "flags": [
+         "F-A1-024"
+        ]
+       },
+       {
+        "text": "RebuildRoadmap on a changed fact in Walk, with diff_line",
+        "flags": [
+         "F-A1-024"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Talk page renders the pending action",
+      "why": "A caption string cannot re-present options or show the next section.",
+      "where": "frontend/src/pages/Talk.tsx, frontend/src/voice/agentClient.ts (types from T28 generation)",
+      "how": "Choose options as large buttons sending the option label as text (same path as voice); Walk sections as chips; on resume speak the pending question/options from snapshot.pending.",
+      "when": "After task 1 and T28 task 1.",
+      "what_for": "Voice and tap reach the same transition; resume re-orients the founder.",
+      "subtasks": [
+       {
+        "text": "Buttons/chips from ack/snapshot pending; resume preamble from pending",
+        "flags": [
+         "F-B1-012"
+        ]
+       }
+      ]
+     }
+    ],
+    "tests": "decide() table tests per kind (yes/no, skip, opinion, choose by ordinal in en/ta/hi, by keyword, none-of-these, ambiguous twice) and purity. Golden replay of tests/eval through decide() vs today's actions. Opinion on turn 2 with research running yields PANEL_AFTER_SEARCH, never a band; in a private session (research not allowed) the panel convenes on rules. Offline first research turn yields a sentence before any board.wait (fake slow job; T23 first_sentence < 1 s). After 'yes', 'costs', 'licences', 'cost per pack' give different section sentences; changing capital in Walk changes months and speaks the diff. Old document with pending_slot loads as Ask. Resume re-presents options.",
+    "risks": "Tamil/Hindi keyword routing and ordinals need native review (1.5.2); buttons and one re-present mitigate. A section keyword inside a new fact: fact change wins. Effects list kept at six kinds. Format change must ship with T34's upgrade step. Rebuilds limited to listed slots."
+   }
+  },
+  {
+   "theme": "T28",
+   "winner": "merge",
+   "scores": {
+    "A": {
+     "root_cause": 5,
+     "correctness": 4,
+     "constraints": 5,
+     "simplicity": 5,
+     "plan": 5
+    },
+    "B": {
+     "root_cause": 5,
+     "correctness": 5,
+     "constraints": 5,
+     "simplicity": 4,
+     "plan": 4
+    }
+   },
+   "reasoning": "Both teams found the same faults (ad-hoc _event dicts and a hand-written AgentEvent union; streamTurn treats end-of-body as success; a VersionConflict at the final save becomes an 'error' after every sentence was spoken under HTTP 200; idempotency planned only on the route Talk never calls; board.notify reaches only current subscribers; Talk keeps only the latest queued utterance) and both chose a Pydantic discriminated union with a terminal Done/Error rule, client_turn_id with last_turn replay in the session document (0003), typed error codes, notice replay, an array queue and openapi-typescript generation. B fixes F-B1-008 at its root: it claims the turn with a version-guarded save before the first event, so a conflict is a real HTTP 409 before anything is spoken, and a different live turn gets 409 turn_in_progress (jobs.py confirms background jobs write only to the result board, not the session, so after the claim the only competing writers are other turns, which the claim excludes). A accepts the late conflict and softens it client-side (drop the unsaved reply, reload, speak a correction). B also honours Last-Event-ID on the notices EventSource, has a TurnWriter where T23's TurnClock plugs in, and extends response models to cohort and voice routes. A contributes what B leaves out: client-side conflict handling is still needed as a fallback (a stale-claim takeover or delete can still conflict at commit), honest 'expired' handling with a spoken message instead of a silent fresh start (B defers it to T18), and a finer task breakdown. Final = B's claim/commit design with A's client conflict fallback and expiry handling.",
+   "final": {
+    "chosen": "Typed TurnEvent union written by one TurnWriter, a terminal Done/Error rule, turn claim/commit keyed by client_turn_id with last_turn replay in the session document, typed error codes (409 before speaking, with a client fallback for late conflicts), notice replay on subscribe with Last-Event-ID, an array utterance queue, and OpenAPI-to-TypeScript generation checked in CI",
+    "why_chosen": "Claiming the turn before speaking moves conflicts to a real 409 at request time, removing the 'spoken then discarded' case at its root; the recorded last turn gives idempotent retries on the route the Talk page uses, stored with the session so a replay can never disagree with the saved turn and works on every store. The terminal sentinel tells the client when to retry. One typed writer is where T23's TurnClock sits, and the same Pydantic models are exported to TypeScript, so Python and the browser cannot drift. No new runtime dependency.",
+    "approaches": [
+     {
+      "name": "Pydantic event union + terminal rule + turn claim/commit with client_turn_id + last_turn replay + generated TS types",
+      "advantages": "One contract fixes truncation, duplicates, late conflicts and the untyped OpenAPI; works on stream and non-stream routes and every store.",
+      "drawbacks": "Two saves per turn (claim + commit); session grows by one turn's events.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Same, but conflicts detected only at the final save and handled client-side",
+      "advantages": "One save per turn.",
+      "drawbacks": "The founder still hears a reply the server then discards.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Redis SETNX idempotency keys with cached responses",
+      "advantages": "Standard pattern.",
+      "drawbacks": "Second store that can disagree with the session; absent when Redis is off; awkward for SSE.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "AsyncAPI document for the stream",
+      "advantages": "Purpose-built for event APIs.",
+      "drawbacks": "Second spec toolchain for one endpoint; FastAPI cannot emit it.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "WebSocket turn channel",
+      "advantages": "Bidirectional, explicit acks.",
+      "drawbacks": "Transport rewrite; worse on 2G and behind proxies; still needs idempotency and replay.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "sse-starlette / @microsoft/fetch-event-source with Last-Event-ID resume",
+      "advantages": "Standard resume semantics and retry hooks.",
+      "drawbacks": "The turn stream is a fetch POST, so automatic resume does not apply; server buffering is the last_turn anyway; a dependency for a few lines.",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Non-streaming turns or buffering the whole reply until saved",
+      "advantages": "Real 409s, never speaks unsaved text.",
+      "drawbacks": "Loses sentence-by-sentence speech and the 1-second first sentence.",
+      "cost": "free/open source"
+     }
+    ],
+    "not_chosen": [
+     {
+      "name": "Same, but conflicts detected only at the final save and handled client-side",
+      "reason": "Softens rather than removes the spoken-then-discarded case; its client handling is kept only as a fallback."
+     },
+     {
+      "name": "Redis SETNX idempotency keys with cached responses",
+      "reason": "Second source of truth; absent without Redis."
+     },
+     {
+      "name": "AsyncAPI document for the stream",
+      "reason": "Extra toolchain; OpenAPI with the union schema suffices to generate types."
+     },
+     {
+      "name": "WebSocket turn channel",
+      "reason": "Transport rewrite with poorer mobile behaviour; idempotency still needed."
+     },
+     {
+      "name": "sse-starlette / @microsoft/fetch-event-source with Last-Event-ID resume",
+      "reason": "Does not apply to a fetch POST and adds a dependency; notices keep the plain EventSource with our own ids and Last-Event-ID."
+     },
+     {
+      "name": "Non-streaming turns or buffering the whole reply until saved",
+      "reason": "Gives up the voice latency win."
+     }
+    ],
+    "design": {
+     "components": "1) agents/events.py (new): AckEvent{session_id, client_turn_id, action, pending (T27), reply_language}, SentenceEvent{seq, text, language, origin} (T26), ToolEvent, EvidenceEvent/NoveltyEvent/CouncilEvent (idea_version, at), DoneEvent{client_turn_id, replayed, counts, languages, ...}, ErrorEvent{code: 'conflict'|'turn_in_progress'|'expired'|'not_found'|'failed', detail, retryable}; TurnEvent = Annotated[Union[...], Field(discriminator='event')]; TurnWriter serialises with 'id: <seq>', numbers, times (T23 TurnClock) and records events. 2) AgentTurnIn.client_turn_id: UUID (optional; server generates one when absent) and optional client_timing (T23). 3) run_turn shared by agent_turn and agent_turn_stream: load (404 -> not_found, or expired when T07's store reports expiry); last_turn.client_turn_id == id and committed -> replay recorded events with replayed=true (no decide(), no model call); claim: s.turn_claim = {client_turn_id, at} with a CAS save; VersionConflict -> HTTP 409 conflict; a live claim with a different id -> 409 turn_in_progress (stale after 120 s); same id -> takeover; run turn_stream; commit s.last_turn + session in one CAS save, clear the claim, then yield Done; a commit conflict -> Error conflict (retryable=false); exceptions -> Error failed (retryable=true); disconnect before commit clears the claim in finally. 4) Notices: on subscribe send the latest result per kind (board.take) with id '<kind>:<finished_at>'; Last-Event-ID skips delivered ones; snapshot (agent_resume async) merges board results newer than the session's copies. 5) Client: streamTurn throws StreamCut when no terminal event; Talk retries up to 2 times with the same client_turn_id (1 s, 3 s) and skips sentences whose seq was already spoken; conflict -> drop the unsaved reply, reload the snapshot, speak the fixed recorded correction and snapshot.pending's question; expired -> say so and offer a fresh start (no silent save(null)). 6) Talk queue: string[] of utterances, each shown, joined with ' ' into the next turn, persisted in the talk_session registry key (T18). 7) response_model on every agent, cohort and voice route; stream documented as text/event-stream with schema TurnEvent; scripts/export_openapi.py + openapi-typescript -> frontend/src/api/schema.d.ts; CI regenerates and diffs (T22 frontend job).",
+     "data_model": "AgentSession gains turn_claim {client_turn_id, at}|None and last_turn {client_turn_id, events: [TurnEvent dicts], committed_at}|None (latest turn only, ~2-10 KB), both in the session JSON (0003); old documents load with None (same T34 bump as T27's pending). Snapshot gains pending and results_pending.",
+     "algorithm": "Client id = crypto.randomUUID() per utterance or merged queue batch; attempt(n): stream; Done -> commit transcript; Error{retryable} or StreamCut with n < 2 -> back-off and retry same id; Error conflict -> reload and correct; expired -> spoken message and fresh start. Server claim CAS keeps at most one live turn per session across processes; the in-process asyncio.Lock stays as a fast path.",
+     "files": [
+      "backend/app/agents/events.py (new)",
+      "backend/app/agents/ideation.py",
+      "backend/app/routers/ideation.py",
+      "backend/app/routers/cohort.py",
+      "backend/app/routers/voice.py",
+      "backend/app/agents/jobs.py",
+      "backend/app/agents/store.py (claim helpers on the version check)",
+      "scripts/export_openapi.py (new)",
+      "frontend/src/api/schema.d.ts (generated)",
+      "frontend/src/voice/agentClient.ts",
+      "frontend/src/pages/Talk.tsx",
+      "frontend/package.json (openapi-typescript devDependency, gen:api)",
+      ".github/workflows/ci.yml (regenerate and diff, with T22)",
+      "backend/tests/api/test_turn_stream_contract.py (new)"
+     ],
+     "rollout": "Backward compatible: client_turn_id optional, fields additive, error keeps 'detail' beside 'code'. Order: event models + TurnWriter + terminal rule; claim/commit and replay; client sentinel, retry, conflict/expiry handling and queue; notice replay; generated types with CI diff. No database migration (session JSON).",
+     "offline": "Pure protocol; identical with or without models or Redis. Replays need no model, so a retried turn costs no free-tier quota."
+    },
+    "tasks": [
+     {
+      "title": "Typed event union, TurnWriter and typed error codes",
+      "why": "Events are defined twice by hand and errors are free text, so a conflict or failure looks like a normal reply.",
+      "where": "backend/app/agents/events.py (new), agents/ideation.py, routers/ideation.py",
+      "how": "Pydantic discriminated union; TurnWriter for every event with seq; ErrorEvent{code, retryable}; router emits only typed errors; every stream ends with exactly one Done or Error.",
+      "when": "First; T23's TurnClock plugs into the writer; T26 adds Sentence fields; T27 pending.",
+      "what_for": "One contract for the turn stream shared by both sides and the docs.",
+      "subtasks": [
+       {
+        "text": "TurnEvent union, emit() and TurnWriter; ErrorEvent{code, retryable}; terminal rule",
+        "flags": [
+         "F-B1-008",
+         "F-A5-019"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Turn claim/commit with client_turn_id and last-turn replay",
+      "why": "A conflict is found after the reply is spoken and a retry after a drop re-runs the turn; planned idempotency is on a route Talk never uses.",
+      "where": "backend/app/routers/ideation.py (run_turn), agents/ideation.py (AgentSession fields), agents/store.py",
+      "how": "client_turn_id; claim with a CAS save before the first event (409 conflict / turn_in_progress); commit session + last_turn in one save, then Done; same id replays; shared by both routes.",
+      "when": "After task 1 and T27 task 1 (same T34 bump); relies on T07's version-guarded save.",
+      "what_for": "A retried turn is never applied twice, and the founder never hears a reply the server threw away.",
+      "subtasks": [
+       {
+        "text": "run_turn shared by both routes with last_turn replay on a matching client_turn_id",
+        "flags": [
+         "F-B1-007"
+        ]
+       },
+       {
+        "text": "Claim before speaking so conflicts are an HTTP 409 before any sentence; Done only after commit",
+        "flags": [
+         "F-B1-008"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Client sentinel check, retry, conflict/expiry handling and utterance queue",
+      "why": "A cut stream resolves as success, a late conflict is silent, and a second utterance during a slow turn overwrites the first.",
+      "where": "frontend/src/voice/agentClient.ts, frontend/src/pages/Talk.tsx",
+      "how": "StreamCut when no terminal event; retry with the same id (2 attempts, back-off), dedupe by seq; conflict -> drop unsaved reply, reload, spoken correction; expired -> spoken message before a fresh start; queue as array merged into one next turn.",
+      "when": "After task 2.",
+      "what_for": "On 2G, dropped replies are recovered, the founder always knows whether the answer counted, and nothing said is lost.",
+      "subtasks": [
+       {
+        "text": "Done-sentinel check and retry with the same client_turn_id, dedupe by seq",
+        "flags": [
+         "F-B1-009"
+        ]
+       },
+       {
+        "text": "Talk.tsx conflict fallback with a spoken fixed correction",
+        "flags": [
+         "F-B1-008"
+        ]
+       },
+       {
+        "text": "Queue every utterance as an array, shown in the transcript and merged into the next turn",
+        "flags": [
+         "F-B1-010"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Notice replay on subscribe and fresh results in the snapshot; honest expiry",
+      "why": "Results that finish while disconnected never appear; an expired session silently restarts.",
+      "where": "backend/app/agents/jobs.py, routers/ideation.py (agent_notices, async agent_resume), agents/ideation.py (snapshot), Talk.tsx",
+      "how": "On subscribe send the latest result per kind with an id; honour Last-Event-ID; snapshot merges board results; 404 with code expired and a spoken message before a fresh start.",
+      "when": "After task 1; uses T07 expiry and T12 result lifecycle.",
+      "what_for": "Reconnects and reloads show what finished meanwhile.",
+      "subtasks": [
+       {
+        "text": "Replay the latest research/council results with event ids on (re)subscribe; Last-Event-ID skips delivered ones",
+        "flags": [
+         "F-B1-011"
+        ]
+       },
+       {
+        "text": "Snapshot includes finished board results; Talk says why a fresh start happened",
+        "flags": [
+         "F-B1-011"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Response models in OpenAPI and generated TypeScript types",
+      "why": "Agent routes and stream events are missing from OpenAPI, so a renamed field breaks Talk silently.",
+      "where": "routers/ideation.py, routers/cohort.py, routers/voice.py, scripts/export_openapi.py, frontend/package.json, frontend/src/api/schema.d.ts, .github/workflows/ci.yml",
+      "how": "response_model on every agent, cohort and voice route; text/event-stream schema = TurnEvent; openapi-typescript generates schema.d.ts; agentClient imports from it; CI regenerates and fails on diff.",
+      "when": "After task 1; CI diff in T22's frontend job.",
+      "what_for": "5.3.4 publishes a complete reference; Python/TypeScript drift fails CI.",
+      "subtasks": [
+       {
+        "text": "Typed responses and the stream event schema in OpenAPI",
+        "flags": [
+         "F-A5-019"
+        ]
+       },
+       {
+        "text": "export_openapi.py + openapi-typescript; agentClient uses generated types; CI diff",
+        "flags": [
+         "F-A5-019"
+        ]
+       }
+      ]
+     }
+    ],
+    "tests": "Every stream (normal, model failure, offline, conflict, exception) ends with exactly one Done or Error; events validate against TurnEvent (TypeAdapter). Fake store raising VersionConflict at claim -> HTTP 409, zero sentence events. Same client_turn_id twice -> replayed=true, version bumped once, model stub called once. Generator closed before commit -> claim cleared, retry runs. Research finished with no subscriber, then subscribe -> evidence first; Last-Event-ID skips it. Vitest: body without done -> StreamCut and one retry with the same id; duplicate seq not spoken twice; two queued utterances -> one joined request; conflict -> reload and correction. CI: regenerated schema.d.ts has no diff.",
+    "risks": "Two saves per turn add one DB round trip (~5-20 ms) before the ack; acceptable against model latency. A stale claim after a crash blocks a session up to 120 s unless the same id retries (takeover). A re-run after an uncommitted drop may produce different sentences than were partly heard; the client clears the caption and speaks the new reply. Documents grow by one turn's events."
+   }
+  }
+ ]
+}
