@@ -1,0 +1,1592 @@
+{
+ "judge": "J5",
+ "verdicts": [
+  {
+   "theme": "T29",
+   "winner": "merge",
+   "scores": {
+    "A": {
+     "root_cause": 5,
+     "correctness": 5,
+     "constraints": 5,
+     "simplicity": 4,
+     "plan": 5
+    },
+    "B": {
+     "root_cause": 5,
+     "correctness": 4,
+     "constraints": 4,
+     "simplicity": 4,
+     "plan": 4
+    }
+   },
+   "reasoning": "Both teams found the same root (unknown treated as a value, numbers asserted instead of derived from one rubric) and the same fix shape: Optional inputs, three-valued investor constraints with a check-with-investor group, readiness as advice, counterfactual gaps, pipeline fixes. A is the better base. Its coverage plus 'not assessed' scoring is exactly the flag's resolution and gives founders a single honest number instead of a range. Its pipeline fix is more correct when checked against the code: backend/pyproject.toml declares requires-python >=3.10 and mypy python_version 3.10, where datetime.fromisoformat rejects 'Z', so B's reliance on 3.11 accepting 'Z' is unsafe; and since can_advance only allows closed_won from term_sheet/negotiation, a WON entry without history provably passed every open stage through term_sheet, which B's '{initial_contact, terminal}' undercounts. A's plan also splits subtasks more finely. B contributes three things A lacks: reuse of the shared app/core/tri.py (Tri/Verdict) and FounderFacts (app/core/facts.py, from_slots) contract that T04 and T24 also use, instead of A's separate FundingProfile type; value_by_stage as a real replacement for the removed weighted_value; and the interval monotonicity property test. B's interval readiness is a sound alternative, but ranges are harder for low-literacy founders and add a second score shape; it is not adopted.",
+   "final": {
+    "chosen": "A's single rubric table with three-valued inputs (per-dimension coverage, 'not assessed', overall over assessed weight), with inputs carried in B's shared FounderFacts funding fields and constraints in the shared core/tri.py; investor constraints three-valued with readiness demoted to advice and fit from varying terms only; counterfactual gap impacts from the same rubric; A's state-machine-correct pipeline fixes plus B's value_by_stage.",
+    "why_chosen": "One rubric definition feeds score, coverage, gating advice, next questions and gap impact, so they cannot disagree; unknown is legal so the frontend needs no invented defaults; readiness ranks and advises while only investor-published criteria exclude. Reusing T04's Tri/Verdict and the FounderFacts contract means one unknown-aware mechanism across schemes, funding and opportunities, and the conversation's stage/team answers fill readiness without re-asking. Deterministic, standard library only, offline.",
+    "approaches": [
+     {
+      "name": "Single rubric table with three-valued inputs and coverage",
+      "advantages": "One definition feeds score, coverage, gaps, questions; honest single number with 'not assessed'; pure and property-testable",
+      "drawbacks": "Scores drop for founders who skip questions (intended); one-time rewrite of readiness.py",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Interval readiness (unknown input contributes [0, max])",
+      "advantages": "Mathematically honest; interval width shows what to ask next",
+      "drawbacks": "Founders see ranges, harder to read on a phone; second score shape to carry through API and UI",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Ask every rubric field on the form",
+      "advantages": "Complete data, no unknown state",
+      "drawbacks": "25-field form on 2G phones for low-literacy founders; guessed answers are invented data by another route",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Slot projection from the ideation session",
+      "advantages": "Never ask twice",
+      "drawbacks": "Covers about 5 of 25 inputs; still needs an unknown state",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Imputation from cohort medians",
+      "advantages": "A single number for everyone",
+      "drawbacks": "Invented data; no cohort data exists",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Per-stage readiness gates and playbook preconditions",
+      "advantages": "Quick relief for worst symptoms",
+      "drawbacks": "Gate numbers stay invented; impact points stay wrong",
+      "cost": "free/open source"
+     },
+     {
+      "name": "CP-SAT constraint model for matching",
+      "advantages": "Uniform with planner machinery",
+      "drawbacks": "One startup vs N investors has no combinatorial structure; latency and opacity",
+      "cost": "free/open source"
+     },
+     {
+      "name": "BM25 / TF-IDF over investor theses",
+      "advantages": "Uses the richest investor text",
+      "drawbacks": "Noisy on ~36 short summaries; new dependency; hard to explain; idea text needs privacy handling",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Statistical / learned readiness and closing odds",
+      "advantages": "Defensible if outcome data existed",
+      "drawbacks": "No TN outcome data; fitted numbers would be invented",
+      "cost": "free/open source"
+     }
+    ],
+    "not_chosen": [
+     {
+      "name": "Interval readiness",
+      "reason": "Equally honest but ranges confuse the target founders and add a second score shape; coverage plus 'not assessed' plus next_inputs gives the same guidance with one number. The monotonicity idea is kept as a property test."
+     },
+     {
+      "name": "Ask every rubric field on the form",
+      "reason": "Hurts 2G/low-literacy users and pushes them to type guesses, recreating invented inputs."
+     },
+     {
+      "name": "Slot projection alone",
+      "reason": "Partial coverage; used inside the chosen design as an origin-tagged input source via FounderFacts.from_slots."
+     },
+     {
+      "name": "Imputation from cohort medians",
+      "reason": "Invented data under the project's rules; no cohort data."
+     },
+     {
+      "name": "Per-stage gates and playbook preconditions",
+      "reason": "Keeps invented thresholds and wrong impact numbers."
+     },
+     {
+      "name": "CP-SAT for matching",
+      "reason": "No combinatorial structure; complexity without benefit."
+     },
+     {
+      "name": "BM25 / TF-IDF thesis ranking",
+      "reason": "Noisy at this data size, new dependency, unexplainable; canonical sector/stage terms and T01 keyword overlap carry the signal transparently."
+     },
+     {
+      "name": "Learned readiness and closing odds",
+      "reason": "No outcome data exists; any fitted number would be invented."
+     }
+    ],
+    "design": {
+     "components": "1) funding/rubric.py: RUBRIC rows (dimension, input, kind flag|number|stage, points or scale+cap) reproducing today's points exactly for fully answered profiles. 2) Inputs: the funding fields of the shared FounderFacts model (app/core/facts.py, every field Optional, None = not told), with from_funding_form and from_slots projections and an origin tag (founder|conversation); self-reported origin is never labelled verified. 3) readiness.py: score_readiness(facts) -> ReadinessResult{dimensions: {dim: {score|None, coverage, missing}}, overall|None, assessed_weight, band|'not enough answers', next_inputs (top 3 missing by weight*points)}. 4) investor_match.py: each criterion returns core/tri.py Tri; groups eligible / check_with_investor (no FALSE, at least one UNKNOWN such as stage or sector not published, listing the unknown criteria) / ineligible (reasons cite published criteria only). readiness_gate deleted; readiness band shown as advice. _fit uses only varying terms: sector (specialist 100, generalist 70-80), stage-list position, ticket position (when ticket known), traction margin (only where min_users/min_revenue published), thesis overlap on T01 canonical keywords (omitted until T01 lands). Terms without data omitted and weights renormalised; fit carries 'why' strings; ties broken by name. 5) gaps.py: each PLAYBOOK action declares the inputs it sets and a precondition; analyze_gaps(facts, readiness) drops actions already satisfied, marks actions on unknown inputs 'if not done yet', impact = rubric re-score delta; effort weeks labelled as rough estimates. 6) pipeline.py: _reached: history -> stages in history; no history: LOST -> {initial_contact, LOST}; WON -> every open stage through term_sheet + WON (implied by can_advance); open -> stages up to current. _to_date helper normalises 'Z' to '+00:00' then datetime.fromisoformat(...).date(), else date.fromisoformat (works on 3.10 and 3.11). STAGE_PROBABILITY and weighted_value removed; value_by_stage (real sums of entry amounts per stage) added. 7) Funding.tsx: tri-state toggles (yes / no / not sure, default not sure), sends only founder-set fields, shows coverage, 'not assessed', next questions and the three investor groups; Pipeline.tsx shows value_by_stage.",
+     "data_model": "FounderFacts funding fields: stage (T01 Stage)|None; team_size, founder_experience_years, advisors_count, users, monthly_revenue, retention_rate, partnerships, runway_months, revenue_growth_pct, feature_completeness, deck_completeness: number|None; has_*/is_*/dpiit_recognized: bool|None; origin map. RubricRow(dimension, input, kind, points|scale, cap). DimensionScore{score|None, coverage, missing}. InvestorMatchResult{eligible[{investor, fit, why}], check_with_investor[{investor, unknown}], ineligible[{investor, reasons}], total_checked}. Recommendation{dimension, action, sets, impact_points, effort_weeks, conditional}. PipelineMetrics: weighted_value removed, value_by_stage added. funding_schemas.py updated.",
+     "algorithm": "Unanswered rows add to the dimension's total weight but earn nothing; dimension score = earned points on the existing scale; coverage = answered weight / total weight; coverage < 0.5 -> score None. overall = weighted mean over assessed dimensions with weights renormalised; assessed weight < 0.5 -> overall None, band 'not enough answers'. Investors: Kleene AND over constraints. Gap impact(a) = score(facts with a.sets).overall - score(facts with a's inputs at their non-achieved value).overall, computed with dimensions forced assessed so impact equals rubric points; zero-impact actions dropped; sort by impact/effort, ties by dimension weight.",
+     "files": [
+      "backend/app/funding/rubric.py (new)",
+      "backend/app/funding/readiness.py",
+      "backend/app/funding/investor_match.py",
+      "backend/app/funding/gaps.py",
+      "backend/app/funding/pipeline.py",
+      "backend/app/routers/funding.py",
+      "backend/app/models/funding_schemas.py",
+      "backend/app/core/tri.py (from T04)",
+      "backend/app/core/facts.py (funding fields)",
+      "frontend/src/pages/Funding.tsx",
+      "frontend/src/pages/Pipeline.tsx",
+      "frontend/src/api.ts",
+      "backend/tests/unit/test_funding_rubric.py",
+      "backend/tests/unit/test_investor_tri.py",
+      "backend/tests/unit/test_gaps_counterfactual.py",
+      "backend/tests/unit/test_pipeline_metrics.py"
+     ],
+     "rollout": "1) Pipeline fixes (independent). 2) Rubric + three-valued readiness and removal of the Funding.tsx defaults in one PR (removing defaults alone would make scores falsely low); backend accepts old full payloads and partial ones (missing = unknown). 3) Investor groups and gate removal. 4) Counterfactual gaps. Frontend updated in the same PRs as API shape changes; localStorage boards keep loading because date parsing becomes more tolerant. Until T04 lands tri.py/facts.py, a local stub with the same names is used.",
+     "offline": "Deterministic Python over Git-held investor JSON; no model or network; nothing degrades."
+    },
+    "tasks": [
+     {
+      "title": "Rubric table and three-valued readiness",
+      "why": "Readiness counts answers the founder never gave and cannot say 'not assessed'.",
+      "where": "backend/app/funding/rubric.py (new), readiness.py, core/facts.py, models/funding_schemas.py, routers/funding.py, frontend/src/pages/Funding.tsx",
+      "how": "Move the six scorers into RUBRIC rows; FounderFacts funding fields all Optional with origin; coverage, 'not assessed', renormalised overall, next_inputs; frontend tri-state toggles sending only founder-set fields.",
+      "when": "First (after or with stubs of T04's tri.py/facts.py; T01 Stage mapping local until T01 lands).",
+      "what_for": "An honest score that tells the founder what to answer next; base for every other T29 task.",
+      "subtasks": [
+       {
+        "text": "RUBRIC and FounderFacts funding fields reproducing today's points exactly for fully answered profiles (regression test)",
+        "flags": [
+         "F-A4-016"
+        ]
+       },
+       {
+        "text": "Per-dimension coverage, 'not assessed' below 50%, overall over assessed weight, band 'not enough answers', next_inputs; monotonicity property test (adding a true fact never lowers a dimension)",
+        "flags": [
+         "F-A4-016"
+        ]
+       },
+       {
+        "text": "Funding.tsx: delete the 'richer defaults' block, tri-state toggles defaulting to 'not sure', send only founder-set fields, show coverage; Vitest that the payload has no untouched field",
+        "flags": [
+         "F-A4-016"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Investor matching: unknown is not no; readiness is advice",
+      "why": "An invented 60 gate hides pre-seed investors, unpublished criteria are rejected and 60% of fit is constants.",
+      "where": "backend/app/funding/investor_match.py, routers/funding.py, frontend/src/pages/Funding.tsx",
+      "how": "Criteria return Tri; three groups; delete readiness_gate; _fit from varying terms with 'why' strings and stable tie-break.",
+      "when": "After task 1.",
+      "what_for": "Idea- and prototype-stage founders see the real pre-seed investors and the order carries information.",
+      "subtasks": [
+       {
+        "text": "Remove readiness_gate from _violations; readiness band returned as advice text",
+        "flags": [
+         "F-A4-017"
+        ]
+       },
+       {
+        "text": "Stage/sector not published -> check_with_investor group listing the unknown criteria; ineligible reasons cite only published criteria",
+        "flags": [
+         "F-A4-019"
+        ]
+       },
+       {
+        "text": "Rewrite _fit: drop constant stage/geography/track terms; add sector specialism, stage-list position, ticket position, published-only traction margin, thesis overlap (when T01 terms exist); renormalise; 'why' list; stable tie-break",
+        "flags": [
+         "F-A4-019"
+        ]
+       },
+       {
+        "text": "Real-data tests: idea founder with readiness 35 sees idea/poc investors as eligible or check-with; prototype founder with 45 no longer gets 0; top-5 fits not tied on constants",
+        "flags": [
+         "F-A4-017",
+         "F-A4-019"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Counterfactual gap plan",
+      "why": "Advice ignores what the founder has done and its impact numbers disagree with the rubric.",
+      "where": "backend/app/funding/gaps.py, routers/funding.py",
+      "how": "PLAYBOOK entries declare the inputs they set and a precondition; analyze_gaps(facts, readiness) re-scores with each change.",
+      "when": "After task 1.",
+      "what_for": "No advice for done steps and correct ordering; 4.3.2 then tracks the right recommendations.",
+      "subtasks": [
+       {
+        "text": "sets/precondition on every action; drop satisfied actions; mark unknown-input actions 'if not done yet'; test that an MVP-stage founder is never told to ship an MVP",
+        "flags": [
+         "F-A4-018"
+        ]
+       },
+       {
+        "text": "impact_points from score_readiness delta; parametrised test that impact equals the rubric delta for every action (e.g. 'Register the entity' gives the rubric's real change, not 8)",
+        "flags": [
+         "F-A4-018"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Pipeline metrics that match the state machine",
+      "why": "Lost deals inflate conversion, ISO datetimes drop first-stage time and closing odds are uncited.",
+      "where": "backend/app/funding/pipeline.py, frontend/src/pages/Pipeline.tsx",
+      "how": "_reached by state-machine implication; tolerant _to_date; replace STAGE_PROBABILITY/weighted_value with value_by_stage.",
+      "when": "Independent; can land first.",
+      "what_for": "Funnel numbers founders and later programme aggregates (3.1.3, 5.5.5) can trust.",
+      "subtasks": [
+       {
+        "text": "_reached: LOST without history -> {initial_contact, LOST}; WON without history -> open stages through term_sheet + WON; tests ([closed_lost no history, initial_contact] gives 0% negotiation)",
+        "flags": [
+         "F-A4-020"
+        ]
+       },
+       {
+        "text": "_to_date for 'YYYY-MM-DD', '...T..Z' and offsets, normalising 'Z' so it works on Python 3.10 and 3.11; tested with the exact string Pipeline.tsx stamps; avg days > 0 after 9 days",
+        "flags": [
+         "F-A4-020"
+        ]
+       },
+       {
+        "text": "Remove weighted_value and STAGE_PROBABILITY from backend and Pipeline.tsx; add value_by_stage",
+        "flags": [
+         "F-A4-020"
+        ]
+       }
+      ]
+     }
+    ],
+    "tests": "Rubric regression (fully answered profile gives today's scores); coverage thresholds; overall None when assessed weight < 0.5; monotonicity property. Gap impact equals score delta for every action; satisfied actions absent. Real investors: idea/prototype founders no longer get 0 eligible; unpublished stage goes to check_with_investor; ineligible reasons cite only published criteria; no ties on constants. Pipeline: lost-without-history regression, WON implication, JS ISO string parsed on 3.10, value_by_stage sums. API schema tests; Vitest payload test.",
+    "risks": "Lower scores for founders who skip questions can discourage: word as 'answer 3 more to get a score'. Longer eligible lists without the gate: mitigated by fit order, 'why' and grouping. Thesis overlap waits on T01 canonical terms (omitted, not guessed). Investor data stays thin (about 12 without stages); the check_with_investor group makes that visible. Dependency on T04's tri.py/facts.py: stub locally with identical names to avoid a second Tri type."
+   }
+  },
+  {
+   "theme": "T30",
+   "winner": "merge",
+   "scores": {
+    "A": {
+     "root_cause": 5,
+     "correctness": 5,
+     "constraints": 5,
+     "simplicity": 5,
+     "plan": 4
+    },
+    "B": {
+     "root_cause": 5,
+     "correctness": 4,
+     "constraints": 5,
+     "simplicity": 4,
+     "plan": 4
+    }
+   },
+   "reasoning": "Both teams chose the same core (nullable columns with email only in users, drop SoftDeleteMixin for hard delete with cascades, server-only verification with renamed tiers, AES-GCM TypeDecorator with key ids and an HMAC blind index), and both match the flag resolutions and founder.py:23-39. They differ in details. A is right that phone must not stay unique, even as a unique blind index: family members share one phone in rural Tamil Nadu and identity already lives in users.email; B's unique phone_bi would reject a second founder on a shared phone. A keeps startup GSTIN/CIN/DPIIT as plain unique columns (public registry identifiers; hard delete already frees them), which is simpler than B's encrypted values plus three unique blind indexes. A also adds a production boot check and a gitignored per-machine dev key file. B adds things A lacks and that sharpen correctness: per-field provenance (self_reported / format_checked / verified:method) so 'you told us' is stored, not just displayed; first_graduate nullable (unknown is not false, today it defaults to False at founder.py:39); an explicit erasure_audit model with an HMAC subject hash rather than an unspecified 'audit row'; and a migration guard that aborts if rows exist. The final takes A's lookup/uniqueness choices and key handling, and B's provenance, first_graduate, erasure_audit and row-count guard.",
+   "final": {
+    "chosen": "Nullable founder/startup columns with identity only in users; per-field provenance and server-only verification with honest tier names; hard delete with cascades and a PII-free erasure_audit row; AES-GCM TypeDecorator with a keyring separate from JWT signing and one non-unique HMAC blind index for phone.",
+    "why_chosen": "Each part removes one way the schema fights the product: nullable columns let partial profiles sync and make minimisation the default; provenance plus server-only verification means nothing typed or ticked is called verified (D11, no invented data); hard delete with the existing cascades makes erasure real and frees identifiers (D12); randomised AES-GCM with its own keyring and a blind index protects sensitive columns while keeping the one lookup that matters, without forbidding shared family phones. One migration while no real data exists, using cryptography which is already installed, fully offline.",
+    "approaches": [
+     {
+      "name": "Nullable columns, scorer enforces tiers, identity only in users, provenance per field",
+      "advantages": "Every draft syncs in one shape; minimisation by default; one email source; honest origin of every value",
+      "drawbacks": "Fewer DB guarantees; queries handle NULL",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Separate founder_sensitive table created on need",
+      "advantages": "Sensitive data isolated and droppable per purpose",
+      "drawbacks": "Extra join for every eligibility query; does not remove NOT NULL failures on the main table",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Separate draft table plus promotion",
+      "advantages": "Keeps the strict table",
+      "drawbacks": "Two shapes and a promotion step; strict table still over-collects",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Profile as a JSONB document",
+      "advantages": "Matches the browser draft exactly",
+      "drawbacks": "Loses typed columns, checks and indexes used by schemes and cohorts; field encryption inside JSON is awkward",
+      "cost": "free/open source"
+     },
+     {
+      "name": "AES-256-GCM TypeDecorator with key ids + HMAC-SHA256 blind index",
+      "advantages": "Randomised encryption, lookup through the index, rotation by key id, key separate from JWT, offline",
+      "drawbacks": "Rotation script; ciphertext not filterable in SQL; key custody is the operator's job",
+      "cost": "free/open source"
+     },
+     {
+      "name": "sqlalchemy-utils EncryptedType / StringEncryptedType",
+      "advantages": "Little code",
+      "drawbacks": "Weak defaults, no blind index or rotation, new dependency",
+      "cost": "free/open source"
+     },
+     {
+      "name": "PostgreSQL pgcrypto",
+      "advantages": "No application crypto code",
+      "drawbacks": "Keys in SQL text and logs; tests tied to PostgreSQL; no blind index",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Cloud KMS envelope encryption",
+      "advantages": "Strong key custody",
+      "drawbacks": "Paid and online",
+      "cost": "paid"
+     },
+     {
+      "name": "Soft delete with partial unique indexes and delayed purge",
+      "advantages": "Undo window",
+      "drawbacks": "Keeps personal data after an erasure request, against D12",
+      "cost": "free/open source"
+     }
+    ],
+    "not_chosen": [
+     {
+      "name": "Separate founder_sensitive table",
+      "reason": "Adds a join to every eligibility query and does not fix NOT NULL failures; field encryption plus per-purpose consent (T19) already isolates sensitive data."
+     },
+     {
+      "name": "Separate draft table plus promotion",
+      "reason": "Two shapes for the same data and the main table still forces data the product does not need."
+     },
+     {
+      "name": "Profile as a JSONB document",
+      "reason": "Throws away typed columns and constraints the schemes and cohort code query."
+     },
+     {
+      "name": "sqlalchemy-utils",
+      "reason": "Weak defaults, no blind index or rotation, a new dependency."
+     },
+     {
+      "name": "pgcrypto",
+      "reason": "Keys in SQL text and logs, no blind index."
+     },
+     {
+      "name": "Cloud KMS",
+      "reason": "Paid and online, against the free/offline constraint."
+     },
+     {
+      "name": "Soft delete with partial unique indexes",
+      "reason": "Keeps personal data after an erasure request, contradicting D12."
+     }
+    ],
+    "design": {
+     "components": "1) Migration <n>_founder_minimisation (on T16's applying chain; aborts if founders/startups have rows): founders profile columns nullable; drop founders.email with ix_founders_email and its CHECK; drop unique and index on phone; first_graduate nullable without default; add field_provenance JSON; drop deleted_at on founders and startups; startups entity_type/domain/stage nullable (startup_name stays required); create erasure_audit. 2) Models: Founder and Startup without SoftDeleteMixin; Founder.user_id FK users ON DELETE CASCADE; Founder gains phone_bidx (String(64), indexed, NOT unique); phone, date_of_birth, caste_category stored encrypted (EncryptedString / EncryptedDate). Startup cin/dpiit/gstin stay plain unique (public registry identifiers). 3) core/crypto.py: Keyring.from_settings(), encrypt, decrypt, blind_index(value, field, normaliser); EncryptedString and EncryptedDate TypeDecorators (impl Text). The same keyring is reused by T20 (join codes) and T32 (erasure_audit subject hash). 4) Settings: encryption_keys ('id:base64' list, first active) and blind_index_key (SecretStr); production boot refuses missing keys or keys equal to secret_key; development generates a gitignored per-machine key file via T32's package-relative path helper. 5) completeness.py: BASIC_FIELDS drop email (read from users); present fields reported separately from verified_fields, which are filled only from 'verified:*' provenance written by server checks (none exist today, so empty); tiers renamed incomplete/basic/standard/complete, with 'documents_verified' reachable only from a server-side verification record. 6) /profiles router (3.1.2): writes provenance 'self_reported' for founder-typed fields, ignores client verification flags; DELETE is a hard delete that cascades and writes erasure_audit; full erasure goes through T32's service. 7) Profile.tsx: remove the 'Documents verified (demo)' toggle; show self-reported fields as 'you told us'; completeness.ts and i18n.ts tier labels updated together.",
+     "data_model": "founders(founder_id PK, user_id FK users ON DELETE CASCADE, name?, phone? enc, phone_bidx? indexed non-unique, date_of_birth? enc, gender?, state?, district?, city?, pincode?, education fields?, first_graduate? (unknown is not false), caste_category? enc (no blind index: low cardinality), discoverable, field_provenance JSON {field: 'self_reported'|'format_checked'|'verified:<method>'}, timestamps). startups: no deleted_at, FK ON DELETE CASCADE, cin/dpiit/gstin unique. erasure_audit(id, subject_hash = HMAC(founder_id), at, actor_kind, tables_cleared). Ciphertext 'v1:<kid>:<b64(nonce||ct||tag)>' with AAD = 'table.column'.",
+     "algorithm": "Encrypt: AESGCM(key[active]).encrypt(urandom(12), plaintext, aad); decrypt by kid (old kids kept for reading). Blind index: HMAC-SHA256(blind_index_key, field + '|' + normalise_phone(v)) with spaces and leading +91/0 stripped, truncated to 32 hex. Rotation: scripts/rotate_keys.py re-encrypts rows whose kid is not active in idempotent batches; the blind-index key rotates only with a full recompute. Erasure: DELETE FROM founders WHERE founder_id = ... cascades to startups and profile_completeness, then one erasure_audit row.",
+     "files": [
+      "backend/app/db/migrations/versions/<n>_founder_minimisation.py (new)",
+      "backend/app/models/founder.py",
+      "backend/app/models/startup.py",
+      "backend/app/models/profile.py",
+      "backend/app/models/erasure_audit.py (new)",
+      "backend/app/db/base.py",
+      "backend/app/core/crypto.py (new)",
+      "backend/app/core/config.py",
+      "backend/app/services/completeness.py",
+      "backend/app/routers/profiles.py (3.1.2)",
+      "frontend/src/completeness.ts",
+      "frontend/src/pages/Profile.tsx",
+      "frontend/src/i18n.ts",
+      "backend/pyproject.toml and requirements (declare cryptography explicitly)",
+      "scripts/rotate_keys.py (new)",
+      ".env.example",
+      ".gitignore (dev key file)"
+     ],
+     "rollout": "No production data exists. Order: T16 chain fix -> minimisation migration (row-count guard) -> models -> encryption columns (before 3.1.2 writes the first real row) -> tier rename in backend and frontend together, with a label map kept for one release. Keyring optional until the first encrypted write; tests use generated keys.",
+     "offline": "Keys from env or the dev key file; cryptography is local; no external service. Without PostgreSQL the profile stays in the browser as today."
+    },
+    "tasks": [
+     {
+      "title": "Minimal, erasable founder and startup schema",
+      "why": "NOT NULL profile columns block partial sync and force over-collection; soft delete and the duplicate email contradict erasure.",
+      "where": "db/migrations/versions/<n>_founder_minimisation.py, models/founder.py, models/startup.py, models/erasure_audit.py, routers/profiles.py",
+      "how": "alter_column nullable=True; drop founders.email with index/check; drop phone unique; first_graduate nullable; drop deleted_at and SoftDeleteMixin; hard-delete route writing erasure_audit; migration aborts if rows exist.",
+      "when": "After T16 (chain applies, CI upgrade/downgrade); before 3.1.2 CRUD.",
+      "what_for": "Partial profiles sync; deletes are real; identifiers free up.",
+      "subtasks": [
+       {
+        "text": "Migration making profile columns nullable (incl. first_graduate without default) and dropping founders.email in favour of users.email; row-count guard",
+        "flags": [
+         "F-B2-013",
+         "F-A3-007"
+        ]
+       },
+       {
+        "text": "Drop unique/index on phone (shared family phones allowed); keep startups' business identifiers unique",
+        "flags": [
+         "F-A3-007"
+        ]
+       },
+       {
+        "text": "Remove SoftDeleteMixin from Founder and Startup; DELETE /profiles hard-deletes via cascades and writes an erasure_audit row with an HMAC subject hash and no personal data",
+        "flags": [
+         "F-B2-016"
+        ]
+       },
+       {
+        "text": "Tests: founder with only district and sector inserts; deleting a founder cascades startups and profile_completeness and leaves one PII-free audit row; signing up again with the same phone/GSTIN works",
+        "flags": [
+         "F-B2-013",
+         "F-B2-016"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Provenance, server-authoritative verification and honest tier names",
+      "why": "Typed-in fields and a demo checkbox would be stored as verified, tier 100.",
+      "where": "services/completeness.py, models/founder.py (field_provenance), routers/profiles.py, frontend/src/completeness.ts, pages/Profile.tsx, i18n.ts",
+      "how": "field_provenance per field written by the server; verified_fields only from 'verified:*' provenance; has_verified_documents only from a server record; rename tiers; remove the demo toggle.",
+      "when": "With 3.1.2; independent of encryption, ships with task 1.",
+      "what_for": "Nobody is told unverified data is verified (D11).",
+      "subtasks": [
+       {
+        "text": "completeness.py stops copying present fields into verified; verified_fields derived only from verified provenance; tiers renamed basic/standard/complete/documents_verified",
+        "flags": [
+         "F-B2-014"
+        ]
+       },
+       {
+        "text": "Profiles router records 'self_reported' provenance and ignores client verification flags; Profile.tsx removes the demo checkbox and labels 'you told us'; frontend mirror updated; test that docsVerified=true changes nothing",
+        "flags": [
+         "F-B2-014"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Field encryption with a keyring and a blind index",
+      "why": "The planned transparent wrap breaks unique/indexed columns and has no key of its own.",
+      "where": "core/crypto.py (new), core/config.py, models/founder.py, migration, scripts/rotate_keys.py, pyproject.toml",
+      "how": "AES-GCM TypeDecorators with kid prefix and column AAD; separate key settings with boot check; non-unique phone_bidx; dev key file; rotation script.",
+      "when": "After task 1, before 3.1.2 writes real rows; dev key path uses T32's path helper.",
+      "what_for": "Sensitive columns protected at rest with lookup and rotation intact, offline.",
+      "subtasks": [
+       {
+        "text": "crypto.py Keyring, encrypt/decrypt, blind_index with phone normaliser; declare cryptography explicitly",
+        "flags": [
+         "F-A3-018"
+        ]
+       },
+       {
+        "text": "Settings encryption_keys and blind_index_key with boot check (present in production, not equal to secret_key); gitignored dev key file",
+        "flags": [
+         "F-A3-018"
+        ]
+       },
+       {
+        "text": "EncryptedString/EncryptedDate on phone, date_of_birth, caste_category; phone_bidx column; idempotent rotation script",
+        "flags": [
+         "F-A3-018"
+        ]
+       }
+      ]
+     }
+    ],
+    "tests": "Migration up/down on PostgreSQL in CI (T16 harness); guard aborts on non-empty tables. Partial founder insert; hard delete cascades and writes one PII-free audit row. Crypto: round trip; two encryptions differ; wrong AAD or tampered ciphertext fails; old kid decrypts after rotation; blind index equal for '+91 98..' and '098..'; two founders may share a phone. Completeness: no client input yields verified fields or the documents_verified tier. Production settings without keys, or equal to secret_key, fail at boot.",
+    "risks": "Losing the key loses the data: back up keys with the database (SYSTEM-DESIGN 5.5). Encrypted DOB cannot be filtered in SQL; eligibility already runs in Python on the loaded profile. Blind index leaks phone equality (accepted; refused for caste). Non-unique phone means phone cannot be used as a sign-in identity (it is not today). Tier rename touches frontend strings; keep a label map for one release."
+   }
+  },
+  {
+   "theme": "T31",
+   "winner": "merge",
+   "scores": {
+    "A": {
+     "root_cause": 5,
+     "correctness": 5,
+     "constraints": 5,
+     "simplicity": 4,
+     "plan": 5
+    },
+    "B": {
+     "root_cause": 5,
+     "correctness": 4,
+     "constraints": 5,
+     "simplicity": 4,
+     "plan": 4
+    }
+   },
+   "reasoning": "The two designs converge on the same artefact: a persisted plan snapshot with statuses, coverage-based confidence with a spoken range, three-valued applicability that lists conditional milestones, c_grant split into c_seed_grant (Validation) and c_growth_funding (Growth), and a remaining() function over the planner's existing critical-path code (both rightly reject NetworkX as a second graph implementation). A is the better base: it writes a plan row on every build behind a MemoryPlans/SqlPlans protocol, so the tracker always has a plan_id and the design works without PostgreSQL (offline constraint), whereas B keeps anonymous plans in the 6-hour session envelope until sign-in, leaving F-B2-022 unfixed for anonymous founders; A reuses T04's three-valued evaluate (a declared dependency) instead of a planner-local tri-state; A scopes statuses by plan and reconciles strictly on (id, template_hash), where B's fallback 'same id and title' could carry a status across packs that reuse a title; and A's tasks map more finely, including the localStorage import and the cohort band. B adds two things worth taking: plan staleness and supersede driven by T06's derivation key (plan_key = derive_key('roadmap', s)) rather than A's ad hoc idea_version + PLANNER_SLOTS, which is exactly the shared mechanism T31 depends on; and target_stages declared on funding templates in pack data so annotate.py places schemes by T01 Stage from reviewed data rather than a hard-coded stage list. B's property test on remaining() is also kept.",
+   "final": {
+    "chosen": "Persisted plan snapshot (MemoryPlans/SqlPlans) written on every build, keyed by T06's plan_key with statuses scoped to the plan and reconciled on (id, template_hash); coverage-based confidence with spoken ranges; T04 three-valued applicability listing conditional milestones; stage-specific funding milestones with target_stages in pack data; remaining() over the existing graph code.",
+    "why_chosen": "Making the roadmap a stored, owned artefact fixes the root: with its own row and id, milestone ids need only be unique within a plan (keeping pack overrides), the tracker has something durable to point at, Ideate reads the same plan as Talk, and cohort progress can read statuses. T06's plan_key decides exactly when a plan is stale; T04's evaluator and T01's Stage are reused rather than duplicated. The other changes make the artefact honest (confidence from what is known, conditional milestones instead of silent drops, grants where they fund the work) and live (remaining critical path from statuses). Deterministic, offline, no new dependency.",
+    "approaches": [
+     {
+      "name": "Persisted plan snapshot table with statuses",
+      "advantages": "Outlives the transcript (better minimisation); one source for tracker, annotation, Ideate and cohort; keys cannot collide across ideas",
+      "drawbacks": "New table and retention rule; anonymous plans need a session link until sign-in",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Keep the roadmap in the session and extend the session's life",
+      "advantages": "No new table",
+      "drawbacks": "Keeps the whole transcript to keep a plan (DPDP minimisation); status has no stable home",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Recompute on demand from stored slots",
+      "advantages": "Nothing to store",
+      "drawbacks": "Reference-data or pack edits reshape a plan in progress; statuses drift",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Event-sourced milestone log",
+      "advantages": "Audit trail and time-in-milestone",
+      "drawbacks": "More machinery than needed now",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Globally unique template ids",
+      "advantages": "Ids mean one thing everywhere",
+      "drawbacks": "Breaks pack overrides and c_* annotation keys; fixes neither persistence nor dependencies",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Content-addressed milestone uids (pack:template_id:hash)",
+      "advantages": "Globally unique without renaming",
+      "drawbacks": "Longer keys; unnecessary once statuses are scoped to a plan row",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Dynamic funding dependencies computed in code",
+      "advantages": "Adapts per domain",
+      "drawbacks": "Hides planning rules in code instead of reviewed pack data",
+      "cost": "free/open source"
+     },
+     {
+      "name": "NetworkX for the remaining critical path",
+      "advantages": "Ready-made algorithms, already installed",
+      "drawbacks": "Duplicates the tested in-house critical_path; two graph codes to keep consistent",
+      "cost": "free/open source"
+     }
+    ],
+    "not_chosen": [
+     {
+      "name": "Extend session lifetime",
+      "reason": "Keeps the full transcript to keep a plan and gives status no stable key."
+     },
+     {
+      "name": "Recompute on demand",
+      "reason": "Reference-data updates silently reshape plans founders are executing."
+     },
+     {
+      "name": "Event-sourced log",
+      "reason": "Heavier than needed; an events array can be added to the JSONB later without a migration."
+     },
+     {
+      "name": "Globally unique template ids",
+      "reason": "Breaks pack overrides and annotation keys while fixing neither persistence nor dependencies."
+     },
+     {
+      "name": "Content-addressed uids",
+      "reason": "Statuses scoped to the plan row plus template_hash reconcile give the same safety with plain ids; the 'same id and title' fallback risks false carry-over."
+     },
+     {
+      "name": "Dynamic funding dependencies in code",
+      "reason": "Planning rules belong in reviewed pack data (target_stages), not hidden code."
+     },
+     {
+      "name": "NetworkX",
+      "reason": "Duplicates the tested in-house critical_path."
+     }
+    ],
+    "design": {
+     "components": "1) planner/plan.py: confidence_from(session) = max(0.3, mean over the plan's declared slots of slot confidence, 0 when missing/skipped); milestones gain template_hash (sha1 of pack id + title template + deliverables + depends_on + effort); plan gains months_range {optimistic, realistic, pessimistic} along the critical path, plan_inputs and conditional [{id, title, field, question}]. The plan's declared inputs are registered with T06 so plan_key = derive_key('roadmap', s). 2) planner/roadmap.py: applicable() uses T04's three-valued evaluate: yes keep, no drop, unknown excluded from selection and the critical-path total, reported as conditional with the slot to ask, and added to next_questions. 3) common.json: c_grant split into c_seed_grant (Validation, depends_on c_define, applies funding_route grant|mixed) and c_growth_funding (Growth, depends_on c_pilot); each funding template declares target_stages [Stage]; pack overrides reviewed with a CI check that override ids exist. annotate.py places a scheme on the funding milestone whose target_stages contain the scheme's target Stage (T01). 4) Plan store: models/plan.py PlanRow(plan_id, session_id?, user_id?, plan_key, idea_version, pack_id, built_at, inputs, plan, statuses, superseded_by?) in the ideation schema; agents/plans.py with MemoryPlans and SqlPlans behind one protocol. 5) tools._roadmap: build with confidence_from(session); if plan_key differs from the session's current plan, write a new plan row; s.roadmap keeps {plan_id, plan_key, founder-visible fields including milestone ids, depends_on, critical, domain_card id and risk keys}. 6) Reconcile: a rebuild for the same session/owner carries statuses only for milestones whose (id, template_hash) match, tagged carried_from; the old row gets superseded_by. 7) planner/progress.py remaining(plan, statuses): done milestones at zero duration through the existing critical_path; returns remaining critical path, remaining months range and warnings [{id, done_before}] (warn, never block). 8) Routes GET /ideation/plans/{plan_id}, PATCH /ideation/plans/{plan_id}/milestones/{milestone_id}, GET /ideation/agent/sessions/{id}/plan; Ideate.tsx reads the session plan, localStorage only as an offline cache keyed by plan_id. 9) _roadmap_line says 'about N months, between A and B' and how many steps wait on unanswered questions; cohort/programme.py adds a milestone-progress band from plans of consenting sessions (folded below 5).",
+     "data_model": "PlanRow as above; statuses {milestone_id: {status: pending|in_progress|done, at, carried_from?}}. Milestone {id, phase, title, deliverables, months{o,r,p}, depends_on, critical, template_hash, because, risks, risk_keys}; plan {..., months_range, plan_inputs, conditional, confidence}. Funding templates carry target_stages. A Pydantic RoadmapContract mirrors s.roadmap for T34's projection.",
+     "algorithm": "confidence = clamp(mean slot confidence over declared slots, 0.3..1.0); per-milestone sigma as today (0.3 maps to the widest sigma). Range: sums of o/r/p along the critical path (upper bound labelled 'up to'). Staleness: plan_key comparison (T06). Reconcile on (id, template_hash), never id alone. remaining(): critical path over open milestones with done durations zeroed; warning for each done milestone with an undone dependency.",
+     "files": [
+      "backend/app/planner/plan.py",
+      "backend/app/planner/roadmap.py",
+      "backend/app/planner/progress.py (new)",
+      "backend/app/planner/data/packs/common.json and pack overrides",
+      "backend/app/schemes/annotate.py",
+      "backend/app/agents/tools.py",
+      "backend/app/agents/ideation.py",
+      "backend/app/agents/plans.py (new)",
+      "backend/app/models/plan.py (new)",
+      "backend/app/db/migrations/versions/<n>_plans.py (new)",
+      "backend/app/routers/ideation.py",
+      "backend/app/cohort/programme.py",
+      "frontend/src/pages/Ideate.tsx",
+      "frontend/src/api.ts",
+      "backend/tests/unit/test_plan_*.py, test_progress.py"
+     ],
+     "rollout": "Planner honesty first (grant split, confidence, conditional; no storage needed); then the plan store on MemoryPlans; then SqlPlans with the migration after T16; owner filled by T17's claim. Then the tracker leaves the global localStorage map, importing old entries only for ids present in the current plan, tagged device-carried. Anonymous plans follow session retention until claimed; plans are in T32's erasure map.",
+     "offline": "Planner, selection, graph and reconcile code are local; without PostgreSQL MemoryPlans holds plans for the process and the browser caches statuses per plan_id."
+    },
+    "tasks": [
+     {
+      "title": "Seed grants where they fund the work",
+      "why": "c_grant comes after pilot and customers while prototype grants map to Validation.",
+      "where": "planner/data/packs/common.json, pack overrides, schemes/annotate.py",
+      "how": "Split into c_seed_grant and c_growth_funding with target_stages; annotate schemes by target Stage onto the matching milestone.",
+      "when": "First; uses T01 Stage (local mapping until T01 lands).",
+      "what_for": "One consistent answer to 'when do I apply'.",
+      "subtasks": [
+       {
+        "text": "Split c_grant in common.json with target_stages; CI check that pack override ids exist",
+        "flags": [
+         "F-B2-024"
+        ]
+       },
+       {
+        "text": "annotate.py places schemes by target_stages; test pump_controllers with funding_route grant orders c_seed_grant before p_proto with NIDHI PRAYAS on it",
+        "flags": [
+         "F-B2-024"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Honest uncertainty: confidence and conditional milestones",
+      "why": "Confidence is fixed at 0.8 and unknown conditions silently drop milestones.",
+      "where": "planner/plan.py, planner/roadmap.py, agents/tools.py, agents/ideation.py",
+      "how": "confidence_from(session); months_range; T04 three-valued applicable() with conditional list; spoken range.",
+      "when": "With T04's evaluate (until then a missing field counts as unknown inside applicable()); after T03 typed slot confidence.",
+      "what_for": "The roadmap says what it does not know, as the restatement promises.",
+      "subtasks": [
+       {
+        "text": "confidence_from(session) passed by _roadmap; months_range; _roadmap_line speaks the range; test no slots vs all slots give different bands",
+        "flags": [
+         "F-A1-025"
+        ]
+       },
+       {
+        "text": "applicable(): unknown -> conditional entry and next question; test text-only pump plan lists c_seed_grant as conditional on funding_route",
+        "flags": [
+         "F-B2-026"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Plan store with stable keys and reconcile",
+      "why": "The roadmap dies with the 6-hour session and tracker keys collide across packs.",
+      "where": "models/plan.py, migration, agents/plans.py, agents/tools.py, routers/ideation.py",
+      "how": "PlanRow with two stores; plan written when plan_key changes; ids and template_hash per milestone; statuses inside the plan; reconcile on (id, template_hash).",
+      "when": "MemoryPlans now; SqlPlans after T16; plan_key after T06 task 1.",
+      "what_for": "A durable plan to track against, keyed so it cannot collide.",
+      "subtasks": [
+       {
+        "text": "PlanRow, MemoryPlans/SqlPlans, migration and plan routes; test a plan survives session expiry and is deleted by erasure",
+        "flags": [
+         "F-B2-022"
+        ]
+       },
+       {
+        "text": "Milestones carry id and template_hash; statuses live inside the plan keyed by milestone id",
+        "flags": [
+         "F-B2-021"
+        ]
+       },
+       {
+        "text": "Reconcile on rebuild: carry over only on (id, template_hash) match, tag carried_from, supersede old row; test a done common c_pilot does not mark pump c_pilot done",
+        "flags": [
+         "F-B2-021"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Ideate and tracker read the stored plan; progress follows dependencies",
+      "why": "Ideate builds a second text-only plan and the tracker ignores depends_on and the critical path.",
+      "where": "frontend/src/pages/Ideate.tsx, planner/progress.py, routers/ideation.py, cohort/programme.py",
+      "how": "Ideate fetches the session plan; tracker PATCHes statuses; remaining() recomputes path and months; warnings not blocks; cohort band.",
+      "when": "After task 3.",
+      "what_for": "One roadmap per idea that moves with the founder, visible to the programme in aggregate.",
+      "subtasks": [
+       {
+        "text": "Ideate reads GET /ideation/agent/sessions/{id}/plan; text-only planner only without a session, showing conditional steps; test Ideate and Talk show the same milestones",
+        "flags": [
+         "F-B2-026",
+         "F-B2-022"
+        ]
+       },
+       {
+        "text": "progress.remaining() over the existing critical_path; UI shows remaining months and out-of-order warnings; test marking dealer launch done before certification warns and keeps certification months",
+        "flags": [
+         "F-B2-023"
+        ]
+       },
+       {
+        "text": "cohort/programme.py milestone-progress band from consenting sessions' plans, folded below 5",
+        "flags": [
+         "F-B2-023"
+        ]
+       },
+       {
+        "text": "Import old global localStorage statuses only for ids present in the current plan, tagged device-carried",
+        "flags": [
+         "F-B2-021"
+        ]
+       }
+      ]
+     }
+    ],
+    "tests": "Grant ordering and annotation by target_stages; confidence monotonic in coverage; conditional list for unknown applies fields. Plan store CRUD on both stores; staleness by plan_key; reconcile keeps status only when template_hash matches. remaining(): property that remaining months never exceed the full plan and decrease monotonically as milestones are done in dependency order; warnings for out-of-order done. Migration round trip in T16's CI. Eval (T33) asserts on s.roadmap ids; Ideate shows the same ids as Talk.",
+    "risks": "Anonymous plans need cleanup: they follow session retention until claimed. Summed pessimistic months overstate the upper bound; labelled 'up to'. Pack overrides must be re-reviewed for the new funding ids; the CI id check catches typos. Conditional milestones could clutter the plan; listed apart and excluded from totals. Plan retention needs its own D4/D12 rule; until decided plans follow founder retention."
+   }
+  },
+  {
+   "theme": "T32",
+   "winner": "merge",
+   "scores": {
+    "A": {
+     "root_cause": 5,
+     "correctness": 5,
+     "constraints": 5,
+     "simplicity": 4,
+     "plan": 5
+    },
+    "B": {
+     "root_cause": 5,
+     "correctness": 4,
+     "constraints": 5,
+     "simplicity": 3,
+     "plan": 4
+    }
+   },
+   "reasoning": "Both teams agree on package-relative paths (config.py:14 and :115 really are CWD-relative), an OS-scheduler-only trigger with a lock and per-step ledger, an explicit ERASURE_MAP with an 'anon' guard and a metadata coverage test, and consent tombstones deleted a year after erasure. The real split is how erasure and retention reach in-process state. A runs the steps inside the app: scripts/nightly.py (started by the OS scheduler) calls a localhost, token-protected endpoint so every delete goes through the same delete_session path as the founder's DELETE route (store stack + board.forget), and runs the same runner standalone when the app is down (when there is no memory to clear). That is exactly F-B5-016's resolution and fits decision 0010, which says the app is one process. A also notes that CachedStore.delete already drops sess:{id}, so the leak only comes from deleting through the inner store. B runs out of process and bridges to memory with a new erased_sessions table and Redis tombstones that the T12 sweeper applies later. That adds a table, a migration and eventual consistency, and it cannot work on the memory store without a database. B's objection that an endpoint 'reaches one worker only' does not apply under 0010. A wins on the core. B adds small hardening worth keeping: steps report 'skipped: no database' instead of succeeding silently, erase_sessions refuses empty or over-1000-id batches and non-UUID owners, and step status appears in /health as well as the 5.4.3 page.",
+   "final": {
+    "chosen": "A's in-app maintenance service: OS scheduler starts scripts/nightly.py, which triggers the runner inside the app through a localhost token endpoint (standalone fallback when the app is down); Redis SET NX / O_EXCL file run lock; atomic per-step JSON ledger with catch-up; package-relative paths; explicit erasure map with sentinel guards and a shared delete_session; consent tombstones. Plus B's 'skipped: no database' reporting, batch/UUID guards and /health status.",
+    "why_chosen": "Running every delete through the same in-app path as the founder's DELETE reaches database, Redis and the in-memory job board together without new tables or infrastructure (F-B5-016, decision 0010). The OS scheduler gives one run by construction (F-A5-028); the lock and ledger cover manual overlap, missed nights and failure streaks (F-B5-013). Package-relative paths remove CWD dependence for app, scripts and tests. Consent tombstones satisfy both written retention rules. Works offline, with memory stores and without Redis.",
+    "approaches": [
+     {
+      "name": "In-app maintenance service triggered by the OS scheduler (endpoint + standalone fallback), with lock and ledger",
+      "advantages": "One delete path across DB, Redis and memory; works with or without Redis; records runs",
+      "drawbacks": "Small custom lock/ledger code; destructive endpoint must be locked down",
+      "cost": "free/open source"
+     },
+     {
+      "name": "App-package runner out of process (python -m app.maintenance) with erasure tombstone bridge",
+      "advantages": "Runs whether or not the API is up; no endpoint or secret",
+      "drawbacks": "Needs an erased_sessions table and sweeper to reach memory; eventual consistency; no memory-store path without a database",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Out-of-process script only (as planned)",
+      "advantages": "Independent of the app",
+      "drawbacks": "Cannot reach the in-memory job board; each script re-solves paths and store choice",
+      "cost": "free/open source"
+     },
+     {
+      "name": "In-process scheduler (APScheduler or asyncio loop)",
+      "advantages": "Catch-up and coalescing built in; reaches memory",
+      "drawbacks": "Fires per worker; job store wants a database; still needs a lock; nothing runs when the app is stopped; new dependency",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Database-native: FK cascades from users + pg_cron",
+      "advantages": "Database guarantees",
+      "drawbacks": "Impossible on the 'anon' string column; blind to Redis, disk cache and memory; pg_cron unavailable locally",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Redis pub/sub 'erased' channel",
+      "advantages": "Reaches many workers",
+      "drawbacks": "Redis optional and one process (0010)",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Tombstone keys checked on every read",
+      "advantages": "Robust to stale copies",
+      "drawbacks": "Per-turn read to patch a delete path that should not exist; tombstones need their own retention",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Hosted scheduler / heartbeat (GitHub Actions cron, healthchecks.io)",
+      "advantages": "Alerts on missed runs",
+      "drawbacks": "Cannot reach the owner's laptop; hosted, against free-and-offline",
+      "cost": "free tier, hosted"
+     }
+    ],
+    "not_chosen": [
+     {
+      "name": "Out-of-process runner with tombstone bridge",
+      "reason": "Adds a table, migration and sweeper dependency to reach memory the in-app path clears directly; the single-process app (0010) makes the endpoint sufficient."
+     },
+     {
+      "name": "Out-of-process script only",
+      "reason": "Cannot clear in-memory results; every script re-solves paths and store choice."
+     },
+     {
+      "name": "In-process scheduler",
+      "reason": "Per-worker timers, wants the database, new dependency, still needs the lock."
+     },
+     {
+      "name": "FK cascades + pg_cron",
+      "reason": "Impossible on 'anon' string rows, blind to Redis/memory, pg_cron unavailable locally; T17 adds nullable owner FKs later as a second guard."
+     },
+     {
+      "name": "Redis pub/sub",
+      "reason": "Redis optional and one process; revisit with several workers."
+     },
+     {
+      "name": "Tombstone keys on read",
+      "reason": "Per-turn cost compensating for a wrong delete path."
+     },
+     {
+      "name": "Hosted scheduler/heartbeat",
+      "reason": "Hosted and unreachable from a laptop; against free-and-offline."
+     }
+    ],
+    "design": {
+     "components": "1) core/paths.py: BACKEND_DIR = Path(__file__).resolve().parents[2]; resolve(p) returns absolute p unchanged, else BACKEND_DIR / p. Settings: env_file = BACKEND_DIR/'.env'; validators resolve research_cache_dir, a new state_dir ('.state') and the T30 key dir. 2) maintenance/runner.py: Step(name, fn); run(steps, trigger) takes the lock, runs each step in its own try/except with a timeout, writes the ledger, releases. A step that needs a database and has none records 'skipped: no database'. Steps: research_cache_purge (T08 purge), retention (sessions idle > 90 days and not saved per D4; anonymous plans with them; consent tombstones older than 1 year; logs older than 30 days), session_upgrade_all (T34), cohort_projection_rebuild (T34 / 5.5.5.2), warming (2.2.6) when it lands. 3) maintenance/lock.py: Redis SET maint:lock <run_id> NX EX 3h; else O_CREAT|O_EXCL lock file in state_dir with pid and start time, stale after 3h; a held lock records 'already running' and exits 0. 4) maintenance/ledger.py: state_dir/maintenance.json {step: {last_start, last_success, last_error, consecutive_failures}} written atomically (tmp + os.replace). Alert = consecutive_failures >= 2, exposed via GET /internal/maintenance/status for 5.4.3 and summarised in /health. 5) Trigger: POST /internal/maintenance/run (localhost check + MAINTENANCE_TOKEN; never takes a user id); scripts/nightly.py posts to it or, on connection refused, runs the runner standalone. App lifespan: if a daily step's last_success is older than 26h, schedule one background catch-up (lock prevents duplicates). Runbook: Windows Task Scheduler entry with 'run as soon as possible after a missed start', and a cron/anacron line. 6) services/erasure.py: ERASURE_MAP of every personal table and key path (users; founders via users.founder_id with startups/profile_completeness/documents cascading; agent_sessions.user_id; plans.user_id (T31); consents -> tombstone) plus non-DB targets via one shared delete_session(id) = get_store().delete + board.forget + result store delete, also used by the DELETE route and retention. erase_user(user_id) refuses None, '', 'anon', non-UUID values and ids not in users; erase_sessions refuses empty lists or more than 1000 ids; rows deleted in one transaction, then Redis/memory cleared, then erasure_log written. NOT_PERSONAL lists reference and derived tables. 7) Consent tombstones: on erasure each consent becomes {subject_ref = HMAC(blind_index_key, user_id), purpose, policy_version, given_at, withdrawn_at, erased_at} with no personal content; deleted 1 year after erased_at; plain retention keeps consents for the data's life plus one year. Recorded in SYSTEM-DESIGN 5.4 and decision 0011, flagged for the 3.2.6 legal review.",
+     "data_model": "Ledger JSON as above; erasure_log(id, subject_ref, at, counts JSONB) (same table as T30's erasure_audit); consents (T19) gain erased_at with user_id nullable. ERASURE_MAP entries {table, key, via, action: delete|cascade|tombstone}.",
+     "algorithm": "Retention selects by last_active (works while user_id is 'anon') and deletes through delete_session. Erasure selects by owner and refuses until T17 links sessions to real users. Metadata test: set(Base.metadata.tables) == mapped tables | NOT_PERSONAL, so a new table without a decision fails CI.",
+     "files": [
+      "backend/app/core/paths.py (new)",
+      "backend/app/core/config.py",
+      "backend/app/maintenance/ (runner.py, lock.py, ledger.py, steps.py, new)",
+      "backend/app/routers/internal.py (new)",
+      "backend/app/routers/health.py",
+      "backend/app/main.py",
+      "backend/app/services/erasure.py (new)",
+      "backend/app/routers/ideation.py (shared delete_session)",
+      "scripts/nightly.py (new)",
+      "docs/runbooks/nightly.md (new)",
+      "SYSTEM-DESIGN.md 5.4",
+      "docs/decisions/0011-erasure-and-consent-tombstones.md (new)",
+      "backend/tests/test_paths.py, test_maintenance.py, test_erasure.py"
+     ],
+     "rollout": "1) Paths fix now (the stray repo-root .cache/research is a 7-day cache and can be deleted). 2) Runner, lock and ledger with cache purge first (with 2.2.5). 3) Retention once D4's 90 days is in the store. 4) Erasure behind T17 (refuses until owners exist) and T30 hard delete; consent tombstones with T19.",
+     "offline": "File lock and file ledger without Redis/DB; steps use memory stores in-app; database steps record 'skipped: no database'; warming is skipped and recorded when sources are unreachable."
+    },
+    "tasks": [
+     {
+      "title": "Package-relative paths for config, cache and state",
+      "why": "CWD-relative .env and cache dir already produced two caches; a nightly job would purge the wrong one and miss DB/Redis settings.",
+      "where": "backend/app/core/paths.py (new), core/config.py",
+      "how": "BACKEND_DIR; absolute env_file; validators resolving relative path settings.",
+      "when": "First; T30's key dir uses the helper.",
+      "what_for": "App, scripts and tests share one cache and one config.",
+      "subtasks": [
+       {
+        "text": "core/paths.py and Settings validators; test loading from repo root and backend gives identical paths",
+        "flags": [
+         "F-B5-011"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Maintenance runner: OS-scheduler trigger, run lock, ledger",
+      "why": "Nightly work has no single runner, can run twice and leaves no record.",
+      "where": "app/maintenance/*, routers/internal.py, routers/health.py, main.py, scripts/nightly.py, docs/runbooks/nightly.md",
+      "how": "Isolated steps; Redis/file lock; atomic JSON ledger; localhost token endpoint; standalone fallback; catch-up at startup; 'skipped: no database'.",
+      "when": "After task 1; lands with 2.2.5.",
+      "what_for": "Housekeeping that runs once, catches up and shows failure streaks to 5.4.3.",
+      "subtasks": [
+       {
+        "text": "Lock with Redis SET NX EX and O_EXCL file fallback with stale takeover; concurrent runs -> one runs, one records 'already running'",
+        "flags": [
+         "F-A5-028"
+        ]
+       },
+       {
+        "text": "OS scheduler calls scripts/nightly.py -> app endpoint (localhost + token), standalone fallback; no in-process timer; runbook for Task Scheduler and cron",
+        "flags": [
+         "F-A5-028"
+        ]
+       },
+       {
+        "text": "Per-step ledger, consecutive failures, catch-up when last success > 26h, status endpoint for 5.4.3 and /health summary",
+        "flags": [
+         "F-B5-013"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Erasure service with explicit map and sentinel guards",
+      "why": "No relation leads from a user to all their data, and 'anon' would erase everyone.",
+      "where": "backend/app/services/erasure.py (new), tests/test_erasure.py",
+      "how": "ERASURE_MAP + NOT_PERSONAL; sentinel, UUID and batch-size guards; metadata completeness test.",
+      "when": "Needs T17 owners on sessions and T30 hard delete.",
+      "what_for": "One call erases a person everywhere and no new table is forgotten.",
+      "subtasks": [
+       {
+        "text": "ERASURE_MAP covering users, founders (cascade), agent_sessions, plans (T31), documents, consents; refuse None/''/'anon'/non-UUID/unknown ids and empty or >1000-id batches; never touches anonymous rows",
+        "flags": [
+         "F-B5-015"
+        ]
+       },
+       {
+        "text": "Metadata test: every ORM table mapped or listed NOT_PERSONAL",
+        "flags": [
+         "F-B5-015"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Deletes through the full store stack inside the app",
+      "why": "Deleting through the inner store leaves the Redis copy and in-memory results readable.",
+      "where": "routers/ideation.py, services/erasure.py, maintenance/steps.py",
+      "how": "One delete_session helper (store stack delete + board.forget + result store) used by the DELETE route, retention and erasure; maintenance runs in-process.",
+      "when": "With tasks 2 and 3; T12 board lifecycle.",
+      "what_for": "Erased conversations disappear from DB, Redis and memory together.",
+      "subtasks": [
+       {
+        "text": "Shared delete_session; test with CachedStore + fake Redis that the session is unreadable and the board empty after erasure via the maintenance endpoint",
+        "flags": [
+         "F-B5-016"
+        ]
+       },
+       {
+        "text": "Retention step: unsaved sessions idle > 90 days, their anonymous plans, logs > 30 days, all through delete_session",
+        "flags": [
+         "F-B5-016"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Consent tombstones and the written rule",
+      "why": "Erasure and retention rules for consents contradict each other.",
+      "where": "SYSTEM-DESIGN.md 5.4, docs/decisions/0011, services/erasure.py, consents model (T19)",
+      "how": "Tombstone on erasure; delete tombstones 1 year after erased_at; recorded for legal review.",
+      "when": "Decision now; implementation with T19, before 3.2.4.1 ships.",
+      "what_for": "Personal data gone while proof of lawful processing is kept for the stated year.",
+      "subtasks": [
+       {
+        "text": "Decision record and SYSTEM-DESIGN wording: erasure tombstones consents, tombstones deleted after 1 year",
+        "flags": [
+         "F-B5-014"
+        ]
+       },
+       {
+        "text": "Tombstone conversion (HMAC subject_ref, no personal fields) and its retention step; test tombstone has no user id",
+        "flags": [
+         "F-B5-014"
+        ]
+       }
+      ]
+     }
+    ],
+    "tests": "Paths identical from two CWDs. Two concurrent runner invocations (fake Redis and file mode) -> one runs; stale lock taken over. A failing step does not stop others; consecutive_failures increments and resets; catch-up at 27h with a fake clock; database steps report 'skipped: no database' without PostgreSQL. Erasure: 'anon' and non-UUID refused; a user with two sessions -> rows, Redis keys and board results gone; consents become tombstones; metadata test. Retention: 91-day unsaved session deleted, saved kept.",
+    "risks": "The internal endpoint is destructive: localhost plus token, and it never takes a user id (erasure goes through the authenticated route or an admin CLI). A laptop asleep for days catches up once; steps are idempotent. Several workers in future would need pub/sub or the tombstone bridge; revisit then. Tombstone pseudonymity needs the 3.2.6 review; isolated in one function."
+   }
+  },
+  {
+   "theme": "T33",
+   "winner": "A",
+   "scores": {
+    "A": {
+     "root_cause": 5,
+     "correctness": 5,
+     "constraints": 5,
+     "simplicity": 5,
+     "plan": 5
+    },
+    "B": {
+     "root_cause": 5,
+     "correctness": 4,
+     "constraints": 4,
+     "simplicity": 3,
+     "plan": 4
+    }
+   },
+   "reasoning": "Both teams name the same root: the replay boundary sits above the code under test, and the report is not deterministic. Both add an unscripted-question check, assertions on s.roadmap and a --check report mode. They differ on where to replay. A replays at the research.sources function layer (papers, paper_count, trials, projects, patents, epo_patents all take (client, query, cache)), which is exactly F-A5-003's resolution: scan() and novelty.check() post-processing run for real, fixtures stay readable JSON, nothing above HTTP stores credentials, and degraded variants are a per-source status override. B replays at the HTTP boundary keyed by T08's canonical_key. That would also cover parsing, but canonical_key and Entry do not exist yet in backend/app/research (they are T08 future work that T33 would block on). B also needs a research_client_factory hook in production scan/novelty, larger raw-body fixtures, and re-records on every query-building change, which the flag explicitly wanted to avoid. Parsing (_work, epo_documents) is better covered by small unit tests. On dynamic answers, A keys them by the question's recorded source ('dynamic:<source>', then 'dynamic'), which scales past one dynamic question. B has a single answers.dynamic. A's --check ignores only the Generated line, keeping the useful timestamp as the flag resolution says. A's tasks also map each flag through two concrete subtasks with meta-tests. B's idea of keeping the old 'scan'/'novelty' fixture fields for one PR, to diff old and new output, is a good rollout step and is noted in the final rollout.",
+   "final": {
+    "chosen": "Source-layer record/replay with degraded variants via pytest parametrisation, an unscripted-question check plus source-keyed dynamic answers, assertions on s.roadmap, and a --check mode for the report.",
+    "why_chosen": "Replay at the source-function boundary is the lowest layer that is still stable and readable, so the logic the quality set claims to check actually runs, and the same recordings yield degraded variants by overriding source status, with no network and no dependency on T08's future cache key. The unscripted check turns silent skips into failures while source-keyed answers let the payer question be scripted. Asserting on s.roadmap tests what the founder saw. --check keeps the committed report verifiable without losing its timestamp.",
+    "approaches": [
+     {
+      "name": "Source-layer record/replay (per-source SourceResult)",
+      "advantages": "Exercises scan/novelty post-processing; readable JSON; deterministic; easy degraded variants; no credentials stored",
+      "drawbacks": "Fixture format change and one re-record; skips sources.py parsing (covered by unit tests)",
+      "cost": "free/open source"
+     },
+     {
+      "name": "HTTP-boundary replay with httpx.MockTransport keyed by T08 canonical_key",
+      "advantages": "Every line including parsing runs; degraded profiles as transport policies; key shared with production cache",
+      "drawbacks": "Blocks on T08's canonical_key; production client-factory hook; raw-body fixtures; any query change forces re-record",
+      "cost": "free/open source"
+     },
+     {
+      "name": "respx / pytest-httpx route mocks",
+      "advantages": "No app code patched; precise degraded control",
+      "drawbacks": "Raw or synthetic payloads, brittle to query/header changes; credentials in URLs must be scrubbed",
+      "cost": "free/open source"
+     },
+     {
+      "name": "vcrpy / pytest-recording cassettes",
+      "advantages": "Little code",
+      "drawbacks": "New dependency, weaker async httpx support, cassette churn, credential filtering, custom failure injection anyway",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Live nightly eval against real sources",
+      "advantages": "Catches source drift",
+      "drawbacks": "Non-deterministic, spends the shared free budget, cannot gate CI",
+      "cost": "free/open source"
+     },
+     {
+      "name": "LLM-simulated founder",
+      "advantages": "Covers any question",
+      "drawbacks": "Non-deterministic; needs a model in CI",
+      "cost": "free tier"
+     },
+     {
+      "name": "Unit tests for scan/novelty post-processing only",
+      "advantages": "Fast and precise",
+      "drawbacks": "Misses the founder-facing conversation; complementary only",
+      "cost": "free/open source"
+     }
+    ],
+    "not_chosen": [
+     {
+      "name": "HTTP-boundary replay with canonical_key",
+      "reason": "Depends on T08 work not yet built, adds a production hook and large raw fixtures, and re-records on every query tweak; the extra parsing coverage is cheaper as unit tests."
+     },
+     {
+      "name": "respx / pytest-httpx",
+      "reason": "Raw or synthetic payload fixtures that break on any query or header change and risk storing credentials."
+     },
+     {
+      "name": "vcrpy",
+      "reason": "New dependency, weaker async httpx support and cassette churn."
+     },
+     {
+      "name": "Live nightly eval",
+      "reason": "Non-deterministic and spends the budget; kept only as the manual re-record path."
+     },
+     {
+      "name": "LLM-simulated founder",
+      "reason": "Non-deterministic and needs a model in CI."
+     },
+     {
+      "name": "Unit tests only",
+      "reason": "Miss the transcript; added alongside for parsing and subtle functions, not instead."
+     }
+    ],
+    "design": {
+     "components": "1) tests/eval/replay.py: RECORDED_SOURCES (module, function) for papers, paper_count, trials, projects, patents, epo_patents; record() wrapper capturing SourceResult as dict; replay(fixture, mode) patching each function with a lookup by (source, normalise(query)); a miss returns SourceResult(status='error', note='not recorded') and is added to result.replay_misses. Patching the functions also bypasses the Redis pause/budget helpers. 2) Fixture format 2: {format: 2, id, idea, recorded, calls: [{source, query, result}]}; the whole 'scan'/'novelty' results are dropped (kept for one PR only to diff old vs new output). Local TN lookups are file-based and run for real. 3) Modes: online, papers_down (papers/paper_count error, no items), all_down (every network source error). run_idea(idea, mode); test_eval parametrises ideas x modes; ideas.json gains expect_degraded (terms-fallback categories, mentions 'not searched', panel band not strong without evidence, no novelty or local-absence claim after a failed lookup). 4) Checks: 'categories' reads computed s.scan; 'replay covers queries' fails on any miss; 'unscripted questions' fails for slots answered by fallback unless in expect.may_skip; _answer uses answers['dynamic:<source>'] then answers['dynamic']; the elicitation ask action exposes the dynamic question's source. 5) Roadmap checks read s.roadmap (domain card id, pack id, milestone ids/titles, risk keys, stored by tools._roadmap per T31); the post-hoc build_plan call is removed. 6) eval_report.py: deterministic body (no session ids, stable ordering, fixed number formatting); --check regenerates in memory and compares with docs/eval/report.md ignoring the single 'Generated' line, exit 1 with a diff; CI step runs it. 7) Unit tests for sources.py parsing (_work, epo_documents) on small recorded payloads.",
+     "data_model": "Fixture v2 as above; ideas.json answers['dynamic:<source>'], expect.may_skip, expect_degraded; Result gains mode and replay_misses.",
+     "algorithm": "normalise(query) = collapsed whitespace, lower-case; exact lookup; repeated identical calls served in recorded order, last one repeated. Matrix: ideas x {online, papers_down, all_down}.",
+     "files": [
+      "backend/tests/eval/replay.py (new)",
+      "backend/tests/eval/runner.py",
+      "backend/tests/eval/test_eval.py",
+      "backend/tests/eval/ideas.json",
+      "backend/tests/eval/fixtures/*.json (re-recorded)",
+      "backend/tests/unit/test_sources_parsing.py (new)",
+      "scripts/record_eval_fixtures.py",
+      "scripts/eval_report.py",
+      ".github/workflows/ci.yml",
+      "backend/app/elicitation/engine.py (dynamic source on the ask action)",
+      "backend/app/agents/tools.py (_roadmap keeps domain card and risk keys)",
+      "docs/eval/report.md"
+     ],
+     "rollout": "Report --check first (independent). Then replay and recorder; owner re-records the ten ideas once (keeping old scan/novelty fields for one PR to diff); switch the runner; add degraded modes; add the unscripted check together with the missing answers in the same PR; roadmap assertions once tools._roadmap stores the fields.",
+     "offline": "Replay needs no network, model, Redis or key; only re-recording touches free live sources, run manually."
+    },
+    "tasks": [
+     {
+      "title": "Replay research at the source layer",
+      "why": "Whole-scan replay leaves scan() and novelty.check() untested.",
+      "where": "backend/tests/eval/replay.py (new), runner.py, scripts/record_eval_fixtures.py, fixtures/",
+      "how": "Recorder and replayer around research.sources; fixture v2; categories from s.scan; replay-miss check.",
+      "when": "After the report task; coordinate with T08 (replay passes cache=None).",
+      "what_for": "Research fixes (1.2.1) become assertable in CI.",
+      "subtasks": [
+       {
+        "text": "replay.py with record/replay and miss reporting; runner stops patching scan/check",
+        "flags": [
+         "F-A5-003"
+        ]
+       },
+       {
+        "text": "Recorder writes calls[]; re-record ten ideas; categories check reads computed s.scan; meta-test that changing FIELD_TO_CATEGORY fails the check",
+        "flags": [
+         "F-A5-003"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Degraded research modes",
+      "why": "The outage/offline path founders get is never evaluated.",
+      "where": "tests/eval/replay.py, test_eval.py, ideas.json",
+      "how": "papers_down and all_down from the same recordings; parametrise ideas x modes; expect_degraded.",
+      "when": "After task 1; expectations use T13's honest statement types.",
+      "what_for": "Fallback categories, wording and panel band held to the same bar.",
+      "subtasks": [
+       {
+        "text": "Per-source status overrides and pytest parametrisation over modes",
+        "flags": [
+         "F-A5-005"
+        ]
+       },
+       {
+        "text": "expect_degraded per idea: terms-fallback categories, 'not searched' said, no novelty or local-absence claim",
+        "flags": [
+         "F-A5-005"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "No silent skips",
+      "why": "Every unscripted question, including the payer question, is answered 'skip'.",
+      "where": "runner.py, ideas.json, elicitation/engine.py",
+      "how": "Unscripted-question check with expect.may_skip; answers keyed by dynamic source.",
+      "when": "Independent of tasks 1-2.",
+      "what_for": "The customer/payer path is exercised and new questions are noticed.",
+      "subtasks": [
+       {
+        "text": "Expose the dynamic question source on the ask action; _answer looks up 'dynamic:<source>' then 'dynamic'",
+        "flags": [
+         "F-A5-004"
+        ]
+       },
+       {
+        "text": "Unscripted-question check; payer answers and may_skip lists for the ten ideas",
+        "flags": [
+         "F-A5-004"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Check what the founder saw; diffable report",
+      "why": "The runner checks a rebuilt plan and the report cannot be compared.",
+      "where": "agents/tools.py, runner.py, scripts/eval_report.py, .github/workflows/ci.yml",
+      "how": "tools._roadmap keeps domain card and risk keys; assertions on s.roadmap; drop build_plan; deterministic report with --check; CI step.",
+      "when": "Report first; roadmap assertions with T31 task 3.",
+      "what_for": "The eval measures the real artefact and the committed report stays truthful.",
+      "subtasks": [
+       {
+        "text": "Domain, pack, milestone and risk checks read s.roadmap; remove post-hoc build_plan",
+        "flags": [
+         "F-A5-006"
+        ]
+       },
+       {
+        "text": "eval_report.py --check ignoring the Generated line, stable ordering, CI step",
+        "flags": [
+         "F-A5-007"
+        ]
+       }
+      ]
+     }
+    ],
+    "tests": "Meta-tests: monkeypatching FIELD_TO_CATEGORY fails the categories check (code runs); deleting a recorded call yields a miss failure; a new unscripted question fails; all_down produces no 'crowded' or local-absence claim; --check passes on fresh regenerate and fails after editing a cell. Parsing unit tests for _work and epo_documents. Degraded runs stay within about 2x current runtime.",
+    "risks": "Query-builder changes require re-recording; the miss check names exact queries and the recorder is one command. Degraded expectations should be rules (no claim, says not searched), not exact sentences. Re-recording spends some free budget: run by hand off-peak."
+   }
+  },
+  {
+   "theme": "T34",
+   "winner": "merge",
+   "scores": {
+    "A": {
+     "root_cause": 5,
+     "correctness": 4,
+     "constraints": 5,
+     "simplicity": 5,
+     "plan": 5
+    },
+    "B": {
+     "root_cause": 5,
+     "correctness": 5,
+     "constraints": 5,
+     "simplicity": 4,
+     "plan": 5
+    }
+   },
+   "reasoning": "The two designs are close to identical in structure: a FORMAT number, one pure decode with an upgrade chain, UndecodableSession mapped to 410 and skip-and-count in /programme, a newer-format guard returning 503, a format column with an idempotent upgrade-all, a vocabulary step that re-keys idea_version results, and split tables as a nightly projection with Pydantic payload contracts. Both reject the same alternatives for sound reasons. B's save guard is more correct. SqlStore.save adds WHERE format <= FORMAT, so it is atomic against a newer worker that wrote after this one loaded. A's in-memory loaded_format check only catches documents that were already newer at load time, so in a mixed deploy a newer write between load and save would still be overwritten (F-B2-002). B also makes the row columns (version, format) authoritative over copies inside the document, which matters because SqlStore.get merges row.version. B treats a Redis copy older than the row as a miss, and keeps one fixture document per historical format plus a --dry-run for the backfill. A adds a decode_error column so undecodable rows are marked and queryable, registers upgrade-all and the projection rebuild as T32 maintenance steps, and has a test forbidding ORM imports in the codec, which keeps steps pure. The final takes A's module, decode_error, maintenance registration and purity test, and B's SQL-level guard, row-authoritative decode, stale-copy rule, per-format fixtures and dry run. The decision record is numbered 0012 because T32 takes 0011.",
+   "final": {
+    "chosen": "Central session codec (FORMAT, pure upgrade chain, decode policy, newer-format guard enforced in SQL on save) + format and decode_error columns with an idempotent, dry-runnable upgrade-all registered as a maintenance step + vocabulary upgrade step through T01's mapping with result re-keying + split tables as a nightly projection with Pydantic payload contracts.",
+    "why_chosen": "A single codec is the smallest thing that owns all five failure modes. It decides what an unreadable document means (410 or skip, never 500). It refuses formats newer than the code, atomically on save, so nothing is lost silently. It runs versioned upgrades including the vocabulary mapping. It stamps a format that a column exposes for backfill and as the split precondition. JSON stays the truth and the tables become a rebuildable projection, which keeps decision 0003 and the guarded write path. Pure Python, testable on the memory store, offline. It is also the registry other themes (T19 consents, T24 choice state, T01 renames) add their steps to.",
+    "approaches": [
+     {
+      "name": "Central codec: FORMAT, ordered pure upgrade steps, newer-format guard, format column, upgrade-all",
+      "advantages": "One place for decode policy; old code refuses newer docs; mixed formats queryable; testable Python",
+      "drawbacks": "One more migration and script; during rollback newer sessions are unavailable by design",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Lenient Pydantic model for the whole session (extra='allow')",
+      "advantages": "Declarative coercion and defaults; unknown keys preserved",
+      "drawbacks": "Leniency hides corruption; old code still acts on fields it ignores; large refactor",
+      "cost": "free/open source"
+     },
+     {
+      "name": "jsonschema contract per format",
+      "advantages": "Documented contract",
+      "drawbacks": "Second schema beside Python types; detects but neither upgrades nor recovers",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Preserve unknown keys (extras round-trip)",
+      "advantages": "No bytes lost on rollback",
+      "drawbacks": "Old code still makes retention/consent decisions blind to those fields",
+      "cost": "free/open source"
+     },
+     {
+      "name": "SQL-side upgrades (Alembic data migrations with frozen upgraders, or jsonb_set)",
+      "advantages": "Self-contained, set-based",
+      "drawbacks": "Duplicated or SQL-encoded logic; awkward nested enum mapping; big transactional rewrites; untestable on the memory store",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Dual write to normalised tables, or PostgreSQL triggers/generated columns",
+      "advantages": "Always in step",
+      "drawbacks": "Heavier live path, the rewrite SYSTEM-DESIGN 5.1 rules out; triggers hide logic and cannot run on the memory store",
+      "cost": "free/open source"
+     }
+    ],
+    "not_chosen": [
+     {
+      "name": "Lenient Pydantic session model",
+      "reason": "Hides corruption and still lets old code act on fields it ignores; large refactor."
+     },
+     {
+      "name": "jsonschema",
+      "reason": "A second schema without upgrade or recovery."
+     },
+     {
+      "name": "Preserve unknown keys",
+      "reason": "Keeps bytes but not safety; refusing newer formats is the safe rule."
+     },
+     {
+      "name": "SQL-side upgrades",
+      "reason": "Duplicated or SQL-encoded logic, large transactional rewrites, untestable offline."
+     },
+     {
+      "name": "Dual write / triggers",
+      "reason": "Contradicts SYSTEM-DESIGN 5.1 and decision 0003, adds failure modes to every turn, untestable on the memory store."
+     }
+    ],
+    "design": {
+     "components": "1) agents/session_codec.py (new; no ORM imports, enforced by a test): FORMAT = 2 (format 1 = today's unversioned docs); UPGRADES = {1: _v1_to_v2, ...} pure and idempotent dict->dict; decode(raw, *, row_version=None, row_format=None) -> Decoded{session, upgraded_from, idea_version_before}; encode(s) -> dict with 'format'. Row columns (version, format) are authoritative over copies inside the document. Errors SessionUnreadable(session_id, format, reason) and FormatTooNew(session_id, found, known). from_dict/to_dict become private helpers used only by the codec; enum restore is strict (an unknown value after upgrading is cleared to confidence 0 so it is asked again, never kept as a bare str). 2) Memory, Sql and Cached stores call decode/encode only. get() catches SessionUnreadable, logs agent_store.unreadable (ids, format, exception type, never document text) and the router maps it to 410 'This conversation cannot be resumed'; FormatTooNew -> 503 'saved by a newer version; try again shortly'. CachedStore treats a Redis copy that fails to decode, or is older than the row, as a miss and drops it. 3) Save guard: SqlStore.save writes format=FORMAT with WHERE format <= FORMAT (and the existing version check); MemoryStore compares the stored document's format; a refusal raises FormatTooNew. Until the column exists the guard checks the format inside the stored document. 4) store.get_many(ids) -> (sessions, unreadable_count); /programme returns sessions_unreadable. 5) Vocabulary step: maps slot enum values through T01's frozen old->new mapping (data); the same step moves idea_version to canonical codes; decode reports idea_version before/after and the store calls ResultStore.rekey(session_id, old, new) once so finished scan/council results survive. 6) Migration <n>_session_format: agent_sessions.format SMALLINT (add nullable + index, backfill via script, then NOT NULL default 1) and decode_error TEXT NULL. 7) scripts/upgrade_sessions.py (also a T32 maintenance step): batches WHERE format < FORMAT; decode -> encode -> version-checked UPDATE (skip/retry on conflict); undecodable rows counted and marked in decode_error; --dry-run; report of counts per source format; idempotent; prints remaining count. 5.5.5.1 precondition: count(format < FORMAT) == 0. 8) Projection (5.5.5.2): analytics tables rebuilt nightly by T32's runner from decoded JSON at the current format; nested payloads validated by Pydantic contracts (RoadmapContract from T31, CouncilContract from T35, NoveltyContract); invalid payloads skipped and counted; decision 0012 states JSON is the truth.",
+     "data_model": "Document gains 'format'. agent_sessions gains format SMALLINT NOT NULL (indexed) and decode_error TEXT NULL. ResultStore gains rekey(session_id, old_iv, new_iv). Projection tables are derived and droppable. tests/fixtures/sessions/ holds one document per historical format.",
+     "algorithm": "fmt = row_format or raw.get('format', 1); fmt > FORMAT -> FormatTooNew; while fmt < FORMAT: raw = UPGRADES[fmt](deepcopy(raw)); fmt += 1; build AgentSession, mapping KeyError/ValueError/TypeError/ValidationError to SessionUnreadable. Save: UPDATE ... WHERE id=:id AND version=:v AND format <= :FORMAT; zero rows with a newer stored format -> FormatTooNew. Backfill idempotent because decoding a current document is the identity and saves are version-checked.",
+     "files": [
+      "backend/app/agents/session_codec.py (new)",
+      "backend/app/agents/ideation.py (to_dict/from_dict private, strict enum restore, idea_version on canonical codes)",
+      "backend/app/agents/store.py",
+      "backend/app/agents/results.py (rekey)",
+      "backend/app/routers/ideation.py (_load)",
+      "backend/app/routers/cohort.py",
+      "backend/app/models/agent_session.py (format, decode_error)",
+      "backend/app/db/migrations/versions/<n>_session_format.py (new)",
+      "scripts/upgrade_sessions.py (new)",
+      "docs/decisions/0012-session-tables-as-projection.md (new)",
+      "SYSTEM-DESIGN.md 5.1/5.3",
+      "backend/tests/unit/test_session_codec.py",
+      "backend/tests/fixtures/sessions/ (one document per format)"
+     ],
+     "rollout": "1) Codec with FORMAT=2 (step 1->2 only adds the key), decode policy and guard, all stores using it. 2) Format/decode_error columns (nullable), dry run, script backfill, then constraint; register upgrade-all as a nightly step. 3) Vocabulary step (FORMAT 3) when T01's mapping and T06's idea_version definition land. 4) Each later format change lands as a step, a fixture and a test in one PR; deploys roll forward only. 5) Before 5.5.5, run until COUNT(format < FORMAT) = 0, then build the projection with contracts.",
+     "offline": "Codec and upgrades are pure Python and run on MemoryStore and in tests; the columns and script apply only where PostgreSQL exists."
+    },
+    "tasks": [
+     {
+      "title": "Session codec with decode policy",
+      "why": "One undecodable document causes a 500 and breaks /programme.",
+      "where": "agents/session_codec.py (new), agents/ideation.py, agents/store.py, routers/ideation.py, routers/cohort.py",
+      "how": "decode/encode with SessionUnreadable; all stores decode; row columns authoritative; router 410; get_many for /programme; stale or bad Redis copies dropped; per-format fixtures.",
+      "when": "First; aligned with T07's store contract. T19 and T24 register their steps after this lands.",
+      "what_for": "Bad documents are isolated, visible and never fatal.",
+      "subtasks": [
+       {
+        "text": "Codec with FORMAT and upgrade loop; Memory/Sql/Cached stores call only decode/encode; Redis copy that fails to decode or is older than the row is dropped; no-ORM-imports test",
+        "flags": [
+         "F-B2-001"
+        ]
+       },
+       {
+        "text": "410 in _load with a log event; /programme via get_many reporting sessions_unreadable; test one corrupt document among five",
+        "flags": [
+         "F-B2-001"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Newer-format guard on load and save",
+      "why": "Older code strips newer fields on load-then-save during rollbacks and mixed deploys.",
+      "where": "agents/session_codec.py, agents/store.py",
+      "how": "FormatTooNew on decode; SqlStore.save with WHERE format <= FORMAT; MemoryStore compares stored format; 503 with retry advice.",
+      "when": "With task 1; the SQL predicate after the column lands (document-format check until then).",
+      "what_for": "No silent loss of 'saved', consent or similar fields.",
+      "subtasks": [
+       {
+        "text": "Guard in all three stores; tests that a FORMAT+1 doc is neither loaded nor overwritten, including one written by a newer worker after this one loaded",
+        "flags": [
+         "F-B2-002"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Format column and idempotent upgrade-all",
+      "why": "Upgrade-on-read leaves mixed formats and the split has no precondition.",
+      "where": "models/agent_session.py, migration, scripts/upgrade_sessions.py, T32 maintenance step",
+      "how": "Add/fill/constrain format; decode_error; batched, version-checked upgrade with --dry-run and per-format report; nightly registration.",
+      "when": "After tasks 1-2 and T16; before 5.5.5.1.",
+      "what_for": "The split sees one format and progress is queryable.",
+      "subtasks": [
+       {
+        "text": "Migration adding format (nullable + index, backfill, NOT NULL default 1) and decode_error",
+        "flags": [
+         "F-B2-004"
+        ]
+       },
+       {
+        "text": "upgrade_sessions.py idempotent, conflict-safe, --dry-run, marks undecodable rows; remaining-count precondition for 5.5.5.1; second run is a no-op",
+        "flags": [
+         "F-B2-004"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Vocabulary upgrade step with result re-keying",
+      "why": "Renamed enum values stay as dead strings and shift idea_version, orphaning results.",
+      "where": "agents/session_codec.py, agents/ideation.py, agents/results.py",
+      "how": "Map via T01's frozen mapping; strict restore (unmapped -> asked again); idea_version on canonical codes; rekey results on idea_version change.",
+      "when": "When T01's mapping and T06's idea_version definition land.",
+      "what_for": "Old sessions valid without re-asking or re-spending research budget.",
+      "subtasks": [
+       {
+        "text": "Upgrade step with T01 mapping, unmapped cleared to be re-asked, ResultStore.rekey; test an old-sector session upgrades and keeps its finished scan",
+        "flags": [
+         "F-B2-003"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Split tables as a nightly projection",
+      "why": "No rule keeps split tables in step with the live JSON.",
+      "where": "docs/decisions/0012 (new), SYSTEM-DESIGN 5.1, TASKS 5.5.5 wording, analytics projection module, payload contracts",
+      "how": "JSON is the truth; tables rebuilt nightly in T32's runner from contract-validated payloads; invalid payloads skipped and counted.",
+      "when": "Decision before 5.5.5.1; projection with 5.5.5.2; contracts from T31 and T35.",
+      "what_for": "Cohort analytics without touching the guarded live write path.",
+      "subtasks": [
+       {
+        "text": "Decision record and projection rebuild step with Pydantic contracts; invalid payloads counted; test rebuild equals from-scratch rebuild",
+        "flags": [
+         "F-B2-007"
+        ]
+       }
+      ]
+     }
+    ],
+    "tests": "Fixture documents for every historical format decode to the same AgentSession as a fresh session with those facts; encode(decode(x)) stable and decode idempotent on current docs. Slot confidence 1.5 -> SessionUnreadable, never a 500. /programme with one bad id returns aggregates and sessions_unreadable=1. FORMAT+1 -> FormatTooNew on load and save across Memory, Sql and Cached stores, including a concurrent newer write. upgrade_sessions dry run, idempotency, conflict skip. Vocabulary: old sector mapped, unmapped cleared, results re-keyed. No ORM imports in the codec. Projection rebuild deterministic.",
+    "risks": "A buggy upgrade step could corrupt many documents in the backfill: dry run first, version-checked writes, steps tested against per-format fixtures. During a rollback window newer sessions return 503 (documented in the deploy runbook; format bumps rare and additive). Re-asking unmapped enum values annoys returning founders; T01's mapping test should prevent misses."
+   }
+  },
+  {
+   "theme": "T35",
+   "winner": "merge",
+   "scores": {
+    "A": {
+     "root_cause": 5,
+     "correctness": 5,
+     "constraints": 5,
+     "simplicity": 5,
+     "plan": 5
+    },
+    "B": {
+     "root_cause": 5,
+     "correctness": 3,
+     "constraints": 4,
+     "simplicity": 4,
+     "plan": 4
+    }
+   },
+   "reasoning": "Both teams agree on a criterion on every claim validated in code, a three-state founder-skill rule (unknown gives no bump, word-boundary match so 'python developer' counts as technical), and one structured panel call with per-seat validation, rule fallback for missing seats and breaker recording. A gets F-A1-020 right and B does not. A criterion alone does not fix the probe, because the rules.customer claim 'the closest domain names its usual buyers' really is about need but is neutral, so B's 'take the claim whose criterion matches from the low seat' would still read it out as the weakest point. A adds a direction (for/against/neutral) and quotes only 'against' claims as weaknesses and 'for' claims as strengths. A also keeps the design self-contained on its declared dependencies (T01, T13), while B routes the call through T15's egress gate, which T35 does not depend on. B contributes useful extras: ask_founder becomes a typed Question {criterion, text, duplicates_slot}, so T05 can bind the panel question and skip it when the slot is already filled; a PANEL_MODE=single|per_seat switch for one release to compare bands on the eval set before per-seat calls are removed; the skill vocabulary (with known non-technical entries) placed in T01's vocabulary module and matched by T10's word-boundary lexicon rather than a local list; a capped claim count with a prompt-only fallback when Gemini responseSchema is unavailable; and a T34 upgrader for the stored council shape. The final takes A's contract and B's extras, and uses T15's gate only if it exists.",
+   "final": {
+    "chosen": "Typed claim contract (criterion + direction) and typed panel question (criterion + duplicates_slot) validated in code; three-state founder-skill rule on the shared vocabulary; one batched panel call with per-seat validation, rule fallback, breaker recording, and a one-release PANEL_MODE comparison.",
+    "why_chosen": "Criterion and direction on each claim make synthesis pairing a code decision (decision 0002), produced identically by rules and model seats, and they are the only option that stops neutral claims from being quoted as weaknesses. The skill rule claims only what is known. Batching cuts free-tier use sevenfold with no information loss because every seat already sees the same pack, and breaker recording ends quota stalls. A tagged question lets T05 route the founder's answer back to the right criterion. Rules remain the offline baseline.",
+    "approaches": [
+     {
+      "name": "Typed claim contract: criterion + direction validated in code",
+      "advantages": "Correct pairing by construction, neutral claims never quoted as reasons; same contract for rules and model seats",
+      "drawbacks": "Prompt, rules and synthesis all change; model may mislabel (bounded by validation)",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Criterion only on claims",
+      "advantages": "Smaller schema change",
+      "drawbacks": "Neutral on-topic claims are still quoted as strengths/weaknesses (the probe case)",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Keyword overlap between claim and criterion words",
+      "advantages": "No schema change",
+      "drawbacks": "Unreliable; claims also in Tamil and Hindi",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Local embedding similarity (sentence-transformers)",
+      "advantages": "Language-robust",
+      "drawbacks": "Heavy torch dependency to infer a field the producer can state; slow on CPU",
+      "cost": "free/open source"
+     },
+     {
+      "name": "One batched panel call returning all seats",
+      "advantages": "One request instead of seven; breaker stops the 8 s stall",
+      "drawbacks": "Seats less independent; one failure loses all model seats (rules stand in)",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Per-seat evidence slices with seven calls",
+      "advantages": "Real input diversity",
+      "drawbacks": "Still seven requests per panel against a small per-minute quota",
+      "cost": "free tier"
+     },
+     {
+      "name": "Model for some seats only",
+      "advantages": "Three requests",
+      "drawbacks": "Mixed basis inside one vote; still several requests",
+      "cost": "free/open source"
+     },
+     {
+      "name": "Selective re-run of changed seats only",
+      "advantages": "Fewer calls on re-runs",
+      "drawbacks": "First run still seven calls; mixed bases",
+      "cost": "free tier"
+     },
+     {
+      "name": "Rules-only panel with the model wording the synthesis",
+      "advantages": "Deterministic, one call",
+      "drawbacks": "Loses model judgement where evidence is rich; rule seats are coarse",
+      "cost": "free/open source"
+     },
+     {
+      "name": "ESCO skills taxonomy for founder skills",
+      "advantages": "Broad coverage",
+      "drawbacks": "Heavy dataset for one weight bump",
+      "cost": "free/open source"
+     }
+    ],
+    "not_chosen": [
+     {
+      "name": "Criterion only on claims",
+      "reason": "Does not stop a neutral need claim being read out as the weakest point; direction is required."
+     },
+     {
+      "name": "Keyword overlap",
+      "reason": "Fragile and language-dependent; whoever writes the claim knows the criterion."
+     },
+     {
+      "name": "Embedding similarity",
+      "reason": "Heavy dependency to infer a field the producer can state."
+     },
+     {
+      "name": "Per-seat slices with seven calls",
+      "reason": "Keeps seven requests; per-seat briefs and focus kinds inside the batched prompt keep focus without extra calls."
+     },
+     {
+      "name": "Model for some seats only",
+      "reason": "Several requests and a mixed basis in one vote."
+     },
+     {
+      "name": "Selective re-run",
+      "reason": "Does not reduce the first run; partial re-runs of requested seats are kept inside the batched call."
+     },
+     {
+      "name": "Rules-only panel",
+      "reason": "Throws away the model's judgement where evidence is rich."
+     },
+     {
+      "name": "ESCO",
+      "reason": "A heavy dataset for one weight adjustment; T01's reviewed vocabulary is enough."
+     }
+    ],
+    "design": {
+     "components": "1) seats.py: Claim{text, evidence, criterion: Literal[CRITERIA] | None, direction: Literal['for','against','neutral']}; Opinion.ask_founder becomes Question{criterion, text, duplicates_slot|None}; validate() drops model claims whose criterion is outside CRITERIA; stored opinions without the fields load as neutral (T34 upgrader maps a string ask_founder to Question with criterion None) and are never quoted for a criterion. 2) rules.py: every rule claim states criterion and direction (local startups exist: need/for; domain names its buyers: need/neutral; no TN startup found: need/against, worded per T13); the customer question carries duplicates_slot='beneficiary'. 3) synthesis.py: strength = highest-confidence 'for' claim with that criterion (prefer the scoring seat, then any seat); weakness = an 'against' claim likewise; none -> sentence without the reason clause. vote.py picks the panel question from the most-disputed criterion, else the weakest, skipped if its duplicates_slot is filled; T05 consumes it with binds={'criterion': c}. 4) vote.py: technical_skill(slots) -> True | False | None; None when founder_skills was never answered or skipped (no bump, weights_why 'technical skills not known yet'); True on a word-boundary match (T10 lexicon; local \\b regex until it lands) against a reviewed technical vocabulary in T01's module (software, engineer, electronics, hardware, coding, programming, developer, python, java, embedded, firmware, CAD, machinist, electrician, data, web); False when skills were named and none match -> +5 with reason 'no technical skill among the skills you named'. 5) model.py: ask_panel(client, seats, pack, idea, slots, provider): one system prompt (instructions + pack.lines() once) and one user message listing each seat's id, brief, question and focus kinds; reply {\"opinions\": {seat_id: {...}}}; Gemini responseSchema when supported, schema-in-prompt otherwise; claims capped at 3 per seat; max_tokens about 2000-2500. 6) __init__.py convene: one task with about a 10-12 s cap (through T15's egress gate with priority 'panel' if it exists); per-seat validate; must_oppose still enforced; missing or invalid seats -> rules; provider.breaker.fail(reason) on 429/timeout/error and succeed() on success; partial re-runs send only requested seats. PANEL_MODE=single|per_seat setting for one release, then per_seat and ask_seat removed. 7) Docs: model.py docstring and decision 0009 note ('one call per panel').",
+     "data_model": "Claim{text, evidence, criterion, direction}; Question{criterion, text, duplicates_slot}; vote question {criterion, text, from_seat, duplicates_slot}; council result gains 'calls'. CouncilContract (T34 projection) includes criterion and direction.",
+     "algorithm": "For criterion c and wanted direction d: candidates = claims with criterion == c and direction == d across opinions; pick max by (from scoring seat, opinion confidence, evidence count); none -> no reason clause. Fact-check gate unchanged.",
+     "files": [
+      "backend/app/agents/council/seats.py",
+      "backend/app/agents/council/rules.py",
+      "backend/app/agents/council/synthesis.py",
+      "backend/app/agents/council/vote.py",
+      "backend/app/agents/council/model.py",
+      "backend/app/agents/council/__init__.py",
+      "backend/app/agents/providers.py (optional Gemini responseSchema)",
+      "backend/app/core/vocab/ (technical skill vocabulary, T01)",
+      "backend/app/core/config.py (PANEL_MODE)",
+      "docs/decisions/0009-free-models-gemini-then-ollama.md (note)",
+      "backend/tests/unit/council/test_panel.py, test_synthesis.py, test_weights.py"
+     ],
+     "rollout": "Contract and rules first (offline path fixed at once), then synthesis selection and the typed question, then the skill rule, then the batched call behind PANEL_MODE, compared on the eval set and the Gemini free tier before ask_seat is removed.",
+     "offline": "Rules produce typed claims and questions, so synthesis and weights are correct without any model; the batched call is optional with per-seat fallback."
+    },
+    "tasks": [
+     {
+      "title": "Claims carry criterion and direction; synthesis pairs by them",
+      "why": "Synthesis quotes a seat's first claim whatever it was about, including neutral claims as weaknesses.",
+      "where": "council/seats.py, rules.py, synthesis.py, vote.py, model.py",
+      "how": "Extend Claim; typed Question; label all rule claims; prompt asks for both fields; synthesis selects matching claims or none; question chosen by criterion.",
+      "when": "First; T13 wording when it lands; T05 consumes the tagged question.",
+      "what_for": "Every reason the founder hears supports the judgement it is attached to, and the panel question is targeted.",
+      "subtasks": [
+       {
+        "text": "Claim.criterion/direction and Question{criterion, text, duplicates_slot} with validation; label every rule claim; prompt schema updated; upgrader for stored council results",
+        "flags": [
+         "F-A1-020"
+        ]
+       },
+       {
+        "text": "Synthesis selection by criterion and direction; tests that the probe no longer calls the buyers claim a weakness and an 'economics' claim is never quoted for 'need'",
+        "flags": [
+         "F-A1-020"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "Three-state founder skills in weights",
+      "why": "The technical bump fires for unknown skills and for a Python developer.",
+      "where": "council/vote.py, core/vocab (T01), T10 lexicon",
+      "how": "technical_skill() from the slot's answered state; word-boundary match on a reviewed vocabulary; bump only when known non-technical; honest weights_why.",
+      "when": "Independent; local \\b regex until T10's lexicon lands.",
+      "what_for": "Weights never assert an unknown fact about the founder.",
+      "subtasks": [
+       {
+        "text": "technical_skill with None/True/False; extended vocabulary; tests for absent slot (no bump, 'not known'), 'python developer' (no bump), 'tailoring' (+5 with honest reason)",
+        "flags": [
+         "F-A1-021"
+        ]
+       }
+      ]
+     },
+     {
+      "title": "One panel call with breaker recording",
+      "why": "Seven requests per panel exhaust the free quota and failures stall 8 s each time.",
+      "where": "council/model.py, council/__init__.py, agents/providers.py, core/config.py, docs/decisions/0009",
+      "how": "ask_panel returning all seats; per-seat validation and rule fallback; breaker.fail/succeed; PANEL_MODE comparison for one release.",
+      "when": "After task 1; through T15's gate if it has landed.",
+      "what_for": "One request per panel and immediate rules when quota is gone.",
+      "subtasks": [
+       {
+        "text": "ask_panel with batched JSON schema (responseSchema or prompt fallback), per-seat validation, missing seats from rules, partial re-runs send only requested seats; test exactly one request",
+        "flags": [
+         "F-A1-023"
+        ]
+       },
+       {
+        "text": "Record 429/timeout/errors on provider.breaker; test an open breaker goes straight to rules within milliseconds",
+        "flags": [
+         "F-A1-023"
+        ]
+       },
+       {
+        "text": "PANEL_MODE single vs per_seat compared on the eval set (band and question stable within tolerance), then remove ask_seat and update the 0009 note",
+        "flags": [
+         "F-A1-023"
+        ]
+       }
+      ]
+     }
+    ],
+    "tests": "Rules-mode probe: synthesis cites only claims with matching criterion and direction; claims with no valid criterion dropped. Weights: absent founder_skills -> no bump and no 'no technical skill' reason; 'python developer' -> no bump; 'tailoring' -> +5. Fake provider: exactly one call; a response missing two seats -> those from rules; malformed seat dropped; 429 opens the breaker and the next convene uses rules immediately. Question skipped when duplicates_slot is filled. Eval set comparison between panel modes.",
+    "risks": "Longer batched output may hit flash-lite limits; cap claims at 3 per seat, size max_tokens and keep per-seat fallback. Less seat independence; per-seat briefs and the devil's must_oppose keep dissent; watch spread values in the eval report. Gemini responseSchema field names vary by API version; keep the prompt-only fallback."
+   }
+  }
+ ]
+}
