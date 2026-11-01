@@ -1,0 +1,1359 @@
+{
+ "agent": "B3",
+ "team": "B",
+ "shared_mechanisms": "Shared mechanisms across B3's themes (and their dependencies): (M1) 'typed outcome, never silent': every write or lookup returns a status the caller must handle (PutOutcome in T03, LocalResult/coverage row in T13, typed SSE error codes in T28, ApiError with status and code in T18, cache read error counted as a miss in T08, 'unrecorded request' in T33). (M2) one canonical outbound request key (T08 research/cache.py canonical_key) is also the eval recording key (T33), so the eval replays at the HTTP boundary through the same code founders use. (M3) one in-process metrics registry with a per-minute database roll-up (T23) is fed by cache layers (T08), turn-stream marks (T28), job outcomes, put() conflicts (T03) and degraded coverage (T13). (M4) Pydantic is the single schema source: ProfileIn (T03), the TurnEvent union (T28) and server record shapes for browser sync (T18) are exported through OpenAPI and turned into TypeScript by one generator, so the browser and server cannot drift.",
+ "designs": [
+  {
+   "theme": "T03",
+   "understanding": "ElicitationSession.put (session.py:153-171) is the only door into the fact store, and it trusts its caller completely: the value is Any, the only precedence is 'ANSWER beats non-ANSWER, otherwise higher-or-equal confidence wins', and it returns None whether it stored, ignored or overwrote. Three callers exploit that: engine.start writes raw profile values at 0.95 PROFILE (engine.py:116-120, flat keys that match neither the browser's nested ProfileDraft nor the server Startup model, and no 'stage'); _note_fact writes any JSON at 0.8 EXTRACTED and always answers 'recorded' (tools.py:271-275); observe() lets later extractions at 0.85-0.90 replace an earlier direct ANSWER at 0.90 because only the slot answered THIS turn is protected (engine.py:155-157). answers.validate already knows how to coerce text to each slot type, but only the direct-answer path calls it. Consumers (planner k_experience/capacity, schemes, cohort grouping) assume typed values and crash or silently mismatch. Separately, 'known' has two thresholds: filled >= 0.5 (session.py:123) and TAU_FILL = 0.60 (selector.py:37). Root cause: the store has no per-slot codec, no source rank, no outcome and no defined entry shape for profiles. All flags checked against the code; they hold.",
+   "flags_disputed": [
+    {
+     "id": "F-A1-007",
+     "note": "Duplicate of F-B1-031 / F-B3-016 for the validation half; its 'shape does not match' half duplicates F-B3-017. Resolved by the same subtasks."
+    },
+    {
+     "id": "F-B1-016",
+     "note": "Holds for planned work (1.1.2.3 lock, 1.1.5.5 card, 1.2.4 lever) rather than a live bug: nothing writes a chosen value yet. Fixed in advance by putting Source.CHOSEN at the top of the rank table."
+    },
+    {
+     "id": "F-A1-026",
+     "note": "Valid, but the planner is the victim, not the cause; catching TypeError in run_tool would hide the bad fact. Fixed at put(); the planner gets a type check only in tests."
+    }
+   ],
+   "approaches": [
+    {
+     "name": "Per-slot codec inside put() + source-rank table + PutOutcome",
+     "how": "Each Slot gets a coerce(value) built from answers.validate (text) and enum/int/bounds checks (already-typed values). put() coerces first, then applies a rank table CHOSEN > ANSWER > PROFILE > DOCUMENT > NOTE > EXTRACTED > DEFAULT, keeps a losing disagreeing value as a rival, and returns PutOutcome(stored|kept|conflict|invalid|unknown_slot).",
+     "basis": "Reuses answers.validate and the Slot table that exist today; ranking sources by precedence is the standard provenance pattern in CRM and master-data tools.",
+     "cost": "free/open source",
+     "advantages": "One door, so every present and future caller (profile, extractor, model, cards, levers) gets validation and precedence for free; the outcome tells the model the truth; no new dependency.",
+     "drawbacks": "put() becomes the most important function in elicitation and needs strong tests; every caller must handle the result."
+    },
+    {
+     "name": "Typed Pydantic model per slot (discriminated SlotValue union)",
+     "how": "Replace SlotValue.value: Any with a union of typed models (SectorValue(enum), IntValue(bounds), TextValue(max_len) ...), validated by Pydantic on construction.",
+     "basis": "Pydantic v2 discriminated unions are mature and already the session's base class.",
+     "cost": "free/open source",
+     "advantages": "Types enforced at the data layer, including when a session is loaded from JSON.",
+     "drawbacks": "Pydantic can check shape but cannot coerce 'about five' or 'Chennai city'; that still needs answers.validate. Changes the persisted JSON shape of every session (decision 0003 migration). Does not solve precedence or outcome."
+    },
+    {
+     "name": "Validate at each entry point (router ProfileIn, note_fact schema, extractor)",
+     "how": "Put a Pydantic ProfileIn on AgentStartIn, an enum/int JSON schema per key in note_fact, and leave put() unchanged.",
+     "basis": "What most of the flags' reviewers recommended in isolation.",
+     "cost": "free/open source",
+     "advantages": "Small, local changes; errors surface at the API edge as 422.",
+     "drawbacks": "Three copies of the rules that drift; the next caller (cards 1.1.5.5, levers 1.2.4, documents) bypasses them; precedence and silent drops are untouched."
+    },
+    {
+     "name": "Event-sourced fact log with a resolver",
+     "how": "Store every observation (key, value, source, confidence, turn) append-only and compute the current slot view with a resolver function on read.",
+     "basis": "Common in knowledge-base and audit systems; keeps the full history of rivals.",
+     "cost": "free/open source",
+     "advantages": "Nothing is lost; 'why does it think my sector is agri' is answerable; easy rival detection.",
+     "drawbacks": "Larger session document on each save, a resolver on every read, migration of all stored sessions; more machinery than one team needs when only the latest rival matters."
+    },
+    {
+     "name": "Defensive consumers (planner casts, run_tool catches TypeError)",
+     "how": "Make build_plan coerce or ignore wrong types and broaden run_tool's except clause.",
+     "basis": "Quickest way to stop the crash.",
+     "cost": "free/open source",
+     "advantages": "Stops TypeErrors today.",
+     "drawbacks": "Bad facts stay, are restated as known, and silently miss scheme/council comparisons; every consumer needs the same guards."
+    }
+   ],
+   "chosen": "Per-slot codec inside put() + source-rank table + PutOutcome, with a typed ProfileIn at the edge and a client/server profile projection",
+   "why_chosen": "The root cause is that the single write path is untyped and unranked, so the fix belongs in that path: once put() coerces through the existing answers.validate, ranks sources and returns an outcome, every flag in the theme collapses (profile, model note, extraction, lever/card writes) and future callers inherit it. The edge ProfileIn stays, but only as a size and allowlist guard (privacy and quota), not as the place where slot rules live. The outcome object is the same M1 pattern used in T13/T28/T18, and its conflict counter feeds T23 metrics.",
+   "not_chosen": [
+    {
+     "name": "Typed Pydantic model per slot",
+     "reason": "Cannot coerce natural-language values, which is the actual failure; forces a session JSON migration (0003) for no gain over a codec that stores the same typed values in the existing field."
+    },
+    {
+     "name": "Validate at each entry point",
+     "reason": "Triplicates the rules and leaves precedence and silent drops unsolved; the planned card/lever writers would bypass it."
+    },
+    {
+     "name": "Event-sourced fact log",
+     "reason": "Over-built for one team: only the current value plus the latest rival is needed; it grows the session document every save and needs a resolver on every read."
+    },
+    {
+     "name": "Defensive consumers",
+     "reason": "Treats the symptom; wrong facts would still be stated to the founder and miss enum comparisons. Kept only as a test assertion, not as code."
+    }
+   ],
+   "design": {
+    "components": "1) elicitation/session.py: Source gains CHOSEN and NOTE; RANK dict; KNOWN = TAU_FILL = 0.60 and CONFIRM_FLOOR = 0.40 defined here (selector imports them); put() -> PutOutcome. 2) elicitation/codec.py (new, ~80 lines): coerce(key, value) using answers.validate for str, enum membership (by member or value, T01 canonical enums), int bounds, multi lists (max 10 items x 60 chars), text max 300 chars; returns a typed value or None. 3) elicitation/profile.py (new): ProfileIn Pydantic model (extra='forbid'; district, stage, sector, founder_years, founder_skills, owned_assets, all optional, length-bounded) and profile_from_row(founder, startup) server mapper (Startup.domain -> sector via the T01 taxonomy synonym map; stage free text through codec). 4) agents/tools.py: _note_fact writes Source.NOTE and returns the outcome dict. 5) engine.start and observe use outcomes; PROFILE_SLOTS gains 'stage'. 6) frontend agentClient.ts: toAgentProfile(draft) allowlisted projection (founder.district, startup.stage, startup.domain only).",
+    "data_model": "SlotValue gains rival: {value, source, confidence, turn} | None (optional, default None, so old sessions load). PutOutcome = {status: 'stored'|'kept_existing'|'conflict'|'invalid'|'unknown_slot', key, value (typed, as stored), existing (when kept/conflict)}. RANK = {CHOSEN:6, ANSWER:5, PROFILE:4, DOCUMENT:3, NOTE:2, EXTRACTED:1, DEFAULT:0}. A model_validator(mode='after') on ElicitationSession re-runs codec over stored slots on load and drops invalid ones, so sessions saved before the fix heal themselves.",
+    "algorithm": "put(key, value, conf, source): unknown key -> unknown_slot. typed = codec.coerce(key, value); None -> invalid (nothing stored). existing = slots.get(key). None -> store. Same normalised value -> keep max confidence and the higher-rank source -> stored. RANK[source] > RANK[existing.source] -> store, previous becomes rival. Equal rank -> newer wins when conf >= existing.conf, else kept_existing. Lower rank -> keep existing and record the rival; when the existing value is itself only a guess (rank <= NOTE), cap its confidence at 0.55 (CONFIRM band) so the selector confirms it -> conflict. ANSWER/PROFILE/CHOSEN are never displaced by EXTRACTED or NOTE (fixes the later-extraction overwrite). NOTE outranks EXTRACTED, so the model can correct a substring false positive (agri for an electronics kit). filled == {confidence >= KNOWN}; selector candidates use the same constant; values in [CONFIRM_FLOOR, KNOWN) are restated as 'I think...' at confirmation.",
+    "interfaces": "T01: codec uses the canonical enums and synonym maps from the taxonomy module (Sector, Stage). T27: CHOSEN is the source written when the founder picks a card or lever in the pending-action state. T23: counter elicitation.put{status}. T28: the done payload carries learned/conflicts so the client can show 'I noted X'. T18: the client projection reads the profile through the storage registry. note_fact returns the outcome (the model is told 'kept_existing: sector is electronics (founder answer)').",
+    "files": [
+     "backend/app/elicitation/session.py",
+     "backend/app/elicitation/codec.py (new)",
+     "backend/app/elicitation/profile.py (new)",
+     "backend/app/elicitation/engine.py",
+     "backend/app/elicitation/selector.py",
+     "backend/app/agents/tools.py",
+     "backend/app/routers/ideation.py",
+     "backend/app/agents/ideation.py (new_session reads profile_from_row for signed-in founders)",
+     "frontend/src/voice/agentClient.ts",
+     "backend/tests/elicitation/test_put.py (new)"
+    ],
+    "rollout": "Ship codec + outcome first (pure function, fully tested); then the rank table; then the profile edge and projection. Old sessions heal on load through the after-validator; no Alembic migration (the session is one JSON document, 0003).",
+    "offline": "Entirely deterministic; no model involved. The model path only gains a truthful tool result."
+   },
+   "tasks": [
+    {
+     "title": "Per-slot codec and validated put() with PutOutcome",
+     "why": "Untyped values crash the planner and silently miss enum comparisons; callers are told 'recorded' when nothing was stored.",
+     "where": "backend/app/elicitation/codec.py (new), session.py, agents/tools.py",
+     "how": "Write coerce(key, value) over answers.validate and the Slot enum/bounds; put() coerces, stores typed values and returns PutOutcome; note_fact returns the outcome; an after-validator heals stored sessions.",
+     "when": "First. Uses T01's canonical enums when they land (falls back to the slots.py enums until then).",
+     "what_for": "No session can again hold 'about five' in an int slot or 'healthtech' in Sector, and the model learns what really happened.",
+     "subtasks": [
+      {
+       "text": "codec.coerce for enum/int/multi/text with bounds and length caps; reuse answers.validate for strings",
+       "flags": [
+        "F-B4-011",
+        "F-A1-026"
+       ]
+      },
+      {
+       "text": "put() calls codec and returns PutOutcome; invalid values are not stored",
+       "flags": [
+        "F-B4-011",
+        "F-A1-026"
+       ]
+      },
+      {
+       "text": "_note_fact uses Source.NOTE and returns {status, key, value, existing}; the tool description tells the model that kept/conflict means 'ask the founder'",
+       "flags": [
+        "F-B4-012"
+       ]
+      },
+      {
+       "text": "ElicitationSession after-validator re-coerces stored slots on load and drops invalid ones",
+       "flags": [
+        "F-A1-026"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Source rank table, rivals and one set of confidence bands",
+     "why": "Later extractions overwrite direct answers; nothing represents a deliberate choice; two thresholds disagree on 'known'.",
+     "where": "backend/app/elicitation/session.py, selector.py, engine.py",
+     "how": "Add CHOSEN and NOTE to Source, the RANK table and the rival field; implement the merge algorithm; define KNOWN/CONFIRM_FLOOR once and import them in selector; confirmation restates CONFIRM-band values as uncertain.",
+     "when": "After task 1. T27's card/lever states write Source.CHOSEN once this exists.",
+     "what_for": "The founder's answer is never undone by an offhand sentence, levers stick, and conflicts become a confirmation question instead of a silent overwrite.",
+     "subtasks": [
+      {
+       "text": "RANK table; EXTRACTED/NOTE never displace ANSWER/PROFILE/CHOSEN; equal rank resolves by confidence then recency",
+       "flags": [
+        "F-B4-014"
+       ]
+      },
+      {
+       "text": "Source.CHOSEN at the top of the rank for cards and levers; documented as the write source for 1.1.2.3, 1.1.5.5 and 1.2.4",
+       "flags": [
+        "F-B1-016"
+       ]
+      },
+      {
+       "text": "Keep a disagreeing lower-rank value as rival and cap confidence into the CONFIRM band when only guesses disagree",
+       "flags": [
+        "F-B4-012",
+        "F-B4-014"
+       ]
+      },
+      {
+       "text": "Single KNOWN=0.60 / CONFIRM_FLOOR=0.40 constants; filled and selector candidates both use KNOWN",
+       "flags": [
+        "F-A1-009"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Typed profile entry: ProfileIn, server mapper and client projection",
+     "why": "The profile is an unbounded dict written at 0.95 as never-asked facts, and neither the browser nor the server shape matches slot keys.",
+     "where": "backend/app/elicitation/profile.py (new), routers/ideation.py, elicitation/engine.py, agents/ideation.py, frontend/src/voice/agentClient.ts",
+     "how": "AgentStartIn.profile: ProfileIn | None (extra='forbid', bounded lengths); engine.start puts each value through put() (codec decides; invalid -> slot left to ask); add 'stage' to PROFILE_SLOTS; profile_from_row maps the signed-in founder's Startup.domain/stage and Founder.district; toAgentProfile() in the client sends only district, stage and domain->sector.",
+     "when": "After task 1. Uses the T01 synonym map for domain->sector. The signed-in mapping needs T17's user identity on the route.",
+     "what_for": "Profile knowledge actually saves questions, without locking in free text, leaking caste/phone/DOB, or letting one client burn the shared model quota with a 200 KB value.",
+     "subtasks": [
+      {
+       "text": "ProfileIn model with allowlisted keys and length bounds on AgentStartIn; 422 for unknown keys or oversize values",
+       "flags": [
+        "F-B1-031",
+        "F-A1-007"
+       ]
+      },
+      {
+       "text": "engine.start routes profile values through put() so codec validation applies; invalid ones are dropped and counted",
+       "flags": [
+        "F-B3-016",
+        "F-A1-007",
+        "F-B1-031"
+       ]
+      },
+      {
+       "text": "Add 'stage' to PROFILE_SLOTS; client toAgentProfile() projection from the nested ProfileDraft (district, stage, domain only)",
+       "flags": [
+        "F-B3-017"
+       ]
+      },
+      {
+       "text": "profile_from_row server mapper (Startup.domain via T01 synonyms -> Sector, unknown dropped) used by new_session for signed-in founders",
+       "flags": [
+        "F-B2-015"
+       ]
+      }
+     ]
+    }
+   ],
+   "tests": "Unit: put() table test over every (existing source, new source, same/different value) pair; the F-B4-014 replay (answer electronics, then 'farm schools') keeps ELECTRONICS with an AGRI rival; _note_fact after a wrong extraction returns stored (NOTE > EXTRACTED). Hypothesis (already a dev dependency) property test: for any JSON value put() into any slot, the stored value is absent or of the slot's declared type, and build_plan never raises TypeError on the resulting slots. Profile probes from the flags (injection string, {'$ne':1}, -999, 200,000 chars) return 422 or are dropped; 'Chennai city'/'Fintech'/'five' are stored as 'chennai'/FINANCE/5. A saved session JSON with bad slots loads healed. The eval set (T33) still passes with no extra questions.",
+   "risks": "Raising 'filled' from 0.5 to 0.6 may add a question for extractions currently at 0.5-0.59; check extract.py confidences and the eval question-limit check before merging. Coercion via validate may map loosely (e.g. 'sales' -> revenue stage) from profile text; profile values that coerce only through fuzzy extraction should be stored at 0.75, not 0.95. Rival capping could re-ask too often if extraction is noisy; the cap applies only when both disagreeing values are guesses."
+  },
+  {
+   "theme": "T08",
+   "understanding": "research/sources.py has one Cache class (Redis first, then disk) keyed on 'GET {url} {json(params)}' (sources.py:167). Because papers()/paper_count() put api_key into params, the key changes when OPENALEX_API_KEY is added or rotated. The disk layer writes in place (write_text) and json.loads with no error handling, so a torn file raises for up to 7 days. Disk hits are copied to Redis with the full TTL, doubling staleness. Only status 200 is cached, so EPO's 404 'no hits' repeats. There is no in-process single-flight, and the planned Redis lock (2.2.1) is 30 s against a 60 s client timeout with no re-check by waiters. core/redis.py remembers a failed ping for the life of the process. Warming (2.2.6) would key on registry phrasing nobody searches, share the whole daily cap with founders, and refetch entries still fresh. Reference dataset caches are ~25 independent lru_caches with hidden dependencies (get_ecosystem bakes in the banking branch index). Root cause: the cache has no defined key canonicalisation, entry envelope, write protocol, negative-result rule, concurrency rule or owner for dataset dependencies. All flags checked against current code.",
+   "flags_disputed": [
+    {
+     "id": "F-B5-003",
+     "note": "Duplicate of F-A2-007; one subtask resolves both."
+    },
+    {
+     "id": "F-B5-007",
+     "note": "Describes the planned 2.2.1 design (30 s lock), not current code; still valid as a design constraint and resolved by the lock parameters chosen here."
+    },
+    {
+     "id": "F-A2-010",
+     "note": "Not research-cache specific (reference dataset loaders), but shares the cause 'cache invalidation has no owner'; kept here."
+    }
+   ],
+   "approaches": [
+    {
+     "name": "Own small cache module: canonical key, envelope, atomic writes, negative entries, in-process single-flight + redis-py Lock",
+     "how": "research/cache.py with canonical_key(method, url, params) dropping credential params, an envelope {v, stored_at, status, body}, temp-file + os.replace writes, unreadable file = miss + unlink, remaining-TTL Redis copy, an asyncio.Future map for single-flight, and redis.asyncio.lock.Lock (token-safe release) across workers.",
+     "basis": "All primitives are in the stdlib or redis-py, already installed; os.replace is atomic on Windows and POSIX.",
+     "cost": "free/open source",
+     "advantages": "Fixes every flag in ~200 lines; keeps the documented rs:/budget: Redis key layout; works without Redis (the default setup).",
+     "drawbacks": "We own the cache code and its tests."
+    },
+    {
+     "name": "hishel (RFC 9111 HTTP cache transport for httpx)",
+     "how": "Wrap the httpx client in hishel's caching transport with a file or Redis storage backend.",
+     "basis": "Maintained httpx-native cache library.",
+     "cost": "free/open source",
+     "advantages": "Standards-based; the library handles atomic storage.",
+     "drawbacks": "Follows upstream Cache-Control headers (OpenAlex/EPO send little), so the 7-day policy needs force-caching options; the key includes the full URL with api_key unless customised; no single-flight, budgets or EPO-404 negative caching; new dependency."
+    },
+    {
+     "name": "aiocache / cashews decorators",
+     "how": "Decorate source functions with a caching decorator that has Redis/memory backends and built-in lock and early refresh.",
+     "basis": "Popular asyncio cache libraries; cashews has 'locked' and 'early' (refresh-ahead) strategies.",
+     "cost": "free/open source",
+     "advantages": "Single-flight and refresh-ahead ready-made.",
+     "drawbacks": "No disk backend without Redis in the default free setup (cashews needs an extra dependency for disk); keys built from function arguments bring back the credential problem unless customised; another layer to learn."
+    },
+    {
+     "name": "diskcache (SQLite-backed) as the disk layer",
+     "how": "Replace the JSON-file directory with diskcache.Cache, which is process-safe and atomic, with a per-key expiry.",
+     "basis": "Mature, widely used, pure Python.",
+     "cost": "free/open source",
+     "advantages": "Atomicity, TTL and multi-process safety solved by SQLite.",
+     "drawbacks": "New dependency; the cache becomes an opaque SQLite file instead of inspectable JSON that the runbook and eval recordings use; does not address key canonicalisation, negative caching or warming policy."
+    },
+    {
+     "name": "Store research responses in PostgreSQL",
+     "how": "A research_cache table (key, stored_at, status, body jsonb) with INSERT ... ON CONFLICT and advisory locks for single-flight.",
+     "basis": "Postgres is already the system of record; advisory locks are a known single-flight tool.",
+     "cost": "free/open source",
+     "advantages": "Shared across workers without Redis; transactional.",
+     "drawbacks": "Research must work when the database is down (the store falls back to memory); adds a migration and database load for a pure cache; contradicts SYSTEM-DESIGN section 4 (Redis then disk)."
+    }
+   ],
+   "chosen": "Own small cache module (canonical key, envelope with stored_at, atomic writes, negative entries, in-process single-flight + redis-py Lock), plus refresh-ahead warming from a requested-keys index and a dataset-cache registry",
+   "why_chosen": "Every flag is a policy decision (what is part of the key, how old an entry is, what an empty answer means, who waits for whom, whose budget warming uses), and none of the libraries encodes these policies; adopting one would still mean customising each point while adding a dependency. The stdlib + redis-py versions are short, keep the inspectable JSON files and the documented Redis key layout, and work in the default no-Redis single-process setup. The canonical key becomes the shared M2 key that T33 records and replays, and the cache layer counters feed T23.",
+   "not_chosen": [
+    {
+     "name": "hishel",
+     "reason": "HTTP-header semantics do not match a fixed 7-day research policy, and it leaves single-flight, budgets, negative caching and credential stripping to us anyway."
+    },
+    {
+     "name": "aiocache / cashews",
+     "reason": "No disk layer without extra dependencies in the default no-Redis setup, and argument-based keys bring back the credential problem; we would use only two features of a large library."
+    },
+    {
+     "name": "diskcache",
+     "reason": "Solves only atomicity (os.replace does that in 5 lines) at the price of an opaque SQLite file that the eval recordings and runbook cannot read."
+    },
+    {
+     "name": "PostgreSQL cache table",
+     "reason": "Research must keep working when the database is down, and a cache does not belong in the system of record; contradicts SYSTEM-DESIGN section 4."
+    }
+   ],
+   "design": {
+    "components": "1) backend/app/research/cache.py (new; Cache moved out of sources.py): canonical_key(), Entry envelope, DiskLayer (atomic), RedisLayer (remaining TTL), SingleFlight (in-process futures + optional RedisLock), fetch_cached(key, fetch, policy). 2) sources._get_json delegates to fetch_cached; per-source policies: cache 200 always; cache EPO 404 as empty with a 1-day negative TTL; never cache 429/5xx. 3) core/redis.py: a failed ping is remembered with retry_at (30 s, doubling to 5 min) instead of forever; is_live() for the status page. 4) research/requested.py: requested-keys index (Redis ZSET rs:req, or a disk JSON index when Redis is off) counting every founder lookup by canonical key with a replayable request spec. 5) scripts/warm_research_cache.py: refresh-ahead of requested keys with >= 2 requests whose remaining TTL < 24 h, charged to a separate warm budget share. 6) backend/app/core/datasets.py (new): @dataset_cache(name, reads=(...)) wrapping lru_cache and registering cache_clear with its dataset dependencies; clear_dataset(name) clears dependants transitively.",
+    "data_model": "Entry = {v: 2, stored_at: epoch_s, status: 200|404, body}. canonical_key = 'v2 GET ' + url + ' ' + json(sorted params minus CREDENTIAL_PARAMS={'api_key','mailto','key','token','access_token'}), hashed with sha1 for file and Redis names. Disk file <hash>.json holds the Entry; old v1 files (bare body) are read with stored_at = mtime and expire naturally. Redis: rs:<hash> (Entry, ex = ttl - age), rs:lock:<hash> (redis-py Lock), budget:{source}:{date} (founders), budget:warm:{source}:{date} (warming), rs:req ZSET (canonical key -> request count) plus rs:req:spec:<hash>.",
+    "algorithm": "fetch_cached(key): entry = Redis or disk; fresh if now - stored_at < ttl(status). Miss: if the key has an in-process future, await it. Otherwise create the future; if Redis is live, acquire Lock(rs:lock:<hash>, timeout = 3 x client timeout + 10 s (~190 s, papers makes three calls), blocking_timeout = 20 s). After acquiring (or after waiting), re-read the cache, then re-check pause and budget, then fetch. The holder writes the entry (200, or negative 404) and releases (Lock.release checks its token, so it cannot delete another holder's lock). On 429/5xx nothing is written; waiters see the pause key the holder set and return 'paused' without calling the source. Disk write: <hash>.json.tmp-<pid>-<rand>, fsync, os.replace; read: any OSError/JSONDecodeError/envelope mismatch -> log cache.corrupt(hash), unlink, miss. Disk-to-Redis copy uses ex = ttl - age (skip if <= 0). Warming: keys in rs:req by count, skip when remaining TTL > 24 h, stop when budget:warm reaches research_warm_share (default 25%) of the source limit or when the founder reserve would be touched; runs only between 22:00 and 05:00 IST.",
+    "interfaces": "T33: canonical_key and Entry are the eval recording format (record = capture Entries per key; replay = serve them). T23: counters research.cache{layer=redis|disk|miss|negative|corrupt}, research.singleflight{joined}, gauge redis.live. Per-source budgets (another theme, F-B5-001) plug into the same budget check; the warm budget uses the same INCR helper. Reference-data reload (TASKS 2.2.3) calls clear_dataset(). T13: requested keys only ever contain allowlisted query words.",
+    "files": [
+     "backend/app/research/cache.py (new)",
+     "backend/app/research/sources.py",
+     "backend/app/research/requested.py (new)",
+     "backend/app/core/redis.py",
+     "backend/app/core/datasets.py (new)",
+     "backend/app/core/config.py (research_warm_share, research_negative_days)",
+     "backend/app/ecosystem/index.py, banking/branches.py, banking/catalogue.py, ecosystem/match.py, funding/investors.py, journey/engine.py, cohort/reference.py, planner/registry.py (decorator swap)",
+     "scripts/warm_research_cache.py (new)",
+     "backend/tests/research/test_cache.py (new)"
+    ],
+    "rollout": "1) cache.py with v2 keys and envelope; v1 files stay readable (mtime as stored_at), and for one TTL a miss also tries the old key form so entries cached with an api_key are not lost. 2) single-flight; 3) Redis re-probe; 4) the requested index starts recording at once, and the warming script is enabled only after a week of data; 5) the dataset registry swap is mechanical, one module per commit.",
+    "offline": "The default setup (no Redis, one process) gets single-flight, the atomic disk cache, negative caching and remaining-TTL logic; Redis only adds cross-worker sharing. Warming is optional and never runs unless invoked."
+   },
+   "tasks": [
+    {
+     "title": "Canonical cache key and entry envelope",
+     "why": "API keys in the cache key empty the cache on add/rotate; entries carry no age, so the Redis copy resets the TTL.",
+     "where": "backend/app/research/cache.py (new), research/sources.py",
+     "how": "Move Cache into cache.py; canonical_key strips CREDENTIAL_PARAMS and sorts params; Entry {v, stored_at, status, body}; Redis copy with remaining TTL; v1 compatibility read.",
+     "when": "First; T33's recorder depends on canonical_key.",
+     "what_for": "Adding OPENALEX_API_KEY keeps every cached answer, and data is never older than research_cache_days.",
+     "subtasks": [
+      {
+       "text": "canonical_key without api_key/mailto/token params; one-TTL fallback lookup of the old key form",
+       "flags": [
+        "F-A2-007",
+        "F-B5-003"
+       ]
+      },
+      {
+       "text": "Entry envelope with stored_at; the disk-to-Redis copy uses ttl - age and skips expired entries",
+       "flags": [
+        "F-A2-008"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Atomic disk layer and negative entries",
+     "why": "A torn file raises for a week and fails the whole scan; EPO 'no hits' repeats against a ~10/minute fair-use limit.",
+     "where": "backend/app/research/cache.py, research/sources.py (epo_patents policy)",
+     "how": "Temp file + fsync + os.replace; any read error is a logged miss and the file is removed; the policy table caches EPO 404 as {total 0} for research_negative_days (1).",
+     "when": "After task 1.",
+     "what_for": "A crash or full disk costs one refetch, not a week of failed scans; narrow ideas stop re-spending EPO quota.",
+     "subtasks": [
+      {
+       "text": "Atomic write via os.replace; corrupt or truncated files are treated as a miss, removed and logged by hash",
+       "flags": [
+        "F-A2-009"
+       ]
+      },
+      {
+       "text": "Negative caching of EPO 404 with a shorter TTL; 429/5xx never cached",
+       "flags": [
+        "F-B5-008"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Single-flight in process and across workers",
+     "why": "Ten concurrent identical searches send ten requests in the default one-process setup; the planned 30 s Redis lock expires before a 60 s fetch and lets waiters stampede after a failure.",
+     "where": "backend/app/research/cache.py (SingleFlight), research/sources.py",
+     "how": "asyncio.Future map keyed by canonical key, always on; redis.asyncio.lock.Lock with timeout ~3x client timeout + margin and blocking_timeout 20 s when Redis is live; waiters re-read the cache and re-check pause and budget before fetching.",
+     "when": "After task 1. Replaces TASKS 2.2.1's '30 seconds' wording.",
+     "what_for": "One logical search costs one request and one budget unit, and every waiter respects a 429.",
+     "subtasks": [
+      {
+       "text": "In-process single-flight via shared futures (works with Redis off)",
+       "flags": [
+        "F-B5-006"
+       ]
+      },
+      {
+       "text": "redis-py Lock with token-safe release, a timeout sized to the fetch, and a re-check of cache/pause/budget after waiting",
+       "flags": [
+        "F-B5-007"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Redis liveness re-probe",
+     "why": "One failed ping disables the Redis cache, shared pauses and shared budgets until restart, invisibly.",
+     "where": "backend/app/core/redis.py",
+     "how": "Remember failure with retry_at = now + 30 s (doubling to 5 min); re-ping on a later call; expose is_live() and last_error for the status page; a Redis error mid-call marks it down the same way.",
+     "when": "Independent; before T23's status endpoint.",
+     "what_for": "Starting Redis after the app, or a blip, heals by itself, and the operator can see which mode is active.",
+     "subtasks": [
+      {
+       "text": "Timed re-probe with back-off and an is_live() gauge used by the T23 status page and the cache layer counters",
+       "flags": [
+        "F-B5-005"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Refresh-ahead warming from requested keys with a founder reserve",
+     "why": "Warming registry phrasing fills keys founders never request, may use the whole daily cap, and refetches entries valid for days.",
+     "where": "backend/app/research/requested.py (new), scripts/warm_research_cache.py (new), core/config.py",
+     "how": "Record the canonical key and replayable request spec of every founder lookup; a nightly script refreshes only keys requested at least twice whose remaining TTL < 24 h, charging budget:warm under research_warm_share and stopping before the founder reserve.",
+     "when": "After tasks 1-3. Replaces TASKS 2.2.6's registry-domain warming.",
+     "what_for": "Common founder searches answer instantly from cache without spending the budget founders need that day.",
+     "subtasks": [
+      {
+       "text": "Requested-keys index (Redis ZSET or disk index) storing the canonical key and request spec",
+       "flags": [
+        "F-B5-009"
+       ]
+      },
+      {
+       "text": "Warm only expiring, repeatedly requested keys; separate warm budget share and founder reserve; night window in IST",
+       "flags": [
+        "F-B5-010",
+        "F-B5-009"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Dataset-cache registry for reference loaders",
+     "why": "About 25 lru_cache loaders have hidden cross-dataset dependencies, so clearing one leaves mixed versions.",
+     "where": "backend/app/core/datasets.py (new) and each loader module",
+     "how": "@dataset_cache('ecosystem', reads=('ecosystem','banking')) wraps functools.lru_cache and registers cache_clear; clear_dataset(name) clears every loader whose reads include it; a test fails on any bare @lru_cache left on a data loader.",
+     "when": "Independent; required before the TASKS 2.2.3 reload work.",
+     "what_for": "A new banking file refreshes branch counts everywhere at once, and new loaders cannot be forgotten.",
+     "subtasks": [
+      {
+       "text": "datasets.py registry and decorator; swap loaders; transitive clear_dataset; test listing undecorated lru_cache loaders",
+       "flags": [
+        "F-A2-010"
+       ]
+      }
+     ]
+    }
+   ],
+   "tests": "httpx.MockTransport tests: the same query with and without api_key hits the cache once; 10 concurrent identical calls with set_redis(None) send 1 request; with a local Redis (skipped when absent), two Cache instances acting as workers send 1; a holder getting 429 -> waiters return paused with 0 extra calls; a truncated file is a miss and is removed; a 6.9-day disk entry copied to Redis gets ~0.1 day TTL; three EPO 404s send 1 request. Redis re-probe: ping fails, then succeeds after retry_at -> is_live True. Warming with a fake clock: keys with 1 request or > 24 h TTL are skipped, and warming stops at its share. datasets: clearing 'banking' clears get_ecosystem.",
+   "risks": "A lock timeout sized to the slowest fetch means a crashed holder delays waiters up to blocking_timeout (20 s), after which they fetch themselves: accepted. The requested-keys index stores request specs, which are already public-vocabulary queries (decision 0004), never founder text; enforce by recording only post-scrub params. Cross-worker lock tests need a local Redis; they are skipped in CI without one rather than adding fakeredis."
+  },
+  {
+   "theme": "T13",
+   "understanding": "Novelty statements (research/novelty.py _statement and levers) are chosen by which numbers happen to be present, not by what was actually searched. scan._local swallows every exception and returns the same {'startups': []} for 'error' and 'nothing found', with no coverage row, while novelty treats len(startups)==0 as 'no Tamil Nadu startup' even though the map covers only Chennai, Coimbatore and Madurai (654 records). The 'crowded' fallback fires when no pair was counted (one part, or every pair count failed). Query building takes the first content words from a public vocabulary that includes every word of every registry summary ('small', 'building', 'village'). scrub() is a denylist (drops a word only if the founder said it verbatim and it is not public), so brand variants pass. Two matchers over the same startup map (scan._local and cohort.reference.similar_startups) use different term rules and stoplists, so Talk and Cohort disagree. Root cause: no evidence ledger records search status and scope, statements are not gated on it, and term filtering and matching rules are duplicated. Flags checked; all hold.",
+   "flags_disputed": [
+    {
+     "id": "F-B4-021",
+     "note": "Same root as F-A1-014 (silent local lookup + unscoped claim); one LocalResult resolves both."
+    },
+    {
+     "id": "F-A1-012",
+     "note": "Partly a policy choice: an allowlist will also drop some legitimate model technical words; accepted, because decision 0004 makes 'nothing private leaves' the stronger rule."
+    }
+   ],
+   "approaches": [
+    {
+     "name": "Evidence ledger + claim preconditions (coverage-gated statement templates)",
+     "how": "Each search (remote sources, pair counts, local map) records {status, scope, count}. Every novelty statement and lever template declares preconditions over the ledger (e.g. 'crowded' needs >= 1 counted pair and no failed pair; 'no TN startup' needs local.status == ok and is worded with local.scope). Failing preconditions fall through to an honest 'unclear/not searched' template.",
+     "basis": "Same pattern as decisions 0005 (fact check before speech) and 0006 (novelty from counts): code decides, templates word it.",
+     "cost": "free/open source",
+     "advantages": "Makes 'not searched is never nothing found' structural; easy to test; one table of claims.",
+     "drawbacks": "Statements become more conditional; every caller must fill the ledger."
+    },
+    {
+     "name": "Post-hoc fact check of novelty sentences by the existing grounding gate",
+     "how": "Leave the statements and extend the gate() to drop sentences whose numbers or claims are not in the facts corpus.",
+     "basis": "Reuses the fact-check gate (0005).",
+     "cost": "free/open source",
+     "advantages": "No change in novelty.py.",
+     "drawbacks": "The gate checks that numbers exist in the corpus, not that the search was complete; 'I found no TN startup' has no number to check; offline templates bypass the model gate anyway."
+    },
+    {
+     "name": "BM25 single matcher (rank-bm25) for local startups and cohort",
+     "how": "Index the 654 startup descriptions with BM25 and use a score threshold for both Talk and Cohort.",
+     "basis": "rank-bm25 is a small, popular pure-Python package; BM25 is the standard lexical relevance function.",
+     "cost": "free/open source",
+     "advantages": "Principled scoring, length normalisation, one function.",
+     "drawbacks": "New dependency for 654 documents; BM25 score thresholds depend on the corpus; does not by itself fix the missing anchor-term rule or the coverage claim."
+    },
+    {
+     "name": "Local embeddings (sentence-transformers / Ollama embeddings) for matching",
+     "how": "Embed descriptions and ideas; cosine-similarity threshold.",
+     "basis": "Semantic matching catches synonyms.",
+     "cost": "free/open source (model download ~100 MB)",
+     "advantages": "Better recall on paraphrase.",
+     "drawbacks": "pgvector is unavailable, the dependency and model download are heavy, and non-deterministic thresholds hurt eval reproducibility; goes against 'deterministic offline baseline first'."
+    },
+    {
+     "name": "Allowlist query vocabulary with a document-frequency filter and an OpenAlex topic list",
+     "how": "Outgoing words must be in a technical allowlist (lexicon terms, TERM_FIELDS, a snapshot of OpenAlex topic/keyword names) or the registry vocabulary minus high-document-frequency filler; scrub becomes allowlist-only.",
+     "basis": "Decision 0004 already defines a public vocabulary; OpenAlex publishes its ~4,500 topics and keywords free; document frequency is the textbook way to find stopwords.",
+     "cost": "free/open source",
+     "advantages": "Brand variants cannot pass; filler words stop taking query slots; deterministic.",
+     "drawbacks": "Some legitimate rare technical words are dropped (recall loss); the topic snapshot needs an occasional refresh."
+    }
+   ],
+   "chosen": "Evidence ledger + claim preconditions, combined with one shared IDF-anchored local matcher (stdlib, no BM25 package) and an allowlist query vocabulary with a document-frequency filter",
+   "why_chosen": "The theme has three causes and each chosen part fixes one at its root: the ledger makes every statement depend on what was searched (the honesty problem; the same M1 'typed outcome' pattern as T03/T28); one matcher module removes the Talk/Cohort contradiction by construction; and an allowlist with a DF filter enforces decision 0004 positively instead of hoping a denylist catches variants. All are deterministic and need no new runtime dependency (the topic list is a data snapshot).",
+   "not_chosen": [
+    {
+     "name": "Post-hoc fact check of novelty sentences",
+     "reason": "The gate can verify numbers, not whether a search was complete; the riskiest claim ('no TN startup') has no number, and offline templates do not pass through the model gate."
+    },
+    {
+     "name": "BM25 via rank-bm25",
+     "reason": "A dependency for 654 short documents where the existing idf computation plus an anchor-term rule gives the same ranking; the real problem was filler and duplication, not the scoring function."
+    },
+    {
+     "name": "Local embeddings",
+     "reason": "Heavy model download, no pgvector, and non-deterministic thresholds that would make the eval set unstable; left as an optional future recall boost behind the same matcher interface."
+    }
+   ],
+   "design": {
+    "components": "1) research/local.py (new): match_startups(text, sector=None, limit) -> LocalResult(status 'ok'|'not_searched'|'error', scope {source: 'TN Startup Map', districts, records, as_of}, items with shared terms). Uses planner.registry._terms stems, idf from the startup index, the FILLER stoplist from terms.py, and requires >= 2 shared terms of which >= 1 is an anchor with idf >= ANCHOR_IDF (about log(N/20)). The index is cached with T08's @dataset_cache('ecosystem'). 2) scan._local calls it and adds a 'local' coverage row; cohort.reference.similar_startups becomes a thin wrapper over the same function. 3) research/claims.py (new): a Ledger built in novelty.check from part counts, pair counts (with status), context counts and the LocalResult; a CLAIMS table [(type, precondition(ledger) -> bool, template)] evaluated in order, falling through to 'unclear'. Levers declare preconditions the same way. 4) research/terms.py: FILLER = words in more than DF_MAX (5%) of registry summaries plus a short curated list; query_vocabulary() = public vocabulary - FILLER; scrub() keeps a word only if it is in query_vocabulary or the technical allowlist (LEXICON terms, TERM_FIELDS, data/openalex_topics.txt), after normalising hyphenated, plural and split forms.",
+    "data_model": "LocalResult {status, scope: {districts: [..], records: int, as_of: date}, items: [...]}. Ledger {parts: [{element, query, status, papers}], pairs: [{a, b, status, papers}], context: {status, world, india}, local: LocalResult}. Novelty output gains 'basis': {'pairs_counted': n, 'pairs_failed': m, 'local': status} so the client and T33 can check it. The scan coverage list gains {source: 'local', status, found, note: 'TN Startup Map: Chennai, Coimbatore, Madurai (654 listed)'}.",
+    "algorithm": "Statement order: combination gap (needs >= 1 pair with status ok and gap) -> context gap (needs context ok AND local ok; text '...and among the {records} startups the TN Startup Map lists for {districts}, I found none doing it') -> rarest element -> crowded (needs pairs_counted >= 1, pairs_failed == 0 and every part ok) -> unclear ('I could check only {k} of the parts; the combination was not counted'). Single-part ideas never reach 'crowded'; they get 'element' or 'unclear'. The localise lever needs local.status == ok and repeats the scoped wording. Matching: score = sum of idf of shared stems; accept when |shared - FILLER| >= 2 and max idf(shared) >= ANCHOR_IDF; the cohort count shown is the number accepted.",
+    "interfaces": "T01: the sector filter uses canonical Sector values. T08: dataset_cache for the startup index; the requested-keys index only ever sees allowlisted queries. T28: novelty/evidence events carry the basis; the session stores the LocalResult so the Cohort page can read the same result by session id (POST /cohort/reference gains an optional session_id; ownership per T17). T33: degraded fixtures assert the 'unclear' and 'not searched' statements. T23: counter research.coverage{source,status}.",
+    "files": [
+     "backend/app/research/local.py (new)",
+     "backend/app/research/claims.py (new)",
+     "backend/app/research/novelty.py",
+     "backend/app/research/scan.py",
+     "backend/app/research/terms.py",
+     "backend/app/research/data/openalex_topics.txt (new snapshot)",
+     "backend/app/cohort/reference.py",
+     "backend/app/routers/cohort.py",
+     "scripts/snapshot_openalex_topics.py (new, one-off, free API)"
+    ],
+    "rollout": "Ledger and claims first (the change is visible only in wording); then the shared matcher (re-record eval fixtures and compare counts on the 10 ideas); then the vocabulary change, measured with the eval set's paper totals before and after.",
+    "offline": "Fully deterministic. With no network every remote status is not_searched, local is ok, and statements fall through to scoped local wording or 'unclear'. The topic snapshot is a file in the repo."
+   },
+   "tasks": [
+    {
+     "title": "Local lookup as a source with status and scope",
+     "why": "A failed or three-district lookup is reported as 'no Tamil Nadu startup does this'.",
+     "where": "backend/app/research/local.py (new), research/scan.py",
+     "how": "LocalResult with ok/not_searched/error and the scope read from ecosystem _meta; scan adds a 'local' coverage row; exceptions are logged and become status error.",
+     "when": "First; uses T08's dataset registry when present.",
+     "what_for": "The novelty check knows whether, and where, local startups were looked at.",
+     "subtasks": [
+      {
+       "text": "LocalResult with status and scope; no bare except; coverage row 'local'",
+       "flags": [
+        "F-B4-021",
+        "F-A1-014"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Evidence ledger and claim preconditions for statements and levers",
+     "why": "'Combinations are well studied' and 'no TN startup' are said without the counts behind them.",
+     "where": "backend/app/research/claims.py (new), research/novelty.py",
+     "how": "Build the Ledger in check(); replace _statement's if-chain with the CLAIMS table; scoped TN wording; single-part and failed-pair cases fall to 'unclear'; levers gated the same way; novelty output gains basis.",
+     "when": "After task 1.",
+     "what_for": "Every novelty sentence a founder hears is true about what was searched.",
+     "subtasks": [
+      {
+       "text": "'crowded' needs >= 1 counted pair and none failed; single-part ideas are never 'crowded'; the business-model lever is gated the same way",
+       "flags": [
+        "F-A1-013"
+       ]
+      },
+      {
+       "text": "The 'context' gap and the localise lever need local ok and use scoped wording (districts, record count)",
+       "flags": [
+        "F-A1-014",
+        "F-B4-021"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "One local matcher for Talk and Cohort",
+     "why": "Two matchers over the same 654 records disagree (0 vs 20), and filler words inflate cohort counts.",
+     "where": "backend/app/research/local.py, cohort/reference.py, routers/cohort.py",
+     "how": "match_startups with an idf anchor and FILLER removal; similar_startups delegates to it; the cohort route accepts session_id and reads the stored LocalResult; cohort observations ('room to be the local option') need local ok and state the scope.",
+     "when": "After task 1; shares FILLER with task 4.",
+     "what_for": "The conversation and the Cohort page state the same fact, and a count means real similarity.",
+     "subtasks": [
+      {
+       "text": "Single matcher used by scan and cohort; the result is stored on the session and readable by the Cohort page",
+       "flags": [
+        "F-A5-031"
+       ]
+      },
+      {
+       "text": "An anchor term with idf >= ANCHOR_IDF is required; FILLER stoplist shared with terms.py",
+       "flags": [
+        "F-A5-032"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Allowlist query vocabulary with document-frequency filler removal",
+     "why": "Filler words take query slots, and brand-name variants pass the denylist scrub against decision 0004.",
+     "where": "backend/app/research/terms.py, research/data/openalex_topics.txt, scripts/snapshot_openalex_topics.py",
+     "how": "Compute FILLER by registry document frequency; query_vocabulary excludes it; scrub keeps only allowlisted words after normalising variants; snapshot OpenAlex topic and keyword names once with the free API.",
+     "when": "Independent of tasks 1-3; re-record T33 fixtures afterwards.",
+     "what_for": "Searches are sharper, and nothing the founder invented can leave in any spelling.",
+     "subtasks": [
+      {
+       "text": "DF filter over registry summaries removes filler from query building",
+       "flags": [
+        "F-A1-016"
+       ]
+      },
+      {
+       "text": "scrub becomes allowlist-only (public vocabulary + technical allowlist), so 'KaruvaduKart-style', 'Karuvadu Kart' and 'KaruvaduKarts' are all dropped",
+       "flags": [
+        "F-A1-012"
+       ]
+      }
+     ]
+    }
+   ],
+   "tests": "Unit: get_ecosystem raising -> LocalResult error, coverage row error, and the statement never says 'no Tamil Nadu startup'; a one-part idea -> no 'crowded'; all pair counts budget_exhausted -> 'unclear'; scoped TN wording names the three districts. Matcher: the bci idea no longer matches Terraclime; scan and cohort counts are equal for all 10 eval ideas. Queries: 'small business banana chips' -> no 'small'; scrub drops all three KaruvaduKart variants (property test: any casing/hyphen/plural of an out-of-vocabulary founder token is dropped). T33 degraded fixtures assert the honest statements.",
+   "risks": "The allowlist scrub may cut recall for model-written technical terms missing from the topic snapshot; measure paper totals on the eval set and extend the allowlist rather than relax the rule. ANCHOR_IDF and DF_MAX are tuning constants: set them from the eval ideas and pin them with tests. Scoped wording is longer for voice; keep it to one sentence."
+  },
+  {
+   "theme": "T18",
+   "understanding": "Every page owns its own localStorage key and shape: journeyStore.ts and pages/Journey.tsx both write 'vanigam_journey' with incompatible shapes (versioned enums/consent/milestones vs unversioned {facts, done}), so each wipes or crashes the other. Keys are not scoped by user, and logout (auth.tsx:53-56) only clears tokens, so the profile (with caste category, phone, DOB), consent, pipeline, suppliers and the Talk session id survive for the next person on a shared device. Talk.tsx resumes with getSession(id).catch(() => save(null)), and agentClient's json() throws a bare Error for 404, 500 and network failure alike, so any transient failure throws away the only handle to the conversation (and to deleting it). Pipeline/Suppliers save whole arrays with Date.now() ids and no version, so syncing to the server (3.1.3) has no merge rule. Root cause: no registry of browser keys with an owner, a scope, a version/migration and a lifecycle, and no typed client error. Flags checked.",
+   "flags_disputed": [
+    {
+     "id": "F-B2-017",
+     "note": "Duplicate of F-B3-018 and F-A3-006 (same key collision)."
+    },
+    {
+     "id": "F-B2-027",
+     "note": "Duplicate of F-B5-018; F-B3-013 adds the delete-handle consequence and the 404-expired case."
+    },
+    {
+     "id": "F-A3-006",
+     "note": "Its recommendation (a separate key vanigam_journey_steps) is weaker than merging into journeyStore v2, because 1.1.6 needs reg_subtype and the registration facts together; not followed."
+    },
+    {
+     "id": "F-B3-013",
+     "note": "Cites the store IDLE_EXPIRY of 6 hours (agents/store.py:29) while elicitation session.py says 30 days; that inconsistency belongs to T07."
+    }
+   ],
+   "approaches": [
+    {
+     "name": "Typed key registry module with scopes, versions and migrations over localStorage",
+     "how": "frontend/src/storage/registry.ts declares every key once: {name, scope: device|user, version, empty, migrate(raw)}. Access only through read/write/subscribe helpers; user-scoped keys are stored as 'vanigam:u:<uid|anon>:<name>'. Logout and user change clear the scope; a CI grep forbids direct localStorage use elsewhere.",
+     "basis": "The standard persistence pattern (redux-persist / zustand persist have version + migrate), written in ~120 lines without a framework.",
+     "cost": "free/open source",
+     "advantages": "Fixes collisions, leaks and migrations in one place; no runtime dependency; stays offline-first.",
+     "drawbacks": "Every page's storage code changes; discipline is enforced by a grep check."
+    },
+    {
+     "name": "zustand with persist middleware",
+     "how": "One zustand store per domain with persist({name, version, migrate, partialize}).",
+     "basis": "Popular, small state library with built-in persistence and migration.",
+     "cost": "free/open source",
+     "advantages": "Versioning and migration ready-made; reactive across components.",
+     "drawbacks": "New runtime dependency and a change of state style across pages that use useState today; user scoping and clear-on-logout are still ours."
+    },
+    {
+     "name": "IndexedDB via idb-keyval / Dexie",
+     "how": "Move drafts to IndexedDB with per-user databases.",
+     "basis": "Larger quota, structured storage; Dexie supports schema versions.",
+     "cost": "free/open source",
+     "advantages": "Quota and structure for future offline features.",
+     "drawbacks": "The async API forces rewrites of synchronous loaders used during render; data volumes here are tiny; does not by itself define a merge or clearing policy."
+    },
+    {
+     "name": "Server as the only store (no browser persistence for signed-in users)",
+     "how": "Signed-in pages read and write the server; localStorage only for anonymous drafts.",
+     "basis": "SYSTEM-DESIGN rule 1: the server is the source of truth.",
+     "cost": "free/open source",
+     "advantages": "No cross-user leakage for signed-in users; no sync conflicts.",
+     "drawbacks": "Breaks the offline/2G experience the product is built for; anonymous founders still need everything else."
+    },
+    {
+     "name": "Per-record version + updated_at with union-by-UUID merge (sync protocol)",
+     "how": "Every list record gets a UUID, updated_at and version; the first sync unions by id; later writes use compare-and-set and a 409 on stale versions.",
+     "basis": "The same optimistic concurrency as the session store (agents/store.py version check); last-writer-wins per record.",
+     "cost": "free/open source",
+     "advantages": "Two devices never erase each other's lists; reuses a pattern the backend already has.",
+     "drawbacks": "Covers only sync; needs the registry to own ids and migrations."
+    }
+   ],
+   "chosen": "Typed key registry (scopes, versions, migrations, lifecycle) + typed ApiError in the client + per-record UUID/version sync protocol",
+   "why_chosen": "The registry is the missing owner: it ends the key collision, gives every record a migration instead of a silent discard, and makes clearing on logout or user change one loop. The typed ApiError (the same M1 'typed outcome' as T28's error codes) lets Talk forget a session only on a real 404 and offer delete on 'expired'. The record-level version/UUID protocol mirrors the session store's optimistic concurrency, so sync needs no new idea on the server. No new runtime dependency.",
+   "not_chosen": [
+    {
+     "name": "zustand persist",
+     "reason": "Adds a runtime dependency and a state-library migration across pages to get version/migrate, which the registry provides in ~120 lines; user scoping would still be ours."
+    },
+    {
+     "name": "IndexedDB (idb-keyval / Dexie)",
+     "reason": "Async storage forces render-path rewrites for kilobytes of data and leaves the policy questions (scope, clearing, merge) unanswered."
+    },
+    {
+     "name": "Server as the only store",
+     "reason": "Contradicts the offline, low-bandwidth design goal and does nothing for anonymous founders, who are the majority."
+    }
+   ],
+   "design": {
+    "components": "1) frontend/src/storage/registry.ts: defineKey<T>({name, scope, version, empty, migrate, sensitive}); read/write/remove/subscribe (storage event for other tabs); currentOwner() from auth ('anon' or the user id); clearScope(owner); listKeys() for the privacy page. Registered keys: device scope: tokens, lang; user scope: profile, journey (v2), pipeline, suppliers, talk_session (+ the pending utterance queue from T28). 2) journeyStore.ts v2 absorbs Journey.tsx's registration {facts, done}; migrate() recognises v1 journeyStore records and unversioned {facts, done} records and merges both. 3) auth.tsx: logout -> clearScope(user) and clearScope('anon'); login -> if the anon scope holds data, ask 'Keep the drafts on this device for your account?' -> claim (copy into the user scope and call T17's claim for the talk session) or discard. 4) api/errors.ts: class ApiError {status, code, retryable, detail}; agentClient json() throws ApiError; network failures throw ApiError(status 0, code 'network', retryable). 5) Talk.tsx resume: 404 not_found -> forget; 404 expired -> keep the id and offer 'delete it' or 'start fresh'; 5xx/0 -> keep the id and show a retry notice with back-off. 6) Pipeline/Suppliers records: id = crypto.randomUUID(), updated_at, version; a migration rewrites 'local-<ts>' ids. 7) syncList(name): first sync = union by id, same id -> newer updated_at; later PUTs carry the version, the server answers 409 with its copy, and the client re-merges.",
+    "data_model": "Stored envelope per key: {v: version, owner, updated_at, data}. Journey v2: {version: 2, entry_mode, reg_subtype, terrain, terrain_confirmed, consent, milestones, registration: {facts, done}}. List record: {id: uuid, updated_at: ISO, version: int, deleted?: bool (a tombstone, so a union does not bring deleted records back)}. Server records for sync (3.1.3) mirror this with a version column.",
+    "algorithm": "read(key): parse the envelope; if v < version run the migrate chain; if migrate throws, keep the raw value under '<name>.bak' and return empty (never a silent loss). Merge on first sync: for each id in the union pick the record with the greater (updated_at, version); tombstones win over older live records. Logout: for each user-scope key, remove it for owners user and 'anon'.",
+    "interfaces": "T17: the login claim uses the session claim operation and owner check; talk_session is user-scoped, so a new user never resumes another's conversation. T07: the backend distinguishes not_found from expired in the 404 body code. T28: ApiError codes are the same codes as the stream's typed error events; the utterance queue persists under talk_session. T03: toAgentProfile reads the profile through the registry. Generated TS types (T28, M4) give the server record shapes.",
+    "files": [
+     "frontend/src/storage/registry.ts (new)",
+     "frontend/src/api/errors.ts (new)",
+     "frontend/src/journeyStore.ts",
+     "frontend/src/pages/Journey.tsx",
+     "frontend/src/profileStore.ts",
+     "frontend/src/pages/Pipeline.tsx",
+     "frontend/src/pages/Suppliers.tsx",
+     "frontend/src/pages/Talk.tsx",
+     "frontend/src/voice/agentClient.ts",
+     "frontend/src/auth.tsx",
+     "frontend/src/api.ts",
+     "frontend/src/components/LangSwitch.tsx, frontend/src/i18n.ts",
+     "backend/app/routers/ideation.py (404 body code not_found|expired)",
+     "frontend/package.json (vitest dev dependency for registry and stream tests)"
+    ],
+    "rollout": "1) The registry and migrations read the old key names (vanigam_journey etc.), so existing browsers keep their data, moved into the anon namespace on first load; 2) ApiError and the Talk resume policy; 3) the logout/login lifecycle; 4) the UUID record migration; 5) the sync protocol lands with 3.1.3. A CI grep fails if 'localStorage' appears outside storage/registry.ts.",
+    "offline": "All local; works without a network. The retry notice appears only when the server is unreachable, and the session id is kept until a definite 404."
+   },
+   "tasks": [
+    {
+     "title": "Storage key registry with versions and migrations; journey v2",
+     "why": "Two modules write one key with different shapes, erasing consent and milestones or crashing Journey.",
+     "where": "frontend/src/storage/registry.ts (new), journeyStore.ts, pages/Journey.tsx, profileStore.ts, Pipeline.tsx, Suppliers.tsx, api.ts, LangSwitch.tsx, i18n.ts",
+     "how": "defineKey for every key; journey v2 with registration {facts, done}; migrate recognises both old shapes; Journey.tsx reads and writes through journeyStore; a CI grep forbids direct localStorage.",
+     "when": "First; no dependency.",
+     "what_for": "No page can overwrite another's data, and a shape change migrates instead of discarding.",
+     "subtasks": [
+      {
+       "text": "Registry module and journey v2 with a migration from both the v1 journeyStore shape and the unversioned Journey.tsx shape",
+       "flags": [
+        "F-B3-018",
+        "F-B2-017",
+        "F-A3-006"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "User-scoped namespaces, clear on logout, claim on login",
+     "why": "The next user on a shared device inherits the profile (caste, phone, DOB), consent, pipeline, quotes and the conversation, and a later sync would upload them into the wrong account.",
+     "where": "frontend/src/storage/registry.ts, auth.tsx, pages/Talk.tsx",
+     "how": "User-scoped keys under vanigam:u:<owner>:; logout clears the user and anon scopes; login with anon data asks keep-or-discard and calls T17's claim for the talk session.",
+     "when": "After task 1; the claim call needs T17's claim endpoint (until then: keep or discard locally only).",
+     "what_for": "Shared phones and lab computers stop leaking one founder's data to the next (DPDP).",
+     "subtasks": [
+      {
+       "text": "clearScope on logout for the user and anon owners",
+       "flags": [
+        "F-A3-005",
+        "F-B2-018"
+       ]
+      },
+      {
+       "text": "Owner-namespaced keys and an explicit keep/discard claim prompt at sign-in",
+       "flags": [
+        "F-B2-018"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Typed ApiError and a Talk resume policy that forgets only on 404",
+     "why": "Any network blip or 5xx deletes the only pointer to the conversation and to its delete control.",
+     "where": "frontend/src/api/errors.ts (new), voice/agentClient.ts, pages/Talk.tsx, backend/app/routers/ideation.py",
+     "how": "json() throws ApiError{status, code, retryable}; the backend 404 body carries code not_found or expired; Talk keeps the id on 0/5xx with a retry notice, forgets on not_found, and on expired offers 'delete it' or 'start fresh'.",
+     "when": "Independent of tasks 1-2; the backend code field is agreed with T07.",
+     "what_for": "A brief outage never loses a conversation, and the founder can always delete what the server still holds.",
+     "subtasks": [
+      {
+       "text": "ApiError class; network errors as status 0, retryable",
+       "flags": [
+        "F-B5-018",
+        "F-B2-027"
+       ]
+      },
+      {
+       "text": "Resume policy: keep the id unless not_found; expired -> delete or start fresh",
+       "flags": [
+        "F-B3-013",
+        "F-B5-018",
+        "F-B2-027"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Record UUIDs, versions and a first-sync merge rule",
+     "why": "Whole-array saves with time-based ids make two-device sync erase or overwrite the wrong entries.",
+     "where": "frontend/src/pages/Pipeline.tsx, Suppliers.tsx, storage/registry.ts (syncList), the backend routes of 3.1.3",
+     "how": "Migrate ids to crypto.randomUUID with updated_at and version; tombstones for deletes; union-by-id first sync; compare-and-set PUT with a 409 carrying the server copy.",
+     "when": "After task 1; the server half lands with TASKS 3.1.3 and T17 ownership.",
+     "what_for": "Investor contacts and quotes survive sign-in on a second device.",
+     "subtasks": [
+      {
+       "text": "UUID ids, updated_at, version and tombstones in list records; union-by-id merge; 409 re-merge path",
+       "flags": [
+        "F-B2-019"
+       ]
+      }
+     ]
+    }
+   ],
+   "tests": "Vitest (new dev dependency) with jsdom localStorage: open Journey, then Start/Consent and back -> consent, milestones and facts all present; both legacy shapes migrate; logout empties every user-scope key (registry listKeys) while lang stays; login with anon data shows the prompt; Talk resume with mocked fetch: network error and 503 keep the id, 404 not_found clears it, 404 expired shows delete. Merge: two lists with overlapping ids and a tombstone give the expected union. CI grep: no localStorage outside the registry.",
+   "risks": "Clearing the anon scope on logout could surprise a founder who used the app anonymously before signing in on their own phone; the claim prompt at sign-in moves the drafts first, so only unclaimed data is cleared. Vitest is a new dev-only dependency (free, made for Vite); without it these rules cannot be tested. Migration bugs could lose data; the .bak copy on migration failure guards against it."
+  },
+  {
+   "theme": "T23",
+   "understanding": "Observability today is stdout JSON logs (core/logging.py) and nothing else. The request middleware is a BaseHTTPMiddleware that returns when call_next gives back the response object, i.e. at headers, so for StreamingResponse turns it measures milliseconds and never sees ack, first sentence or done. Jobs log started/failed but not finish or whether the result made the turn's wait, so the decision 0010 wait budgets are guesses. Breaker.state, the store choice, Redis liveness and research pauses exist in memory or Redis, but no route shows them; /health is static. Logs leak content: grounding.dropped logs the model sentence verbatim, and x-request-id is taken from the client unchecked, echoed and put into error bodies. Root cause: no metrics store, no defined measurement points and no log-content policy. All flags checked.",
+   "flags_disputed": [
+    {
+     "id": "F-B1-029",
+     "note": "Duplicate of F-A5-025; its recommendation (prometheus_client + /metrics) assumes a Prometheus server, which is not part of the free stack. Not followed; see not_chosen."
+    }
+   ],
+   "approaches": [
+    {
+     "name": "In-process fixed-bucket histograms + counters, rolled up per minute into PostgreSQL, read by a status page",
+     "how": "core/metrics.py holds counters and log-scale bucket histograms keyed by (name, labels). A background task every 60 s adds each worker's deltas into a metric_minute table. The status route merges the last N minutes across workers and computes p50/p95 from buckets. Without a database the route reads the in-process registry.",
+     "basis": "The same bucketing as Prometheus client histograms, stored in the database already in the stack.",
+     "cost": "free/open source",
+     "advantages": "Cross-worker percentiles with no new service; survives restarts; ~150 lines; offline.",
+     "drawbacks": "Percentiles are bucket-approximate (fine at 10-20% bucket width); one small table and migration."
+    },
+    {
+     "name": "prometheus_client + /metrics (+ self-hosted Prometheus/Grafana)",
+     "how": "Instrument with prometheus_client histograms, scrape with a local Prometheus, view in Grafana.",
+     "basis": "Industry standard, mature, free software.",
+     "cost": "free/open source (but needs extra always-on services)",
+     "advantages": "Rich queries, alerting, standard dashboards.",
+     "drawbacks": "Two extra services to run and back up; 'Logging and aggregation stacks' were dropped from the plan; several workers need multiprocess mode with a shared directory; the in-app status page would still have to query Prometheus."
+    },
+    {
+     "name": "Redis HINCRBY minute buckets",
+     "how": "Each observation increments a Redis hash field per minute bucket; the page reads the hashes.",
+     "basis": "TASKS 5.4.1.4 suggestion; Redis is cheap for counters.",
+     "cost": "free/open source",
+     "advantages": "Cross-worker, simple.",
+     "drawbacks": "Redis is optional and off by default, so the default setup would have no numbers; one network call per observation on the hot path; data lost when Redis restarts."
+    },
+    {
+     "name": "OpenTelemetry SDK with a local collector",
+     "how": "Instrument traces and metrics with OTel and export to a collector or the console.",
+     "basis": "Vendor-neutral standard with FastAPI auto-instrumentation.",
+     "cost": "free/open source",
+     "advantages": "Traces across job boundaries; future-proof.",
+     "drawbacks": "Heavy dependency set; still needs a backend to store and query; too much for one team."
+    },
+    {
+     "name": "Parse stdout logs offline (log file + script computing p95)",
+     "how": "Write logs to a rotating file and compute percentiles with a script or a route reading the file.",
+     "basis": "No new code paths in the app.",
+     "cost": "free/open source",
+     "advantages": "No hot-path cost.",
+     "drawbacks": "Fragile parsing, one file per host with several workers, a slow page, no live degraded-mode view."
+    }
+   ],
+   "chosen": "In-process metrics registry with a per-minute PostgreSQL roll-up and a status endpoint, plus a pure ASGI timing middleware, in-generator turn marks, job outcome events and a log-content policy",
+   "why_chosen": "It meets SYSTEM-DESIGN section 7 (medians, p95, a 10-minute window) across workers using only the database the app already has, keeps working in-process when there is no database or Redis, and adds no service to run. The same registry is the M3 sink for T08 cache counters, T28 turn marks, T03 put outcomes and T13 coverage, so one page shows latency, caches, budgets and every degraded mode.",
+   "not_chosen": [
+    {
+     "name": "prometheus_client + Prometheus/Grafana",
+     "reason": "Requires always-on extra services the owner cannot host free in production, and the plan dropped aggregation stacks; the in-app page would still need its own store."
+    },
+    {
+     "name": "Redis HINCRBY buckets",
+     "reason": "Redis is optional and off by default, so the default free setup would show nothing; adds a network call per observation and loses data on restart."
+    },
+    {
+     "name": "OpenTelemetry",
+     "reason": "Large dependency set and still no free store or query backend; tracing is not what the flags ask for."
+    },
+    {
+     "name": "Parse log files",
+     "reason": "Per-host files and fragile parsing cannot give a live cross-worker p95 or a degraded-mode view."
+    }
+   ],
+   "design": {
+    "components": "1) core/metrics.py: Counter/Histogram registry; BUCKETS_MS log-scale 5..120000 (~20 buckets, x1.6); observe(name, ms, **labels) with a fixed label allowlist per metric (no ids, no text); snapshot_and_reset(); quantile(buckets, q). 2) core/metrics_flush.py: a lifespan task flushing every 60 s into metric_minute (Alembic migration), with 7-day retention. 3) core/middleware.py: RequestContextMiddleware rewritten as pure ASGI middleware wrapping send(): records time to http.response.start and to the final body chunk (more_body False) per route template; checks x-request-id against ^[A-Za-z0-9._-]{8,64}$, else generates a uuid4 (the client value is never logged raw). 4) agents/ideation.py turn_stream: a TurnClock with perf_counter marks ack, first_sentence and done (and per tool call), observed as turn.ack_ms, turn.first_sentence_ms, turn.done_ms labelled by lane (offline/model/provider) and written as one 'turn.timing' log line. 5) agents/jobs.py: job.done with seconds; wait() counts job.wait{kind, outcome=in_time|late|failed}; a job duration histogram. 6) routers/status.py: GET /api/v1/status (operator token from settings, else localhost only): breakers (state, open_until), store name and database reachability, redis.is_live (T08), active research pauses (rs:neg keys or local pauses), budgets used, the model provider chain, 10-minute p50/p95 per metric, job in-time ratio. 7) Log policy: grounding.dropped logs problem codes and sha256(sentence)[:10]; a structlog processor truncates any string field over 200 chars and drops keys in a SENSITIVE_FIELDS set.",
+    "data_model": "metric_minute(minute timestamptz, name text, labels jsonb (canonical, sorted), count bigint, sum_ms double precision, buckets int[], PRIMARY KEY (minute, name, labels)). Counters use count only. The flush reads the row with SELECT ... FOR UPDATE and adds arrays in Python (volume is tiny), then upserts.",
+    "algorithm": "p95 over a window: sum the bucket arrays, walk the cumulative counts to 0.95 x total, interpolate inside the bucket. Flush: swap the registry dicts (one event loop, so atomic), write the deltas; on a database error keep them and retry next minute (bounded to 60 minutes).",
+    "interfaces": "T08: research.cache{layer}, research.singleflight, the redis.live gauge, budgets. T28: the TurnClock lives inside the typed event writer, so every emitted event can be timed; timings stay server-side. T03: elicitation.put{status}. T13: research.coverage{source,status}. The per-source budget theme (F-B5-001) reads its counters here. The frontend reports first-audio latency (TTS) with a small POST /api/v1/status/client-timing (bounded, no ids), observed as voice.first_audio_ms.",
+    "files": [
+     "backend/app/core/metrics.py (new)",
+     "backend/app/core/metrics_flush.py (new)",
+     "backend/app/db/migrations/versions/<new>_metric_minute.py",
+     "backend/app/core/middleware.py",
+     "backend/app/core/logging.py",
+     "backend/app/agents/ideation.py",
+     "backend/app/agents/jobs.py",
+     "backend/app/routers/status.py (new)",
+     "backend/app/routers/health.py (readiness)",
+     "backend/app/main.py (lifespan, router)",
+     "frontend/src/voice/mentorVoice.ts (first-audio timing beacon)"
+    ],
+    "rollout": "Log policy first (a privacy fix with no dependency). Then the registry and the in-process status page; then the database roll-up migration. Each metric is added by the theme that owns the code path, through the registry API.",
+    "offline": "No external service. Without a database the status page shows this worker's in-process numbers and says so; without Redis it reports 'Redis: off'."
+   },
+   "tasks": [
+    {
+     "title": "Log-content policy and request-id validation",
+     "why": "Dropped model sentences carrying the founder's idea are logged verbatim, and a client-controlled request id is echoed and logged without limits.",
+     "where": "backend/app/agents/ideation.py (_Gate), core/middleware.py, core/logging.py, core/errors.py",
+     "how": "Log problem codes + a short hash; check x-request-id against a strict pattern or replace it; a structlog processor that truncates long strings and drops sensitive keys; a privacy test that forces a gate drop.",
+     "when": "First; no dependencies.",
+     "what_for": "Logs stop carrying founder content (DPDP) and cannot be injected through headers.",
+     "subtasks": [
+      {
+       "text": "grounding.dropped logs codes + sha256[:10]; request id checked against a strict pattern; truncating processor; a test that forces a drop and scans the captured logs",
+       "flags": [
+        "F-A2-015"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Metrics registry with a per-minute database roll-up",
+     "why": "There is nowhere to compute medians and p95, and in-process numbers cover one worker only.",
+     "where": "backend/app/core/metrics.py, core/metrics_flush.py, an Alembic migration, main.py lifespan",
+     "how": "Fixed-bucket histograms and counters with allowlisted labels; a 60 s flush into metric_minute; quantiles from merged buckets; 7-day retention.",
+     "when": "After task 1; before tasks 3-5 and the status page.",
+     "what_for": "5.4.1-5.4.3 have a store to read, shared by every worker, with no extra service.",
+     "subtasks": [
+      {
+       "text": "Registry, buckets, quantile function and unit tests",
+       "flags": [
+        "F-A5-025",
+        "F-B1-029"
+       ]
+      },
+      {
+       "text": "metric_minute table, flush task, and the in-process fallback when the database is absent",
+       "flags": [
+        "F-A5-025",
+        "F-B1-029"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Turn timings inside the stream and an ASGI timing middleware",
+     "why": "BaseHTTPMiddleware timing ends at headers, so streamed turns report milliseconds and ack/first sentence/done are never measured.",
+     "where": "backend/app/core/middleware.py, agents/ideation.py (turn_stream), frontend/src/voice/mentorVoice.ts",
+     "how": "Pure ASGI middleware timing to response start and to the last body chunk; TurnClock marks in turn_stream through the T28 event writer; one turn.timing log line; a client beacon for first audio.",
+     "when": "After task 2; shares the event writer with T28 task 1.",
+     "what_for": "The latency founders feel on voice turns becomes visible and tunable.",
+     "subtasks": [
+      {
+       "text": "ASGI middleware with end-of-body timing per route template; TurnClock marks ack/first_sentence/done per lane; first-audio beacon",
+       "flags": [
+        "F-B1-027"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Job outcome events and wait in-time counters",
+     "why": "Jobs log start and failure but not finish, so decision 0010's wait budgets cannot be tuned.",
+     "where": "backend/app/agents/jobs.py",
+     "how": "job.done log with seconds; a job.duration histogram by kind; wait() counts in_time/late/failed.",
+     "when": "After task 2.",
+     "what_for": "research_wait_s, council_wait_s and opinion_wait_s can be set from data.",
+     "subtasks": [
+      {
+       "text": "job.done event with duration and a job.wait{outcome} counter from Board.wait",
+       "flags": [
+        "F-A5-030"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Status endpoint for degraded modes",
+     "why": "Operators cannot see open breakers, the store in use, Redis liveness or research pauses until founders complain.",
+     "where": "backend/app/routers/status.py (new), routers/health.py, services/breaker.py, core/redis.py",
+     "how": "GET /api/v1/status aggregating breaker states, store name and database reachability, redis.is_live (T08), research pauses and budgets, the provider chain and 10-minute p50/p95; guarded by an operator token or localhost; /health/ready for readiness.",
+     "when": "After task 2 and T08's Redis re-probe.",
+     "what_for": "Each SYSTEM-DESIGN section 9 failure mode is visible the moment it starts.",
+     "subtasks": [
+      {
+       "text": "Status route with breaker, store, Redis, pause, provider and latency sections; readiness probe",
+       "flags": [
+        "F-A5-026"
+       ]
+      }
+     ]
+    }
+   ],
+   "tests": "Unit: quantile over known bucket arrays; the flush merges two workers' deltas into one row; the registry rejects unknown labels. ASGI middleware: a streaming endpoint that sleeps 200 ms between chunks records >= 200 ms; an invalid x-request-id is replaced. Turn: an offline turn gives turn.ack_ms <= turn.first_sentence_ms <= turn.done_ms. Jobs: a job finishing after wait() counts 'late'. Privacy: a forced grounding drop leaves no sentence text in the captured logs. Status: a breaker opened in the test shows 'open'; Redis off shows off.",
+   "risks": "Label cardinality: only allowlisted label values (route template, lane, kind, source, status) keep rows small. A dying worker loses up to a minute of data: acceptable. The client beacon must not become a tracking channel: no ids, bounded values, rate-limited."
+  },
+  {
+   "theme": "T28",
+   "understanding": "The turn stream (routers/ideation.py agent_turn_stream) yields dicts built ad hoc by _event(kind, data) in agents/ideation.py, and the browser declares them again by hand (agentClient.ts AgentEvent). The session is saved only when 'done' is produced, and a VersionConflict at that point becomes an 'error' event after every sentence was already spoken under HTTP 200. The client loop (agentClient.ts streamTurn) treats end-of-body as success without checking that 'done' arrived. There is no client turn id, so a retry after a drop re-runs the turn; the planned idempotency (1.1.4) is on the non-stream route that the Talk page never calls. Notices go only to queues subscribed at that moment (jobs.py notify), and snapshot() reads s.scan etc., which only _absorb fills on the next turn. Talk.tsx keeps only the latest queued utterance. 20 of 49 OpenAPI operations (all agent routes) have no response schema. Root cause: the stream has no typed contract (event union, terminal sentinel, error codes, idempotency key, replay). Flags checked.",
+   "flags_disputed": [
+    {
+     "id": "F-B1-011",
+     "note": "Its last clause (an expired session silently dropped) is T18's resume policy and is resolved there; the replay half is resolved here."
+    }
+   ],
+   "approaches": [
+    {
+     "name": "Typed event union + turn claim/commit with client_turn_id + recorded last turn for replay",
+     "how": "Pydantic discriminated union TurnEvent (ack, sentence{seq}, tool, evidence, novelty, council, done, error{code, retryable}); one TurnWriter writes the stream. Before the first event the server claims the turn (CAS save of {client_turn_id, at}); on completion it commits the session plus last_turn {client_turn_id, events} in one CAS save and only then emits done. A repeat of the same client_turn_id replays the recorded events; a conflict at claim returns a real HTTP 409 before anything is spoken.",
+     "basis": "Optimistic concurrency already exists in the store (version check); idempotency keys are the standard pattern for retried POSTs; discriminated unions are first-class in Pydantic v2 and OpenAPI 3.1.",
+     "cost": "free/open source",
+     "advantages": "Fixes truncation, duplicates, late conflicts and the untyped OpenAPI with one contract; works for the stream and non-stream routes.",
+     "drawbacks": "Two saves per turn (claim + commit); the session document grows by one turn's events."
+    },
+    {
+     "name": "WebSocket conversation channel",
+     "how": "Replace SSE + POST with one WebSocket carrying typed messages both ways, with acks.",
+     "basis": "Mature in FastAPI/Starlette.",
+     "cost": "free/open source",
+     "advantages": "Bidirectional, natural queueing and acks, one connection for turns and notices.",
+     "drawbacks": "Large rewrite; proxies and 2G networks drop idle WebSockets; reconnection and replay must still be designed; idempotency is still needed."
+    },
+    {
+     "name": "sse-starlette with event ids and Last-Event-ID resume",
+     "how": "Use sse-starlette's EventSourceResponse with ids; the client resumes a cut stream from the last id.",
+     "basis": "Popular SSE helper for Starlette; Last-Event-ID is in the SSE standard.",
+     "cost": "free/open source",
+     "advantages": "Standard resume semantics, built-in ping.",
+     "drawbacks": "The turn stream is a POST read with fetch, not EventSource, so Last-Event-ID is not automatic; resuming needs server-side buffering of in-flight events anyway; a dependency for formatting we do in one function."
+    },
+    {
+     "name": "Non-streaming turns with idempotency only (drop SSE for turns)",
+     "how": "Use the JSON /turns route with an Idempotency-Key and a cached response; speak after the full reply arrives.",
+     "basis": "Simplest correct HTTP semantics.",
+     "cost": "free/open source",
+     "advantages": "Real 409s, trivial retries.",
+     "drawbacks": "Loses sentence-by-sentence speech, the main latency win for voice on slow models; contradicts the streaming voice design."
+    },
+    {
+     "name": "Client-side buffering only (speak after done)",
+     "how": "Keep the protocol; the client buffers sentences until done arrives and discards them on error.",
+     "basis": "No server change.",
+     "cost": "free/open source",
+     "advantages": "Never speaks a turn that failed.",
+     "drawbacks": "The same latency loss as non-streaming; duplicates and replays stay unsolved."
+    }
+   ],
+   "chosen": "Typed TurnEvent union written by one TurnWriter, turn claim/commit keyed by client_turn_id with last-turn replay, typed error codes, notice replay on subscribe, a client utterance queue, and OpenAPI-to-TypeScript generation",
+   "why_chosen": "Claiming the turn before speaking moves conflicts to a real 409 at request time, which removes the 'spoken then discarded' case at its root instead of softening it; the recorded last turn gives idempotent retries on the route the Talk page actually uses; the terminal 'done'/'error' sentinel tells the client when to retry. One typed writer is also where T23's TurnClock sits, and the same Pydantic models are exported to TypeScript (M4), so Python and the browser cannot drift. Everything reuses the store's version check; no new runtime dependency.",
+   "not_chosen": [
+    {
+     "name": "WebSocket channel",
+     "reason": "A transport rewrite that behaves worse on 2G and behind proxies, and it still needs the same idempotency and replay design."
+    },
+    {
+     "name": "sse-starlette + Last-Event-ID",
+     "reason": "The turn stream is a fetch POST, so the browser's automatic resume does not apply; the buffering needed is the recorded last turn anyway. Notices keep the plain EventSource with our own ids."
+    },
+    {
+     "name": "Non-streaming turns",
+     "reason": "Gives up sentence-level speech, the main voice latency win."
+    },
+    {
+     "name": "Client-side buffering only",
+     "reason": "The same latency loss, and duplicate execution on retry stays unsolved."
+    }
+   ],
+   "design": {
+    "components": "1) backend/app/agents/events.py (new): Pydantic models AckEvent, SentenceEvent{seq, text}, ToolEvent, EvidenceEvent, NoveltyEvent, CouncilEvent, DoneEvent{turn_id, reply, action, ...}, ErrorEvent{code: 'conflict'|'turn_in_progress'|'failed'|'not_found'|'expired', detail, retryable}; TurnEvent = Annotated[Union[...], Field(discriminator='event')]; a TurnWriter that serialises, numbers and times (T23 TurnClock) every event and records it. 2) AgentTurnIn gains client_turn_id: UUID (optional for compatibility; the server generates one when absent). 3) Router: load -> if last_turn.client_turn_id == id and committed -> replay the events (no model call); claim: s.turn_claim = {client_turn_id, at}; CAS save; VersionConflict -> HTTP 409 code conflict; a fresh claim with a different id -> 409 turn_in_progress (stale after 120 s); the same id -> takeover. Commit: s.last_turn = {client_turn_id, events, committed_at}; clear the claim; CAS save; then yield done. A disconnect before commit clears the claim in finally (best effort), and the next retry re-runs. The non-stream /turns route uses the same functions. 4) Notices: Board already keeps LATEST results; on subscribe send the latest result per kind with id '<kind>:<finished_at>'; the Last-Event-ID header (EventSource sends it on auto-reconnect) skips results already delivered. snapshot() merges board results newer than s.scan etc. 5) Client: streamTurn requires a terminal event, otherwise throws StreamCut (retryable); Talk retries up to 2 times with the same client_turn_id and back-off, and skips sentences whose seq was already spoken when the server replays (committed replays are identical). 6) Talk queue: an array of utterances, joined with ' ' into the next turn and each shown in the transcript; persisted in the talk_session registry key (T18). 7) Response models on all agent routes; the stream is documented as responses={200: {'content': {'text/event-stream': {'schema': TurnEvent}}}}; openapi-typescript (dev dependency) generates frontend/src/api/schema.d.ts; CI regenerates and diffs.",
+    "data_model": "AgentSession gains turn_claim: {client_turn_id, at} | None and last_turn: {client_turn_id, events: [TurnEvent dicts], committed_at} | None (the latest turn only, ~2-10 KB). Both are stored in the session JSON (0003); old documents load with None.",
+    "algorithm": "Client: id = crypto.randomUUID() per utterance (or per merged queue batch); attempt(n): stream; terminal done -> ok; error{retryable} or StreamCut with n < 2 -> wait 1 s x 2^n -> attempt(n+1) with the same id; error{conflict} -> reload the snapshot and say the fixed recorded phrase 'This conversation changed on another screen; I have reloaded it.' The server claim CAS keeps at most one live turn per session across processes; the in-process asyncio.Lock stays as a fast path.",
+    "interfaces": "T27: the action in ack/done is the state machine's typed PendingAction model (same union approach). T07: CAS save and VersionConflict semantics come from the store contract; claim staleness uses its clock. T23: TurnWriter carries the TurnClock. T18: ApiError codes equal ErrorEvent codes; queued utterances persist in the registry. T03: done carries learned/conflict outcomes.",
+    "files": [
+     "backend/app/agents/events.py (new)",
+     "backend/app/agents/ideation.py",
+     "backend/app/routers/ideation.py",
+     "backend/app/agents/jobs.py",
+     "backend/app/agents/store.py (claim helpers on the existing version check)",
+     "frontend/src/voice/agentClient.ts",
+     "frontend/src/pages/Talk.tsx",
+     "frontend/src/api/schema.d.ts (generated)",
+     "frontend/package.json (openapi-typescript dev dependency, gen:api script)",
+     ".github/workflows/ci.yml (regenerate and diff)"
+    ],
+    "rollout": "Server first with client_turn_id optional, so the current client keeps working; then the client sends ids and checks the sentinel; then notice replay; then type generation with the CI diff. No database migration (session JSON).",
+    "offline": "Pure protocol; the offline lane benefits equally. Replays need no model, so a retried turn costs no free-tier quota."
+   },
+   "tasks": [
+    {
+     "title": "Typed event union, TurnWriter and typed error codes",
+     "why": "Events are defined twice by hand and errors are free text, so a conflict or failure looks like a normal reply.",
+     "where": "backend/app/agents/events.py (new), agents/ideation.py, routers/ideation.py",
+     "how": "Pydantic discriminated union; TurnWriter used by turn_stream for every event (seq numbers); ErrorEvent with code and retryable; the router emits only typed errors.",
+     "when": "First; T23's TurnClock plugs into the writer; T27 supplies the PendingAction model when ready.",
+     "what_for": "One contract for the turn stream that both sides and the docs share.",
+     "subtasks": [
+      {
+       "text": "TurnEvent union and ErrorEvent{code, retryable}; conflicts and failures carry codes",
+       "flags": [
+        "F-B1-008",
+        "F-A5-019"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Turn claim/commit with client_turn_id and last-turn replay",
+     "why": "A conflict is found after the reply is spoken, and a retry after a drop re-runs the turn; the planned idempotency is on a route the Talk page never uses.",
+     "where": "backend/app/routers/ideation.py, agents/ideation.py (AgentSession fields), agents/store.py",
+     "how": "AgentTurnIn.client_turn_id; claim with a CAS save before the first event (409 conflict / turn_in_progress as a real HTTP status); commit the session + last_turn in one save, then done; the same id replays the recorded events; shared by stream and non-stream routes.",
+     "when": "After task 1; relies on T07's version-guarded save contract.",
+     "what_for": "A retried turn is never applied twice, and the founder never hears a reply the server threw away.",
+     "subtasks": [
+      {
+       "text": "Idempotency on the stream route via last_turn {client_turn_id, events}",
+       "flags": [
+        "F-B1-007"
+       ]
+      },
+      {
+       "text": "Claim before speaking, so conflicts are an HTTP 409 before any sentence",
+       "flags": [
+        "F-B1-008"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Client sentinel check, automatic retry and utterance queue",
+     "why": "A cut stream resolves as success, and a second utterance during a slow turn overwrites the first.",
+     "where": "frontend/src/voice/agentClient.ts, frontend/src/pages/Talk.tsx",
+     "how": "streamTurn throws StreamCut when no done/error arrived; Talk retries with the same client_turn_id (2 attempts, back-off) and skips already-spoken seq numbers; the queue is an array merged into one next turn and shown in the transcript.",
+     "when": "After task 2 (the server must accept client_turn_id).",
+     "what_for": "On 2G, dropped replies are recovered and no answer is silently lost.",
+     "subtasks": [
+      {
+       "text": "Done-sentinel check and retry with the same client_turn_id",
+       "flags": [
+        "F-B1-009"
+       ]
+      },
+      {
+       "text": "Queue every utterance and merge them into the next turn",
+       "flags": [
+        "F-B1-010"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Notice replay on subscribe and fresh results in the snapshot",
+     "why": "Results that finish while the screen is disconnected never appear until the founder speaks again.",
+     "where": "backend/app/agents/jobs.py, routers/ideation.py (agent_notices), agents/ideation.py (snapshot)",
+     "how": "On subscribe, send the latest finished result per kind with an id; honour Last-Event-ID to skip delivered ones; snapshot merges board results newer than the session's copies.",
+     "when": "Independent of tasks 2-3.",
+     "what_for": "Reconnects and reloads show the evidence and the panel's view as soon as they exist.",
+     "subtasks": [
+      {
+       "text": "Replay the latest results with event ids on (re)subscribe; snapshot includes board results",
+       "flags": [
+        "F-B1-011"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Response models in OpenAPI and generated TypeScript types",
+     "why": "Agent routes and stream events are missing from the OpenAPI document, so a renamed field breaks the Talk page silently.",
+     "where": "backend/app/routers/ideation.py, routers/cohort.py, routers/voice.py, frontend/package.json, frontend/src/api/schema.d.ts, .github/workflows/ci.yml",
+     "how": "response_model on every agent, cohort and voice route; text/event-stream content schema = TurnEvent; openapi-typescript generates schema.d.ts; agentClient imports its types from it; CI regenerates and fails on a diff.",
+     "when": "After task 1; can land alongside T03's ProfileIn.",
+     "what_for": "5.3.4 publishes a complete reference, and Python/TypeScript drift becomes a CI failure.",
+     "subtasks": [
+      {
+       "text": "Typed responses and the stream event schema in OpenAPI; generated client types with a CI diff check",
+       "flags": [
+        "F-A5-019"
+       ]
+      }
+     ]
+    }
+   ],
+   "tests": "Backend: TestClient stream with a fake store raising VersionConflict at claim -> HTTP 409 and zero sentence events; the same client_turn_id twice -> the second response replays identical events and the model stub is called once; closing the generator before commit -> claim cleared and the retry runs; every emitted event validates against TurnEvent. Notices: a result finished before subscribe is delivered on subscribe; Last-Event-ID skips it. Frontend (Vitest): a body ending without done -> StreamCut and a retry with the same id; two queued utterances are both sent in one turn. CI: the generated schema.d.ts has no diff.",
+   "risks": "Two saves per turn add one database round trip (~5-20 ms) before the ack; acceptable against model latency, and the ack follows the claim immediately. A stale claim after a crash blocks a session for up to 120 s unless the same client_turn_id retries (takeover). A re-run after an uncommitted drop may produce different sentences than were partly heard; the client clears the caption and speaks the new reply."
+  },
+  {
+   "theme": "T33",
+   "understanding": "The eval runner (backend/tests/eval/runner.py) replaces scan_mod.scan and novelty_mod.check with functions returning the recorded final dicts, so the scan's field->category mapping, terms fallback, clinical filter and the novelty statement logic never execute, and the 'categories' check reads the recording itself. _answer returns 'skip' for any unscripted slot, so the dynamic payer question is skipped in all ten ideas without failing anything. Every fixture records fully working sources (only patents:no_key), so degraded paths have no case. The plan check rebuilds build_plan(idea, slots) instead of checking s.roadmap, which the founder actually received (and which lacks domain_card). eval_report.py writes 'Generated <now>', so the report can never be diffed. Root cause: the replay boundary sits above the code under test, and the report is not deterministic. Flags checked.",
+   "flags_disputed": [],
+   "approaches": [
+    {
+     "name": "Record and replay at the HTTP boundary, keyed by T08's canonical request key",
+     "how": "record_eval_fixtures.py runs the real scan/novelty with an httpx transport wrapper that captures every (canonical_key -> Entry{status, body}); the runner serves them through httpx.MockTransport. Unrecorded requests return a sentinel status 599 and are listed in a check. Degraded variants are transport policies (e.g. openalex -> 429, all -> network error) over the same recording.",
+     "basis": "VCR-style record/replay is the standard approach for HTTP-dependent tests; httpx.MockTransport is built into httpx (already installed and used in tests).",
+     "cost": "free/open source",
+     "advantages": "All research logic runs on every eval; degraded fixtures need no new recordings; the key format is shared with the production cache.",
+     "drawbacks": "Fixtures grow (raw responses); any change in query building invalidates keys and needs a re-record."
+    },
+    {
+     "name": "vcrpy / pytest-recording cassettes",
+     "how": "Record HTTP interactions to YAML cassettes with vcrpy and replay them.",
+     "basis": "Mature, popular VCR port for Python with httpx support.",
+     "cost": "free/open source",
+     "advantages": "Ready-made recording and matching rules.",
+     "drawbacks": "New dependency; matching on full URLs includes the api_key unless filtered; YAML cassettes duplicate what the cache Entry already is; failure injection for degraded paths is still custom."
+    },
+    {
+     "name": "respx route mocks with hand-written responses",
+     "how": "Mock each source endpoint with respx and synthetic JSON.",
+     "basis": "Popular httpx mocking library.",
+     "cost": "free/open source",
+     "advantages": "Precise control of degraded cases.",
+     "drawbacks": "Synthetic data drifts from real API shapes and loses the realism of recorded ideas; a lot of hand-written JSON per idea."
+    },
+    {
+     "name": "Replay per-source SourceResult objects (mid-level patch)",
+     "how": "Record each sources.* function's SourceResult and patch those functions in replay.",
+     "basis": "The flag's own recommendation; smaller fixtures.",
+     "cost": "free/open source",
+     "advantages": "Exercises scan/novelty logic above the sources; easy failure injection by status.",
+     "drawbacks": "Skips sources.py parsing (_work, epo_documents) and the cache key path; patch points must track function signatures; a second fixture format beside the cache."
+    },
+    {
+     "name": "Run the eval against live sources nightly",
+     "how": "A nightly or weekly CI job runs the eval with the network.",
+     "basis": "Real end-to-end signal.",
+     "cost": "free/open source (but spends free API budgets)",
+     "advantages": "Catches upstream API changes.",
+     "drawbacks": "Non-deterministic, spends shared free budgets, cannot gate pull requests; still no degraded cases."
+    }
+   ],
+   "chosen": "Record and replay at the HTTP boundary with the T08 canonical key, transport-level degradation profiles, an unscripted-question check, checks on the delivered roadmap, and a deterministic report with --check",
+   "why_chosen": "Moving the replay boundary to HTTP is the only option under which every line of scan, novelty, terms and sources runs in the quality set, and using T08's canonical key and Entry format (M2) means the recorder needs no new format and cannot record credentials. Degradation becomes a transport policy rather than new recordings. httpx.MockTransport is already installed; no dependency is added.",
+   "not_chosen": [
+    {
+     "name": "vcrpy / pytest-recording",
+     "reason": "A new dependency whose cassette format duplicates the cache Entry, needs credential filtering that canonical_key already gives, and still needs custom failure injection."
+    },
+    {
+     "name": "respx hand-written responses",
+     "reason": "Synthetic payloads lose the realism of the recorded ideas and need hand-maintained JSON per idea; kept only for small unit tests."
+    },
+    {
+     "name": "Per-source SourceResult replay",
+     "reason": "Still skips source parsing and the cache path, and adds a second fixture format; HTTP replay costs little more and covers more."
+    },
+    {
+     "name": "Live nightly eval",
+     "reason": "Non-deterministic and spends the shared free budgets founders rely on; it cannot gate pull requests. A manual re-record script covers upstream drift."
+    }
+   ],
+   "design": {
+    "components": "1) backend/tests/eval/http_replay.py (new): RecordingTransport (wraps httpx.AsyncHTTPTransport, captures canonical_key(request) -> Entry) and ReplayTransport(entries, profile) (an httpx.MockTransport handler; the profile can force a status per source host: 429, 500, or raise httpx.ConnectError; an unknown key -> 599 and recorded in .unrecorded). 2) scan() and novelty.check() already accept client=; the runner passes httpx.AsyncClient(transport=ReplayTransport), and the agent's background research job gets it through a research_client_factory hook used by scan/novelty when no client is passed. The research Cache is disabled in the eval (cache=None) so every request reaches the transport. 3) Fixtures v2: {id, idea, recorded, http: {canonical_key: Entry}} (bodies already trimmed by OpenAlex 'select'); the old 'scan'/'novelty' fields are kept for one PR only, to diff old and new output. 4) ideas.json: each idea gets answers.dynamic (the payer/alternative answer) and optional allowed_skips; expectations per profile: expect.degraded.{openalex_down, all_down} (e.g. statement type in {unclear, not_searched}, no 'crowded', categories from the terms fallback, no novelty claim sentences). 5) Runner checks: 'unscripted question' (an asked slot without a scripted answer and not in allowed_skips -> fail), 'unrecorded requests' (strict in CI), and the categories/domain/pack/risk checks read s.scan and s.roadmap; tools._roadmap stores domain_card and risk labels on s.roadmap. 6) scripts/eval_report.py: the header shows fixture recorded dates, not now(); stable ordering; --check regenerates in memory and diffs with docs/eval/report.md; CI runs it.",
+    "data_model": "Fixture v2 as above; Entry is identical to T08's research/cache.py Entry, so a fixture can also seed a cache directory for manual debugging.",
+    "algorithm": "Matrix: for each idea x profile in (normal, openalex_down, all_down): run converse with ReplayTransport(profile), then the checks for that profile. Unscripted check: answers.get(slot) is None and slot not in allowed_skips -> Check('unscripted question', False, slot). Report determinism: no clock, sorted keys, fixed number formatting.",
+    "interfaces": "T08: canonical_key and Entry imported from research/cache.py. T13: degraded profiles assert the claim preconditions (unclear/not searched, scoped local wording). T03: ideas that start with a profile can check validated profiles. T28: the runner can drive turn_stream through TurnWriter and validate every event against TurnEvent.",
+    "files": [
+     "backend/tests/eval/http_replay.py (new)",
+     "backend/tests/eval/runner.py",
+     "backend/tests/eval/ideas.json",
+     "backend/tests/eval/fixtures/*.json (re-recorded v2)",
+     "backend/tests/eval/test_eval.py",
+     "scripts/record_eval_fixtures.py",
+     "scripts/eval_report.py",
+     "backend/app/research/scan.py and novelty.py (client factory hook)",
+     "backend/app/agents/tools.py (_roadmap keeps domain_card and risk labels)",
+     ".github/workflows/ci.yml (eval_report --check)",
+     "docs/eval/report.md"
+    ],
+    "rollout": "Land the deterministic report and --check first (independent). Then HTTP recording after T08 task 1 (canonical key): re-record all 10 ideas once with the free sources and switch the runner, keeping the old fixture fields for one PR to diff scan output. Then the degraded profiles and the unscripted check (which fails until ideas.json gets dynamic answers).",
+    "offline": "The eval runs with no network, no model and no Redis, as today; only recording needs the network (free sources, run by hand)."
+   },
+   "tasks": [
+    {
+     "title": "HTTP-boundary record and replay with the canonical key",
+     "why": "Replaying the finished scan means the scan and novelty logic, and the categories check, test nothing.",
+     "where": "backend/tests/eval/http_replay.py (new), runner.py, scripts/record_eval_fixtures.py, research/scan.py and novelty.py (client hook)",
+     "how": "RecordingTransport/ReplayTransport keyed by research.cache.canonical_key; the runner injects the replay client and disables the cache; fixtures v2; unrecorded-request check; the categories check reads the live s.scan.",
+     "when": "After T08 task 1 (canonical key and Entry).",
+     "what_for": "A change to FIELD_TO_CATEGORY, the clinical filter or the domain fallback turns the quality set red.",
+     "subtasks": [
+      {
+       "text": "Record and replay raw HTTP entries; scan/novelty run for real in the eval; categories checked on the current output",
+       "flags": [
+        "F-A5-003"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Degradation profiles over the same recordings",
+     "why": "No fixture exercises the 'papers not searched' or all-sources-down paths the free offline product depends on.",
+     "where": "backend/tests/eval/http_replay.py, runner.py, ideas.json, test_eval.py",
+     "how": "Transport profiles forcing 429/5xx/ConnectError per host; per-profile expectations in ideas.json; a matrix run in test_eval.py.",
+     "when": "After task 1; the expectations use T13's honest statement types.",
+     "what_for": "Degraded answers are held to the same quality bar as the normal path.",
+     "subtasks": [
+      {
+       "text": "openalex_down and all_down profiles with expectations on categories, statements and the absence of claims",
+       "flags": [
+        "F-A5-005"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Unscripted-question check and payer answers",
+     "why": "The runner answers 'skip' to anything unscripted, so the payer question is skipped in all ten ideas without a failure.",
+     "where": "backend/tests/eval/runner.py, ideas.json",
+     "how": "Add answers.dynamic and allowed_skips per idea; a check fails when an asked slot has no scripted answer and may not be skipped.",
+     "when": "Independent.",
+     "what_for": "The most important answer path (customer and willingness to pay) is exercised, and new or irrelevant questions are caught.",
+     "subtasks": [
+      {
+       "text": "Unscripted-question check; dynamic payer answers for all ten ideas",
+       "flags": [
+        "F-A5-004"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Check the delivered roadmap, not a rebuilt plan",
+     "why": "The eval rebuilds build_plan without the model's domain_id, so a wrong delivered roadmap passes.",
+     "where": "backend/app/agents/tools.py (_roadmap), backend/tests/eval/runner.py",
+     "how": "s.roadmap keeps domain_card, pack and risk labels; the domain, pack, risk and milestone checks read s.roadmap only.",
+     "when": "Independent.",
+     "what_for": "When the model path is evaluated (5.1.2), a wrong domain_id fails the set.",
+     "subtasks": [
+      {
+       "text": "Store domain_card and risk labels on s.roadmap; the runner checks s.roadmap",
+       "flags": [
+        "F-A5-006"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Deterministic report with a --check mode in CI",
+     "why": "The report embeds a run timestamp, so a regenerate-and-diff check always fails and gets dropped.",
+     "where": "scripts/eval_report.py, .github/workflows/ci.yml, docs/eval/report.md",
+     "how": "Replace 'Generated <now>' with the fixtures' recorded dates; stable ordering; --check compares the regenerated text with the committed file and exits non-zero on a difference; CI runs it.",
+     "when": "First (independent).",
+     "what_for": "The committed report always matches the runner.",
+     "subtasks": [
+      {
+       "text": "Deterministic header and --check mode wired into CI",
+       "flags": [
+        "F-A5-007"
+       ]
+      }
+     ]
+    }
+   ],
+   "tests": "Meta-tests: changing FIELD_TO_CATEGORY in a test makes the categories check fail; a replay with an unknown key makes the 'unrecorded requests' check fail; profile all_down -> no sentence claims 'crowded' or 'no Tamil Nadu startup'; an idea with an unanswered dynamic question fails the unscripted check; eval_report --check on an unchanged tree exits 0, and after editing report.md exits 1.",
+   "risks": "Re-recording needs the free live sources and spends some daily budget (10 ideas x ~15 requests): run by hand off-peak. Query-building changes (T13) invalidate keys and force a re-record; the unrecorded list makes the cause obvious. Fixture size grows; OpenAlex 'select' already trims bodies, and fixtures can be gzip-compressed if they exceed a few MB."
+  }
+ ]
+}
