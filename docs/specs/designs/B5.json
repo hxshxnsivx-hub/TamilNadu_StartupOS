@@ -1,0 +1,1326 @@
+{
+ "agent": "B5",
+ "team": "B",
+ "shared_mechanisms": "Team B5 shared mechanisms. M1 'utterance reader' (T10) is also the cue matcher for T01 taxonomy cues and the T35 skill check. M2 'question ledger and policy' (T05) takes the panel's tagged question from T35 and the correction reader from T10. M3 'egress gate' (backend/app/core/egress.py) is one choke point for every outbound call: it enforces the session privacy policy (T25, using T19 purposes), the per-destination limits, concurrency, priority and per-provider usage (T15), and carries the single batched panel call (T35). M4 'keyring' (backend/app/core/crypto.py) provides AES-GCM field encryption and HMAC blind indexes (T30), which T20 also uses to hash programme join codes and enrolment tokens.",
+ "designs": [
+  {
+   "theme": "T05",
+   "understanding": "There is no single object that owns the question budget. The 7-question cap is measured as len(session.turns) (session.py:137-139), so the opening pitch, every re-ask and every opinion request each use one up, while REQUIRED_BY_MODE[IDEA] holds 9 slots (every Need.REQUIRED slot in slots.py). Dynamic questions from the scan and the panel skip the selector entirely: engine.step asks them at step 2, before any required slot, through a first-come cap of 3 (engine.py:193-203, 274-285). Their answers are written to d['answer'] and nobody reads them. The selector values a slot by a fixed consumer count (selector.py:83-99), not by what its absence blocks right now. The WHY finger owns no required slot, so the five-finger rule checks four fingers (selector.py:214-222). The restatement names only session.missing, which removes skipped slots (session.py:126-127), and it leaves out the facts the planner uses most (team_size, founder_years, time_horizon). The common cause: asking, skipping and assuming are three unconnected code paths with no ledger and no single policy. So nobody can tell which questions were asked, which facts were assumed, or why a question was worth a turn.",
+   "flags_disputed": [
+    {
+     "id": "F-A1-010",
+     "note": "Holds, with one nuance: CP-SAT is solved twice per turn only once required coverage is met. While required slots are unfilled, is_objective_clear returns before calling select_next (selector.py:198-205), so the solver runs once (from next_question). The conclusion stands: at the default horizon and budget the solver never changes the head question."
+    },
+    {
+     "id": "F-A1-019",
+     "note": "Holds as cited, although the code has moved: rules.customer returns the 'Who exactly would pay' question (rules.py:53), and vote.py falls back to the first opinion that has ask_founder, which is the customer seat because SEATS lists it first."
+    },
+    {
+     "id": "F-B4-013",
+     "note": "Holds. Strictly, the 'not sensitive' filter is missing rather than broken: candidates() never reads slot.sensitive, and no slot is marked sensitive yet."
+    }
+   ],
+   "approaches": [
+    {
+     "name": "Question ledger plus one policy (greedy, required-first, quotas), with CP-SAT kept for binding budgets",
+     "how": "The session keeps an ordered ledger of AskRecord entries (key, kind slot|dynamic, source, counted, outcome). Every question goes through one QuestionPolicy.next(): a candidate pool holding required slots, a WHY any-of group, tagged dynamic questions (with per-source quotas) and enrichment slots, all scored by one value function that includes a blocked-results term. The budget counts only ledger entries marked counted. Required slots the budget cannot reach become explicit assumptions in the restatement.",
+     "basis": "Event-ledger pattern inside the existing session JSON document (0005), plus the existing selector. No new dependency.",
+     "cost": "free/open source",
+     "advantages": "One decider, so ordering, quotas and budget cannot conflict. The ledger makes skipped and assumed facts visible and testable. Fits decision 0002 (code decides).",
+     "drawbacks": "Needs a session format bump (T34) for old documents. The value weights stay uncalibrated."
+    },
+    {
+     "name": "Full CP-SAT plan over slots and dynamic questions together",
+     "how": "Model every candidate (slot and dynamic) as a boolean in one CP-SAT model with budget, quota and ordering constraints, re-solved every turn.",
+     "basis": "OR-Tools CP-SAT, already installed and used by selector.py.",
+     "cost": "free/open source",
+     "advantages": "Expresses quotas and budget as constraints in one formal model.",
+     "drawbacks": "The flag's probe shows the solver adds nothing at this problem size, at about 28 ms per turn against 0.04 ms for greedy. Harder to explain and test, and the greedy fallback still needs the same rules."
+    },
+    {
+     "name": "Expected value of information with answer priors",
+     "how": "Score each question by the expected information gain over downstream decisions, using prior distributions over answers.",
+     "basis": "Howard 1966 VOI; Bayesian experimental design.",
+     "cost": "free/open source",
+     "advantages": "Principled: asks what changes decisions most.",
+     "drawbacks": "Needs answer priors per district, sector and stage that do not exist, so they would be invented data. Opaque to founders and to the team."
+    },
+    {
+     "name": "Separate budgets per question class",
+     "how": "Keep turns as they are, and give required slots, dynamic questions and enrichment their own caps (for example 9 + 3 + 2).",
+     "basis": "Simple counters.",
+     "cost": "free/open source",
+     "advantages": "Trivial to build, with no ordering conflicts.",
+     "drawbacks": "Makes interviews longer, which the design explicitly avoids (rnd-elicitation 4.2). Does not fix vanishing assumptions or the value-blind dynamic path."
+    },
+    {
+     "name": "Static dialogue script (state chart of fixed question order)",
+     "how": "Replace the selector with a hand-written order: what, who/where, when, how, then dynamic questions.",
+     "basis": "Classic form-filling dialogue managers (VoiceXML FIA).",
+     "cost": "free/open source",
+     "advantages": "Predictable and very easy to test.",
+     "drawbacks": "Ignores what the pitch already filled and what each gap blocks, and throws away the selector and decision-class modelling already built. Skips still need a ledger."
+    },
+    {
+     "name": "The model decides the next question (LLM planner)",
+     "how": "Ask Gemini or Ollama which question to ask next, given the known facts.",
+     "basis": "Free-tier model chain (0010).",
+     "cost": "free tier, rate limited",
+     "advantages": "Flexible and aware of phrasing.",
+     "drawbacks": "Contradicts decision 0002 (code decides, the model words). Absent offline and not deterministic, so the eval set cannot pin it."
+    }
+   ],
+   "chosen": "Question ledger plus one policy (greedy, required-first, quotas), with CP-SAT kept for binding budgets",
+   "why_chosen": "It fixes the root cause: no single place decides and records what is asked. It reuses the selector, the slot table and the session document. The ledger gives one source of truth for the 'I skipped / I assumed' restatement, the dynamic-answer binding and the budget unit. It also pairs with the T10 correction reader: the confirmation step becomes a cheap catch-all where the founder can correct any assumed fact in one sentence. That makes a 7-question cap against 9 required slots safe instead of silently wrong.",
+   "not_chosen": [
+    {
+     "name": "Full CP-SAT plan",
+     "reason": "Measured to give the same head question as greedy at about 700 times the cost. The budget is a count, which greedy plus a filter handles exactly; the solver stays only for the voice burden budget, where it can bind."
+    },
+    {
+     "name": "Expected value of information",
+     "reason": "Needs invented answer priors, against the no-invented-data rule."
+    },
+    {
+     "name": "Separate budgets per class",
+     "reason": "Makes interviews longer, against the product decision, and leaves assumptions invisible."
+    },
+    {
+     "name": "Static dialogue script",
+     "reason": "Asks about facts the pitch already gave, and discards the decision-class value model."
+    },
+    {
+     "name": "The model decides the next question",
+     "reason": "Violates decision 0002 and the offline baseline."
+    }
+   ],
+   "design": {
+    "components": "elicitation/ledger.py (new: AskRecord, a Ledger view over session.asked); elicitation/policy.py (new: QuestionPolicy.next and budget_left, absorbing selector.is_objective_clear and next_question); selector.py keeps question_value, candidates and select_next (CP-SAT only when the burden budget binds); engine.step calls the policy once per turn; engine.restate gains three labelled parts: 'you told me', 'I assumed (say change if not)' and 'you skipped'.",
+    "data_model": "ElicitationSession gains asked: list[AskRecord], where AskRecord = {key:str, kind:'slot'|'dynamic', source:'selector'|'scan'|'panel'|'reask'|'repeat', counted:bool, outcome:'pending'|'answered'|'missed'|'skipped'|'corrected', turn:int}. questions_asked = count(counted). A dynamic entry becomes DynamicQ{key, question, source, binds:{'slot':key}|{'criterion':c}|{'note':True}, duplicates_slot:str|None, asked:bool, answer:str|None}. Founder notes: session.notes: list[{text, criterion|None, turn}], with Source.ANSWER provenance through T03's typed put. Slot gains restate:bool (computed: kind != 'text' and consumers include 'roadmap' or 'scheme') and a WHY any-of group: WHY_GROUP = ('why_now','differentiation','motivation').",
+    "algorithm": "next(): (1) a pending re-ask, not counted. (2) Candidates: unfilled required slots; the WHY group (one candidate, 'differentiation', ranked below the required slots) when no WHY slot is filled; dynamic questions whose binding is not yet satisfied (a filled duplicates_slot drops the question), admitted only when the remaining budget exceeds the remaining required count, or after required coverage; enrichment after required coverage. Source quotas: scan at most 1, panel at most 2, and a panel arrival replaces an unasked scan question. (3) Value = question_value + W_BLOCKED * blocked(slot), where blocked() counts scheme rules that are three-valued 'unknown' only because of this slot (interface from T04) plus the roadmap gates that need it; until T04 lands it falls back to len(consumers). Sensitive slots are excluded unless the T19 purpose is granted. (4) Greedy with required-first; select_next (CP-SAT) only when the channel's burden budget binds (voice). (5) Stop when questions_asked >= Q_MAX, or when required slots are covered and the best value < TAU_GAIN. On stop, every required slot not sourced from ANSWER (extracted, defaulted or skipped) goes on the 'assumed' list with the default value from the planner's defaults (T03 and T01 own the default table).",
+    "interfaces": "T03: put() returns an outcome and a source rank; ledger outcomes come from it. T10: the correction reader turns a confirmation reply into slot changes, so assumed facts can be fixed at confirmation without a question. T35: the panel question arrives tagged with criterion and duplicates_slot. T04: unknown_inputs(profile) -> Counter[field] feeds blocked(). T19: purposes gate sensitive slots. T24: experience mode reuses the same policy with its own required set. T34: session format version for the new fields. T27: the typed pending action carries the AskRecord key.",
+    "files": [
+     "backend/app/elicitation/ledger.py (new)",
+     "backend/app/elicitation/policy.py (new)",
+     "backend/app/elicitation/selector.py",
+     "backend/app/elicitation/engine.py",
+     "backend/app/elicitation/session.py",
+     "backend/app/elicitation/slots.py",
+     "backend/app/agents/ideation.py (_advance opinion path, _apply_council)",
+     "backend/app/agents/council/vote.py (question tagging, with T35)",
+     "backend/tests/unit/elicitation/test_policy.py (new)",
+     "backend/tests/eval (replay assertions)"
+    ],
+    "rollout": "Add the ledger first. Old documents without 'asked' are upgraded by T34's upgrader, which derives entries from turns (counted = asked and not a repeat). Then move step() onto the policy, with no flag; the eval replay set must keep every case that passes today. Then add the restatement parts. Q_MAX stays 7, and 5.1.3 tunes its value later.",
+    "offline": "Fully deterministic, no model. CP-SAT is optional: greedy plus required-first is the complete behaviour."
+   },
+   "tasks": [
+    {
+     "title": "Question ledger and a budget counted in questions",
+     "why": "The budget counts turns, so re-asks, opinion requests and the pitch use up the 7 questions and required slots are never asked.",
+     "where": "backend/app/elicitation/ledger.py (new), session.py, engine.py (observe, step), agents/ideation.py _advance (opinion path)",
+     "how": "Add AskRecord and session.asked; record each ask in step(); mark re-asks and opinion repeats counted=False; questions_asked replaces turn_no in every budget check.",
+     "when": "First in T05. Needs the T34 format-version field, or a local default for a missing 'asked'. Independent of T03.",
+     "what_for": "So that 'at most 7 questions' is true, and later tasks can read what was asked, skipped and missed.",
+     "subtasks": [
+      {
+       "text": "Add AskRecord, session.asked and questions_asked; mark re-asks and the opinion-request repeat as not counted",
+       "flags": [
+        "F-A1-002"
+       ]
+      },
+      {
+       "text": "Replace turn_no with questions_asked in is_objective_clear and the dynamic gate; probe: pitch plus 'not sure' replies reaches district, beneficiary and product_form before stopping",
+       "flags": [
+        "F-A1-002"
+       ]
+      },
+      {
+       "text": "T34 upgrader derives 'asked' from existing turns for stored sessions",
+       "flags": [
+        "F-A1-002"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "One policy for slot and dynamic questions, with quotas and binding",
+     "why": "Dynamic questions bypass the selector, use the budget before required slots, are admitted first-come, repeat filled slots, and their answers go nowhere.",
+     "where": "backend/app/elicitation/policy.py (new), engine.py (step, add_dynamic), agents/ideation.py (_apply_council, scan point), agents/council/vote.py",
+     "how": "DynamicQ gains binds and duplicates_slot; add_dynamic applies per-source quotas (scan 1, panel 2; a panel question replaces an unasked scan one); the policy admits dynamic questions only when budget_left > required_left or after coverage; an answer becomes a founder note bound to a criterion, or a slot ANSWER through T03's put.",
+     "when": "After task 1 and after T35 task 'Criterion on every claim and question', which tags the panel question. Slot-bound answers need T03's typed put; until then use session.put with Source.ANSWER.",
+     "what_for": "So every question passes one decider, and only questions whose answers change something use a turn.",
+     "subtasks": [
+      {
+       "text": "Make dynamic questions policy candidates, admitted after required coverage or when the budget has room",
+       "flags": [
+        "F-B4-017"
+       ]
+      },
+      {
+       "text": "Per-source quotas in add_dynamic: scan at most 1 (never from the generic 'Any idea' group), panel at most 2; a panel question replaces an unasked scan one",
+       "flags": [
+        "F-B4-018"
+       ]
+      },
+      {
+       "text": "Drop a dynamic question whose duplicates_slot is already filled (the customer seat question against beneficiary)",
+       "flags": [
+        "F-A1-019"
+       ]
+      },
+      {
+       "text": "Bind dynamic answers: a slot ANSWER, or a founder note with a criterion, passed to council.convene and restated as 'you told me'",
+       "flags": [
+        "F-B4-019"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Value of asking: blocked results, the WHY group and a single solve",
+     "why": "Slot value is a static consumer count, WHY is never checked, sensitive slots are not filtered, and CP-SAT runs for nothing.",
+     "where": "backend/app/elicitation/selector.py, slots.py, policy.py; interface to the schemes engine (T04)",
+     "how": "Add W_BLOCKED * blocked(slot) from T04's unknown-input counts (fallback: len(consumers)); exclude slot.sensitive unless the T19 purpose is granted; add the WHY any-of group, satisfied by extraction or answer; use greedy with required-first, calling CP-SAT only when the channel's burden budget binds; compute the plan once per step.",
+     "when": "After task 2. blocked() reads T04's three-valued engine once it exists; the sensitive filter reads T19 purposes; T10's reader adds differentiation cues ('unlike', 'cheaper than').",
+     "what_for": "So questions go to what the founder gets (schemes, roadmap), the five-finger contract holds, and turns are fast.",
+     "subtasks": [
+      {
+       "text": "Blocked-results value term with the T04 interface and the static fallback; sensitive slots filtered by consent purpose",
+       "flags": [
+        "F-B4-013"
+       ]
+      },
+      {
+       "text": "WHY finger satisfied by any of why_now, differentiation or motivation; ask 'differentiation' once only if budget remains, else name it as unknown",
+       "flags": [
+        "F-A1-008"
+       ]
+      },
+      {
+       "text": "Greedy required-first as the default path; CP-SAT only when the burden budget binds; one plan per step; property test that greedy == CP-SAT when the budget is slack",
+       "flags": [
+        "F-A1-010"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Restatement says what was told, assumed and skipped",
+     "why": "Skipped and dropped required slots vanish, and the planner's main inputs are never shown, so the roadmap is built on hidden assumptions.",
+     "where": "backend/app/elicitation/engine.py restate(), slots.py (restate flag), the planner defaults table (T03/T01)",
+     "how": "Restate in three labelled sentences driven by the ledger and slot sources: facts the founder gave; 'I assumed: ...' for every restate-flagged slot not sourced from ANSWER (team size, years, horizon, geo scope) and for skipped required slots, with the default the planner will use; and the founder notes. Keep it short for voice: at most 4 assumed items, the most blocking first, the rest on screen.",
+     "when": "After tasks 1-2. Uses T03's source labels and the T10 correction reader, so the founder can say 'change capital to 5 lakh' at confirmation.",
+     "what_for": "So no roadmap rests on an assumption the founder never heard, and one confirmation reply can correct several facts.",
+     "subtasks": [
+      {
+       "text": "Name skipped and dropped required slots with the default to be used ('you skipped X; I will assume Y')",
+       "flags": [
+        "F-A1-003"
+       ]
+      },
+      {
+       "text": "Restate every restate-flagged non-text slot not sourced from ANSWER in one 'I assumed' sentence, ranked by blocked value",
+       "flags": [
+        "F-B4-016"
+       ]
+      }
+     ]
+    }
+   ],
+   "tests": "Unit tests: questions_asked ignores re-asks and opinion repeats; the replay 'pitch plus not sure x6' reaches district, beneficiary and product_form; dynamic questions are never asked while budget_left <= required_left; quota and replacement order; a filled duplicates_slot drops the question; a dynamic answer reaches the council input and the restatement. Hypothesis property: for random filled subsets with a slack budget, the greedy head equals the CP-SAT head, and questions_asked <= Q_MAX always. Golden tests for the told, assumed and skipped sentences. The eval replay set (tests/eval) gains assertions on the order of questions.",
+   "risks": "Stored sessions need the T34 upgrader. Restatement length on voice (mitigated by the cap of 4 items). W_BLOCKED is uncalibrated (marked UNVERIFIED like the other weights). Depends on T35 tagging; until that lands, panel questions get binds={'note':True}."
+  },
+  {
+   "theme": "T10",
+   "understanding": "Every reading of a founder's reply is a bare substring or set test. _first_cue uses 'n in low' (extract.py _first_cue), so 'app' fires inside Tiruchirappalli, 'crop' inside 'microprocessor' and 'course' inside 'of course'. Yes/no at confirmation is a set intersection (ideation.py:55-56, _advance), so 'not right' contains 'right' and confirms, and 'yes but Salem not Erode' confirms without reading the correction. Nothing handles negation scope ('no customers yet' -> revenue; answers._stage now has a leading \\b but still no negation), corrections ('actually', 'not X, Y'), the position or role of a place in a sentence (find_district picks the longest name, not the first or the 'from/in' one), or towns below district level (no Pollachi). Any answer of 25 or more characters also produces a positional 'problem' guess that can overwrite the real problem at equal confidence. The root cause is the missing reading layer between raw text and slot writes: one that tokenises once, matches cues on word boundaries, marks negated and corrected spans, and has its own gazetteer.",
+   "flags_disputed": [
+    {
+     "id": "F-A1-004",
+     "note": "Partly updated: answers._stage now uses re.search(rf'\\b{w}') (leading word boundary only), not plain substring, but 'no customers yet' still matches 'customers' -> revenue because there is no negation check. The cited lines (208-238) no longer match (answers.py is 101 lines). The finding holds."
+    },
+    {
+     "id": "F-A1-005",
+     "note": "find_district now uses (?<![a-z])name(?![a-z]) boundaries, so the substring part is fixed, but it still returns the longest name first, not the earliest or role-marked one. The precedence part (EXTRACTED 0.85 cannot replace ANSWER 0.90) still holds in session.put."
+    }
+   ],
+   "approaches": [
+    {
+     "name": "Deterministic reading layer: tokens with spans, word-boundary lexicon matcher, negation and correction scopes, role-aware places, pincode-derived gazetteer",
+     "how": "elicitation/reading.py tokenises the reply once (regex tokens with character spans, clause breaks at , . ; and 'but'). A Lexicon compiles each cue list into one alternation regex with word boundaries and optional stems ('manufactur\\w*'). A NegEx-style trigger list ('no', 'not', 'never', 'without', \"haven't\", 'illai', 'yet to') marks the following tokens as negated, up to a clause break or 3 tokens. Correction triggers ('actually', 'sorry', 'I meant', 'not X, (it is) Y', 'change X to Y') mark the new value as a correction. Places come from a town gazetteer, with role cues ('in', 'from', 'based in', 'my unit is in' = operating; 'sell in', 'export to' = market) and the earliest operating mention first. Output: Reading{tokens, mentions:[Mention(key, value, span, negated, corrected, role, strength)], polarity}.",
+     "basis": "NegEx (Chapman et al. 2001) is the standard rule-based negation method. The India Post all-India pincode directory on data.gov.in (OGD licence) is already cited in the repo (banking/data/branches_tn5.json _meta).",
+     "cost": "free/open source",
+     "advantages": "Offline, fast, explainable and testable with Hypothesis. One module fixes every flag, and T01 cue lists, T35 skills and T05 confirmation reuse it.",
+     "drawbacks": "Rule lists need curation and review. English and transliterated Tamil only at first; Tamil-script cues must be added by review."
+    },
+    {
+     "name": "spaCy pipeline with PhraseMatcher, EntityRuler and negspacy",
+     "how": "Load en_core_web_sm, add EntityRuler patterns for districts and towns, a PhraseMatcher for cues and negspacy for negation scope.",
+     "basis": "spaCy is mature and very popular; negspacy implements NegEx on spaCy.",
+     "cost": "free/open source (spaCy plus a model download of about 15 MB)",
+     "advantages": "Proper tokenisation and dependency-based scope.",
+     "drawbacks": "A large new dependency and download for short cue lists. English-only models, while founders mix in Tamil. Slower cold start, and it still needs the same curated lists."
+    },
+    {
+     "name": "Stanza or IndicNLP for Tamil plus English",
+     "how": "Use Stanford Stanza (which has a Tamil model) or the IndicNLP tokenisers to handle Tamil script.",
+     "basis": "Academic toolkits with Tamil support.",
+     "cost": "free/open source (large models, PyTorch)",
+     "advantages": "Real Tamil tokenisation.",
+     "drawbacks": "Needs PyTorch and hundreds of MB, far too heavy for a CPU-only free setup. Negation and correction rules are still hand-written."
+    },
+    {
+     "name": "Model-based slot filling and yes/no classification (Gemini free tier, then Ollama)",
+     "how": "Send the reply to a model with a JSON schema and let it return slots, polarity and corrections.",
+     "basis": "Free model chain (decision 0010).",
+     "cost": "free tier, rate limited",
+     "advantages": "Handles paraphrase and Tamil naturally.",
+     "drawbacks": "Absent offline. Breaks decision 0002 for a gate (code decides). Not reproducible, and it reaches Google, which conflicts with private mode (T25)."
+    },
+    {
+     "name": "Fuzzy matching with rapidfuzz against the gazetteer and cues",
+     "how": "Token-set ratio matching to tolerate spelling variants (Tiruchi, Trichy, Thiruchirappalli).",
+     "basis": "rapidfuzz is mature and small.",
+     "cost": "free/open source",
+     "advantages": "Tolerates transliteration and STT spelling noise.",
+     "drawbacks": "Fuzzy matching raises false positives, which is exactly the precision problem here. Adds a dependency. Reviewed aliases handle spelling variants better."
+    },
+    {
+     "name": "Ask instead of parse: confirm every extracted value with a question or buttons",
+     "how": "Whenever a value is inferred, ask the founder to confirm it; use tap buttons for yes/no.",
+     "basis": "Common chatbot practice.",
+     "cost": "free/open source",
+     "advantages": "No parsing error survives.",
+     "drawbacks": "Spends the already short question budget (T05), and buttons do not work on the voice path the product targets."
+    }
+   ],
+   "chosen": "Deterministic reading layer: tokens with spans, word-boundary lexicon matcher, negation and correction scopes, role-aware places, pincode-derived gazetteer",
+   "why_chosen": "Every flag comes from the same missing layer. A small rule-based reader fixes all of them offline at negligible CPU cost using the standard-library re module, and decision 0002 wants code to decide gates such as 'is this a yes'. The same Lexicon class becomes the one matcher for T01's canonical cue lists and for T35's technical-skill check, so the word-boundary fix is made once. The correction marks give T03's typed put the source it needs (an explicit correction outranks earlier answers) and give T05's confirmation step multi-slot corrections.",
+   "not_chosen": [
+    {
+     "name": "spaCy with negspacy",
+     "reason": "A large dependency and model download for a few dozen cue lists, English only, and it still needs the same curated lists; the rule reader gives the same scope behaviour for these short replies."
+    },
+    {
+     "name": "Stanza or IndicNLP",
+     "reason": "Needs PyTorch-sized models on a CPU-only free setup; Tamil cues can be added as reviewed aliases instead."
+    },
+    {
+     "name": "Model-based slot filling",
+     "reason": "Unavailable offline, breaks decision 0002 for gates, and would send private text to Google (T25)."
+    },
+    {
+     "name": "Fuzzy matching",
+     "reason": "Raises false positives, which is the defect being fixed; reviewed aliases give the variants without that risk."
+    },
+    {
+     "name": "Ask instead of parse",
+     "reason": "Uses the question budget T05 protects, and buttons exclude voice-first founders."
+    }
+   ],
+   "design": {
+    "components": "backend/app/elicitation/reading.py (new): tokenize(); Lexicon (compiled word-boundary matcher with stems and multi-word phrases); negation scopes; correction detection; polarity(text) -> YES|NO|YES_WITH_CHANGES|CHANGES|UNCLEAR; read(text, answering) -> Reading. extract.py is rewritten on top of read(), keeping its public extract() -> list[Extraction] shape plus new fields. places.py gains the gazetteer, find_places(text) -> list[PlaceMention(district, name, span, role)] and a find_district() wrapper (earliest operating mention). answers.validate uses read() for stage and enums, with negation. agents/ideation.py _advance uses polarity() and always observes the reply at CONFIRMING, then confirms only if nothing changed.",
+    "data_model": "Mention{key, value, span:(int,int), negated:bool, corrected:bool, role:'operate'|'market'|None, strength:float}. Extraction gains source_hint:'answer'|'correction'|'extracted' and excludes:list (negated values, for example district != madurai). Gazetteer file backend/app/elicitation/data/tn_places.json: {_meta:{source:'India Post all-India pincode directory, data.gov.in, OGD licence', retrieved, licence}, places:{town_lower:[district_id,...]}}, generated by scripts/build_tn_places.py from the published CSV (office name, Taluk, District, StateName == TAMIL NADU), with district names normalised to the 38 ids in places.DISTRICTS. A town in several districts maps to a list; an ambiguous town is not filled but asked.",
+    "algorithm": "Tokens: re.finditer(r\"[\\w']+|[.,;!?]\") over the lower-cased text, with spans. Clause breaks: punctuation and 'but', 'however', 'though'. Negation: a trigger negates the following tokens until a clause break, at most 3 tokens (NegEx window), plus 'X not Y' patterns and post-triggers ('not yet', 'yet to'). Correction: the triggers 'actually', 'sorry', 'i meant', 'instead', 'change', or the contrast 'not X(,) (it is|but) Y' mark Y as corrected and X as excluded. Lexicon match: one compiled regex per key, r'(?<!\\w)(?:cue1|cue2|stem\\w*)(?!\\w)', returning all matches with spans; a sector or form value whose matches are all negated is dropped; with several sectors, the earliest unnegated match wins, ties going to the longest cue. Places: candidates from districts, aliases and the gazetteer; role from the preceding 3 tokens; choose corrected, then operating role, then earliest. The positional 'problem' guess is emitted only when answering is None (a free description), never when the reply answers a slot. Polarity: YES and NO words are counted outside negation scope ('not right' -> NO, 'not wrong' -> YES); YES plus any slot mention -> YES_WITH_CHANGES; NO plus a mention -> CHANGES; NO alone -> NO; otherwise UNCLEAR.",
+    "interfaces": "T01: Lexicon matches the canonical taxonomy cue lists (T01 owns the vocabularies, T10 owns the matching). T03: Extraction.source_hint maps onto T03's source rank (CORRECTION > ANSWER > PROFILE > EXTRACTED), and excludes becomes a typed 'not' fact. T05: polarity and corrections drive confirmation: YES_WITH_CHANGES or CHANGES apply the changes and restate again; NO with no mention asks 'Which part should I change?' listing the restated facts (not counted against the budget). T27: the pending action at CONFIRMING is typed, not inferred from state. T35: the skills check uses Lexicon. T02: tn_places.json carries provenance metadata in T02's format and is checked in CI (T22).",
+    "files": [
+     "backend/app/elicitation/reading.py (new)",
+     "backend/app/elicitation/extract.py",
+     "backend/app/elicitation/answers.py",
+     "backend/app/elicitation/places.py",
+     "backend/app/elicitation/data/tn_places.json (new, generated)",
+     "scripts/build_tn_places.py (new)",
+     "backend/app/elicitation/engine.py (observe, confirm with changes)",
+     "backend/app/agents/ideation.py (_advance; YES/NO sets removed)",
+     "backend/tests/property/test_reading.py (new)",
+     "backend/tests/unit/elicitation/test_corrections.py (new)",
+     "backend/tests/eval/ideas.json (negative cases)"
+    ],
+    "rollout": "Land reading.py and the Lexicon first, with extract() using them behind the same interface, and run the eval replays plus the new negative set. Then switch answers and places, then confirmation. The gazetteer ships in its own commit with provenance and a CI check that every value is one of the 38 district ids.",
+    "offline": "Entirely offline, standard library only. The gazetteer is a committed file, never fetched at runtime."
+   },
+   "tasks": [
+    {
+     "title": "Reading layer: tokens, word-boundary lexicon and negation scope",
+     "why": "Substring cues misfire inside words and nothing understands 'no' or 'not', so wrong facts are stored at 0.85-0.90 and never asked about.",
+     "where": "backend/app/elicitation/reading.py (new), extract.py (_first_cue replaced), answers.py (_stage, _enum)",
+     "how": "Write tokenize(), Lexicon (compiled alternation with (?<!\\w)...(?!\\w), stems as \\w*) and NegEx-style scopes with clause breaks; rebuild extract() and validate() on read(), dropping negated mentions and recording excludes.",
+     "when": "First in T10. Uses T01's canonical cue lists once they exist; until then it compiles the current dicts in extract.py unchanged.",
+     "what_for": "So 'happily', 'Tiruchirappalli', 'of course' and 'no customers yet' stop producing software, education and revenue.",
+     "subtasks": [
+      {
+       "text": "Replace _first_cue with the word-boundary Lexicon for sector, form and route cues; Hypothesis property: district names and a common-word list never trigger a sector or form",
+       "flags": [
+        "F-A5-002"
+       ]
+      },
+      {
+       "text": "Negative-case quality set for sectors ('of course', 'microprocessor', 'workshop', 'carbon credit') added to the tests and the eval set",
+       "flags": [
+        "F-B4-001"
+       ]
+      },
+      {
+       "text": "Negation window in stage reading: 'no customers yet', 'not selling yet' and \"haven't launched\" never give revenue or mvp",
+       "flags": [
+        "F-A1-004"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Corrections and the positional problem guess",
+     "why": "A correction said in passing is ignored, a sentence naming two places picks one by name length, and an answer to another question overwrites the problem.",
+     "where": "reading.py (correction triggers), places.py (find_places with roles), engine.observe, session.put via T03",
+     "how": "Detect correction triggers and 'not X, Y' contrasts; mark the new value as a correction (source_hint='correction') and the old value as excluded; choose places by correction, then operating role, then position; emit the positional problem guess only when answering is None.",
+     "when": "After task 1. The CORRECTION source rank needs T03's typed put; until T03 lands, write corrected values with Source.ANSWER at 0.90.",
+     "what_for": "So founders can fix a fact the moment they say it, without spending a question.",
+     "subtasks": [
+      {
+       "text": "Correction cues ('actually', 'sorry', 'I meant', 'not X, Y') produce a correction that replaces an earlier answer; 'Salem not Erode' gives salem",
+       "flags": [
+        "F-A1-005"
+       ]
+      },
+      {
+       "text": "Role- and position-aware district choice: 'I live in Salem but want to sell in Coimbatore' gives salem",
+       "flags": [
+        "F-A1-005"
+       ]
+      },
+      {
+       "text": "No positional problem guess when the utterance answers a named slot; the replay 'coconut farmers who sell copra' keeps the original problem",
+       "flags": [
+        "F-B1-019"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Confirmation reads polarity and corrections",
+     "why": "'That's not right' confirms the restatement, 'yes but ...' drops the correction, and a 'no' either stores the rejected value or loops forever.",
+     "where": "agents/ideation.py _advance (CONFIRMING branch), engine.confirm(session, changes), reading.polarity",
+     "how": "Always run read() on the reply at CONFIRMING. YES -> confirm; YES_WITH_CHANGES or CHANGES -> apply the changes and restate again; NO alone -> ask 'Which part should I change?' listing the restated facts (not counted against the budget). Negated values become excludes, never values.",
+     "when": "After task 2. Coordinates with T27's typed pending action and with T05 task 'Restatement says what was told, assumed and skipped'.",
+     "what_for": "So a rejection always changes something or asks a targeted question, and no roadmap is built on a rejected restatement.",
+     "subtasks": [
+      {
+       "text": "Negation-aware polarity: 'not right' is NO and 'not wrong' is YES; always observe the reply and confirm only if nothing changed",
+       "flags": [
+        "F-A1-001"
+       ]
+      },
+      {
+       "text": "engine.confirm accepts a list of changes; 'No, I am in Salem not Madurai' sets salem and excludes madurai; NO with no slot asks which part to change",
+       "flags": [
+        "F-B4-015"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Town gazetteer from the India Post pincode directory",
+     "why": "Founders name their town, not the district, so 'Pollachi' is asked about again and listed as unknown.",
+     "where": "scripts/build_tn_places.py (new), backend/app/elicitation/data/tn_places.json (new), places.py",
+     "how": "Generate a Tamil Nadu town -> district map from the data.gov.in pincode CSV (office name and Taluk, filtered to Tamil Nadu); normalise districts to the 38 ids; keep the _meta provenance; leave ambiguous towns unfilled.",
+     "when": "Independent of tasks 1-3; plugs into find_places. Provenance format per T02, CI data check per T22.",
+     "what_for": "So 'coconut unit in Pollachi' fills district=coimbatore without a question.",
+     "subtasks": [
+      {
+       "text": "Build and commit tn_places.json with _meta (source, licence, retrieved); find_places looks up towns; Pollachi, Kumbakonam, Rajapalayam, Karaikudi, Mettupalayam, Ambur and Tambaram resolve",
+       "flags": [
+        "F-A1-006"
+       ]
+      },
+      {
+       "text": "CI data check: every gazetteer value is one of the 38 district ids; ambiguous towns map to a list and are not filled",
+       "flags": [
+        "F-A1-006"
+       ]
+      }
+     ]
+    }
+   ],
+   "tests": "Hypothesis properties: (a) for any district or town name and any word from a common-English list, no sector or form cue fires unless the word is itself a cue; (b) a negated cue ('not X') never yields X. Table tests for every probe in the flags: happily, apparel, of course, microprocessor, workshop, carbon credit, no customers yet, Salem not Erode, live in Salem sell in Coimbatore, Pollachi. Confirmation tests: 'that's not right', 'yes but the district is Salem not Erode', and 'no' alone. Eval replay: banana_trichy keeps product_form != software, and coconut copra keeps the problem.",
+   "risks": "Rule lists grow and need review (keep them in T01's vocabulary module, with tests). Over-eager negation ('not only X but Y') is handled by an exception list. Tamil-script replies from speech recognition are not covered until reviewed Tamil cues exist; they fall back to asking. Gazetteer licence: OGD India permits reuse with attribution, recorded in _meta."
+  },
+  {
+   "theme": "T15",
+   "understanding": "Outbound calls have no governor. research/sources._get_json is already the single function behind every research request, but it lets transport errors escape (client.get with no try), and scan and novelty gather without return_exceptions, so one GitHub timeout fails the whole scan. It returns only (status, text), so 'our own cap', 'the source asked us to wait' and 'the source refused' are all 429, and papers() maps every 429 to 'add OPENALEX_API_KEY'. One daily limit covers all sources (research_daily_limit, default 0), so an 80% alert has no denominator, and GitHub and EPO limits are per minute anyway. On the model side, the panel fires seven parallel judge calls (council/__init__.py) and jobs start immediately (jobs.py start), so bursts hit Gemini's per-minute free quota, open the shared breaker and degrade live turns. Usage is one dict with no provider key, so free local Ollama tokens use up SESSION_TOKEN_BUDGET while the real Gemini daily quota is never counted. The OpenAlex calls in papers() and the scan's element searches run one after another. The root cause: there is no shared egress layer that knows each destination's limits, priority and cost and returns a typed outcome.",
+   "flags_disputed": [],
+   "approaches": [
+    {
+     "name": "In-house egress gate: destination table, typed Outcome reasons, token bucket plus daily counter, priority reserve, per-destination semaphores, per-provider usage",
+     "how": "backend/app/core/egress.py holds DESTINATIONS {name: Dest(kind research|model|voice, locality local|cloud, vendor, limits [(n, 'minute'|'day')], concurrency, metered)}, loaded from settings (EGRESS_LIMITS='openalex=100000/day,github=10/min,epo=10/min,gemini=15/min,gemini=1500/day'). gate.call(dest, fn, priority) checks the policy (T25), the minute bucket (in-process, with a reserve that only priority 'live' may use), the day counter (Redis INCR when Redis runs, else in-process) and the semaphore; runs fn; catches httpx.TransportError; records usage; and returns Outcome{dest, reason, status, data, retry_after}. Research and providers both call through it.",
+     "basis": "Generalises the existing Redis INCR pattern and the breaker; token bucket and GCRA are standard algorithms. No dependency.",
+     "cost": "free/open source",
+     "advantages": "One place for every limit, reason, priority and counter. Gives T23 real denominators and T25 one enforcement point. Small (about 200 lines).",
+     "drawbacks": "In-process minute buckets undercount across several workers (acceptable: one worker today, and the Redis day counters stay shared)."
+    },
+    {
+     "name": "The 'limits' library (moving or fixed window, Redis or memory)",
+     "how": "Use the limits package with RedisStorage or MemoryStorage per destination.",
+     "basis": "Mature; used by slowapi and Flask-Limiter.",
+     "cost": "free/open source",
+     "advantages": "Tested algorithms with shared storage.",
+     "drawbacks": "A new dependency and a second key scheme beside the existing budget:* keys. The outcome type, priority and usage accounting are still hand-written."
+    },
+    {
+     "name": "aiolimiter plus asyncio semaphores",
+     "how": "AsyncLimiter(max_rate, period) per destination around each call.",
+     "basis": "A small, popular asyncio leaky bucket.",
+     "cost": "free/open source",
+     "advantages": "Tidy async API.",
+     "drawbacks": "Per-process only, with no daily figure and no priority. A dependency for about 20 lines of code."
+    },
+    {
+     "name": "Retries and per-source circuit breakers (tenacity, pybreaker)",
+     "how": "Retry transient errors with backoff and open a breaker per source after repeated failures.",
+     "basis": "Widely used resilience libraries.",
+     "cost": "free/open source",
+     "advantages": "Resilient to short outages.",
+     "drawbacks": "Retries spend the free budget faster and fix none of the shared-cap, reason or provider-split defects. The repo already has a breaker."
+    },
+    {
+     "name": "Queue worker for all outbound work (arq or Celery with Redis)",
+     "how": "Push every research and panel call onto a Redis queue consumed by rate-limited workers.",
+     "basis": "Standard architecture for throttled background work.",
+     "cost": "free/open source, but Redis must always run",
+     "advantages": "Global rate control across processes.",
+     "drawbacks": "Redis is optional in this stack and must stay optional. Another process to run, too heavy for one small team."
+    },
+    {
+     "name": "Prometheus metrics with alerting on usage",
+     "how": "Export counters and alert on rates.",
+     "basis": "Standard observability.",
+     "cost": "free/open source, but needs a scraping server",
+     "advantages": "Rich dashboards.",
+     "drawbacks": "Needs hosting the free setup lacks, and it only observes the problems without preventing any (T23 owns the store)."
+    }
+   ],
+   "chosen": "In-house egress gate: destination table, typed Outcome reasons, token bucket plus daily counter, priority reserve, per-destination semaphores, per-provider usage",
+   "why_chosen": "Every T15 flag is a missing property of one choke point, and the code already has half of it (_get_json, _pause, _over_budget, Breaker). Extending that into a small shared gate with no dependency gives typed reasons, real denominators, protection for live turns and provider-split usage at once. The same gate is where T25 enforces private mode and where T35's single panel call takes its token, so one design solves three themes instead of three partial fixes.",
+   "not_chosen": [
+    {
+     "name": "The 'limits' library",
+     "reason": "A dependency and a parallel key scheme for what is one INCR per window, and it still lacks reasons, priority and usage."
+    },
+    {
+     "name": "aiolimiter",
+     "reason": "Per-process only, no daily counts and no priority; the bucket is about 20 lines inside the gate."
+    },
+    {
+     "name": "tenacity/pybreaker retries",
+     "reason": "Retries burn the free budget and fix none of the root defects; the existing Breaker already covers model providers."
+    },
+    {
+     "name": "Queue worker",
+     "reason": "Makes Redis mandatory and adds a process to run, against the optional-Redis and small-team constraints."
+    },
+    {
+     "name": "Prometheus",
+     "reason": "Needs a scraping server the free setup does not have; T23 stores the counters this gate records."
+    }
+   ],
+   "design": {
+    "components": "core/egress.py (new): Dest, Reason, Outcome, and Gate with call(), usage() and status(); a parser for EGRESS_LIMITS; Priority live > panel > research. research/sources.py: _get_json becomes a thin wrapper over gate.call and returns an Outcome; papers, paper_count, trials, projects and patents map reasons to SourceResult status and note. agents/providers.py: Provider gains a destination name and 'metered'; stream and complete run under gate.call(priority) and record tokens per provider. agents/jobs.py: a semaphore per job kind (council 2, research 3, configurable). agents/ideation.py: _spent counts metered providers only; usage is stored per provider.",
+    "data_model": "Reason = OK | CACHED | OWN_CAP | UPSTREAM_PAUSE | UPSTREAM_LIMIT | NO_KEY | TRANSPORT | UPSTREAM_ERROR | POLICY. Outcome{dest, reason, http_status:int|None, data, retry_after:float|None}. SourceResult.status adds 'paused' and 'unreachable' and keeps budget_exhausted only for OWN_CAP and UPSTREAM_LIMIT, each with its own note. Session usage becomes {provider: {input_tokens, output_tokens, requests}}; a T34 upgrader folds the old flat dict into 'unknown'. Redis keys: use:{dest}:{yyyy-mm-dd}:{requests|tokens} (2-day expiry); budget:{source}:{date} stays as an alias during the change.",
+    "algorithm": "call(dest, fn, priority): policy check (T25) -> POLICY; pause key -> UPSTREAM_PAUSE; minute bucket of capacity n per minute with continuous refill, where a caller below priority 'live' takes a token only while tokens > reserve (30% of capacity, configurable); empty bucket -> OWN_CAP with retry_after; the day counter is incremented only when the call is actually sent (fixing the over-count of refused requests), and reaching the limit -> OWN_CAP; semaphore per destination; try fn(), mapping httpx.TransportError -> TRANSPORT, 429 -> pause plus UPSTREAM_LIMIT, other non-200 -> UPSTREAM_ERROR; record requests, tokens (metered only) and outcome. Percent used = day_count / day_limit, defined for every destination that has a day limit; others report 'no daily limit'. Research parallelism: papers() gathers its three OpenAlex requests, scan gathers the per-element searches, novelty gathers its independent waves. Because call() never raises for transport errors, gather needs no return_exceptions, and a failing source only sets its own status.",
+    "interfaces": "T08: the cache lookup stays before gate.call, so a cache hit spends no budget; T08 owns key normalisation and atomic writes. T25: Gate.call consults the session EgressPolicy (local only in private mode). T35: the panel's single call uses priority 'panel'. T23: Gate.usage() and status() feed the observability store and the 80% alert. T12: the job semaphores live in the job board T12 bounds. docs/runbooks/research-budget.md is rewritten per reason.",
+    "files": [
+     "backend/app/core/egress.py (new)",
+     "backend/app/core/config.py (EGRESS_LIMITS, PANEL_RESERVE, JOB_CONCURRENCY)",
+     "backend/app/research/sources.py",
+     "backend/app/research/scan.py",
+     "backend/app/research/novelty.py",
+     "backend/app/agents/providers.py",
+     "backend/app/agents/jobs.py",
+     "backend/app/agents/ideation.py (_spent, _budget_left, _add_usage)",
+     "backend/app/agents/council/__init__.py (breaker recording)",
+     "docs/runbooks/research-budget.md",
+     "backend/tests/unit/test_egress.py (new)"
+    ],
+    "rollout": "1) Typed outcomes and the transport catch in _get_json (no change on the ok path). 2) The gate, with a limits table whose defaults reproduce today's behaviour (no caps) plus documented recommended values. 3) Providers through the gate, with per-provider usage. 4) Parallel research. Each step ships on its own.",
+    "offline": "With no network every call returns TRANSPORT quickly and each source reports 'unreachable'; Ollama is local and unmetered; the gate itself needs no Redis."
+   },
+   "tasks": [
+    {
+     "title": "Typed outcomes and transport errors in the research fetch",
+     "why": "One network error fails the whole scan, and every stop reads 'add OPENALEX_API_KEY'.",
+     "where": "backend/app/research/sources.py (_get_json, papers, paper_count, trials, projects, patents), docs/runbooks/research-budget.md",
+     "how": "Introduce Reason and Outcome; catch httpx.TransportError -> TRANSPORT; separate OWN_CAP, UPSTREAM_PAUSE and UPSTREAM_LIMIT; map each to its own SourceResult status and note; give the NO_KEY note only when the key really is missing.",
+     "when": "First in T15. Independent of T08, but the cache read must stay before any budget check.",
+     "what_for": "So a failing source costs only itself, and founders and operators see the true reason.",
+     "subtasks": [
+      {
+       "text": "Catch httpx.TransportError in _get_json and return a TRANSPORT outcome; test with a mock transport where GitHub raises ReadTimeout and the scan still returns papers",
+       "flags": [
+        "F-A2-006"
+       ]
+      },
+      {
+       "text": "Reason enum; papers and paper_count notes per reason; runbook steps per reason",
+       "flags": [
+        "F-B5-002"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Egress gate with per-destination limits, priority and counters",
+     "why": "One daily cap for every source means nothing per minute and gives no denominator, and panel bursts take quota from live turns.",
+     "where": "backend/app/core/egress.py (new), core/config.py, research/sources.py, agents/providers.py, agents/jobs.py",
+     "how": "Destination table from EGRESS_LIMITS; minute token bucket with a reserve for priority 'live'; day counter incremented only for calls actually sent; per-destination semaphore; status() returns used/limit per window.",
+     "when": "After task 1. The T25 policy hook is a no-op until T25 task 'Session egress policy, may-reach notice and recorded agreement' lands.",
+     "what_for": "So each source and provider has a real limit, '80% used' is computable, and live turns keep working during panel bursts.",
+     "subtasks": [
+      {
+       "text": "Per-destination limit table (n per minute or per day) replaces research_daily_limit, with documented defaults for openalex, ctgov, github, patentsview and epo",
+       "flags": [
+        "F-B5-001"
+       ]
+      },
+      {
+       "text": "status() exposes used/limit per window so the 5.4.2/5.4.3 alert can say '80% used'; refused requests are not counted as used",
+       "flags": [
+        "F-A5-027"
+       ]
+      },
+      {
+       "text": "Per-provider minute bucket shared by turns and the panel, with a reserve held for live turns; per-kind job semaphores in jobs.py",
+       "flags": [
+        "F-A2-013"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Per-provider usage and an unmetered local model",
+     "why": "Ollama tokens end a founder's model budget, while the Gemini daily quota is invisible.",
+     "where": "agents/providers.py (_usage with provider), agents/ideation.py (_spent, _budget_left, _add_usage), core/egress.py usage counters",
+     "how": "Usage keyed by provider; Dest.metered=False for ollama; _spent sums metered providers only; daily per-provider request and token counters in the gate.",
+     "when": "After task 2. The change in session usage shape needs a T34 upgrader.",
+     "what_for": "So the session budget stops only for real cost, and the free-tier quota is visible per day.",
+     "subtasks": [
+      {
+       "text": "Usage keyed by provider with a metered flag; SESSION_TOKEN_BUDGET ignores ollama; daily per-provider counters for Gemini",
+       "flags": [
+        "F-B5-004"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Parallel research calls",
+     "why": "Serial OpenAlex requests and element searches miss the turn's wait window on a cold cache.",
+     "where": "research/sources.py papers(), research/scan.py, research/novelty.py, agents/ideation.py _research_work",
+     "how": "asyncio.gather the three OpenAlex requests in papers(), the per-element searches in the scan and the independent novelty waves; the gate's per-destination semaphore bounds concurrency.",
+     "when": "After task 2: the semaphore must exist before the fan-out, or bursts trip upstream limits.",
+     "what_for": "So evidence arrives in the same turn more often, at no extra request cost.",
+     "subtasks": [
+      {
+       "text": "gather the independent calls in papers(), the scan's element searches and the novelty waves; a latency test with a delayed mock transport shows wall time close to the slowest call",
+       "flags": [
+        "F-A1-017"
+       ]
+      }
+     ]
+    }
+   ],
+   "tests": "Mock-transport unit tests: one source raises ReadTimeout and the others still succeed; each Reason maps to the right SourceResult and note; the bucket refuses background calls inside the reserve but lets live calls through; the day counter ignores refused calls; status() percentages. Provider test: Ollama usage leaves the session budget untouched while Gemini usage reduces it. Concurrency test: two simultaneous panels plus a live turn, where the live turn is never refused while tokens > 0.",
+   "risks": "Recommended per-minute values for free tiers change upstream (keep them in config with a date comment and a runbook entry). In-process buckets undercount with several workers (documented; a Redis GCRA layer can follow if multi-worker becomes real). gather raises concurrency, bounded by the semaphores."
+  },
+  {
+   "theme": "T20",
+   "understanding": "The programme view aggregates whatever list of session ids the caller posts (routers/cohort.py ProgrammeIn, up to 500). It answers every request with exact counts for groups of 5 or more, exact averages and a raw reached_a_roadmap count (programme.py). Anyone can difference two lists, or plant four self-made consenting sessions plus a victim, and read one founder's attributes. The unit counted is the session, not the founder, so restarts count twice. The session id handed to the programme is also the full read, write and delete credential. The endpoint has no auth, and the planned auth needs a database that is not available. The root cause: the caller chooses the membership instead of the server owning it, and disclosure control is a per-field habit (_grouped) instead of one rule applied to every published number.",
+   "flags_disputed": [],
+   "approaches": [
+    {
+     "name": "Server-owned programme membership by join code and enrolment token, one disclosure function (round to 5, suppress 1-4, bands for averages), published snapshots that change only in steps of 5 or more members, and an interim operator key",
+     "how": "An operator creates a programme document (id, name, join-code hash, operator-key hash) in the existing store. A founder enters the join code at session start or later; the server records an enrolment {enrolment_id, programme_id, latest_session_id, consent_version} and returns an opaque enrolment token that the browser keeps and resends with new sessions. The programme endpoint takes only programme_id plus the operator key, computes over the latest session per enrolment, passes every number through disclose(), and serves the last published snapshot, which is refreshed only after a membership change of 5 or more.",
+     "basis": "Statistical disclosure control practice of national statistics offices (threshold rule and rounding to base 5, as in UK ONS and Statistics Canada small-cell rules); enrolment matches TASKS 5.5.4.",
+     "cost": "free/open source",
+     "advantages": "Removes caller-chosen sets (the root cause) and session ids from the programme flow, counts founders, and closes differencing across requests and across snapshots. Works today for anonymous founders, with no database.",
+     "drawbacks": "Snapshots lag membership changes. A leaked join code still lets someone enrol planted sessions (bounded by rounding and step publication)."
+    },
+    {
+     "name": "Differential privacy (OpenDP or diffprivlib) on the aggregates",
+     "how": "Add calibrated Laplace or Gaussian noise to each count and track a privacy budget per programme.",
+     "basis": "The formal standard (Dwork 2006); OpenDP and IBM diffprivlib are maintained.",
+     "cost": "free/open source",
+     "advantages": "Provable guarantees against differencing.",
+     "drawbacks": "For batches of 5-30 the noise makes the bands unreadable for the programme manager. Budget accounting is state to keep and hard to explain to an incubator."
+    },
+    {
+     "name": "Query auditing (overlap control)",
+     "how": "Store past queries and refuse a new set that overlaps an earlier one by all but a few members.",
+     "basis": "Classic statistical-database auditing (Chin, Dobkin).",
+     "cost": "free/open source",
+     "advantages": "Keeps exact answers.",
+     "drawbacks": "Needs a stored query history and is still evadable with planted sessions. Does not stop session ids being credentials."
+    },
+    {
+     "name": "Owner-bound sessions and account-based membership",
+     "how": "Wait for T17 accounts; membership becomes a users-programmes table and the view requires a programme role.",
+     "basis": "Standard RBAC.",
+     "cost": "free/open source",
+     "advantages": "The right long-term identity model.",
+     "drawbacks": "Blocked on the database (2.1.1) and T17, and it leaves anonymous founders double counted and exposed meanwhile. Still needs disclosure control."
+    },
+    {
+     "name": "k-anonymity / microdata tooling (ARX, sdcMicro)",
+     "how": "Generalise each founder's record until every combination appears at least k times, then aggregate.",
+     "basis": "Mature SDC toolkits.",
+     "cost": "free/open source (Java or R)",
+     "advantages": "Strong record-level protection.",
+     "drawbacks": "Built for releasing microdata, not a handful of aggregate counts, and needs a foreign runtime."
+    },
+    {
+     "name": "Signed cohort token instead of session ids (HMAC capability)",
+     "how": "Each founder gets an HMAC token that the programme posts instead of a session id.",
+     "basis": "Capability tokens.",
+     "cost": "free/open source",
+     "advantages": "Stops handing over the full session key.",
+     "drawbacks": "The caller still chooses the set, so the differencing leak stays."
+    }
+   ],
+   "chosen": "Server-owned programme membership by join code and enrolment token, one disclosure function (round to 5, suppress 1-4, bands for averages), published snapshots that change only in steps of 5 or more members, and an interim operator key",
+   "why_chosen": "It removes the cause instead of auditing the symptom. The server owns the set, the founder is the unit, every published number goes through one deterministic rule that fits the existing 'bands, not rankings' promise, and the programme never sees a session id. It works now on the JSON session store (decision 0005), with the operator key as a stop-gap until T14/T17 roles. It reuses the T30 keyring (HMAC) for the join-code, enrolment-token and operator-key hashes, and the T19 consent record for the programme purpose.",
+   "not_chosen": [
+    {
+     "name": "Differential privacy",
+     "reason": "Noise at batch sizes of 5-30 makes the view useless to the programme manager; rounding plus server-owned sets closes the demonstrated attacks deterministically."
+    },
+    {
+     "name": "Query auditing",
+     "reason": "Stateful and evadable with planted sessions; server-owned membership makes it unnecessary."
+    },
+    {
+     "name": "Owner-bound accounts now",
+     "reason": "Blocked on the database and T17; the enrolment record maps onto a user id later without a redesign."
+    },
+    {
+     "name": "k-anonymity tooling",
+     "reason": "Built for microdata release, with a foreign runtime, for a few counts."
+    },
+    {
+     "name": "HMAC capability token",
+     "reason": "Keeps caller-chosen sets, so the differencing leak stays."
+    }
+   ],
+   "design": {
+    "components": "cohort/membership.py (new): create_programme, enrol(join_code, session) -> enrolment token, resolve(enrolment token), withdraw. cohort/disclosure.py (new): disclose_count, disclose_counts (dict), band_share, and snapshot publication. cohort/programme.py computes over member sessions only and routes every number through disclosure. routers/cohort.py: POST /programmes (operator), POST /programmes/join (founder, with session), GET /programmes/{id} (operator key), DELETE /programmes/join (withdraw). api/deps.py: require_operator(programme_id) compares an HMAC of the presented key using secrets.compare_digest. Frontend: Cohort.tsx loses the session-id paste and shows the published snapshot; in Talk.tsx and Consent.tsx, join-code entry replaces the share_with_programme checkbox.",
+    "data_model": "Programme document in the store (key 'programme:{id}'): {id, name, join_code_bi (HMAC-SHA256 via the T30 keyring), operator_key_bi, created_at, members: {enrolment_id: {token_bi, latest_session_id, joined_at, consent_record_id}}, published: {at, member_count_rounded, payload, members_at_publish}}. The session document gains enrolment_id, replacing cohort_consent; the T34 upgrader drops the old flag and enrols no one. The enrolment token is 128-bit random and is shown to the browser once (kept in T18's key registry). Consent: a T19 consent record with purpose 'programme_aggregate' and the programme_id.",
+    "algorithm": "disclose_count(n) = 0 if n == 0; 'fewer than 5' if 1 <= n <= 4; else 5*round(n/5). disclose_counts(values) groups the values and applies disclose_count, folding sub-5 groups into one 'fewer than 5' bucket that is itself rounded or suppressed. Shares become bands ('under a quarter', 'about half', ...). founders_listed and founders_sharing are never published exactly; only member_count_rounded is. Publication: recompute nightly (T32 runner) or on operator request, but replace 'published' only when the symmetric difference between current members and members_at_publish is 5 or more; otherwise serve the old snapshot and say when it will update. Nothing is shown below 5 members. Aggregates use the latest session per enrolment.",
+    "interfaces": "T17: once owners exist, an enrolment links user_id and the token becomes optional; the session id never leaves the founder. T19: consent record with purpose and withdrawal; a withdrawal removes the member at the next publication. T30: keyring HMAC for the *_bi fields. T14: require_operator is replaced by a programme role. T32: the maintenance runner publishes snapshots. T18: the browser stores the enrolment token in its key registry. T07: programme documents use the same store, with no idle expiry.",
+    "files": [
+     "backend/app/cohort/membership.py (new)",
+     "backend/app/cohort/disclosure.py (new)",
+     "backend/app/cohort/programme.py",
+     "backend/app/routers/cohort.py",
+     "backend/app/api/deps.py",
+     "backend/app/core/config.py (OPERATOR_KEYS bootstrap)",
+     "backend/app/agents/ideation.py (enrolment_id instead of cohort_consent)",
+     "backend/app/routers/ideation.py (join_code in AgentStartIn)",
+     "frontend/src/pages/Cohort.tsx",
+     "frontend/src/pages/Talk.tsx",
+     "frontend/src/pages/Consent.tsx",
+     "backend/tests/property/test_disclosure.py (new)",
+     "docs/specs/TASKS.md (3.2.5 When and subtasks)"
+    ],
+    "rollout": "1) The disclosure function applied to today's endpoint (an immediate partial fix). 2) The operator key on the endpoint. 3) Membership and enrolment, removing the session-id endpoint in the same release. 4) Published snapshots once T32 exists (until then, publish on operator request, with the step-of-5 rule). No real programme data exists yet, so no members need migrating.",
+    "offline": "Entirely local: the store, HMAC from the standard library or cryptography, no external call."
+   },
+   "tasks": [
+    {
+     "title": "One disclosure function for every published number",
+     "why": "Exact counts at 5 or more, exact averages and a raw roadmap count let one added session reveal a founder.",
+     "where": "backend/app/cohort/disclosure.py (new), cohort/programme.py",
+     "how": "disclose_count and disclose_counts (round to base 5, 1-4 as 'fewer than 5') and banded shares; programme_cohort routes every field, including reached_a_roadmap and founders_sharing, through them; a Hypothesis property asserts that no output integer is 1-4 or off a multiple of 5.",
+     "when": "First in T20; no dependency.",
+     "what_for": "So new 5.5.3 aggregates inherit the rule automatically, and a single extra session cannot be read off.",
+     "subtasks": [
+      {
+       "text": "Route reached_a_roadmap, the average and every group through disclosure; property test that no count is 1-4",
+       "flags": [
+        "F-A5-033"
+       ]
+      },
+      {
+       "text": "Round counts to 5 and band averages; replaying the 5+1 Salem probe gives identical outputs with and without the target",
+       "flags": [
+        "F-A3-012",
+        "F-B2-006"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Interim operator key on the programme endpoints",
+     "why": "The endpoint is open, and the planned auth needs a database no machine has yet.",
+     "where": "backend/app/api/deps.py (require_operator), core/config.py, routers/cohort.py, docs/specs/TASKS.md 3.2.5",
+     "how": "Store an operator key per programme as an HMAC (T30 keyring, or hmac with SECRET_KEY until the keyring lands) and compare with secrets.compare_digest; TASKS 3.2.5 gains a subtask 'replace with a role column (T14/T17) plus migration'.",
+     "when": "After task 1; independent of the database. The T30 keyring task is preferred but not blocking.",
+     "what_for": "So the view is closed today without waiting for PostgreSQL.",
+     "subtasks": [
+      {
+       "text": "require_operator dependency with compare_digest; programme endpoints return 401 without the key; TASKS 3.2.5 'When' and a migration subtask corrected",
+       "flags": [
+        "F-B3-003"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Server-owned membership by join code and enrolment",
+     "why": "The caller chooses the session set, session ids are full credentials, and one founder counts several times.",
+     "where": "backend/app/cohort/membership.py (new), routers/cohort.py, routers/ideation.py (join_code), agents/ideation.py, frontend Cohort.tsx, Talk.tsx, Consent.tsx",
+     "how": "Programme documents in the store; POST /programmes/join with a session and a join code creates or resumes an enrolment and returns an enrolment token; new sessions send the token and update latest_session_id; GET /programmes/{id} aggregates the latest session per enrolment; the session_ids endpoint is removed; Cohort.tsx no longer takes session ids.",
+     "when": "After task 2. Consent record from T19 ('programme_aggregate'); token kept in T18's browser key registry; the T34 upgrader drops cohort_consent.",
+     "what_for": "So the server owns the set, programmes never hold a founder's session key, and the floor counts founders.",
+     "subtasks": [
+      {
+       "text": "Remove the caller-chosen session_ids endpoint; aggregate only over server-owned members",
+       "flags": [
+        "F-B3-001"
+       ]
+      },
+      {
+       "text": "The join code replaces pasting session ids; the programme never receives a session id",
+       "flags": [
+        "F-B3-002"
+       ]
+      },
+      {
+       "text": "The enrolment token is resent with new sessions; aggregate the latest session per enrolment, so a restart does not count twice",
+       "flags": [
+        "F-B3-014"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Published snapshots that move in steps of five",
+     "why": "Comparing two outputs over time, or before and after one join, still isolates a founder.",
+     "where": "backend/app/cohort/disclosure.py (publication), cohort/membership.py, the T32 maintenance runner",
+     "how": "Store the published payload with members_at_publish; replace it only when the symmetric difference of members is 5 or more; serve the last snapshot with its date; the T32 nightly job recomputes.",
+     "when": "After task 3. Uses T32's runner when available, and an operator 'refresh' action until then.",
+     "what_for": "So neither a single join nor a single withdrawal can be isolated by differencing snapshots.",
+     "subtasks": [
+      {
+       "text": "Publish a new snapshot only after a membership change of 5 or more; test that one join leaves the served payload unchanged",
+       "flags": [
+        "F-B2-006",
+        "F-A3-012"
+       ]
+      }
+     ]
+    }
+   ],
+   "tests": "Hypothesis: for any member multiset, every published integer is 0 or a multiple of 5 that is at least 5, and 1-4 never appears. Differencing tests: the A3, B3 and B2 probes (5 plus 1 target, Chennai and Salem variants) give equal outputs. Membership tests: an unknown join code is refused; a token resent from a new session updates latest_session_id and the founder count stays 1; a withdrawal removes the member at the next publication. Auth tests: a missing or wrong key gives 401, with a timing-safe compare. Frontend: Cohort.tsx has no session-id input.",
+   "risks": "A leaked join code lets planted sessions in (mitigated by operator join-code rotation and rounding). The snapshot lag may confuse operators (show 'updates when 5 or more founders join or leave'). Rounding hides real cohorts smaller than 5, by design."
+  },
+  {
+   "theme": "T25",
+   "understanding": "s.private gates only the research scan and novelty (ideation.py _research_work). providers.chain() and judge() never look at the session, so in private mode the whole conversation still streams to Gemini or Claude and the panel seats send the idea. /voice/speak takes free text with no session id, so reply audio goes to Gemini or Sarvam TTS whatever the founder chose, and Talk.tsx calls speaker.say regardless of isPrivate. Browser SpeechRecognition (the default listener without a Sarvam key) sends audio to Google in Chrome, and no notice mentions it. The planned notice is tied to whichever provider answered a turn, so it can only appear after the text has left. TASKS 3.2.1 claims private sessions send no idea text out. The root cause: no per-session egress policy is decided before the first turn and enforced on the server at every outbound call. Privacy is a research flag, not a property of the session.",
+   "flags_disputed": [],
+   "approaches": [
+    {
+     "name": "Per-session EgressPolicy decided at start from configuration and consent, enforced in the egress gate (T15), with a versioned 'may reach' notice before the first turn",
+     "how": "At session start the server computes may_reach from configuration: the cloud model vendors in llm_order that are configured, the TTS vendors, the browser speech listener and external research. The start flow returns may_reach plus notice_version; the founder agrees per purpose (cloud_model, cloud_voice, browser_speech, external_research) or picks private, which grants none. The policy is stored on the session and checked by gate.call for every destination; chain(policy) and judge(policy) list only allowed providers; /speak requires session_id and checks cloud_voice.",
+     "basis": "Privacy by design and purpose limitation (DPDP Act 2023 s.4-6); one enforcement point, as in T15.",
+     "cost": "free/open source",
+     "advantages": "Makes 'private' true, shows the notice before any text leaves, records agreement for T19, and is testable at one choke point.",
+     "drawbacks": "Private sessions get a plainer conversation (Ollama or templates) and fewer voice options."
+    },
+    {
+     "name": "Disclosure only (notice, no enforcement)",
+     "how": "Show a notice that text may go to Google and keep the current behaviour.",
+     "basis": "Common consent-banner practice.",
+     "cost": "free/open source",
+     "advantages": "Trivial.",
+     "drawbacks": "Leaves a feature named 'private' sending everything to Google, contradicting decision 0004 and the greeting."
+    },
+    {
+     "name": "Redaction or pseudonymisation before cloud calls (Microsoft Presidio, custom masking)",
+     "how": "Mask names, places and idea specifics before sending text to cloud models.",
+     "basis": "Presidio is a mature PII-detection toolkit.",
+     "cost": "free/open source (spaCy-based)",
+     "advantages": "Lets cloud models help in private mode.",
+     "drawbacks": "An idea conversation cannot work on masked text, because the idea itself is the secret. Heavy dependency, and poor Tamil coverage."
+    },
+    {
+     "name": "Fully local voice stack for private mode (Piper TTS, Vosk STT)",
+     "how": "Run Piper for speech output and Vosk for recognition on the server, so voice works privately.",
+     "basis": "Both are open source and offline.",
+     "cost": "free/open source (models of 50-100 MB each)",
+     "advantages": "Private voice without Google.",
+     "drawbacks": "Tamil accuracy is unproven and it needs a worker to run. A worthwhile follow-up, but it enforces nothing on its own."
+    },
+    {
+     "name": "Frontend-only gating",
+     "how": "Talk.tsx stops calling remote TTS and STT in private mode; the backend stays as it is.",
+     "basis": "Simple UI change.",
+     "cost": "free/open source",
+     "advantages": "Quick.",
+     "drawbacks": "A promise the server does not keep: any other client, or a bug, still sends data, and model and panel calls are server-side anyway."
+    },
+    {
+     "name": "Per-call consent prompts",
+     "how": "Ask the founder every time a cloud call is about to be made.",
+     "basis": "Just-in-time consent.",
+     "cost": "free/open source",
+     "advantages": "Very explicit.",
+     "drawbacks": "Unusable in a voice conversation (a prompt every turn), and it still needs server enforcement."
+    }
+   ],
+   "chosen": "Per-session EgressPolicy decided at start from configuration and consent, enforced in the egress gate (T15), with a versioned 'may reach' notice before the first turn",
+   "why_chosen": "It is the only option that makes private mode true and shows the notice before anything leaves, and it reuses parts that already exist: Ollama, templates, phrasebook audio and typing. Enforcement sits in the same egress gate T15 builds, so exactly one place allows, counts and limits any outbound call, which is easy to test with a transport that fails on any non-local host. Consent records come from T19, so the agreement cites the notice version.",
+   "not_chosen": [
+    {
+     "name": "Disclosure only",
+     "reason": "Private mode would still send everything to Google, against 0004 and the greeting."
+    },
+    {
+     "name": "Redaction",
+     "reason": "The idea is the private content, so masked text defeats the conversation; heavy and weak for Tamil."
+    },
+    {
+     "name": "Local voice stack now",
+     "reason": "Unproven Tamil accuracy and a new worker; kept as the follow-up listener and speaker for private mode once checked."
+    },
+    {
+     "name": "Frontend-only gating",
+     "reason": "The server would not keep the promise, and model and panel calls are server-side."
+    },
+    {
+     "name": "Per-call prompts",
+     "reason": "Breaks the voice conversation and still needs server enforcement."
+    }
+   ],
+   "design": {
+    "components": "core/egress.py: EgressPolicy{cloud_model, cloud_voice, browser_speech, external_research, notice_version}, and Gate.call(policy=...) refusing with Reason.POLICY. agents/providers.py: Provider.locality and vendor; chain(policy) and judge(policy). agents/privacy.py (new): may_reach(settings) -> list[{vendor, purpose, what}] and NOTICE_VERSION. agents/ideation.py: the policy is built at start from the consent choices (private=True means local only), and turn_stream and _council_work pass it on. routers/voice.py: /speak and /transcribe require session_id and check the policy; /status reports per purpose. Frontend: Talk.tsx shows the notice before the first turn and uses no remote TTS or browser STT unless allowed, with typing as the default in private mode; speech.ts is guarded by the policy.",
+    "data_model": "The session gains egress: {cloud_model:bool, cloud_voice:bool, browser_speech:bool, external_research:bool, notice_version:str, decided_at}. 'private' stays as a derived view (all false) for compatibility. Consent records (T19) hold purpose, notice_version, granted and withdrawn_at. may_reach is computed, never stored.",
+    "algorithm": "Start: may = may_reach(settings); if private, all purposes are false; otherwise the purposes come from the founder's choices in the start request (the frontend shows the notice from GET /ideation/agent/notice before creating the session). Every outbound call: gate.call(dest, ..., policy=s.egress) refuses with POLICY when dest.locality == 'cloud' and the purpose for dest.kind is not granted. chain(policy) filters providers before any stream starts, so nothing is sent. /speak without cloud_voice falls back to the phrasebook or 204. When browser_speech is false the frontend hides the mic and offers typing; the server cannot enforce this, so it returns the policy to the client and the notice says so. If the configuration changes mid-session and may_reach gains a vendor that is not in the agreed notice_version, that vendor is refused until the founder agrees again. A withdrawal (T19) changes the purposes at once.",
+    "interfaces": "T15: the gate is the enforcement point. T19: purpose registry and consent records (this theme defines the four egress purposes there). T26: the voice pipeline reads the policy and later adds local Piper/Vosk for private mode. T35: the panel's call passes the policy (private -> rules only). T23: POLICY refusals are counted. docs/specs/TASKS.md 3.2.1 wording corrected; the consequences of decision 0009 updated in a new ADR note.",
+    "files": [
+     "backend/app/core/egress.py (EgressPolicy)",
+     "backend/app/agents/privacy.py (new)",
+     "backend/app/agents/providers.py (chain, judge)",
+     "backend/app/agents/ideation.py (start, turn_stream, _council_work)",
+     "backend/app/routers/ideation.py (start body, notice endpoint)",
+     "backend/app/routers/voice.py",
+     "frontend/src/pages/Talk.tsx",
+     "frontend/src/voice/speech.ts",
+     "frontend/src/pages/Consent.tsx",
+     "docs/specs/TASKS.md (3.2.1)",
+     "backend/tests/integration/test_private_egress.py (new)"
+    ],
+    "rollout": "1) chain(policy) and judge(policy), with private meaning local only (a quick fix that needs no notice UI). 2) Session-scoped /speak. 3) may_reach, the versioned notice and purposes recorded through T19. 4) The browser speech purpose in the notice. Old sessions: the T34 upgrader sets egress from 'private' (private -> all false; otherwise cloud purposes true with notice_version 'pre-notice', so the next session shows the notice).",
+    "offline": "Private mode is the offline mode: Ollama if running, else deterministic templates; phrasebook audio; typing."
+   },
+   "tasks": [
+    {
+     "title": "Local-only provider chain for private sessions",
+     "why": "Private sessions still stream the conversation and the panel to Gemini or Claude.",
+     "where": "backend/app/agents/providers.py (Provider.locality, chain(policy), judge(policy)), agents/ideation.py (turn_stream, _council_work), docs/specs/TASKS.md 3.2.1",
+     "how": "Add locality and vendor to each provider; chain and judge take the session policy; private means local only (Ollama, then templates); the panel uses rules when no allowed judge exists; correct the TASKS 3.2.1 sentence.",
+     "when": "First in T25. Uses T15's gate when present; until then chain() filters directly, and the gate re-checks later.",
+     "what_for": "So 'private' means what the greeting promises.",
+     "subtasks": [
+      {
+       "text": "chain(policy) and judge(policy) exclude cloud providers for private sessions; integration test with a transport that fails on any non-local host",
+       "flags": [
+        "F-B3-008",
+        "F-A1-022"
+       ]
+      },
+      {
+       "text": "TASKS 3.2.1 corrected to say that private sessions use only local models and recorded voice",
+       "flags": [
+        "F-B3-008"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Session-scoped voice endpoints",
+     "why": "/speak takes any text with no session, so private replies, and replies without voice consent, go to Gemini or Sarvam TTS, and anyone can spend the free quota.",
+     "where": "backend/app/routers/voice.py (/speak, /transcribe), frontend/src/pages/Talk.tsx, frontend/src/voice/speech.ts",
+     "how": "SpeakIn gains session_id; load the session and refuse remote TTS without the cloud_voice purpose (falling back to the phrasebook or 204); Talk.tsx passes session_id and uses only the phrasebook in private mode.",
+     "when": "After task 1. The voice consent purpose comes from T19; until then, cloud_voice = not private.",
+     "what_for": "So the server keeps the private and voice-consent promises, and the free TTS quota is not open to anyone.",
+     "subtasks": [
+      {
+       "text": "/speak requires session_id and checks private mode and voice consent before any remote TTS; Talk.tsx stops remote voice in private mode",
+       "flags": [
+        "F-A3-016"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Session egress policy, may-reach notice and recorded agreement",
+     "why": "A notice keyed to the provider that answered can only appear after the text has left, and it records nothing.",
+     "where": "backend/app/agents/privacy.py (new), core/egress.py (EgressPolicy, gate check), routers/ideation.py (notice endpoint, start body), Talk.tsx, Consent.tsx",
+     "how": "Compute may_reach from configuration, with NOTICE_VERSION; show it before the first turn; record agreement per purpose through T19; the gate refuses cloud destinations without the purpose; a vendor added mid-session is refused until the founder agrees again.",
+     "when": "After tasks 1-2 and T15 task 'Egress gate with per-destination limits, priority and counters'. Consent records from T19 (or a session-local record until T19 lands).",
+     "what_for": "So the founder decides before any text leaves, and the agreement cites a notice version.",
+     "subtasks": [
+      {
+       "text": "may_reach from configuration and a versioned notice before the first turn; agreement recorded per purpose and enforced by the gate",
+       "flags": [
+        "F-B3-009"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Browser speech recognition in the notice and policy",
+     "why": "On the default no-key setup Chrome's SpeechRecognition sends audio to Google, and no notice mentions it.",
+     "where": "frontend/src/voice/speech.ts, Talk.tsx, agents/privacy.py may_reach, the 'browser_speech' purpose",
+     "how": "List the browser listener in may_reach as a Google path; without the browser_speech purpose (and always in private mode) hide the mic and default to typing; record Vosk in BACKLOG as the planned private listener (T26).",
+     "when": "After task 3; coordinate with T26 for the later local listener.",
+     "what_for": "So voice-first founders know their audio goes to Google, and private mode sends none.",
+     "subtasks": [
+      {
+       "text": "Browser STT named in the notice as a Google path; disabled in private mode and without the purpose; typing is the path that sends nothing",
+       "flags": [
+        "F-B3-010"
+       ]
+      }
+     ]
+    }
+   ],
+   "tests": "Integration: a private session with GEMINI_API_KEY set and an httpx MockTransport that records hosts; after a full conversation with panel and voice, no request reached generativelanguage.googleapis.com, api.anthropic.com or Sarvam. /speak without session_id gives 422; for a private session it gives the phrasebook or 204 and never makes a remote call. Notice: may_reach lists Gemini when a key is set and the browser listener when there is no Sarvam key; a mid-session config change refuses the new vendor. Frontend test: private mode hides the mic.",
+   "risks": "Private sessions are plainer (no cloud model), which the start screen must explain. Browser speech cannot be enforced server-side; it relies on the client honouring the policy, as the notice says. Notice fatigue: one notice per session, versioned, so it reappears only when the vendors change."
+  },
+  {
+   "theme": "T30",
+   "understanding": "models/founder.py forces name, email, phone, date_of_birth, gender, state, district and city to be NOT NULL, with unique email and phone, while the browser profile has every field optional. A partial profile cannot be saved, and the schema demands more personal data than the product needs. Founder.email duplicates users.email. Founder and Startup use SoftDeleteMixin with unique personal columns, so erasure keeps the data and blocks signing up again. completeness.py marks every present basic field as 'verified', and tier 100 'investment_ready' follows a client 'Documents verified (demo)' checkbox. The planned 'transparent' AES wrap of phone and email would break their unique indexes, and there is no key separate from the JWT secret_key. The root cause: the schema was written as a full profile form, with no notion of provenance (self-reported versus verified), minimisation, hard erasure or searchable encryption.",
+   "flags_disputed": [],
+   "approaches": [
+    {
+     "name": "Minimal nullable schema, per-field provenance, hard delete, and an AES-GCM TypeDecorator with keyring and HMAC blind-index columns",
+     "how": "One Alembic migration: personal columns become nullable; Founder.email is dropped (taken from users); SoftDeleteMixin is dropped on Founder and Startup in favour of hard delete with FK cascades and a PII-free audit row. core/crypto.py adds a Keyring (DATA_KEYS as an 'id:base64' list, first one active) and EncryptedString/EncryptedDate TypeDecorators (AES-256-GCM, random nonce, 'v1:keyid:' prefix). HMAC-SHA256 blind indexes (separate BLIND_INDEX_KEY) serve phone and any lookup field, with uniqueness on the blind index. Completeness reports present fields and a separate verified list that only server checks may fill; tiers are renamed basic, standard and complete.",
+     "basis": "cryptography (already installed through python-jose) AESGCM; the blind-index pattern (CipherSweet, Paragon IE) is a standard answer to searchable encryption.",
+     "cost": "free/open source",
+     "advantages": "Fixes sync, minimisation, erasure, honest verification and encryption together, offline, with keys separate from JWT signing and support for rotation.",
+     "drawbacks": "One extra column per lookup field; key management is the operator's job (documented)."
+    },
+    {
+     "name": "Separate draft table plus promotion",
+     "how": "Partial profiles live in founder_drafts (all nullable) and are promoted to founders when complete.",
+     "basis": "Common staging pattern.",
+     "cost": "free/open source",
+     "advantages": "Keeps the strict table.",
+     "drawbacks": "Two shapes and a promotion step for the same data, and the strict table still over-collects."
+    },
+    {
+     "name": "JSONB profile document",
+     "how": "Store the profile as one JSONB column validated by Pydantic.",
+     "basis": "Matches the session-document style (0005).",
+     "cost": "free/open source",
+     "advantages": "Flexible and trivially partial.",
+     "drawbacks": "Loses the typed columns, checks and indexes the scheme code relies on, and field-level encryption inside JSON is awkward."
+    },
+    {
+     "name": "sqlalchemy-utils EncryptedType / StringEncryptedType",
+     "how": "Use the ready-made TypeDecorator.",
+     "basis": "Popular package.",
+     "cost": "free/open source",
+     "advantages": "Little code.",
+     "drawbacks": "Weak defaults (AES-CBC or deterministic modes in older versions), no blind index, no key rotation, and a new dependency."
+    },
+    {
+     "name": "PostgreSQL pgcrypto",
+     "how": "pgp_sym_encrypt in SQL, with keys passed in queries.",
+     "basis": "Built into PostgreSQL.",
+     "cost": "free/open source",
+     "advantages": "No application crypto code.",
+     "drawbacks": "Keys appear in SQL text and logs, tests become tied to PostgreSQL, and there is still no blind index."
+    },
+    {
+     "name": "Cloud KMS envelope encryption (AWS KMS, GCP KMS)",
+     "how": "Data keys wrapped by a managed KMS.",
+     "basis": "Industry standard.",
+     "cost": "paid and online",
+     "advantages": "Strong key custody.",
+     "drawbacks": "Paid and needs the network, against the free and offline constraint."
+    }
+   ],
+   "chosen": "Minimal nullable schema, per-field provenance, hard delete, and an AES-GCM TypeDecorator with keyring and HMAC blind-index columns",
+   "why_chosen": "No real data exists yet, so one migration can make the schema honest before 3.1.2 writes records. It stores only what the founder chose to give, says typed data was typed, erases for real, and encrypts without breaking lookups. The library is already installed, and the keyring also serves T20 (join-code, enrolment and operator-key hashes) and T32 (an erasure audit without personal data).",
+   "not_chosen": [
+    {
+     "name": "Draft table",
+     "reason": "Two shapes and a promotion step, and the main table still forces data the product does not need."
+    },
+    {
+     "name": "JSONB document",
+     "reason": "Throws away the typed columns and indexes the schemes code reads, and makes field encryption awkward."
+    },
+    {
+     "name": "sqlalchemy-utils",
+     "reason": "Weak defaults, no blind index or rotation, and a new dependency."
+    },
+    {
+     "name": "pgcrypto",
+     "reason": "Keys in SQL text and logs, and no blind index."
+    },
+    {
+     "name": "Cloud KMS",
+     "reason": "Paid and online."
+    }
+   ],
+   "design": {
+    "components": "core/crypto.py (new): Keyring.from_settings(); encrypt/decrypt with the format 'v1:{key_id}:{b64(nonce|ct|tag)}'; blind_index(value, field) = HMAC-SHA256(BLIND_INDEX_KEY, field + '|' + normalise(value)); TypeDecorators EncryptedString and EncryptedDate. models/founder.py and startup.py rewritten. services/completeness.py with provenance. An Alembic migration in app/db/migrations/versions. The /profiles router: DELETE is a hard delete, and client verification flags are ignored. Frontend Profile.tsx: the demo checkbox is removed. scripts/rotate_keys.py re-encrypts under the active key.",
+    "data_model": "founders: founder_id; user_id FK users ON DELETE CASCADE (email lives in users); name nullable; phone_enc nullable plus phone_bi unique nullable; date_of_birth_enc nullable; gender nullable; state, district and city nullable; pincode; education fields; caste_category_enc nullable (no blind index: low cardinality); first_graduate nullable (unknown is not false); discoverable; field_provenance JSON {field: 'self_reported'|'format_checked'|'verified:{method}'}. startups: gstin_bi, cin_bi and dpiit_bi unique nullable, plus encrypted values where personal; FK ON DELETE CASCADE; no deleted_at. erasure_audit: id, subject_hash (HMAC of founder_id), at, actor_kind, tables_cleared. Settings: DATA_KEYS (comma list of id:base64key, the first active) and BLIND_INDEX_KEY, both separate from SECRET_KEY; startup fails fast if they are missing while encrypted columns are in use, or equal to SECRET_KEY.",
+    "algorithm": "Encrypt: AESGCM(key).encrypt(os.urandom(12), plaintext, aad=f'{table}.{column}'). Decrypt: parse the key id and take that key from the keyring (old keys stay for reading). Rotation: rotate_keys.py re-encrypts rows whose prefix is not the active key. Blind index: normalise (E.164 for phone, upper-case GSTIN), then HMAC; uniqueness and lookup use the *_bi columns. Completeness: tiers basic (40), standard (60) and complete (80); 100 is reserved and unreachable until server-side verification exists (D11); verified_fields is filled only from 'verified:*' provenance, which no current code path produces. Erasure: DELETE FROM founders WHERE founder_id = ... cascades to startups and profile_completeness, then writes an erasure_audit row.",
+    "interfaces": "T16: the migration and the drift checks. T03: provenance values mirror T03's source ranks (self_reported corresponds to ANSWER/PROFILE). T04: eligibility treats a null field as unknown, never false. T19: caste_category is written only with its consent purpose. T20: Keyring.blind_index hashes join codes and keys. T32: erasure and retention call the hard-delete service and write audit rows. T31: the roadmap reads the profile through nullable fields.",
+    "files": [
+     "backend/app/core/crypto.py (new)",
+     "backend/app/core/config.py (DATA_KEYS, BLIND_INDEX_KEY)",
+     "backend/app/models/founder.py",
+     "backend/app/models/startup.py",
+     "backend/app/models/profile.py",
+     "backend/app/db/migrations/versions/<new>_founder_minimal_encrypted.py",
+     "backend/app/services/completeness.py",
+     "backend/app/routers (profiles router, 3.1.2)",
+     "frontend/src/pages/Profile.tsx",
+     "frontend/src/i18n.ts",
+     "frontend/src/completeness.ts (tier labels)",
+     "scripts/rotate_keys.py (new)",
+     "backend/pyproject.toml (cryptography as an explicit dependency)"
+    ],
+    "rollout": "One migration while the tables are empty, guarded by a row-count check that aborts if data exists. The keyring is optional until the first encrypted write; tests use generated keys. Frontend tier labels change together with completeness.py.",
+    "offline": "All local: the cryptography library, keys from the environment, no external service."
+   },
+   "tasks": [
+    {
+     "title": "Minimal nullable founder schema with email from users",
+     "why": "NOT NULL personal columns make partial profiles unsyncable and force over-collection, and two email columns drift.",
+     "where": "backend/app/models/founder.py, a new Alembic migration, the 3.1.2 profile schemas",
+     "how": "Make personal columns nullable; drop founders.email and read users.email; make first_graduate nullable; enforce completeness in the scorer, not the schema.",
+     "when": "After T16's migration baseline (or as the repo's first migration); before 3.1.2 writes records.",
+     "what_for": "So every draft profile syncs, and only what the founder chose to give is stored.",
+     "subtasks": [
+      {
+       "text": "Nullable personal columns; a partial profile (district plus sector only) saves",
+       "flags": [
+        "F-B2-013",
+        "F-A3-007"
+       ]
+      },
+      {
+       "text": "Drop founders.email in favour of users.email; the migration aborts if rows exist",
+       "flags": [
+        "F-B2-013",
+        "F-A3-007"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Honest provenance and tier names",
+     "why": "Typed fields are stored as 'verified', and a demo checkbox reaches 'investment_ready'.",
+     "where": "backend/app/services/completeness.py, the /profiles router, frontend Profile.tsx, i18n.ts, completeness.ts",
+     "how": "Add field_provenance per field; fill verified_fields only from server verification (none today); rename the tiers basic, standard and complete; make 100 unreachable; the server ignores the client's docsVerified; remove the demo checkbox.",
+     "when": "Independent of task 1, but ships with it.",
+     "what_for": "So no founder or programme is told that something unverified is verified (D11, no invented data).",
+     "subtasks": [
+      {
+       "text": "The server ignores client verification flags; verified_fields stays empty until a real check exists; tiers renamed; demo toggle removed",
+       "flags": [
+        "F-B2-014"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Hard delete with cascades and a PII-free audit row",
+     "why": "Soft delete keeps personal data after erasure, and the unique personal values block signing up again.",
+     "where": "backend/app/models/founder.py and startup.py (drop SoftDeleteMixin), the migration, the profiles DELETE route, the erasure_audit model",
+     "how": "Remove deleted_at; FK ON DELETE CASCADE from startups and profile_completeness; DELETE is a hard delete that writes erasure_audit with an HMAC subject hash.",
+     "when": "After task 1. T32 calls this service for full erasure.",
+     "what_for": "So erasure removes the data, and the same person can sign up again.",
+     "subtasks": [
+      {
+       "text": "Drop SoftDeleteMixin on Founder and Startup; the hard delete cascades; an audit row without personal data; test that signing up again with the same phone works",
+       "flags": [
+        "F-B2-016"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Keyring, AES-GCM columns and blind indexes",
+     "why": "A transparent AES wrap breaks unique and indexed columns, and no key is separate from JWT signing.",
+     "where": "backend/app/core/crypto.py (new), core/config.py, models/founder.py and startup.py, the migration, scripts/rotate_keys.py",
+     "how": "Keyring with key ids and rotation; EncryptedString/EncryptedDate TypeDecorators (AES-256-GCM, AAD = table.column); unique, indexed *_bi HMAC columns for phone and the GSTIN, CIN and DPIIT numbers; caste encrypted without a blind index; fail fast if keys are missing or equal to SECRET_KEY.",
+     "when": "After tasks 1 and 3 (same migration series). T20 reuses Keyring.blind_index.",
+     "what_for": "So sensitive fields are encrypted at rest while lookups and uniqueness still work, offline.",
+     "subtasks": [
+      {
+       "text": "core/crypto.py Keyring plus AES-GCM TypeDecorators plus HMAC blind-index columns with unique constraints; a rotation script; DATA_KEYS and BLIND_INDEX_KEY separate from SECRET_KEY",
+       "flags": [
+        "F-A3-018"
+       ]
+      }
+     ]
+    }
+   ],
+   "tests": "Unit: encrypt/decrypt round trip; a ciphertext from an old key decrypts after rotation; a tampered ciphertext or wrong AAD raises; the blind index is stable under phone normalisation; a duplicate phone is rejected by the unique blind index. Migration test on an empty database (when a database is available; otherwise the SQLite-compatible parts in CI). Completeness: no input yields 'verified' or tier 100. Erasure: a hard delete removes the startups and completeness rows and leaves one audit row with no personal data.",
+   "risks": "Lost keys mean lost data (the runbook documents backing up DATA_KEYS). Blind indexes leak equality for the indexed fields (accepted for phone and GSTIN, refused for caste). The migration must run before any real data, which the row-count abort guards."
+  },
+  {
+   "theme": "T35",
+   "understanding": "Claim (seats.py) has no criterion, so synthesis.py picks the best or worst criterion and then speaks that seat's claims[0], whatever the claim was about; a neutral claim can be read out as 'the weakest point'. vote.weights_for adds technical +5 when no substring of a short TECH_SKILLS list appears in founder_skills, including when the skills are unknown (an enrichment slot the budget rarely reaches). So 'python developer' and 'never asked' both become 'no technical skill recorded'. council.convene makes one judge call per seat (seven, in parallel), each with the same full pack in the system prompt (model.py _system calls pack.lines() with no kinds), so the 'own slice' docstring is false. Failures are not recorded on the provider breaker, so a quota-exhausted Gemini costs the full 8 s on every run. The root cause: panel output is untyped where it matters (claim to criterion, skill to known or unknown), and the panel is shaped as seven independent model calls instead of one structured judgement that code then splits.",
+   "flags_disputed": [],
+   "approaches": [
+    {
+     "name": "One structured panel call returning seven opinions, with a criterion on every claim and question, validated in code; a three-state skill rule on the shared lexicon",
+     "how": "model.py builds one prompt with the full pack once plus every seat's brief, asking for {\"opinions\":[{seat, stance, scores, confidence, claims:[{criterion, text, evidence}], blocker, ask_founder:{criterion, text}, variant}]}. validate() checks seats and criteria and drops claims with no valid criterion or evidence. Rules seats give each claim a criterion, and synthesis picks the claim whose criterion matches. The call goes through the egress gate with priority 'panel' and records failures on the provider breaker. weights_for uses a three-state skill check: known technical, known non-technical, or unknown (no bump).",
+     "basis": "Structured JSON output is supported by Gemini (responseSchema) and parsed with Pydantic, which is already used; decision 0002 (code decides, the model words).",
+     "cost": "free/open source",
+     "advantages": "One request instead of seven per run; an explicit, testable claim-criterion pairing; an honest weights_why; and the tagged question feeds T05.",
+     "drawbacks": "One failure loses every seat's opinion (rules stand in, as today); a longer output per call."
+    },
+    {
+     "name": "Seven calls with per-seat evidence slices",
+     "how": "Keep one call per seat but pass pack.lines(seat.kinds), so each seat really sees its own slice.",
+     "basis": "Matches the original seats.py docstring.",
+     "cost": "free tier, 7 requests per run",
+     "advantages": "Real input diversity between seats.",
+     "drawbacks": "Still seven requests per run on a small per-minute quota, which is the cost the flag is about."
+    },
+    {
+     "name": "Selective re-run of changed seats only",
+     "how": "Re-run only seats whose evidence kinds changed since the last run and keep the others.",
+     "basis": "convene already supports seats= and previous=.",
+     "cost": "free tier",
+     "advantages": "Fewer calls on re-runs.",
+     "drawbacks": "The first run is still seven calls, and the opinions mix bases. A useful optimisation on top of one call, not a substitute."
+    },
+    {
+     "name": "Keyword overlap to map claims to criteria",
+     "how": "Infer each claim's criterion from words such as 'cost', 'buyer' or 'approval'.",
+     "basis": "Simple heuristics.",
+     "cost": "free/open source",
+     "advantages": "No prompt change.",
+     "drawbacks": "Unreliable, and it is the same substring problem T10 fixes elsewhere. The model and the rules already know the criterion when they write the claim."
+    },
+    {
+     "name": "Rules-only panel, with the model used only to word the synthesis",
+     "how": "Seats always run as rules; one model call rewrites the synthesis.",
+     "basis": "Decision 0002 taken further.",
+     "cost": "free/open source",
+     "advantages": "Deterministic, with one call.",
+     "drawbacks": "Loses the model's judgement where evidence is rich; rules seats are coarse (each scores one or two criteria)."
+    },
+    {
+     "name": "ESCO skills taxonomy for founder skills",
+     "how": "Map founder_skills to ESCO occupations and skills to decide what counts as technical.",
+     "basis": "The EU's open skills taxonomy.",
+     "cost": "free/open source (large dataset)",
+     "advantages": "Broad coverage.",
+     "drawbacks": "A heavy dataset for one weight bump; a reviewed technical-skill vocabulary in T01 is enough."
+    }
+   ],
+   "chosen": "One structured panel call returning seven opinions, with a criterion on every claim and question, validated in code; a three-state skill rule on the shared lexicon",
+   "why_chosen": "The seats already share identical evidence, so one structured call loses nothing and cuts free-tier use sevenfold, removing the burst source T15 has to defend against. A criterion written at the source is the only reliable pairing, and code checks it (decision 0002). The same criterion tag on ask_founder lets T05 bind the panel question and route the founder's answer back to the right criterion on the next run. The three-state skill rule on T10's word-boundary Lexicon stops the false 'no technical skill' claim.",
+   "not_chosen": [
+    {
+     "name": "Seven calls with slices",
+     "reason": "Keeps seven requests per run, which is the main cost."
+    },
+    {
+     "name": "Selective re-run",
+     "reason": "Does not reduce the first run; it can be layered on the single call later."
+    },
+    {
+     "name": "Keyword overlap",
+     "reason": "Unreliable, and whoever writes the claim already knows the criterion."
+    },
+    {
+     "name": "Rules-only panel",
+     "reason": "Throws away the model's judgement where evidence is rich."
+    },
+    {
+     "name": "ESCO",
+     "reason": "A heavy dataset for one weight adjustment; T01's reviewed vocabulary is enough."
+    }
+   ],
+   "design": {
+    "components": "council/seats.py: Claim gains criterion (a Literal of CRITERIA); Opinion.ask_founder becomes Question{criterion, text, duplicates_slot}; validate() drops claims whose criterion is unknown or absent from the opinion's scores. council/model.py: ask_panel(client, pack, idea, slots, provider) -> (list[raw], usage), one call with per-seat briefs and a JSON schema (responseSchema for Gemini, the schema in the prompt for other providers). council/__init__.py: one gate.call(priority='panel') with an 8-10 s cap; on failure, breaker.fail() and rules for every seat; missing seats in a partial result are filled by rules. council/rules.py: every claim and question carries a criterion, and the customer question carries duplicates_slot='beneficiary'. council/synthesis.py: picks the first claim of the best or worst seat whose criterion matches, else states the score with no reason. council/vote.py: the question comes from the most-disputed criterion, else the weakest one, and is skipped if its duplicates_slot is filled; weights_for uses technical_skill(slots) -> True|False|None.",
+    "data_model": "Claim{criterion: Literal['need','feasibility','compliance','economics','differentiation'], text, evidence}. Question{criterion, text, duplicates_slot: str|None}. The vote's 'question' becomes {criterion, text, from_seat, duplicates_slot}. Stored council results stay readable (an upgrader maps a string ask_founder to a Question with criterion None). The technical-skill vocabulary (software, developer, programmer, python, java, electronics, embedded, CAD, machinist, engineer, ...) lives in T01's vocabulary module, together with negative entries (non-technical roles) for the 'known non-technical' state.",
+    "algorithm": "technical_skill: skills unknown (slot empty) -> None, no bump, and weights_why says 'founder's technical skills not known yet'; a Lexicon match of the technical vocabulary on word boundaries -> True, no bump; skills given and none matching -> False, +5 with the reason 'no technical skill among the skills you named'. Panel call: the prompt lists each seat's id, brief and focus kinds; the output is validated per seat, duplicate or unknown seat ids are ignored, and must_oppose is still enforced. Synthesis for criterion c: take the claim with claim.criterion == c from the high or low seat; else from any seat scoring c in the same direction; else give no reason clause.",
+    "interfaces": "T05: the tagged Question enters add_dynamic with binds={'criterion': c} and duplicates_slot. T15: the call goes through gate.call(priority='panel') and is the panel's only request. T25: the policy is passed in, and private means rules. T10/T01: the Lexicon and the skill vocabulary. T13: evidence-pack relevance is unchanged. T34: upgrader for the council result shape.",
+    "files": [
+     "backend/app/agents/council/seats.py",
+     "backend/app/agents/council/model.py",
+     "backend/app/agents/council/__init__.py",
+     "backend/app/agents/council/rules.py",
+     "backend/app/agents/council/synthesis.py",
+     "backend/app/agents/council/vote.py",
+     "backend/app/agents/providers.py (Gemini responseSchema option in complete)",
+     "backend/tests/unit/council/test_panel.py (new)"
+    ],
+    "rollout": "1) Criteria on claims and questions (rules first, then the model prompt), and synthesis matching. 2) Three-state skills. 3) The single call, behind a setting PANEL_MODE=single|per_seat for one release to compare outputs on the eval set; then per_seat is removed.",
+    "offline": "Rules seats with criteria give a full panel offline; the single call is optional."
+   },
+   "tasks": [
+    {
+     "title": "Criterion on every claim and question",
+     "why": "Synthesis quotes a seat's first claim whatever its subject, so founders hear reasons that do not support the judgement.",
+     "where": "council/seats.py (Claim, Question, validate), rules.py, the model.py prompt, synthesis.py, vote.py (question choice)",
+     "how": "Add a criterion to Claim and to ask_founder (now a Question with duplicates_slot); validate drops claims with an unknown criterion; rules tag every claim; synthesis picks the matching claim or gives no reason; vote picks the question from the disputed criterion, else the weakest.",
+     "when": "First in T35. T05 task 'One policy for slot and dynamic questions, with quotas and binding' consumes the tagged question.",
+     "what_for": "So every spoken reason supports the criterion it is attached to, and the panel question is targeted.",
+     "subtasks": [
+      {
+       "text": "Claim.criterion validated against CRITERIA; synthesis matches on criterion; the rules-mode probe no longer calls a neutral claim the weakest point",
+       "flags": [
+        "F-A1-020"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "Three-state technical skill rule",
+     "why": "The 'no technical skill' bump fires for a Python developer and whenever the skills are unknown.",
+     "where": "council/vote.py weights_for, the T01 vocabulary module, elicitation/reading.Lexicon (T10)",
+     "how": "technical_skill(slots) -> True/False/None using the word-boundary Lexicon over a reviewed technical vocabulary; bump only for False; weights_why says 'not known' for None.",
+     "when": "After T10 task 'Reading layer: tokens, word-boundary lexicon and negation scope' (until then, a local \\b regex over an extended list).",
+     "what_for": "So the panel never states a false fact about the founder.",
+     "subtasks": [
+      {
+       "text": "Unknown skills -> no bump; 'python developer' -> technical; the reason text reflects the three states",
+       "flags": [
+        "F-A1-021"
+       ]
+      }
+     ]
+    },
+    {
+     "title": "One structured panel call through the egress gate",
+     "why": "Seven calls per run over the same pack burst the free tier, and failures are not recorded on the breaker.",
+     "where": "council/model.py (ask_panel), council/__init__.py (convene), agents/providers.py (Gemini responseSchema), core/egress.py",
+     "how": "Build one prompt with every seat's brief and the pack once; parse an opinions array; validate per seat; fill missing seats from rules; run under gate.call(priority='panel'); breaker.fail on error or 429; a PANEL_MODE switch for one release.",
+     "when": "After task 1 (the schema includes criteria) and after T15 task 'Egress gate with per-destination limits, priority and counters' (the priority bucket). T25 passes the policy.",
+     "what_for": "So a panel run costs one request and cannot crowd out live turns.",
+     "subtasks": [
+      {
+       "text": "ask_panel returns all seven opinions in one call; per-seat validation; missing seats from rules; breaker recording on failure; eval comparison of single versus per-seat before per-seat is removed",
+       "flags": [
+        "F-A1-023"
+       ]
+      }
+     ]
+    }
+   ],
+   "tests": "Unit: a claim with criterion 'economics' is never quoted for 'need'; rules seats always tag a criterion; a claim with no criterion is dropped. weights_for: skills None -> no bump; ['python developer'] -> no bump; ['tailoring'] -> +5 with the honest reason. Panel: a mocked provider returning a 7-opinion array gives seven opinions; a 5-opinion array gives two rules seats; a 429 calls breaker.fail and gives all rules; exactly one request is made (MockTransport counter). Eval set: the band and the question per idea stay stable between modes, within tolerance.",
+   "risks": "Less seat diversity from one call (mitigated by explicit per-seat briefs and the devil's advocate must_oppose rule). Small models may truncate the longer JSON (cap claims at 3 per seat, max_tokens about 1800). Gemini responseSchema field names vary by API version (keep a prompt-only fallback)."
+  }
+ ]
+}
