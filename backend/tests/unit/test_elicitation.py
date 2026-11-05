@@ -238,6 +238,27 @@ def test_wanting_a_prototype_is_not_having_one():
     ]
 
 
+def test_positional_problem_guess_never_overwrites():
+    """A long answer to another question must not rewrite `problem` (F-B1-019)."""
+    s = engine.start("u1")
+    engine.observe(s, "cold storage is too costly for small vegetable vendors")
+    problem = s.slots["problem"].value
+    assert problem  # the lead sentence became the loose problem guess
+    # answering the beneficiary question with a long sentence: the positional
+    # guess in it must not land, so the scanned idea text stays put.
+    engine.observe(
+        s,
+        "mostly women who run roadside vegetable stalls in small towns",
+        answering="beneficiary",
+    )
+    assert s.slots["problem"].value == problem
+
+    # a second free description (answering nothing) also must not overwrite at
+    # equal confidence — the first idea text wins.
+    engine.observe(s, "actually trucks keep breaking down on the way to the market")
+    assert s.slots["problem"].value == problem
+
+
 def test_valid_direct_answers_are_typed():
     from app.elicitation.answers import validate
 
