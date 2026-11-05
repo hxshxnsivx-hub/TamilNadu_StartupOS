@@ -15,9 +15,12 @@ import re
 from enum import Enum
 from typing import Any
 
+from app.core.vocab import negated
 from app.elicitation.extract import extract
 from app.elicitation.places import find_district
 from app.elicitation.slots import BY_KEY
+
+__all__ = ["SKIP", "negated", "validate"]
 
 # Stage words as a founder answers the stage question directly. Broader than
 # the extractor's cues, which must catch stage in passing and so need phrases.
@@ -44,22 +47,6 @@ _NUMBER_WORDS = {
 SKIP = re.compile(
     r"^\s*(skip|pass|next|not sure|no idea|don'?t know|i don'?t know|theriyala)\W*$", re.I
 )
-
-# A cue preceded by one of these is the founder saying they are NOT there yet, so
-# "no customers yet" and "not selling" must not read as revenue (F-A1-004). The
-# trigger is looked for in the short run of words just before the cue.
-_NEGATION = re.compile(
-    r"\b(no|not|n['’]?t|without|never|none|zero|haven['’]?t|hasn['’]?t|"
-    r"don['’]?t|doesn['’]?t|didn['’]?t|yet to|about to|hoping to|planning to|"
-    r"illai|illa)\b",
-    re.I,
-)
-_NEG_WINDOW = 24  # characters before the cue to scan for a negation trigger
-
-
-def negated(low: str, start: int) -> bool:
-    """Is the cue at `start` (in already-lowercased `low`) preceded by a negation?"""
-    return _NEGATION.search(low[max(0, start - _NEG_WINDOW) : start]) is not None
 
 
 def _stage(text: str) -> str | None:
