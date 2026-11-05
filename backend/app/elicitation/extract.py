@@ -29,7 +29,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from app.core.vocab import boundary_hits
+from app.core.vocab import boundary_hits, negated, unnegated_hit
 from app.elicitation.places import find_district
 from app.elicitation.slots import (
     CapitalBand,
@@ -347,14 +347,19 @@ def extract(text: str) -> list[Extraction]:
     if (route := _first_cue(low, _ROUTE_CUES)) is not None:
         out.append(Extraction("funding_route", route, 0.85))
     # State evidence wins outright; intent only ever produces a low-confidence
-    # hint that the stopping rule will turn into a confirmation question.
+    # hint that the stopping rule will turn into a confirmation question. Cues are
+    # matched on word boundaries and a negated cue is ignored, so "we don't have
+    # customers yet" is not read as revenue (F-A1-004).
     for stage, needles in _STAGE_STATE.items():
         pattern = _STAGE_STATE_PATTERNS.get(stage)
-        if any(n in low for n in needles) or (pattern is not None and pattern.search(low)):
+        pat_hit = pattern.search(low) if pattern is not None else None
+        if any(unnegated_hit(low, n) for n in needles) or (
+            pat_hit is not None and not negated(low, pat_hit.start())
+        ):
             out.append(Extraction("stage", stage, 0.85))
             break
     else:
-        if any(n in low for n in _STAGE_INTENT):
+        if any(unnegated_hit(low, n) for n in _STAGE_INTENT):
             out.append(Extraction("stage", "idea", 0.55))
 
     # Capital: only trust a figure that actually carries a unit, otherwise
