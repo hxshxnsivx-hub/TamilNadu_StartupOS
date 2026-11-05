@@ -37,6 +37,33 @@ def boundary_hits(text: str, cue: str) -> bool:
     return _pattern(cue) is not None and _pattern(cue).search(text) is not None
 
 
+# A cue preceded by one of these is the founder saying they are NOT there yet, so
+# "no customers yet" and "we don't have a prototype" must not emit the value
+# (arena flag F-A1-004). The trigger is looked for in the short run of characters
+# just before the cue; Tamil negators (illai / illa / alla) are included.
+_NEGATION = re.compile(
+    r"(?<![" + _LETTER + r"])(?:no|not|n['’]?t|without|never|none|zero|"
+    r"haven['’]?t|hasn['’]?t|hadn['’]?t|don['’]?t|doesn['’]?t|didn['’]?t|"
+    r"isn['’]?t|aren['’]?t|wasn['’]?t|weren['’]?t|yet to|about to|hoping to|"
+    r"planning to|illai|illa|alla)(?![" + _LETTER + r"])",
+    re.IGNORECASE,
+)
+_NEG_WINDOW = 28  # characters before the cue to scan for a negation trigger
+
+
+def negated(text: str, start: int) -> bool:
+    """Is the cue at index ``start`` preceded by a negation trigger (same string)?"""
+    return _NEGATION.search(text[max(0, start - _NEG_WINDOW) : start]) is not None
+
+
+def unnegated_hit(text: str, cue: str) -> bool:
+    """A boundary hit for ``cue`` that is *not* preceded by a negation trigger."""
+    if not text or not cue.strip():
+        return False
+    m = _pattern(cue).search(text)
+    return m is not None and not negated(text, m.start())
+
+
 class Cues:
     """Compile a ``{value: (cue, ...)}`` table and return every value that hits.
 
