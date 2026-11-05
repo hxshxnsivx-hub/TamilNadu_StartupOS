@@ -78,3 +78,20 @@ def test_gaps_only_for_weak_dimensions_and_ranked():
 
 def test_no_gaps_for_strong_profile():
     assert analyze_gaps(score_readiness(STRONG)) == []
+
+
+def test_revenue_stage_scores_above_mvp_not_zero() -> None:
+    """A revenue-stage founder must not fall through to a 0 product score (F-A4-015)."""
+    base = {"feature_completeness": 50, "has_ip": False}
+    mvp = score_readiness({**base, "stage": "mvp"})
+    revenue = score_readiness({**base, "stage": "revenue"})
+    # "revenue" used to be absent from the stage table and scored like "idea"
+    assert revenue.dimensions["product"] > mvp.dimensions["product"]
+
+
+def test_stage_spelling_variants_score_the_same() -> None:
+    base = {"feature_completeness": 50}
+    assert (
+        score_readiness({**base, "stage": "launched"}).dimensions["product"]
+        == score_readiness({**base, "stage": "revenue"}).dimensions["product"]
+    )

@@ -10,6 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from app.core.vocab import Stage, to_stage
+
 WEIGHTS = {
     "team": 0.20,
     "product": 0.20,
@@ -19,7 +21,16 @@ WEIGHTS = {
     "legal": 0.10,
 }
 
-_STAGE_SCORE = {"idea": 10, "poc": 20, "prototype": 25, "mvp": 35, "launched": 45, "scaling": 50}
+# Keyed by the canonical Stage, so every spelling ("revenue", "launched", "scaling")
+# scores the same. A revenue-stage founder no longer falls through to 0 (F-A4-015).
+_STAGE_SCORE = {
+    Stage.IDEA: 10,
+    Stage.POC: 20,
+    Stage.PROTOTYPE: 25,
+    Stage.MVP: 35,
+    Stage.REVENUE: 45,
+    Stage.GROWTH: 50,
+}
 
 
 def _clamp(v: float) -> int:
@@ -48,8 +59,9 @@ def _team(p: dict) -> int:
 
 
 def _product(p: dict) -> int:
+    stage = to_stage(p.get("stage"))
     return _clamp(
-        _STAGE_SCORE.get(str(p.get("stage", "")), 0)
+        (_STAGE_SCORE.get(stage, 0) if stage else 0)
         + _num(p, "feature_completeness") * 0.25
         + (25 if _flag(p, "has_ip") else 0)
     )

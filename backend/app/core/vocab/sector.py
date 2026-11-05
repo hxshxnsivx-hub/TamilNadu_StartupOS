@@ -115,6 +115,8 @@ def to_sector(value: object) -> Sector | None:
     if value is None:
         return None
     key = str(value).strip().lower()
+    if not key:
+        return None
     if key in _BY_VALUE:
         return _BY_VALUE[key]
     if key in ELICITATION_TO_SECTOR:

@@ -124,6 +124,8 @@ def to_stage(value: object) -> Stage | None:
     if value is None:
         return None
     key = str(value).strip().lower()
+    if not key:
+        return None
     if key in LEGACY_STAGE:
         return LEGACY_STAGE[key]
     if _strict():
@@ -139,6 +141,8 @@ def to_round(value: object) -> Round | None:
     if value is None:
         return None
     key = str(value).strip().lower()
+    if not key:
+        return None
     if key in _LEGACY_ROUND:
         return _LEGACY_ROUND[key]
     if _strict():
