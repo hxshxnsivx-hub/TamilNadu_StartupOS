@@ -13,9 +13,22 @@ def test_iot_decomposes_to_hardware_bom():
     assert {"pcb", "sensor"} <= cats
 
 
-def test_unknown_product_falls_back_to_packaging():
+def test_unknown_product_is_reported_honestly():
+    # an unrecognised product says so, instead of inventing a packaging line (F-A4-011)
     cats = {b.category for b in decompose("something entirely novel xyz")}
-    assert cats == {"packaging"}
+    assert cats == {"unknown_product"}
+
+
+def test_cue_does_not_misfire_inside_a_word():
+    # "iot" inside "patriot" and "smart" inside a saree must not pull in a PCB (F-A4-011)
+    assert "pcb" not in {b.category for b in decompose("patriot flags and banners")}
+    assert "pcb" not in {b.category for b in decompose("smart-looking handloom sarees")}
+
+
+def test_knitwear_and_leather_resolve():
+    # F-B4-007: these resolve to the textile/leather bill, not unknown
+    assert "yarn" in {b.category for b in decompose("a knitwear brand")}
+    assert "unknown_product" not in {b.category for b in decompose("handmade leather bags")}
 
 
 async def test_supply_map_matches_covered_lines():

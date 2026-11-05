@@ -12,6 +12,7 @@ from dataclasses import dataclass
 
 from app.b2b.matching import match_demand
 from app.b2b.models import DemandRequest, Match
+from app.core.vocab import boundary_hits
 
 
 @dataclass
@@ -29,10 +30,27 @@ class SupplyMapLine:
     gap: bool  # True when no supplier serves this line
 
 
-# keyword → BOM template. First match wins; falls back to a generic packaging line.
+# keyword → BOM template. Cues are matched on word boundaries (so "iot" no longer
+# matches inside "patriot" and "smart" cannot drag a saree into a PCB bill), and
+# every matching template contributes, deduplicated by category (F-A4-011, F-B4-007).
 _TEMPLATES: list[tuple[tuple[str, ...], list[BOMLine]]] = [
     (
-        ("handloom", "saree", "textile", "apparel", "garment", "cloth", "weav", "fabric"),
+        (
+            "handloom",
+            "saree",
+            "textile",
+            "apparel",
+            "garment",
+            "cloth",
+            "weaving",
+            "weave",
+            "weaver",
+            "fabric",
+            "knitwear",
+            "leather",
+            "natural dye",
+            "dyeing",
+        ),
         [
             BOMLine("yarn", "cotton yarn", 0.4, "kg"),
             BOMLine("dye", "natural dye", 0.05, "kg"),
@@ -41,7 +59,7 @@ _TEMPLATES: list[tuple[tuple[str, ...], list[BOMLine]]] = [
         ],
     ),
     (
-        ("iot", "sensor", "device", "hardware", "electronic", "smart", "monitor"),
+        ("iot", "sensor", "device", "hardware", "electronics", "electronic"),
         [
             BOMLine("pcb", "2-layer PCB", 1, "board"),
             BOMLine("sensor", "sensor module", 2, "unit"),
@@ -64,15 +82,20 @@ _TEMPLATES: list[tuple[tuple[str, ...], list[BOMLine]]] = [
     ),
 ]
 
-_DEFAULT = [BOMLine("packaging", "product packaging", 1, "unit")]
+# When nothing is recognised, say so honestly instead of inventing a packaging line.
+_UNKNOWN = [BOMLine("unknown_product", "components not recognised — please list them", 1, "unit")]
 
 
 def decompose(product: str) -> list[BOMLine]:
-    low = f" {product.lower()} "
+    lines: list[BOMLine] = []
+    seen: set[str] = set()
     for cues, bom in _TEMPLATES:
-        if any(c in low for c in cues):
-            return [BOMLine(**vars(b)) for b in bom]
-    return [BOMLine(**vars(b)) for b in _DEFAULT]
+        if any(boundary_hits(product, c) for c in cues):
+            for b in bom:
+                if b.category not in seen:
+                    seen.add(b.category)
+                    lines.append(BOMLine(**vars(b)))
+    return lines or [BOMLine(**vars(b)) for b in _UNKNOWN]
 
 
 async def build_supply_map(
