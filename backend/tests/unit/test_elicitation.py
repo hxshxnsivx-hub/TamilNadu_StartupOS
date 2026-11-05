@@ -238,6 +238,18 @@ def test_wanting_a_prototype_is_not_having_one():
     ]
 
 
+def test_extractor_ignores_negated_stage_cues():
+    """A negated state cue in free text is not a stage (F-A1-004, extractor side)."""
+    def stages(text: str) -> set[str]:
+        return {e.value for e in extract(text) if e.key == "stage"}
+
+    assert "revenue" not in stages("we don't have customers yet")
+    assert "revenue" not in stages("no revenue so far")
+    # a plain positive still extracts the stage
+    assert "revenue" in stages("we have customers")
+    assert "revenue" in stages("we are already selling")
+
+
 def test_positional_problem_guess_never_overwrites():
     """A long answer to another question must not rewrite `problem` (F-B1-019)."""
     s = engine.start("u1")
