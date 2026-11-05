@@ -95,3 +95,13 @@ async def test_match_includes_incubators_with_programmes(client: AsyncClient):
         json={"sectors": ["saas"], "stage": "series_a", "district": "chennai"},
     )
     assert late.json()["incubators"] == []
+
+
+async def test_match_accepts_a_legacy_elicitation_sector(client: AsyncClient):
+    """A 12-value sector ('education') is normalised to 'edtech', not rejected (F-B4-002)."""
+    r = await client.post(
+        "/api/v1/ecosystem/match",
+        json={"sectors": ["education"], "stage": "seed", "district": "chennai", "ask_lakh": 150},
+    )
+    assert r.status_code == 200
+    assert "edtech" in r.json()["investors"][0]["investor"]["sectors"]

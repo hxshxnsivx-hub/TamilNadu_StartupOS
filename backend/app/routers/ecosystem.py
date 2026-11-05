@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query
 
+from app.core.vocab import Sector, to_sector
 from app.ecosystem.incubators import load_incubators
 from app.ecosystem.index import Ecosystem, get_ecosystem
 from app.ecosystem.match import Founder, match
@@ -30,6 +31,14 @@ from app.models.ecosystem_schemas import (
 )
 
 router = APIRouter(prefix="/api/v1/ecosystem", tags=["ecosystem"])
+
+
+def _safe_sector(value: str) -> Sector | None:
+    try:
+        return to_sector(value)
+    except ValueError:
+        return None
+
 
 _METHOD = (
     "Activity per pin code = equal-weight index of MCA companies, startups and bank branches "
@@ -127,13 +136,19 @@ async def incubators(
 @router.post("/match", response_model=EcosystemMatchOut)
 async def match_founder(body: FounderIn) -> EcosystemMatchOut:
     """Investors (ranked, with reasons for the rest), peers and zone companies for a founder."""
-    unknown = [s for s in body.sectors if s not in SECTORS]
+    # Accept either vocabulary: a 12-value elicitation sector ("agri") is normalised
+    # to the ecosystem join key ("agritech") rather than rejected (F-B4-002).
+    canon: list[str] = []
+    unknown: list[str] = []
+    for s in body.sectors:
+        cs = _safe_sector(s)
+        (canon.append(cs.value) if cs else unknown.append(s))
     if unknown:
         raise HTTPException(status_code=422, detail=f"Unknown sectors: {unknown}")
     r = match(
         _eco(),
         Founder(
-            sectors=body.sectors,
+            sectors=canon,
             stage=body.stage,
             district=body.district,
             pin=body.pin,
