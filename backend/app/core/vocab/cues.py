@@ -18,10 +18,16 @@ _LETTER = r"0-9A-Za-z_஀-௿ऀ-ॿ"
 _NOT_LETTER = rf"[^{_LETTER}]"
 
 
+# An English inflection may follow the cue and still count as the same word, so
+# "patient" matches "patients" and "loan" matches "loaning" — but "app" still does
+# not match "apparel" ("arel" is not an inflection) or "Tiruchirappalli" (no
+# leading boundary).
+_INFLECTION = r"(?:s|es|ing|ed)?"
+
+
 def _pattern(cue: str) -> re.Pattern[str]:
-    # Surround the cue with "not a letter or start/end"; allow internal spaces as-is.
     body = re.escape(cue.strip())
-    return re.compile(rf"(?<![{_LETTER}]){body}(?![{_LETTER}])", re.IGNORECASE)
+    return re.compile(rf"(?<![{_LETTER}]){body}{_INFLECTION}(?![{_LETTER}])", re.IGNORECASE)
 
 
 def boundary_hits(text: str, cue: str) -> bool:

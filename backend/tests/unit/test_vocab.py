@@ -113,3 +113,11 @@ def test_cues_first_is_deterministic() -> None:
     cues = Cues({Sector.FOOD: ("snack",), Sector.TEXTILES: ("yarn",)})
     assert cues.first("a yarn and snack shop") in {Sector.FOOD, Sector.TEXTILES}
     assert cues.first("nothing here") is None
+
+
+def test_cue_matches_plural_and_inflection() -> None:
+    assert boundary_hits("paralysed patients", "patient") is True
+    assert boundary_hits("we make garments", "garment") is True
+    assert boundary_hits("spare parts dealer", "spare part") is True
+    # still not inside an unrelated longer word
+    assert boundary_hits("apparel exporter", "app") is False

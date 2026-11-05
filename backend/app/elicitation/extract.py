@@ -29,6 +29,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from app.core.vocab import boundary_hits
 from app.elicitation.places import find_district
 from app.elicitation.slots import (
     CapitalBand,
@@ -47,40 +48,177 @@ class Extraction:
 
 # ---------------------------------------------------------------- lexicons
 
+# Cues are matched on word boundaries (Tamil-safe), so stems are spelled out as
+# whole words and common variants: "app" no longer matches inside "Tiruchirappalli"
+# or "apparel" (F-B4-003).
 _SECTOR_CUES: dict[Sector, tuple[str, ...]] = {
-    Sector.AGRI: ("agri", "farm", "crop", "irrigation", "soil", "dairy", "poultry"),
+    Sector.AGRI: (
+        "agri",
+        "farm",
+        "farming",
+        "crop",
+        "crops",
+        "irrigation",
+        "soil",
+        "dairy",
+        "poultry",
+    ),
     Sector.TEXTILE: (
         "textile",
+        "textiles",
         "handloom",
-        "weav",
+        "weaving",
+        "weave",
+        "weaver",
         "garment",
+        "garments",
         "apparel",
         "saree",
+        "sarees",
         "yarn",
         "dyeing",
     ),
-    Sector.FOOD: ("food", "restaurant", "kitchen", "snack", "beverage", "bakery", "catering"),
-    Sector.MANUFACTURING: ("manufactur", "factory", "fabricat", "machining", "foundry", "moulding"),
-    Sector.AUTO: ("auto", "vehicle", "spare part", "automobile", "ev ", "two wheeler"),
-    Sector.ELECTRONICS: ("electronic", "pcb", "sensor", "iot", "hardware", "semiconductor"),
-    Sector.IT_SERVICES: ("software", "saas", "app", "website", "it service", "platform", "portal"),
-    Sector.HEALTH: ("health", "medical", "clinic", "patient", "hospital", "diagnos", "pharma"),
-    Sector.EDUCATION: ("education", "edtech", "learning", "student", "course", "tuition", "school"),
-    Sector.FINANCE: ("fintech", "payment", "lending", "loan", "credit", "insurance", "banking"),
-    Sector.RETAIL: ("retail", "ecommerce", "marketplace", "shop", "store", "d2c", "wholesale"),
+    Sector.FOOD: (
+        "food",
+        "restaurant",
+        "kitchen",
+        "snack",
+        "snacks",
+        "beverage",
+        "beverages",
+        "bakery",
+        "catering",
+    ),
+    Sector.MANUFACTURING: (
+        "manufacturing",
+        "manufacture",
+        "manufacturer",
+        "factory",
+        "fabrication",
+        "fabricate",
+        "fabricated",
+        "machining",
+        "foundry",
+        "moulding",
+    ),
+    Sector.AUTO: (
+        "auto",
+        "vehicle",
+        "vehicles",
+        "spare part",
+        "spare parts",
+        "automobile",
+        "ev",
+        "two wheeler",
+        "two wheelers",
+    ),
+    Sector.ELECTRONICS: (
+        "electronics",
+        "electronic",
+        "pcb",
+        "sensor",
+        "sensors",
+        "iot",
+        "hardware",
+        "semiconductor",
+    ),
+    Sector.IT_SERVICES: (
+        "software",
+        "saas",
+        "app",
+        "website",
+        "it service",
+        "it services",
+        "platform",
+        "portal",
+    ),
+    Sector.HEALTH: (
+        "health",
+        "medical",
+        "clinic",
+        "patient",
+        "hospital",
+        "diagnosis",
+        "diagnostic",
+        "diagnostics",
+        "pharma",
+    ),
+    Sector.EDUCATION: (
+        "education",
+        "edtech",
+        "learning",
+        "student",
+        "students",
+        "course",
+        "courses",
+        "tuition",
+        "school",
+    ),
+    Sector.FINANCE: (
+        "fintech",
+        "payment",
+        "payments",
+        "lending",
+        "loan",
+        "loans",
+        "credit",
+        "insurance",
+        "banking",
+    ),
+    Sector.RETAIL: (
+        "retail",
+        "ecommerce",
+        "marketplace",
+        "shop",
+        "store",
+        "d2c",
+        "wholesale",
+    ),
 }
 
 _FORM_CUES: dict[ProductForm, tuple[str, ...]] = {
     ProductForm.SOFTWARE: ("app", "software", "platform", "portal", "website", "saas"),
-    ProductForm.PHYSICAL: ("manufactur", "product", "machine", "device", "unit", "factory"),
-    ProductForm.SERVICE: ("service", "consult", "training", "repair", "delivery", "agency"),
+    ProductForm.PHYSICAL: (
+        "manufacturing",
+        "manufacture",
+        "product",
+        "machine",
+        "device",
+        "unit",
+        "factory",
+    ),
+    ProductForm.SERVICE: (
+        "service",
+        "services",
+        "consult",
+        "consulting",
+        "training",
+        "repair",
+        "delivery",
+        "agency",
+    ),
 }
 
 _ROUTE_CUES: dict[FundingRoute, tuple[str, ...]] = {
-    FundingRoute.SELF: ("own money", "self fund", "savings", "bootstrap", "own funds"),
-    FundingRoute.DEBT: ("loan", "bank finance", "credit", "mudra", "borrow"),
-    FundingRoute.EQUITY: ("investor", "equity", "vc", "angel", "funding round"),
-    FundingRoute.GRANT: ("grant", "subsidy", "scheme money", "seed fund"),
+    FundingRoute.SELF: (
+        "own money",
+        "self fund",
+        "self funded",
+        "savings",
+        "bootstrap",
+        "own funds",
+    ),
+    FundingRoute.DEBT: ("loan", "loans", "bank finance", "credit", "mudra", "borrow"),
+    FundingRoute.EQUITY: (
+        "investor",
+        "investors",
+        "equity",
+        "vc",
+        "angel",
+        "funding round",
+        "funding rounds",
+    ),
+    FundingRoute.GRANT: ("grant", "grants", "subsidy", "scheme money", "seed fund"),
 }
 
 # Stage evidence is split by KIND, because the two are not equally reliable.
@@ -187,7 +325,7 @@ def _band(rupees: float) -> CapitalBand:
 
 def _first_cue(low: str, cues: dict) -> object | None:
     for value, needles in cues.items():
-        if any(n in low for n in needles):
+        if any(boundary_hits(low, n) for n in needles):
             return value
     return None
 

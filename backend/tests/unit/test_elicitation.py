@@ -12,7 +12,7 @@ from app.elicitation import engine
 from app.elicitation.extract import extract
 from app.elicitation.selector import Q_MAX, candidates, is_objective_clear, question_value
 from app.elicitation.session import SessionState, Source
-from app.elicitation.slots import REQUIRED_BY_MODE, EntryMode, Sector
+from app.elicitation.slots import REQUIRED_BY_MODE, EntryMode, ProductForm, Sector
 
 
 def _run(opening: str, *, profile=None, max_turns: int = 20):
@@ -247,3 +247,19 @@ def test_valid_direct_answers_are_typed():
     assert validate("team_size", "yes") is None
     assert validate("problem", "Chennai") is None
     assert validate("stage", "skip") is None
+
+
+def test_extract_does_not_tag_software_from_a_place_name() -> None:
+    """'app' inside a place/word must not mark the idea as IT (F-B4-003)."""
+    from app.elicitation.extract import extract
+
+    got = {e.key: e.value for e in extract("a cold box for vegetable vendors in Tiruchirappalli")}
+    assert got.get("sector") != Sector.IT_SERVICES
+    assert got.get("product_form") != ProductForm.SOFTWARE
+
+
+def test_extract_still_reads_a_real_app() -> None:
+    from app.elicitation.extract import extract
+
+    got = {e.key: e.value for e in extract("a loan app for dairy farmers")}
+    assert got.get("product_form") == ProductForm.SOFTWARE
