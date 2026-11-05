@@ -19,10 +19,27 @@ import statistics
 from collections import Counter
 from functools import lru_cache
 
+from app.core.vocab import to_sector
 from app.ecosystem.index import get_ecosystem
 from app.planner.registry import _terms
 
 MIN_SHARED = 2
+
+
+def _canon_sector(sector: str | None) -> str | None:
+    """Normalise a founder sector (either vocabulary) to the ecosystem join key.
+
+    A founder's sector may arrive as the 12-value elicitation spelling ("agri");
+    company records use the 20-value ecosystem ids ("agritech"). Without this the
+    sector bonus and filter silently never fire (F-B4-002).
+    """
+    try:
+        canon = to_sector(sector)
+    except ValueError:
+        return None
+    return canon.value if canon else None
+
+
 SECTOR_BONUS = 1.5
 DISTRICTS = ("chennai", "coimbatore", "madurai")  # the districts the data covers today
 
@@ -43,6 +60,7 @@ def _snippet(text: str | None, n: int = 160) -> str:
 
 
 def similar_startups(text: str, sector: str | None = None, limit: int = 8) -> list[dict]:
+    sector = _canon_sector(sector)
     startups, terms, idf = _startup_index()
     words = _terms(text)
     # show the founder's own words, not the stems used for matching
@@ -74,6 +92,7 @@ def similar_startups(text: str, sector: str | None = None, limit: int = 8) -> li
 
 
 def sector_companies(sector: str) -> dict:
+    sector = _canon_sector(sector) or sector
     eco = get_ecosystem()
     rows = [c for c in (eco.companies if eco else []) if c.get("sector") == sector]
     years = [c["year"] for c in rows if isinstance(c.get("year"), int) and c["year"] > 1900]

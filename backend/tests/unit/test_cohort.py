@@ -94,3 +94,14 @@ def test_consent_survives_saving():
     s = _session(True, "chennai")
     asyncio.run(store.create(s))
     assert asyncio.run(store.get(s.id)).cohort_consent is True
+
+
+def test_similar_startups_normalises_founder_sector() -> None:
+    """A 12-value elicitation sector ('agri') must match ecosystem 'agritech' tags (F-B4-002)."""
+    from app.cohort.reference import _canon_sector
+
+    assert _canon_sector("agri") == "agritech"
+    assert _canon_sector("it_services") == "saas"
+    assert _canon_sector("agritech") == "agritech"  # already canonical
+    assert _canon_sector(None) is None
+    assert _canon_sector("not-a-sector") is None
