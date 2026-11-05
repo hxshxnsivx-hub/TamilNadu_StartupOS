@@ -249,6 +249,17 @@ def test_valid_direct_answers_are_typed():
     assert validate("stage", "skip") is None
 
 
+def test_negated_stage_cues_do_not_read_as_revenue():
+    """'no customers yet' / 'not selling' are not a revenue stage (F-A1-004)."""
+    from app.elicitation.answers import validate
+
+    assert validate("stage", "no customers yet") is None
+    assert validate("stage", "not selling anything yet") is None
+    assert validate("stage", "haven't launched, still building a prototype") == "prototype"
+    # a plain positive still reads as revenue
+    assert validate("stage", "we have paying customers") == "revenue"
+
+
 def test_extract_does_not_tag_software_from_a_place_name() -> None:
     """'app' inside a place/word must not mark the idea as IT (F-B4-003)."""
     from app.elicitation.extract import extract
