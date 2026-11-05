@@ -15,7 +15,7 @@ import re
 from dataclasses import dataclass, field
 
 from app.planner import registry
-from app.research.terms import is_health
+from app.research.terms import is_health_product
 
 
 def _slug(s: str) -> str:
@@ -52,7 +52,7 @@ class EvidencePack:
 def build(idea: str, scan: dict | None, novelty: dict | None, district: str | None) -> EvidencePack:
     pack = EvidencePack()
     s = scan or {}
-    pack.health = is_health(idea) or bool(s.get("trials", {}).get("total"))
+    pack.health = is_health_product(idea, has_trials=bool(s.get("trials", {}).get("total")))
 
     for f in s.get("associated_domains", {}).get("fields", [])[:6]:
         share = f" ({f['share_pct']}% of matching papers)" if f.get("share_pct") else ""

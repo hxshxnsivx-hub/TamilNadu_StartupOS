@@ -99,3 +99,13 @@ def test_the_founders_own_parts_are_searched_safely():
     r, seen = _run(elements=["brain waves to say yes or no", "KopraKing pager"])
     queries = " ".join(p["search"] for p in seen)
     assert "KopraKing" not in queries and "kopraking" not in queries.lower()
+
+
+def test_fintech_mentioning_hospital_is_not_a_health_product() -> None:
+    """A medical-EMI fintech idea must not be flagged health (F-B4-024)."""
+    from app.research.terms import is_health_product
+
+    assert is_health_product("instalment plans for hospital patients to pay medical bills") is False
+    assert is_health_product("an EEG device for epilepsy diagnosis") is True
+    assert is_health_product("a loan app for dairy farmers") is False
+    assert is_health_product("a clinic management tool", has_trials=True) is True

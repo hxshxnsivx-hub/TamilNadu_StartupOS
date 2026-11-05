@@ -23,7 +23,13 @@ import httpx
 
 from app.core.config import get_settings
 from app.research import sources
-from app.research.terms import element_query, is_health, or_query, public_vocabulary, term_groups
+from app.research.terms import (
+    element_query,
+    is_health_product,
+    or_query,
+    public_vocabulary,
+    term_groups,
+)
 
 MAX_ELEMENTS = 6  # 15 pairs at most
 AUTO_ELEMENTS = 4  # parts found by the lexicon alone: 6 pairs at most
@@ -246,9 +252,9 @@ def _few(n: int, one: str, many: str, none: str = "") -> str:
 
 
 def _is_health(idea: str, scan: dict | None) -> bool:
-    """A health product by its own words, or trials actually found; papers that merely
-    touch medicine do not count (herbal tea papers list Medicine as a field)."""
-    return is_health(idea) or bool((scan or {}).get("trials", {}).get("total"))
+    """A health product by its own words, or trials actually found; a fintech idea
+    that merely names a hospital is not one (F-B4-024)."""
+    return is_health_product(idea, has_trials=bool((scan or {}).get("trials", {}).get("total")))
 
 
 def _levers(parts, pairs, context, retarget, scan, statement, health=False) -> list[dict]:

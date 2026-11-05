@@ -154,6 +154,21 @@ HEALTH_TERMS = re.compile(
     r"cardiac|diabetes|elderly|older adults|surgery|drug|nurse|rehab",
     re.I,
 )
+# A strong signal that the PRODUCT itself is clinical (a device, a diagnosis, a
+# treatment), as opposed to a health word appearing in passing.
+CLINICAL_TERMS = re.compile(
+    r"medical device|diagnos|therapy|therapeutic|treatment|clinical|clinic|vaccine|"
+    r"pharma|implant|prosthetic|surgery|surgical|telemedicine|patient monitoring|"
+    r"eeg|ecg|mri|rehab|paraly|disability aid",
+    re.I,
+)
+# A financial product framing: when present, a stray health word (a hospital as a
+# customer, "medication" being paid for) does not make it a health product.
+FINANCIAL_TERMS = re.compile(
+    r"\bloan\b|\bemi\b|instal?lment|\bpayment|\bcredit\b|financ|lending|premium|"
+    r"\binsurance\b|invoice|wallet|\bbnpl\b|pay later",
+    re.I,
+)
 STOP = {
     "made",
     "buying",
@@ -386,3 +401,20 @@ def fields_from_terms(text: str) -> list[str]:
 
 def is_health(text: str) -> bool:
     return bool(HEALTH_TERMS.search(text))
+
+
+def is_health_product(text: str, *, has_trials: bool = False) -> bool:
+    """Whether the idea is actually a health/medical product, not fintech that
+    merely mentions a hospital.
+
+    A clinical signal (device, diagnosis, treatment) with no financial framing, or
+    real clinical trials found, counts. A financial product that happens to name a
+    hospital or medication does not (F-B4-024): "hospital bills in instalments" is
+    fintech, so it gets no medical-claim advice.
+    """
+    low = text or ""
+    if FINANCIAL_TERMS.search(low) and not CLINICAL_TERMS.search(low):
+        return False
+    if CLINICAL_TERMS.search(low):
+        return True
+    return bool(has_trials)
