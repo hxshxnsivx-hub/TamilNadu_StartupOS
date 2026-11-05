@@ -19,7 +19,7 @@ unknown value under tests and return ``None`` with a log event in production, so
 gap in a mapping table is caught in CI, never silently mislabelled for a founder.
 """
 
-from app.core.vocab.cues import Cues, boundary_hits
+from app.core.vocab.cues import Cues, boundary_hits, negated, unnegated_hit
 from app.core.vocab.sector import (
     CATEGORY_OF,
     ELICITATION_TO_SECTOR,
@@ -50,4 +50,6 @@ __all__ = [
     "to_sector",
     "Cues",
     "boundary_hits",
+    "negated",
+    "unnegated_hit",
 ]
