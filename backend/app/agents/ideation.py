@@ -43,7 +43,7 @@ from app.agents.tools import TOOLS, compact_scan, council_brief, run_tool
 from app.core.config import get_settings
 from app.core.logging import get_logger
 from app.elicitation import engine
-from app.elicitation.answers import SKIP
+from app.elicitation.answers import SKIP, negated
 from app.elicitation.session import ElicitationSession, SessionState
 from app.elicitation.slots import BY_KEY
 from app.research import novelty
@@ -843,15 +843,34 @@ async def _reword_one(
 # ---- the turn -----------------------------------------------------------------
 
 
+def _confirm_signal(text: str) -> tuple[bool, bool]:
+    """(affirmed, rejected) for a restatement reply. A yes word that is negated —
+    "not right", "doesn't look correct" — is not a yes but a rejection, so a
+    founder saying "that's not right" is never read as a confirmation (F-A1-001)."""
+    low = text.lower()
+    yes = no = False
+    for m in re.finditer(r"[a-z']+", low):
+        if m.group() in YES:
+            if negated(low, m.start()):
+                no = True  # "not right", "doesn't look correct" — a rejection
+            else:
+                yes = True
+    if set(re.findall(r"[a-z']+", low)) & NO:
+        no = True
+    return yes, no
+
+
 def _advance(s: AgentSession, text: str) -> engine.Action:
     """Fold the words into the elicitation engine; a yes/no answers a restatement."""
     if s.elicitation.state is SessionState.CONFIRMING:
-        words = set(re.findall(r"[a-z]+", text.lower()))
-        if words & NO and not words & YES:
+        yes, no = _confirm_signal(text)
+        if yes and not no:
+            return engine.confirm(s.elicitation, True)
+        if no:
+            # "that's not right", "no, the problem is ..." — a rejection, and the
+            # correction rides along so the engine can re-read it (F-A1-001).
             engine.observe(s.elicitation, text)
             return engine.confirm(s.elicitation, False)
-        if words & YES:
-            return engine.confirm(s.elicitation, True)
     if s.elicitation.state is SessionState.GENERATING:
         return engine.Action(kind="generate", objective=s.elicitation.objective, progress=1.0)
     if s.pending_slot and SKIP.match(text):
