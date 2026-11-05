@@ -11,14 +11,44 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from app.core.vocab import ROUND_STAGES, Stage, to_round, to_stage
 from app.funding.investors import ALL_SECTORS, Investor, real_investors
 
-_LATE_STAGES = {"series_a", "series_b", "series_c", "growth", "scale"}
 FIT_WEIGHTS = {"sector": 0.30, "stage": 0.25, "traction": 0.20, "geo": 0.15, "track": 0.10}
 
 
-def readiness_gate(stage: str) -> int:
-    return 70 if stage in _LATE_STAGES else 60
+def _safe_stage(value: object) -> Stage | None:
+    try:
+        return to_stage(value)
+    except ValueError:
+        return None
+
+
+def _accepted_stages(inv: Investor) -> set[Stage]:
+    """Company stages an investor accepts, from its mixed stage/round labels.
+
+    ``inv.stages`` holds both company-stage words ("mvp") and round words
+    ("series_a"); each is mapped to the founder :class:`Stage` values it implies,
+    so a revenue-stage founder matches a Series A investor (F-A4-015).
+    """
+    accepted: set[Stage] = set()
+    for raw in inv.stages:
+        if (st := _safe_stage(raw)) is not None:
+            accepted.add(st)
+            continue
+        try:
+            rd = to_round(raw)
+        except ValueError:
+            rd = None
+        if rd is not None:
+            accepted |= ROUND_STAGES[rd]
+    return accepted
+
+
+def readiness_gate(stage: object) -> int:
+    # Later-stage companies (revenue, growth) are held to a higher readiness bar.
+    st = _safe_stage(stage)
+    return 70 if (st is not None and st >= Stage.REVENUE) else 60
 
 
 @dataclass
@@ -56,10 +86,11 @@ def _violations(inv: Investor, s: dict, funding_need: int, readiness: int) -> li
             f"Ticket size ₹{inv.min_ticket:,}–₹{inv.max_ticket:,} "
             f"doesn't fit your ₹{funding_need:,} need"
         )
+    founder_stage = _safe_stage(stage)
     if not inv.stages:
         reasons.append("Investment stage not published")
-    elif stage not in inv.stages:
-        reasons.append(f"Invests at {', '.join(inv.stages)} — not {stage}")
+    elif founder_stage is not None and founder_stage not in _accepted_stages(inv):
+        reasons.append(f"Invests at {', '.join(inv.stages)} — not {founder_stage.value}")
     if not inv.sectors:
         reasons.append("Sectors not published")
     elif ALL_SECTORS not in inv.sectors and sector not in inv.sectors:

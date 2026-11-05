@@ -62,8 +62,11 @@ def test_readiness_gate_blocks_low_readiness():
 
 
 def test_readiness_gate_levels():
+    # the gate is keyed on the founder's company stage: revenue/growth are "late"
     assert readiness_gate("mvp") == 60
-    assert readiness_gate("series_a") == 70
+    assert readiness_gate("prototype") == 60
+    assert readiness_gate("revenue") == 70
+    assert readiness_gate("launched") == 70  # legacy spelling of revenue
     assert readiness_gate("growth") == 70
 
 
@@ -104,3 +107,19 @@ def test_specialists_rank_above_generalists():
     specialists = [f for f, general in fits.values() if not general]
     generalists = [f for f, general in fits.values() if general]
     assert specialists and generalists and min(specialists) > max(generalists)
+
+
+def test_revenue_founder_matches_a_later_stage_investor() -> None:
+    """A revenue-stage founder must match investors whose stages list rounds (F-A4-015)."""
+    # any investor in the real set that invests at series_a / seed should now accept
+    # a "revenue" company stage, where the old literal compare ("revenue" in [...]) failed.
+    from app.core.vocab import Stage
+    from app.funding.investor_match import _accepted_stages
+    from app.funding.investors import real_investors
+
+    seen_round_investor = False
+    for inv in real_investors():
+        if any(s in {"series_a", "series_b", "series_c", "seed", "growth"} for s in inv.stages):
+            seen_round_investor = True
+            assert Stage.REVENUE in _accepted_stages(inv) or Stage.MVP in _accepted_stages(inv)
+    assert seen_round_investor  # the fixture actually exercises the mapping
