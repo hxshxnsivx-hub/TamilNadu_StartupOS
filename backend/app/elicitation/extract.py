@@ -44,6 +44,9 @@ class Extraction:
     key: str
     value: object
     confidence: float
+    # A first-sentence guess, not a cued fact: the engine must never let it
+    # overwrite an existing value or land while another question is open (F-B1-019).
+    positional: bool = False
 
 
 # ---------------------------------------------------------------- lexicons
@@ -375,7 +378,7 @@ def extract(text: str) -> list[Extraction]:
         # Loose positional guess at 0.55, deliberately BELOW TAU_FILL so it is
         # confirmed rather than assumed. First sentence only.
         first = re.split(r"[.!?\n]", text.strip(), maxsplit=1)[0]
-        out.append(Extraction("problem", _clean(first)[:200], 0.55))
+        out.append(Extraction("problem", _clean(first)[:200], 0.55, positional=True))
 
     if (m := _SOLUTION_CUE.search(text)) is not None:
         out.append(Extraction("solution", _clean(m.group(1)), 0.70))
