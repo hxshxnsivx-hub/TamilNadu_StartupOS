@@ -14,9 +14,11 @@ from app.core.vocab import (
     Sector,
     Stage,
     boundary_hits,
+    negated,
     to_round,
     to_sector,
     to_stage,
+    unnegated_hit,
 )
 
 # ---- stage (F-A4-015) -------------------------------------------------------
@@ -121,3 +123,25 @@ def test_cue_matches_plural_and_inflection() -> None:
     assert boundary_hits("spare parts dealer", "spare part") is True
     # still not inside an unrelated longer word
     assert boundary_hits("apparel exporter", "app") is False
+
+
+# ---- negation (F-A1-004) ----------------------------------------------------
+
+
+def test_unnegated_hit_respects_a_preceding_negation() -> None:
+    # the cue is present but negated: no hit
+    assert unnegated_hit("we don't have customers yet", "have customers") is False
+    assert unnegated_hit("no revenue so far", "revenue") is False
+    assert unnegated_hit("illai customers", "customers") is False  # Tamil negator
+    # the cue is present and positive: a hit
+    assert unnegated_hit("we already have customers", "have customers") is True
+    assert unnegated_hit("good revenue this quarter", "revenue") is True
+    # the cue is absent: no hit
+    assert unnegated_hit("just an idea", "revenue") is False
+
+
+def test_negated_scans_only_the_preceding_window() -> None:
+    assert negated("not selling", len("not ")) is True
+    # a negation far earlier (beyond the ~28-char window) does not reach the cue
+    far = "no " + ("x " * 20) + "revenue"
+    assert negated(far, far.index("revenue")) is False
