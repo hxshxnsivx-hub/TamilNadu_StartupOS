@@ -154,6 +154,14 @@ def observe(session: ElicitationSession, text: str, *, answering: str | None = N
         # Never let an extraction overwrite the direct answer we just stored.
         if e.key == answering:
             continue
+        # A positional problem guess is only the lead sentence of a fresh
+        # description: it must not land while another question is open, and it
+        # must never replace a value we already hold (F-B1-019). Otherwise a long
+        # answer to "who benefits?" rewrites `problem` and restarts the scan.
+        if getattr(e, "positional", False) and (
+            (answering is not None and answering != e.key) or e.key in session.filled
+        ):
+            continue
         was_filled = e.key in session.filled
         session.put(e.key, e.value, e.confidence, Source.EXTRACTED)
         if not was_filled and e.key in session.filled:
