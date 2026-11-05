@@ -152,3 +152,13 @@ def test_model_seats_share_a_cached_prefix_and_fall_back_on_failure(monkeypatch)
     assert r["usage"]["input_tokens"] == 60
     basis = {o["seat"]: o["basis"] for o in r["opinions"]}
     assert basis["technical"] == "rules" and basis["customer"] == "model"
+
+
+def test_food_idea_is_not_a_health_device_when_papers_touch_medicine() -> None:
+    """Founder sector beats research categories (F-A5-001, F-B4-020)."""
+    # a herbal-tea idea: papers list Medicine -> health_bio, but the founder said food
+    assert idea_type(["health_bio"], {"sector": "food"}) == "food"
+    assert idea_type(["health_bio"], {"sector": "agri"}) == "agri"
+    # genuine health idea still classified health_device
+    assert idea_type(["health_bio"], {"sector": "health"}) == "health_device"
+    assert idea_type(["health_bio"], {}) == "health_device"  # no sector: category decides

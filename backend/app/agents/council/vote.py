@@ -30,28 +30,30 @@ def weights_table() -> dict:
 
 
 def idea_type(categories: list[str], slots: dict) -> str:
+    # The founder's own sector/form decides first; research-derived categories are
+    # only a fallback. A tea or food idea whose papers merely touch "Medicine" is no
+    # longer cast as a health device (F-A5-001, F-B4-020).
     sector = str(slots.get("sector") or "")
     form = str(slots.get("product_form") or "")
-    if "health_bio" in categories or sector == "health":
+    if sector == "health":
         return "health_device"
     if sector == "food":
         return "food"
-    if "agriculture" in categories or sector == "agri":
+    if sector == "agri":
         return "agri"
     if form == "service":
         return "service"
     if (
         form == "software"
         or sector == "it_services"
-        or {
-            "ai_ml",
-            "saas",
-            "fintech",
-            "it",
-        }
-        & set(categories)
+        or {"ai_ml", "saas", "fintech", "it"} & set(categories)
     ):
         return "software"
+    # category fallbacks, only when the founder gave no decisive sector/form
+    if "agriculture" in categories:
+        return "agri"
+    if "health_bio" in categories:
+        return "health_device"
     return "hardware"
 
 
