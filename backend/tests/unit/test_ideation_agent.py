@@ -246,6 +246,19 @@ def test_confirmation_builds_the_roadmap_offline():
     assert r["roadmap"]["milestones"] and "milestones" in r["reply"]
 
 
+def test_rejection_is_not_read_as_confirmation():
+    """A negated yes word is a rejection, so 'that's not right' never confirms (F-A1-001)."""
+    from app.agents.ideation import _confirm_signal
+
+    assert _confirm_signal("yes, that's right") == (True, False)
+    assert _confirm_signal("yep") == (True, False)
+    # the regression: "right"/"correct" preceded by a negation must not count as yes
+    assert _confirm_signal("that's not right") == (False, True)
+    assert _confirm_signal("no, the problem is different") == (False, True)
+    assert _confirm_signal("doesn't look correct") == (False, True)
+    assert _confirm_signal("wrong") == (False, True)
+
+
 # ---- with the model ------------------------------------------------------------------
 
 
