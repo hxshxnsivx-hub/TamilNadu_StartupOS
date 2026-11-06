@@ -77,9 +77,11 @@ async def test_pipeline_board_endpoint(client: AsyncClient):
     m = body["metrics"]
     assert m["total"] == 3 and m["won"] == 1 and m["lost"] == 1
     assert m["win_rate"] == 50
-    # only the open deal counts toward pipeline value, discounted by stage
+    # only the open deal counts toward pipeline value, split by the stage it sits in
     assert m["pipeline_value"] == 1000000
-    assert m["weighted_value"] == 800000
+    assert m["value_by_stage"]["negotiation"] == 1000000
+    assert m["value_by_stage"]["initial_contact"] == 0
+    assert "weighted_value" not in m
 
 
 async def test_investor_match_uses_real_investors_with_sources(client):
