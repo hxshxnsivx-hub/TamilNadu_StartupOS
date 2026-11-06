@@ -94,7 +94,7 @@ def test_metrics_counts_and_win_rate():
 def test_metrics_empty_pipeline_is_safe():
     m = pipeline_metrics([])
     assert m.total == 0 and m.win_rate == 0
-    assert m.pipeline_value == 0 and m.weighted_value == 0
+    assert m.pipeline_value == 0 and all(v == 0 for v in m.value_by_stage.values())
     assert all(v == 0 for v in m.stage_conversion.values())
 
 
@@ -106,19 +106,48 @@ def test_stage_conversion_infers_reached_stages():
     assert m.stage_conversion["term_sheet"] == 0
 
 
-def test_weighted_value_discounts_early_stages():
-    early = pipeline_metrics([_entry("initial_contact", amount=1_000_000)])
-    late = pipeline_metrics([_entry("negotiation", amount=1_000_000)])
-    assert early.pipeline_value == late.pipeline_value == 1_000_000
-    assert early.weighted_value == 50_000  # 5%
-    assert late.weighted_value == 800_000  # 80%
-    assert early.weighted_value < late.weighted_value
+def test_value_by_stage_splits_open_pipeline(F=1_000_000):
+    # value is reported per the stage the deal sits in, not weighted by an
+    # invented probability (F-A4-020)
+    m = pipeline_metrics(
+        [_entry("initial_contact", amount=F, iid="a"), _entry("negotiation", amount=2 * F, iid="b")]
+    )
+    assert m.pipeline_value == 3 * F
+    assert m.value_by_stage["initial_contact"] == F
+    assert m.value_by_stage["negotiation"] == 2 * F
+    assert m.value_by_stage["term_sheet"] == 0
+    assert not hasattr(m, "weighted_value")
 
 
 def test_closed_entries_leave_the_pipeline_value():
     m = pipeline_metrics([_entry(WON, amount=5_000_000), _entry(LOST, amount=2_000_000)])
     assert m.pipeline_value == 0
-    assert m.weighted_value == 0
+    assert sum(m.value_by_stage.values()) == 0
+
+
+def test_terminal_entries_without_history_do_not_inflate_conversion():
+    # a lost deal with no trail reached only the first contact, not negotiation
+    # (F-A4-020): [closed_lost no history, initial_contact] => 0% negotiation
+    m = pipeline_metrics([_entry(LOST), _entry("initial_contact", iid="b")])
+    assert m.stage_conversion["initial_contact"] == 100
+    assert m.stage_conversion["negotiation"] == 0
+    assert m.stage_conversion["due_diligence"] == 0
+    # a won deal with no trail is credited up to the term sheet, not negotiation
+    won = pipeline_metrics([_entry(WON)])
+    assert won.stage_conversion["term_sheet"] == 100
+    assert won.stage_conversion["negotiation"] == 0
+    assert won.stage_conversion["closed_won"] == 100
+
+
+def test_avg_days_parses_iso_datetime_stamps():
+    # the frontend stamps Date.toISOString() ('...T..:..Z'); first-stage time
+    # must survive the parse on Python 3.10 and 3.11 (F-A4-020)
+    hist = [
+        {"stage": "initial_contact", "at": "2026-01-01T09:30:00.000Z"},
+        {"stage": "pitch_scheduled", "at": "2026-01-10T12:00:00+05:30"},
+    ]
+    m = pipeline_metrics([_entry("pitch_scheduled", history=hist)])
+    assert m.avg_days_in_stage["initial_contact"] == 9.0
 
 
 def test_avg_days_in_stage_from_history():
