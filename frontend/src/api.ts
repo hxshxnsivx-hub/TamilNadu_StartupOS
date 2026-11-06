@@ -253,6 +253,7 @@ export interface ReadinessGap {
   impact: string;
   impact_points: number;
   effort_weeks: number;
+  conditional?: boolean;
 }
 export interface ReadinessOut {
   overall: number;
