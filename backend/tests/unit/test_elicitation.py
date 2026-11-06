@@ -238,6 +238,20 @@ def test_wanting_a_prototype_is_not_having_one():
     ]
 
 
+def test_district_resolution_is_position_role_and_polarity_aware():
+    """The corrected / home district wins over a negated or market one (F-A1-005)."""
+    from app.elicitation.places import find_district
+
+    assert find_district("Trichy") == "tiruchirappalli"  # plain single mention
+    assert find_district("actually I'm in Salem, not Erode") == "salem"
+    assert find_district("not Erode, Salem") == "salem"
+    assert find_district("I live in Salem but want to sell in Coimbatore") == "salem"
+    # a place named only as a selling market is not a home district
+    assert find_district("I want to sell in Coimbatore") is None
+    # a lone negated place leaves the district unknown rather than guessing it
+    assert find_district("I'm not in Erode") is None
+
+
 def test_extractor_ignores_negated_stage_cues():
     """A negated state cue in free text is not a stage (F-A1-004, extractor side)."""
     def stages(text: str) -> set[str]:
