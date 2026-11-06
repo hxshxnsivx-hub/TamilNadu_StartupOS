@@ -57,6 +57,9 @@ async def readiness(body: ReadinessIn) -> ReadinessOut:
         overall=result.overall,
         band=result.band,
         dimensions=result.dimensions,
+        coverage=result.coverage,
+        not_assessed=result.not_assessed,
+        next_inputs=result.next_inputs,
         gaps=[
             RecommendationOut(
                 dimension=g.dimension,
