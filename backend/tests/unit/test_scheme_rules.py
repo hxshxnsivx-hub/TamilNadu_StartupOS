@@ -1,11 +1,12 @@
 """Unit tests for the rule engine and the scheme eligibility engine."""
 
+from app.core.tri import Tri, Verdict
 from app.schemes.engine import check_eligibility, compute_age
-from app.schemes.rules import Combinator, EvalResult, Op, Rule, RuleGroup, evaluate
+from app.schemes.rules import Combinator, Op, Rule, RuleGroup, evaluate
 
 
 # ── primitive operators ──────────────────────────────────────────────────────
-def _ev(node, profile) -> EvalResult:
+def _ev(node, profile) -> Verdict:
     return evaluate(node, profile)
 
 
@@ -20,8 +21,13 @@ def test_operators():
     assert not _ev(Rule("a.flag", Op.IS_FALSE), p).ok
 
 
-def test_missing_field_fails_positive_rule():
-    assert not _ev(Rule("a.missing", Op.GTE, 1), {"a": {}}).ok
+def test_missing_field_is_unknown_not_a_failure():
+    # a missing fact is UNKNOWN (three-valued), never a false "no" (F-A4-001)
+    v = _ev(Rule("a.missing", Op.GTE, 1), {"a": {}})
+    assert v.value is Tri.UNKNOWN and not v.ok
+    assert v.missing == ["a.missing"]
+    # is_false must NOT pass on a missing field (the old bug)
+    assert _ev(Rule("a.missing", Op.IS_FALSE), {"a": {}}).value is Tri.UNKNOWN
 
 
 def test_all_group_collects_reasons():
@@ -54,6 +60,22 @@ def test_any_group_or_semantics():
 def test_compute_age():
     assert compute_age("1996-07-30") in (29, 30)  # depends on run date
     assert compute_age(None) is None
+
+
+def test_early_founder_gets_needs_info_not_false_refusals():
+    """A barely-started founder is asked for facts, not refused with invented ones
+    (F-A4-001, F-B4-008)."""
+    res = check_eligibility({"founder": {"state": "Tamil Nadu"}, "startup": {"stage": "prototype"}})
+    # nothing is a false "no": age/turnover are unknown, so no scheme is ineligible
+    assert res.ineligible == []
+    assert not any(
+        "age" in r.lower() for i in res.ineligible for r in i.reasons
+    )  # no invented age reasons
+    needs = {n.scheme.id for n in res.needs_info}
+    # schemes that hinge on unknown facts wait for answers instead of refusing
+    assert {"pmegp", "mudra"} <= needs
+    pmegp = next(n for n in res.needs_info if n.scheme.id == "pmegp")
+    assert "founder.age" in pmegp.missing
 
 
 # ── end-to-end eligibility ───────────────────────────────────────────────────
