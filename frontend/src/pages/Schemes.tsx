@@ -277,11 +277,48 @@ export default function Schemes() {
             )}
           </Band>
 
-          {data.ineligible.length > 0 && (
+          {data.needs_info && data.needs_info.length > 0 && (
             <Band
               depth={3}
               tone="work"
               folio="II"
+              title={["We need to know"]}
+              index={`${data.needs_info.length} · can't decide yet`}
+            >
+              <Uncover>
+                <p className="v-aside">
+                  These are neither in nor out: they depend on facts you have not
+                  given yet. Answer the questions below and they move to a verdict.
+                </p>
+              </Uncover>
+
+              <div className="v-grid">
+                {data.needs_info.map((it, i) => (
+                  <Plate key={it.scheme.id} index={i} off>
+                    <PlateHead
+                      eyebrow={
+                        <>
+                          <span className="v-tag is-quiet">{it.scheme.level}</span>
+                          <span className="v-tag is-quiet">{it.scheme.type}</span>
+                        </>
+                      }
+                      title={it.scheme.name}
+                    />
+                    <Reasons label="We need to know" items={it.questions} />
+                    <Provenance href={it.scheme.source_url}>
+                      {t("verified_on")} {it.scheme.last_verified}
+                    </Provenance>
+                  </Plate>
+                ))}
+              </div>
+            </Band>
+          )}
+
+          {data.ineligible.length > 0 && (
+            <Band
+              depth={3}
+              tone="work"
+              folio="III"
               title={[t("ineligible_label")]}
               index={`${data.ineligible.length} · shown, not hidden`}
             >
