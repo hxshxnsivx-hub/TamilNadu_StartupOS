@@ -17,6 +17,7 @@ from app.funding.pipeline import (
 )
 from app.funding.readiness import score_readiness
 from app.models.funding_schemas import (
+    CheckWithInvestorOut,
     EligibleInvestorOut,
     IneligibleInvestorOut,
     InvestorMatchIn,
@@ -80,12 +81,18 @@ async def investors_match(body: InvestorMatchIn) -> InvestorMatchOut:
     return InvestorMatchOut(
         total_checked=res.total_checked,
         eligible=[
-            EligibleInvestorOut(investor=_investor_out(e.investor), fit=e.fit) for e in res.eligible
+            EligibleInvestorOut(investor=_investor_out(e.investor), fit=e.fit, why=e.why)
+            for e in res.eligible
+        ],
+        check_with=[
+            CheckWithInvestorOut(investor=_investor_out(c.investor), unknowns=c.unknowns)
+            for c in res.check_with
         ],
         ineligible=[
             IneligibleInvestorOut(investor=_investor_out(i.investor), reasons=i.reasons)
             for i in res.ineligible
         ],
+        readiness_advice=res.readiness_advice,
     )
 
 
