@@ -51,6 +51,12 @@ class InvestorOut(BaseModel):
 class EligibleInvestorOut(BaseModel):
     investor: InvestorOut
     fit: int
+    why: list[str] = Field(default_factory=list)
+
+
+class CheckWithInvestorOut(BaseModel):
+    investor: InvestorOut
+    unknowns: list[str]
 
 
 class IneligibleInvestorOut(BaseModel):
@@ -61,7 +67,9 @@ class IneligibleInvestorOut(BaseModel):
 class InvestorMatchOut(BaseModel):
     total_checked: int
     eligible: list[EligibleInvestorOut]
+    check_with: list[CheckWithInvestorOut] = Field(default_factory=list)
     ineligible: list[IneligibleInvestorOut]
+    readiness_advice: str = ""
 
 
 class PipelineHistoryItem(BaseModel):
