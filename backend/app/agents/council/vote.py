@@ -16,12 +16,36 @@ from functools import lru_cache
 from pathlib import Path
 
 from app.agents.council.seats import BY_ID, CRITERIA, Opinion
+from app.core.vocab import boundary_hits
 
 WEIGHTS_FILE = Path(__file__).parent / "data" / "council_weights.json"
 STRONG, MIXED = 3.8, 2.8
 DISAGREE = 1.0
 SMALL_CAPITAL = {"under_2L", "2L_10L"}
-TECH_SKILLS = ("software", "engineer", "electronic", "hardware", "coding", "programming", "tech")
+
+# A reviewed vocabulary of building skills, matched on word boundaries so a
+# "python developer" reads as technical and "tailoring" does not (F-A1-021).
+TECH_SKILLS = (
+    "software", "hardware", "engineer", "engineering", "developer", "development",
+    "programmer", "programming", "coder", "coding", "code",
+    "python", "java", "javascript", "typescript", "golang", "rust", "c++",
+    "electronics", "electronic", "mechanical", "mechatronics", "embedded", "firmware",
+    "robotics", "iot", "data science", "machine learning", "ml", "ai",
+    "backend", "frontend", "full stack", "fullstack", "devops", "cloud", "technical",
+)  # fmt: skip
+
+
+def technical_skill(slots: dict) -> bool | None:
+    """Three-valued read of the founder's building skill: None when the skill is
+    not known (the slot is unanswered), True when a reviewed technical term is
+    present, False when answered with no technical skill (F-A1-021)."""
+    raw = slots.get("founder_skills")
+    if raw is None:
+        return None
+    text = " ".join(map(str, raw)) if isinstance(raw, (list, tuple)) else str(raw)
+    if not text.strip():
+        return None
+    return any(boundary_hits(text, term) for term in TECH_SKILLS)
 
 
 @lru_cache
@@ -62,12 +86,15 @@ def weights_for(kind: str, slots: dict) -> tuple[dict[str, float], list[str]]:
     t = weights_table()
     w = dict(zip(t["seats"], t["types"][kind], strict=True))
     why = []
-    skills = " ".join(map(str, slots.get("founder_skills") or [])).lower()
-    if kind in ("health_device", "hardware", "software") and not any(
-        k in skills for k in TECH_SKILLS
-    ):
-        w["technical"] += 5
-        why.append("no technical skill recorded for the founder: technical +5")
+    tech = technical_skill(slots)
+    if kind in ("health_device", "hardware", "software"):
+        if tech is False:
+            # answered, and no building skill: the panel leans harder on feasibility
+            w["technical"] += 5
+            why.append("founder reports no technical skill: technical +5")
+        elif tech is None:
+            # unknown, not absent — do not bump on a guess
+            why.append("founder's technical skill not known: no technical adjustment")
     if str(slots.get("capital_band") or "") in SMALL_CAPITAL:
         w["funding"] += 5
         w["cost"] += 5
