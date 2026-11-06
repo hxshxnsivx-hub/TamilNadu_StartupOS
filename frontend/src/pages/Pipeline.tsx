@@ -206,11 +206,11 @@ export default function Pipeline() {
             <Stat label="Open" value={m.open_count} index={0} />
             <Stat label="Won" value={m.won} index={1} />
             <Stat label="Win rate" value={m.win_rate} suffix="%" index={2} />
-            <Stat label="Weighted ₹L" value={Math.round(m.weighted_value / 100000)} index={3} />
+            <Stat label="Pipeline ₹L" value={Math.round(m.pipeline_value / 100000)} index={3} />
           </div>
           <p className="v-note">
-            Pipeline {money(m.pipeline_value)} · weighted {money(m.weighted_value)} ·{" "}
-            {m.total} total · {m.lost} lost
+            Pipeline {money(m.pipeline_value)} · {m.open_count} open · {m.total} total ·{" "}
+            {m.lost} lost
           </p>
         </Band>
       )}
