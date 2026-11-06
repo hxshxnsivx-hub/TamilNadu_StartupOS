@@ -346,6 +346,40 @@ export default function Funding() {
             </div>
           </Band>
 
+          {investors.check_with && investors.check_with.length > 0 && (
+            <Band
+              depth={3}
+              title={["Check with investor"]}
+              index={`${investors.check_with.length} · can't tell from data`}
+            >
+              <Uncover>
+                <p className="v-aside">
+                  These investors have not published a criterion we would need to
+                  judge the fit — ask them directly.
+                </p>
+              </Uncover>
+
+              <div className="v-grid">
+                {investors.check_with.map((x, i) => (
+                  <Plate key={x.investor.id} index={i} off>
+                    <PlateHead
+                      eyebrow={<span className="v-tag is-quiet">{x.investor.type}</span>}
+                      title={x.investor.name}
+                      meta={x.investor.thesis}
+                    />
+                    <Reasons label="Not published" items={x.unknowns} />
+                    <dl className="v-facts">
+                      <div>
+                        <dt>ticket</dt>
+                        <dd>{ticket(x.investor)}</dd>
+                      </div>
+                    </dl>
+                  </Plate>
+                ))}
+              </div>
+            </Band>
+          )}
+
           {investors.ineligible.length > 0 && (
             <Band
               depth={3}
