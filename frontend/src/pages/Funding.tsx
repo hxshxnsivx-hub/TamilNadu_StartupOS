@@ -276,7 +276,12 @@ export default function Funding() {
                         {String(i + 1).padStart(2, "0")}
                       </span>
                       <span className="v-stack">
-                        <span>{g.action}</span>
+                        <span>
+                          {g.action}
+                          {g.conditional && (
+                            <span className="v-aside"> — if not done yet</span>
+                          )}
+                        </span>
                         <span className="v-chips">
                           <span className="v-chip">{g.impact} impact</span>
                           <span className="v-chip">+{g.impact_points} pts</span>
