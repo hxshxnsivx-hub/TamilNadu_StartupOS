@@ -53,7 +53,7 @@ def _investor_out(inv: Investor) -> InvestorOut:
 async def readiness(body: ReadinessIn) -> ReadinessOut:
     """Score funding readiness across six dimensions and return a ranked gap plan."""
     result = score_readiness(body.profile)
-    gaps = analyze_gaps(result)
+    gaps = analyze_gaps(body.profile, result)
     return ReadinessOut(
         overall=result.overall,
         band=result.band,
@@ -68,6 +68,7 @@ async def readiness(body: ReadinessIn) -> ReadinessOut:
                 impact=g.impact_label,
                 impact_points=g.impact_points,
                 effort_weeks=g.effort_weeks,
+                conditional=g.conditional,
             )
             for g in gaps
         ],
