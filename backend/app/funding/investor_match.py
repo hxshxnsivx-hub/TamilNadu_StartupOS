@@ -1,10 +1,20 @@
 """Investor–startup matching (Req 4.4 · design E6).
 
-Hard constraints first (ticket, stage, sector, availability, traction thresholds,
-exclusions, readiness gate) — every unmatched investor carries its violated
-constraints. Eligible investors are then ranked by a weighted fit score. A single
-startup vs. N independent investors is per-investor constraint evaluation, so this
-is deterministic (no solver needed); CP-SAT is reserved for combinatorial cases.
+Each investor falls into one of three groups, never a hidden rejection:
+
+* **eligible** — every *published* criterion the startup can be checked against
+  passes;
+* **check with investor** — nothing is violated, but the investor has not
+  published a criterion we would need (stage, sector or ticket), so it cannot be
+  ruled in or out from data alone (F-A4-019);
+* **ineligible** — a published criterion is violated; the reasons cite only
+  published criteria.
+
+Readiness is **advice**, not a gate: a low readiness score no longer hides an
+investor a founder is otherwise a fit for (F-A4-017). Eligible investors are
+ranked by a fit score built from terms that actually vary between investors,
+each carrying a short "why", with a stable tie-break. One startup vs. N
+independent investors is per-investor evaluation — deterministic, no solver.
 """
 
 from __future__ import annotations
@@ -13,8 +23,7 @@ from dataclasses import dataclass, field
 
 from app.core.vocab import ROUND_STAGES, Stage, to_round, to_stage
 from app.funding.investors import ALL_SECTORS, Investor, real_investors
-
-FIT_WEIGHTS = {"sector": 0.30, "stage": 0.25, "traction": 0.20, "geo": 0.15, "track": 0.10}
+from app.funding.readiness import NOT_ENOUGH, _band
 
 
 def _safe_stage(value: object) -> Stage | None:
@@ -45,16 +54,17 @@ def _accepted_stages(inv: Investor) -> set[Stage]:
     return accepted
 
 
-def readiness_gate(stage: object) -> int:
-    # Later-stage companies (revenue, growth) are held to a higher readiness bar.
-    st = _safe_stage(stage)
-    return 70 if (st is not None and st >= Stage.REVENUE) else 60
-
-
 @dataclass
 class EligibleInvestor:
     investor: Investor
     fit: int
+    why: list[str] = field(default_factory=list)
+
+
+@dataclass
+class CheckWithInvestor:
+    investor: Investor
+    unknowns: list[str]  # published criteria that are missing, so we cannot judge
 
 
 @dataclass
@@ -66,75 +76,125 @@ class IneligibleInvestor:
 @dataclass
 class InvestorMatchResult:
     eligible: list[EligibleInvestor]
+    check_with: list[CheckWithInvestor]
     ineligible: list[IneligibleInvestor]
+    readiness_advice: str = ""
     total_checked: int = field(default=0)
 
 
-def _violations(inv: Investor, s: dict, funding_need: int, readiness: int) -> list[str]:
+def _assess(inv: Investor, s: dict, funding_need: int) -> tuple[list[str], list[str]]:
+    """Return (violations of published criteria, unpublished criteria)."""
     sector = s.get("sector")
-    stage = s.get("stage")
+    founder_stage = _safe_stage(s.get("stage"))
     users = float(s.get("users", 0) or 0)
     revenue = float(s.get("monthly_revenue", 0) or 0)
-    # geography is a soft ranking factor (see _fit), not a hard constraint
-    reasons: list[str] = []
-    if inv.availability == "not_investing" and inv.not_investing_reason:
-        # the deciding reason; the rest would only be noise
-        return [inv.not_investing_reason[:1].upper() + inv.not_investing_reason[1:]]
 
+    if inv.availability == "not_investing":
+        reason = inv.not_investing_reason or "Not currently investing"
+        return [reason[:1].upper() + reason[1:]], []
+
+    violations: list[str] = []
+    unknowns: list[str] = []
+
+    # Ticket: an unpublished range is simply not checked (not a refusal and not a
+    # reason to send the founder away to ask) — only a published range can fail.
     if inv.ticket_known and not (inv.min_ticket <= funding_need <= inv.max_ticket):
-        reasons.append(
+        violations.append(
             f"Ticket size ₹{inv.min_ticket:,}–₹{inv.max_ticket:,} "
             f"doesn't fit your ₹{funding_need:,} need"
         )
-    founder_stage = _safe_stage(stage)
+
+    # Stage
     if not inv.stages:
-        reasons.append("Investment stage not published")
+        unknowns.append("Investment stage not published")
     elif founder_stage is not None and founder_stage not in _accepted_stages(inv):
-        reasons.append(f"Invests at {', '.join(inv.stages)} — not {founder_stage.value}")
+        violations.append(f"Invests at {', '.join(inv.stages)} — not {founder_stage.value}")
+
+    # Sector
     if not inv.sectors:
-        reasons.append("Sectors not published")
-    elif ALL_SECTORS not in inv.sectors and sector not in inv.sectors:
-        reasons.append(f"Focuses on {', '.join(inv.sectors)}")
-    if sector in inv.exclusions:
-        reasons.append(f"Excludes {sector}")
-    if inv.availability == "not_investing":
-        reasons.append(
-            inv.not_investing_reason[:1].upper() + inv.not_investing_reason[1:]
-            if inv.not_investing_reason
-            else "Not currently investing"
-        )
+        unknowns.append("Sectors not published")
+    elif sector and ALL_SECTORS not in inv.sectors and sector not in inv.sectors:
+        violations.append(f"Focuses on {', '.join(inv.sectors)}")
+    if sector and sector in inv.exclusions:
+        violations.append(f"Excludes {sector}")
+
+    # Published traction floors
     if users < inv.min_users:
-        reasons.append(f"Needs ≥ {inv.min_users:,} users")
+        violations.append(f"Needs ≥ {inv.min_users:,} users")
     if revenue < inv.min_revenue:
-        reasons.append(f"Needs ≥ ₹{inv.min_revenue:,}/mo revenue")
-    if readiness < readiness_gate(stage or ""):
-        reasons.append(f"Readiness must be ≥ {readiness_gate(stage or '')} for this stage")
-    return reasons
+        violations.append(f"Needs ≥ ₹{inv.min_revenue:,}/mo revenue")
+
+    return violations, unknowns
 
 
-def _fit(inv: Investor, s: dict) -> int:
+def _ticket_fit(inv: Investor, funding_need: int) -> float:
+    """1.0 when the need sits centrally in the range, tapering toward the edges."""
+    if not inv.ticket_known or inv.max_ticket <= inv.min_ticket:
+        return 0.7  # unpublished or a point ticket: neutral
+    span = inv.max_ticket - inv.min_ticket
+    pos = (funding_need - inv.min_ticket) / span  # 0 at floor, 1 at ceiling
+    return max(0.0, 1.0 - 2 * abs(0.5 - pos))  # 1.0 centred, 0.0 at an edge
+
+
+# Only terms that genuinely vary between investors (the old fit tied everyone on
+# constant stage/geo/track contributions).
+_FIT_WEIGHTS = {"sector": 0.30, "ticket": 0.20, "traction": 0.20, "track": 0.15, "geo": 0.15}
+
+
+def _fit(inv: Investor, s: dict, funding_need: int) -> tuple[int, list[str]]:
     users = float(s.get("users", 0) or 0)
     revenue = float(s.get("monthly_revenue", 0) or 0)
     state = s.get("state")
+    sector = s.get("sector")
+    why: list[str] = []
 
-    sector = 80 if ALL_SECTORS in inv.sectors else 100  # a specialist in your sector fits best
-    stage = 100
-    # traction margin above the investor's floor
-    umarg = 1.0 if inv.min_users == 0 else min(1.0, users / max(1, inv.min_users * 2))
-    rmarg = 1.0 if inv.min_revenue == 0 else min(1.0, revenue / max(1, inv.min_revenue * 2))
-    traction = round(50 + 50 * (umarg + rmarg) / 2)
-    geo = 100 if state in inv.geographies else 60
-    track = inv.track_record_score
+    specialist = bool(sector) and ALL_SECTORS not in inv.sectors and sector in inv.sectors
+    sector_fit = 1.0 if specialist else 0.7
+    if specialist:
+        why.append("Specialises in your sector")
 
-    return int(
-        round(
-            FIT_WEIGHTS["sector"] * sector
-            + FIT_WEIGHTS["stage"] * stage
-            + FIT_WEIGHTS["traction"] * traction
-            + FIT_WEIGHTS["geo"] * geo
-            + FIT_WEIGHTS["track"] * track
-        )
+    ticket = _ticket_fit(inv, funding_need)
+    if inv.ticket_known and ticket >= 0.8:
+        why.append("Your need sits well within their ticket range")
+
+    # traction margin above the investor's *published* floors only
+    if inv.min_users or inv.min_revenue:
+        umarg = min(1.0, users / (inv.min_users * 2)) if inv.min_users else 1.0
+        rmarg = min(1.0, revenue / (inv.min_revenue * 2)) if inv.min_revenue else 1.0
+        traction = (umarg + rmarg) / 2
+        if traction >= 0.75:
+            why.append("Comfortably past their traction bar")
+    else:
+        traction = 0.6  # no published bar: neutral, not a free full mark
+
+    track = (inv.track_record_score / 100) if inv.track_record_known else 0.6
+    if inv.track_record_known and inv.track_record_score >= 75:
+        why.append("Strong track record")
+
+    geo = 1.0 if state and state in inv.geographies else 0.6
+    if geo == 1.0:
+        why.append("Invests in your state")
+
+    score = (
+        _FIT_WEIGHTS["sector"] * sector_fit
+        + _FIT_WEIGHTS["ticket"] * ticket
+        + _FIT_WEIGHTS["traction"] * traction
+        + _FIT_WEIGHTS["track"] * track
+        + _FIT_WEIGHTS["geo"] * geo
     )
+    return int(round(100 * score)), why
+
+
+def _readiness_advice(readiness: int) -> str:
+    band = _band(readiness) if readiness > 0 else NOT_ENOUGH
+    if band == NOT_ENOUGH:
+        return "Answer a few readiness questions to see how investors may view you."
+    tail = (
+        "strengthen the weak dimensions before reaching out."
+        if readiness < 60
+        else "you present well; lead with your strongest dimensions."
+    )
+    return f"Your readiness is {readiness} ({band}) — {tail}"
 
 
 def match_investors(
@@ -145,14 +205,27 @@ def match_investors(
 ) -> InvestorMatchResult:
     investors = investors if investors is not None else list(real_investors())
     eligible: list[EligibleInvestor] = []
+    check_with: list[CheckWithInvestor] = []
     ineligible: list[IneligibleInvestor] = []
 
     for inv in investors:
-        reasons = _violations(inv, startup, funding_need, readiness_overall)
-        if reasons:
-            ineligible.append(IneligibleInvestor(inv, reasons))
+        violations, unknowns = _assess(inv, startup, funding_need)
+        if violations:
+            ineligible.append(IneligibleInvestor(inv, violations))
+        elif unknowns:
+            check_with.append(CheckWithInvestor(inv, unknowns))
         else:
-            eligible.append(EligibleInvestor(inv, _fit(inv, startup)))
+            fit, why = _fit(inv, startup, funding_need)
+            eligible.append(EligibleInvestor(inv, fit, why))
 
-    eligible.sort(key=lambda e: e.fit, reverse=True)
-    return InvestorMatchResult(eligible, ineligible, total_checked=len(investors))
+    # stable tie-break: fit desc, then investor id — never an order that depends
+    # on constant fit terms or input order (F-A4-019).
+    eligible.sort(key=lambda e: (-e.fit, e.investor.id))
+    check_with.sort(key=lambda c: c.investor.id)
+    return InvestorMatchResult(
+        eligible=eligible,
+        check_with=check_with,
+        ineligible=ineligible,
+        readiness_advice=_readiness_advice(readiness_overall),
+        total_checked=len(investors),
+    )
