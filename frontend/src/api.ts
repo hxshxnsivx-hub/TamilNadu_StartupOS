@@ -258,6 +258,9 @@ export interface ReadinessOut {
   overall: number;
   band: string;
   dimensions: Record<string, number>;
+  coverage?: Record<string, number>;
+  not_assessed?: string[];
+  next_inputs?: string[];
   gaps: ReadinessGap[];
 }
 export interface InvestorMatchIn {
