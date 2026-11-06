@@ -31,9 +31,16 @@ class IneligibleOut(BaseModel):
     reasons: list[str]
 
 
+class NeedsInfoOut(BaseModel):
+    scheme: SchemeOut
+    missing: list[str]  # founder-fact paths
+    questions: list[str]  # the same, phrased as questions to ask the founder
+
+
 class EligibilityOut(BaseModel):
     total_checked: int
     eligible: list[SchemeOut]
+    needs_info: list[NeedsInfoOut] = Field(default_factory=list)
     ineligible: list[IneligibleOut]
 
 
@@ -53,4 +60,5 @@ class RankedSchemeOut(BaseModel):
 class RecommendOut(BaseModel):
     total_checked: int
     ranked_eligible: list[RankedSchemeOut]
+    needs_info: list[NeedsInfoOut] = Field(default_factory=list)
     ineligible: list[IneligibleOut]

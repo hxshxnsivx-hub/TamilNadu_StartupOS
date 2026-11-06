@@ -8,17 +8,51 @@ from app.models.scheme_schemas import (
     EligibilityIn,
     EligibilityOut,
     IneligibleOut,
+    NeedsInfoOut,
     RankedSchemeOut,
     RecommendIn,
     RecommendOut,
     SchemeOut,
 )
-from app.schemes.engine import check_eligibility
+from app.schemes.engine import NeedsInfoScheme, check_eligibility
 from app.schemes.models import Scheme
 from app.schemes.swarm import SchemeSwarm
 
 router = APIRouter(prefix="/api/v1/schemes", tags=["schemes"])
 _swarm = SchemeSwarm()
+
+# A plain question for each founder-fact path a rule can leave unknown, so the
+# screen can ask instead of refusing (F-B4-008). Unmapped paths fall back to the
+# path itself; richer phrasing arrives with the typed FounderFacts contract (T04.2).
+_QUESTIONS: dict[str, str] = {
+    "founder.age": "How old are you?",
+    "founder.date_of_birth": "What is your date of birth?",
+    "founder.gender": "What is your gender?",
+    "founder.social_category": "Which social category do you belong to (General/OBC/SC/ST)?",
+    "founder.state": "Which state are you in?",
+    "founder.district": "Which district are you in?",
+    "startup.stage": "What stage is your startup at?",
+    "startup.sector": "Which sector is your startup in?",
+    "startup.is_registered": "Is your business registered yet?",
+    "startup.incorporation_age_years": "How long ago was the business incorporated?",
+    "startup.annual_turnover": "What is your annual turnover?",
+    "startup.dpiit_recognized": "Do you have DPIIT recognition?",
+}
+
+
+def _questions_for(missing: list[str]) -> list[str]:
+    return [_QUESTIONS.get(path, path) for path in missing]
+
+
+def _needs_info_out(items: list[NeedsInfoScheme]) -> list[NeedsInfoOut]:
+    return [
+        NeedsInfoOut(
+            scheme=_scheme_out(n.scheme),
+            missing=n.missing,
+            questions=_questions_for(n.missing),
+        )
+        for n in items
+    ]
 
 
 def _scheme_out(s: Scheme) -> SchemeOut:
@@ -44,6 +78,7 @@ async def eligibility(body: EligibilityIn) -> EligibilityOut:
     return EligibilityOut(
         total_checked=res.total_checked,
         eligible=[_scheme_out(s) for s in res.eligible],
+        needs_info=_needs_info_out(res.needs_info),
         ineligible=[
             IneligibleOut(scheme=_scheme_out(i.scheme), reasons=i.reasons) for i in res.ineligible
         ],
@@ -67,6 +102,7 @@ async def recommend(body: RecommendIn) -> RecommendOut:
             )
             for r in rec.ranked_eligible
         ],
+        needs_info=_needs_info_out(rec.needs_info),
         ineligible=[
             IneligibleOut(scheme=_scheme_out(i.scheme), reasons=i.reasons) for i in rec.ineligible
         ],
