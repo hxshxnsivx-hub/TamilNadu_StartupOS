@@ -184,7 +184,7 @@ export interface PipelineMetrics {
   stage_conversion: Record<string, number>;
   avg_days_in_stage: Record<string, number>;
   pipeline_value: number;
-  weighted_value: number;
+  value_by_stage: Record<string, number>;
 }
 export interface PipelineBoardOut {
   stages: string[];
