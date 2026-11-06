@@ -21,8 +21,11 @@ async def test_readiness_endpoint(client: AsyncClient):
     assert r.status_code == 200
     body = r.json()
     assert 0 <= body["overall"] <= 100
-    assert body["band"] in {"Not Ready", "Developing", "Ready", "Highly Ready"}
+    bands = {"Not Ready", "Developing", "Ready", "Highly Ready", "Not enough answers"}
+    assert body["band"] in bands
     assert set(body["dimensions"]) == {"team", "product", "traction", "financial", "pitch", "legal"}
+    # this sparse profile answers too little of any dimension to be assessed
+    assert body["not_assessed"] and body["next_inputs"]
     # weak dimensions produce ranked recommendations
     assert len(body["gaps"]) >= 1
     assert body["gaps"][0]["impact"] in {"High", "Medium", "Low"}
