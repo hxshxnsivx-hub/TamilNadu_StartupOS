@@ -2,15 +2,15 @@
 
 An investor relationship moves through an ordered set of stages. This module is
 the deterministic core: it validates transitions, groups entries into a Kanban
-board, and derives pipeline metrics (stage conversion, time-in-stage, weighted
-value) from each entry's own stage history. No DB and no LLM — persistence
+board, and derives pipeline metrics (stage conversion, time-in-stage, value by
+stage) from each entry's own stage history. No DB and no LLM — persistence
 lands with the storage layer; everything here is a pure function of its input.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime
 from typing import Any
 
 # Ordered open stages, then the two terminal outcomes.
@@ -27,19 +27,6 @@ STAGES: list[str] = [*OPEN_STAGES, WON, LOST]
 TERMINAL: set[str] = {WON, LOST}
 
 _ORDER = {s: i for i, s in enumerate(OPEN_STAGES)}
-
-# Probability a relationship at this stage eventually closes — used to weight
-# pipeline value so an early conversation isn't counted like a signed term sheet.
-STAGE_PROBABILITY: dict[str, float] = {
-    "initial_contact": 0.05,
-    "pitch_scheduled": 0.10,
-    "pitch_delivered": 0.20,
-    "due_diligence": 0.40,
-    "term_sheet": 0.65,
-    "negotiation": 0.80,
-    WON: 1.0,
-    LOST: 0.0,
-}
 
 # A deal may be won only once it has real commitment behind it.
 _WIN_FROM = {"term_sheet", "negotiation"}
@@ -125,19 +112,47 @@ def advance(entry: PipelineEntry, to_stage: str, at: str | None = None) -> Pipel
 
 
 def _reached(entry: PipelineEntry) -> set[str]:
-    """Stages this relationship has ever occupied (inferred when history is absent)."""
+    """Stages this relationship has ever occupied (inferred when history is absent).
+
+    A terminal entry with no trail is not assumed to have passed through every
+    stage — that counted lost deals as having reached negotiation and inflated
+    conversion at each stage (F-A4-020). A lost deal is credited only with the
+    first contact; a won deal with the open stages up to the term sheet it must
+    have been won from (negotiation is not implied)."""
     if entry.history:
         return {h["stage"] for h in entry.history} | {entry.stage}
-    if entry.stage in TERMINAL:
-        return set(OPEN_STAGES) | {entry.stage}
+    if entry.stage == LOST:
+        return {OPEN_STAGES[0], LOST}
+    if entry.stage == WON:
+        return set(OPEN_STAGES[: _ORDER["term_sheet"] + 1]) | {WON}
     return {s for s in OPEN_STAGES if _ORDER[s] <= _ORDER[entry.stage]}
 
 
-def _days(a: str, b: str) -> int | None:
+def _to_date(s: str) -> date | None:
+    """Parse a 'YYYY-MM-DD' date or a full ISO datetime ('...T..:..Z' or with an
+    offset, as the frontend stamps with Date.toISOString). 'Z' is normalised so
+    it parses on Python 3.10 as well as 3.11 (F-A4-020)."""
+    s = (s or "").strip()
+    if not s:
+        return None
     try:
-        return (date.fromisoformat(b) - date.fromisoformat(a)).days
+        return date.fromisoformat(s)
+    except ValueError:
+        pass
+    iso = s[:-1] + "+00:00" if s.endswith("Z") else s
+    try:
+        return datetime.fromisoformat(iso).date()
+    except ValueError:
+        pass
+    try:  # last resort: a leading YYYY-MM-DD
+        return date.fromisoformat(s[:10])
     except ValueError:
         return None
+
+
+def _days(a: str, b: str) -> int | None:
+    da, db = _to_date(a), _to_date(b)
+    return (db - da).days if da is not None and db is not None else None
 
 
 @dataclass
@@ -151,7 +166,7 @@ class PipelineMetrics:
     stage_conversion: dict[str, int]
     avg_days_in_stage: dict[str, float]
     pipeline_value: int
-    weighted_value: int
+    value_by_stage: dict[str, int]
 
 
 def pipeline_metrics(entries: list[PipelineEntry]) -> PipelineMetrics:
@@ -179,7 +194,9 @@ def pipeline_metrics(entries: list[PipelineEntry]) -> PipelineMetrics:
 
     open_entries = [e for e in entries if e.stage not in TERMINAL]
     value = sum(e.amount for e in open_entries)
-    weighted = round(sum(e.amount * STAGE_PROBABILITY[e.stage] for e in open_entries))
+    # Open pipeline value split by the stage it actually sits in — an honest,
+    # uncited breakdown instead of a made-up per-stage probability (F-A4-020).
+    value_by_stage = {s: sum(e.amount for e in open_entries if e.stage == s) for s in OPEN_STAGES}
 
     return PipelineMetrics(
         total=total,
@@ -191,7 +208,7 @@ def pipeline_metrics(entries: list[PipelineEntry]) -> PipelineMetrics:
         stage_conversion=conversion,
         avg_days_in_stage=avg_days,
         pipeline_value=value,
-        weighted_value=weighted,
+        value_by_stage=value_by_stage,
     )
 
 
