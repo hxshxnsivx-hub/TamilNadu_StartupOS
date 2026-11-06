@@ -99,7 +99,7 @@ class PipelineMetricsOut(BaseModel):
     stage_conversion: dict[str, int]
     avg_days_in_stage: dict[str, float]
     pipeline_value: int
-    weighted_value: int
+    value_by_stage: dict[str, int]
 
 
 class PipelineColumnOut(BaseModel):
