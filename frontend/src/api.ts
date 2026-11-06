@@ -364,9 +364,15 @@ export interface IneligibleScheme {
   scheme: SchemeInfo;
   reasons: string[];
 }
+export interface NeedsInfoScheme {
+  scheme: SchemeInfo;
+  missing: string[];
+  questions: string[];
+}
 export interface RecommendOut {
   total_checked: number;
   ranked_eligible: RankedScheme[];
+  needs_info?: NeedsInfoScheme[];
   ineligible: IneligibleScheme[];
 }
 
