@@ -23,6 +23,9 @@ class ReadinessOut(BaseModel):
     overall: int
     band: str
     dimensions: dict[str, int]
+    coverage: dict[str, float] = Field(default_factory=dict)
+    not_assessed: list[str] = Field(default_factory=list)
+    next_inputs: list[str] = Field(default_factory=list)
     gaps: list[RecommendationOut]
 
 
