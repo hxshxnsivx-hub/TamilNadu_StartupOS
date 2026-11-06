@@ -282,6 +282,11 @@ export interface InvestorInfo {
 export interface EligibleInvestor {
   investor: InvestorInfo;
   fit: number;
+  why?: string[];
+}
+export interface CheckWithInvestor {
+  investor: InvestorInfo;
+  unknowns: string[];
 }
 export interface IneligibleInvestor {
   investor: InvestorInfo;
@@ -290,7 +295,9 @@ export interface IneligibleInvestor {
 export interface InvestorMatchOut {
   total_checked: number;
   eligible: EligibleInvestor[];
+  check_with?: CheckWithInvestor[];
   ineligible: IneligibleInvestor[];
+  readiness_advice?: string;
 }
 
 export interface B2BDemandIn {
