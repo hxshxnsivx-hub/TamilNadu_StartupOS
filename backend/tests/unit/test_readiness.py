@@ -108,17 +108,60 @@ def test_more_traction_raises_that_dimension():
 
 
 def test_gaps_only_for_weak_dimensions_and_ranked():
-    r = score_readiness({"is_registered": True})  # mostly weak
-    gaps = analyze_gaps(r)
+    profile = {"is_registered": True}  # mostly weak
+    r = score_readiness(profile)
+    gaps = analyze_gaps(profile, r)
     assert gaps, "expected recommendations for weak dimensions"
     weak_dims = {d for d, s in r.dimensions.items() if s < GAP_THRESHOLD}
     assert {g.dimension for g in gaps} <= weak_dims
     ratios = [g.ratio for g in gaps]
     assert ratios == sorted(ratios, reverse=True)  # impact/effort descending
+    # the entity is already registered, so that action is not offered again
+    assert not any(g.action.startswith("Register the entity") for g in gaps)
 
 
 def test_no_gaps_for_strong_profile():
-    assert analyze_gaps(score_readiness(STRONG)) == []
+    assert analyze_gaps(STRONG, score_readiness(STRONG)) == []
+
+
+def test_gap_impact_is_the_real_rubric_delta():
+    """Each action's impact equals the dimension change it actually makes (F-A4-018)."""
+    from app.funding.gaps import _PLAYBOOK
+
+    profile: dict = {}  # nothing answered: every action has room to help
+    r = score_readiness(profile)
+    recs = {(g.dimension, g.action): g for g in analyze_gaps(profile, r)}
+    for dim, actions in _PLAYBOOK.items():
+        for action in actions:
+            if action.precondition and not action.precondition(profile):
+                continue
+            after = score_readiness({**profile, **action.sets}).dimensions[dim]
+            expected = after - r.dimensions[dim]
+            if expected <= 0:
+                continue
+            assert recs[(dim, action.label)].impact_points == expected
+
+
+def test_mvp_founder_is_not_told_to_ship_an_mvp():
+    """A precondition keeps stage-reached actions out once the founder is there (F-A4-018)."""
+    profile = {"stage": "mvp", "feature_completeness": 20}
+    gaps = analyze_gaps(profile, score_readiness(profile))
+    assert not any("Ship an MVP" in g.action for g in gaps)
+    # an idea-stage founder, by contrast, is offered it
+    idea = {"stage": "idea", "feature_completeness": 20}
+    assert any("Ship an MVP" in g.action for g in analyze_gaps(idea, score_readiness(idea)))
+
+
+def test_unknown_input_actions_are_marked_conditional():
+    # nothing answered in legal: the register action is offered "if not done yet"
+    profile: dict = {}
+    gaps = {g.action: g for g in analyze_gaps(profile, score_readiness(profile))}
+    reg = next(g for a, g in gaps.items() if a.startswith("Register the entity"))
+    assert reg.conditional is True
+    # a founder who said they are NOT registered gets it unconditionally
+    not_reg = analyze_gaps({"is_registered": False}, score_readiness({"is_registered": False}))
+    reg2 = next(g for g in not_reg if g.action.startswith("Register the entity"))
+    assert reg2.conditional is False
 
 
 def test_revenue_stage_scores_above_mvp_not_zero() -> None:
