@@ -17,6 +17,7 @@ class RecommendationOut(BaseModel):
     impact: str
     impact_points: int
     effort_weeks: int
+    conditional: bool = False
 
 
 class ReadinessOut(BaseModel):
