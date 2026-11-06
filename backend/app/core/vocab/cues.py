@@ -50,10 +50,17 @@ _NEGATION = re.compile(
 )
 _NEG_WINDOW = 28  # characters before the cue to scan for a negation trigger
 
+# A negation does not reach across one of these: "not Erode, Salem" negates
+# Erode but not Salem; "not selling but growing" negates selling, not growing.
+_BREAKER = re.compile(r"[,.;:]|\b(?:but|however|although|though|yet|whereas)\b", re.IGNORECASE)
+
 
 def negated(text: str, start: int) -> bool:
-    """Is the cue at index ``start`` preceded by a negation trigger (same string)?"""
-    return _NEGATION.search(text[max(0, start - _NEG_WINDOW) : start]) is not None
+    """Is the cue at index ``start`` preceded by a negation trigger, with no scope
+    breaker (comma, "but", ...) between the trigger and the cue?"""
+    window = text[max(0, start - _NEG_WINDOW) : start]
+    window = _BREAKER.split(window)[-1]  # only the segment nearest the cue
+    return _NEGATION.search(window) is not None
 
 
 def unnegated_hit(text: str, cue: str) -> bool:
