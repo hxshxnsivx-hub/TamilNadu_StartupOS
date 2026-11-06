@@ -1,7 +1,7 @@
 """Unit tests for funding readiness scoring and gap analysis."""
 
 from app.funding.gaps import GAP_THRESHOLD, analyze_gaps
-from app.funding.readiness import WEIGHTS, score_readiness
+from app.funding.readiness import NOT_ENOUGH, RUBRIC, WEIGHTS, score_readiness
 
 STRONG = {
     "founder_experience_years": 6,
@@ -32,11 +32,52 @@ STRONG = {
 }
 
 
-def test_empty_profile_is_not_ready():
+def test_empty_profile_is_not_assessed_not_a_zero_score():
+    # nothing answered: unknown, not a hard zero (F-A4-016)
     r = score_readiness({})
     assert r.overall == 0
-    assert r.band == "Not Ready"
+    assert r.band == NOT_ENOUGH
     assert set(r.dimensions) == set(WEIGHTS)
+    assert set(r.not_assessed) == set(WEIGHTS)  # every dimension unassessed
+    assert all(c == 0.0 for c in r.coverage.values())
+    assert r.next_inputs  # it tells the founder what to answer first
+
+
+def test_overall_is_computed_over_assessed_dimensions_only():
+    # a founder who has fully answered only the team dimension is scored on it,
+    # not dragged to ~zero by the five dimensions they have not touched yet.
+    team_only = {
+        "founder_experience_years": 6,
+        "team_size": 4,
+        "has_domain_expertise": True,
+        "advisors_count": 3,
+    }
+    r = score_readiness(team_only)
+    assert r.coverage["team"] == 1.0
+    assert r.not_assessed == [d for d in WEIGHTS if d != "team"]
+    # overall equals the team dimension alone (only assessed dimension)
+    assert r.overall == r.dimensions["team"]
+    assert r.band != NOT_ENOUGH
+
+
+def test_known_false_flag_counts_as_coverage_but_zero_points():
+    # answering "no" to every legal question is a real answer: the dimension is
+    # assessed (coverage 1.0) and scores 0 — different from never answering.
+    answered_no = dict.fromkeys((inp.key for inp in RUBRIC["legal"]), False)
+    r = score_readiness(answered_no)
+    assert r.coverage["legal"] == 1.0
+    assert r.dimensions["legal"] == 0
+    assert "legal" not in r.not_assessed
+
+
+def test_adding_a_true_fact_never_lowers_a_dimension():
+    # monotonicity (F-A4-016): each added answer only raises its dimension
+    base: dict = {}
+    for inp in RUBRIC["financial"]:
+        before = score_readiness(base).dimensions["financial"]
+        base[inp.key] = 12 if inp.kind == "num" else True
+        after = score_readiness(base).dimensions["financial"]
+        assert after >= before
 
 
 def test_strong_profile_is_highly_ready():
