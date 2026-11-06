@@ -83,6 +83,29 @@ def test_weights_follow_the_idea_type_and_the_founder():
     assert w["technical"] > w2["technical"] - 1  # no tech skill raises technical
 
 
+def test_technical_skill_is_three_valued():
+    from app.agents.council.vote import technical_skill
+
+    assert technical_skill({}) is None  # slot not answered
+    assert technical_skill({"founder_skills": []}) is None  # answered with nothing
+    assert technical_skill({"founder_skills": ["python developer"]}) is True
+    assert technical_skill({"founder_skills": ["tailoring"]}) is False
+
+
+def test_technical_bump_only_when_skill_is_known_absent():
+    # unknown skill: no bump, and the reason says so honestly (F-A1-021)
+    _, why_unknown = weights_for("hardware", {})
+    assert not any("+5" in r for r in why_unknown)
+    assert any("not known" in r for r in why_unknown)
+    # a python developer is technical: no bump
+    w_dev, why_dev = weights_for("hardware", {"founder_skills": ["python developer"]})
+    assert not any("technical +5" in r for r in why_dev)
+    # a known non-technical skill: the +5 bump, with an honest reason
+    w_tailor, why_tailor = weights_for("hardware", {"founder_skills": ["tailoring"]})
+    assert any("technical +5" in r for r in why_tailor)
+    assert w_tailor["technical"] > w_dev["technical"]
+
+
 def _op(seat, stance, scores, blocker=False, ask=None):
     return Opinion(
         seat=seat, stance=stance, scores=scores, confidence=0.8,
