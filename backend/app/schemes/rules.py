@@ -12,6 +12,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
+from app.core.tri import Tri, Verdict, and_, not_, of, or_
+
 
 class Op(str, Enum):
     EQ = "eq"
@@ -43,32 +45,43 @@ def _get(profile: dict[str, Any], dotted: str) -> Any:
 
 
 def _apply(op: Op, actual: Any, value: Any) -> bool:
-    if op in (Op.IS_TRUE, Op.IS_FALSE):
-        return bool(actual) is (op is Op.IS_TRUE)
-    if actual is None:
-        return False  # missing data can't satisfy a positive constraint
-    try:
-        if op is Op.EQ:
-            return actual == value
-        if op is Op.NE:
-            return actual != value
-        if op is Op.GT:
-            return actual > value
-        if op is Op.GTE:
-            return actual >= value
-        if op is Op.LT:
-            return actual < value
-        if op is Op.LTE:
-            return actual <= value
-        if op is Op.IN:
-            return actual in value
-        if op is Op.NOT_IN:
-            return actual not in value
-        if op is Op.BETWEEN:
-            return value[0] <= actual <= value[1]
-    except TypeError:
-        return False
+    """Two-valued op on a *known* (non-None) actual; may raise TypeError, which
+    the three-valued leaf turns into UNKNOWN."""
+    if op is Op.IS_TRUE:
+        return bool(actual)
+    if op is Op.IS_FALSE:
+        return not bool(actual)
+    if op is Op.EQ:
+        return actual == value
+    if op is Op.NE:
+        return actual != value
+    if op is Op.GT:
+        return actual > value
+    if op is Op.GTE:
+        return actual >= value
+    if op is Op.LT:
+        return actual < value
+    if op is Op.LTE:
+        return actual <= value
+    if op is Op.IN:
+        return actual in value
+    if op is Op.NOT_IN:
+        return actual not in value
+    if op is Op.BETWEEN:
+        return value[0] <= actual <= value[1]
     return False
+
+
+def _apply_tri(op: Op, actual: Any, value: Any) -> Tri:
+    """Missing data (None) and uncomparable types are UNKNOWN, not False — so a
+    positive rule never fails on absent data and ``is_false`` no longer passes
+    on a field the founder has not given (F-A4-001, F-B4-008)."""
+    if actual is None:
+        return Tri.UNKNOWN
+    try:
+        return of(_apply(op, actual, value))
+    except TypeError:
+        return Tri.UNKNOWN
 
 
 @dataclass
@@ -91,30 +104,43 @@ class RuleGroup:
     label: str | None = None
 
 
-@dataclass
-class EvalResult:
-    ok: bool
-    reasons: list[str]  # why it failed (empty when ok)
+def evaluate(node: Rule | RuleGroup, profile: dict[str, Any]) -> Verdict:
+    """Evaluate a rule tree to a three-valued :class:`Verdict`.
 
-
-def evaluate(node: Rule | RuleGroup, profile: dict[str, Any]) -> EvalResult:
+    A verdict is TRUE only when every leaf is provably true; FALSE when a leaf is
+    provably violated (carrying its reason); UNKNOWN when the outcome rests on a
+    missing fact (carrying the field paths we would need).
+    """
     if isinstance(node, Rule):
-        ok = _apply(node.op, _get(profile, node.field), node.value)
-        return EvalResult(ok, [] if ok else [node.describe()])
+        val = _apply_tri(node.op, _get(profile, node.field), node.value)
+        if val is Tri.FALSE:
+            return Verdict(val, reasons=[node.describe()])
+        if val is Tri.UNKNOWN:
+            return Verdict(val, missing=[node.field])
+        return Verdict(Tri.TRUE)
 
-    child_results = [evaluate(c, profile) for c in node.rules]
+    children = [evaluate(c, profile) for c in node.rules]
+    values = [c.value for c in children]
 
     if node.combinator is Combinator.ALL:
-        ok = all(r.ok for r in child_results)
-        reasons = [rr for r in child_results for rr in r.reasons]
-        return EvalResult(ok, [] if ok else reasons)
+        val = and_(values)
+    elif node.combinator is Combinator.ANY:
+        val = or_(values)
+    else:  # NONE / NOR
+        val = not_(or_(values))
 
-    if node.combinator is Combinator.ANY:
-        ok = any(r.ok for r in child_results)
-        reason = node.label or "none of the alternative criteria were met"
-        return EvalResult(ok, [] if ok else [reason])
+    if val is Tri.TRUE:
+        return Verdict(Tri.TRUE)
 
-    # NONE / NOR — passes only if no child matched
-    matched = any(r.ok for r in child_results)
-    reason = node.label or "an exclusion criterion was matched"
-    return EvalResult(not matched, [] if not matched else [reason])
+    missing = [m for c in children for m in c.missing]
+    if val is Tri.UNKNOWN:
+        return Verdict(Tri.UNKNOWN, missing=missing)
+
+    # val is FALSE — give the specific violation(s)
+    if node.combinator is Combinator.ALL:
+        reasons = [r for c in children for r in c.reasons]
+    elif node.combinator is Combinator.ANY:
+        reasons = [node.label or "none of the alternative criteria were met"]
+    else:
+        reasons = [node.label or "an exclusion criterion was matched"]
+    return Verdict(Tri.FALSE, reasons=reasons)
