@@ -7,9 +7,10 @@ scheme carries at least one specific violated rule.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 
+from app.core.tri import Tri
 from app.schemes.models import Scheme
 from app.schemes.rules import evaluate
 from app.schemes.seed import SEED_SCHEMES
@@ -18,6 +19,12 @@ from app.schemes.seed import SEED_SCHEMES
 @dataclass
 class EligibleScheme:
     scheme: Scheme
+
+
+@dataclass
+class NeedsInfoScheme:
+    scheme: Scheme
+    missing: list[str]  # founder-fact paths we would need to decide
 
 
 @dataclass
@@ -30,10 +37,11 @@ class IneligibleScheme:
 class EligibilityResult:
     eligible: list[Scheme]
     ineligible: list[IneligibleScheme]
+    needs_info: list[NeedsInfoScheme] = field(default_factory=list)
 
     @property
     def total_checked(self) -> int:
-        return len(self.eligible) + len(self.ineligible)
+        return len(self.eligible) + len(self.needs_info) + len(self.ineligible)
 
 
 def compute_age(date_of_birth: str | None) -> int | None:
@@ -64,13 +72,17 @@ def check_eligibility(profile: dict, schemes: list[Scheme] | None = None) -> Eli
     schemes = schemes if schemes is not None else SEED_SCHEMES
     p = normalise_profile(profile)
     eligible: list[Scheme] = []
+    needs_info: list[NeedsInfoScheme] = []
     ineligible: list[IneligibleScheme] = []
 
     for scheme in schemes:
-        result = evaluate(scheme.eligibility, p)
-        if result.ok:
+        verdict = evaluate(scheme.eligibility, p)
+        if verdict.value is Tri.TRUE:
             eligible.append(scheme)
+        elif verdict.value is Tri.UNKNOWN:
+            # unknown, not ineligible: ask for the missing facts instead of a false no
+            needs_info.append(NeedsInfoScheme(scheme, list(dict.fromkeys(verdict.missing))))
         else:
-            ineligible.append(IneligibleScheme(scheme, result.reasons))
+            ineligible.append(IneligibleScheme(scheme, verdict.reasons))
 
-    return EligibilityResult(eligible=eligible, ineligible=ineligible)
+    return EligibilityResult(eligible=eligible, ineligible=ineligible, needs_info=needs_info)
