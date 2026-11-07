@@ -95,6 +95,25 @@ BY_ID = {s.id: s for s in SEATS}
 class Claim(BaseModel):
     text: str = Field(min_length=3, max_length=400)
     evidence: list[str] = Field(default_factory=list, max_length=6)
+    # Which criterion the claim is about, and whether it speaks for (up), against
+    # (down) or neither (neutral). Synthesis pairs on these so a claim is never
+    # quoted for the wrong criterion or a neutral claim shown as a weakness (F-A1-020).
+    criterion: str | None = None
+    direction: Literal["up", "neutral", "down"] = "neutral"
+
+
+Direction = Literal["up", "neutral", "down"]
+
+
+def infer_claim_focus(scores: dict[str, int]) -> tuple[str | None, Direction]:
+    """The criterion a seat is most opinionated about, and the direction of that
+    opinion — used to label rule claims that arrive without an explicit focus."""
+    if not scores:
+        return None, "neutral"
+    crit = max(scores, key=lambda c: abs(scores[c] - 3))
+    s = scores[crit]
+    direction: Direction = "up" if s >= 4 else "down" if s <= 2 else "neutral"
+    return crit, direction
 
 
 class Opinion(BaseModel):
@@ -126,10 +145,18 @@ def validate(raw: dict, seat: Seat, evidence_ids: set[str], basis: str) -> Opini
             kept.append(c)
     op.dropped_claims = len(op.claims) - len(kept)
     op.claims = kept
+    # Label any claim that arrived without a focus (every rule claim, and model
+    # claims before the prompt carries the fields) from the seat's own scores.
+    crit, direction = infer_claim_focus(op.scores)
+    for c in op.claims:
+        if c.criterion is None:
+            c.criterion, c.direction = crit, direction
     if op.blocker is not None:
         op.blocker.evidence = [e for e in op.blocker.evidence if e in evidence_ids]
         if not op.blocker.evidence:
             op.blocker = None
+        elif op.blocker.criterion is None:
+            op.blocker.criterion, op.blocker.direction = crit, "down"
     if not op.claims:
         op.confidence = round(op.confidence / 2, 2)  # nothing it said could be backed
     if seat.must_oppose and op.stance == "support":

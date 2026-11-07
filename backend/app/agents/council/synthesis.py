@@ -8,7 +8,7 @@ against the evidence pack. The founder hears one synthesis, never seven voices.
 from __future__ import annotations
 
 from app.agents.council.evidence import EvidencePack
-from app.agents.council.seats import BY_ID, CRITERION_WORDS, Opinion
+from app.agents.council.seats import BY_ID, CRITERION_WORDS, Claim, Opinion
 from app.agents.grounding import facts_from, gate
 
 BAND_LINE = {
@@ -37,6 +37,17 @@ def _clause(text: str) -> str:
     return t[:1].lower() + t[1:]
 
 
+def _claim_for(seat: Opinion | None, criterion: str, direction: str) -> Claim | None:
+    """A seat's claim that is actually about this criterion and points this way —
+    so a positive or off-topic claim is never quoted as the weakness (F-A1-020)."""
+    if seat is None:
+        return None
+    for c in seat.claims:
+        if c.criterion == criterion and c.direction == direction:
+            return c
+    return None
+
+
 def synthesise(vote: dict, opinions: list[Opinion], pack: EvidencePack) -> dict:
     by_seat = {o.seat: o for o in opinions}
     lines = [BAND_LINE[vote["band"]]]
@@ -49,15 +60,15 @@ def synthesise(vote: dict, opinions: list[Opinion], pack: EvidencePack) -> dict:
     crit = vote["criteria"]
     if crit:
         best = max(crit, key=lambda c: crit[c]["score"])
-        seat = by_seat.get(crit[best]["high"])
-        if crit[best]["score"] >= 3.5 and seat and seat.claims:
+        claim = _claim_for(by_seat.get(crit[best]["high"]), best, "up")
+        if crit[best]["score"] >= 3.5 and claim:
             lines.append(f"On {CRITERION_WORDS[best]}, it looks good: "
-                         f"{_clause(seat.claims[0].text)}.")  # fmt: skip
+                         f"{_clause(claim.text)}.")  # fmt: skip
         worst = min(crit, key=lambda c: crit[c]["score"])
-        seat = by_seat.get(crit[worst]["low"])
-        if worst != best and crit[worst]["score"] < 3 and seat and seat.claims:
+        claim = _claim_for(by_seat.get(crit[worst]["low"]), worst, "down")
+        if worst != best and crit[worst]["score"] < 3 and claim:
             lines.append(f"The weakest point is {CRITERION_WORDS[worst]}: "
-                         f"{_clause(seat.claims[0].text)}.")  # fmt: skip
+                         f"{_clause(claim.text)}.")  # fmt: skip
 
     if vote["ask_about"]:
         lines.append(f"The views differ most on {CRITERION_WORDS[vote['ask_about']]}.")
